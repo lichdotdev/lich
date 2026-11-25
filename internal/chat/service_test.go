@@ -85,6 +85,36 @@ func TestAutoApproveAndBirthEffort(t *testing.T) {
 	}
 }
 
+// TestSkipPermissionsAnswersEveryAsk: a checkout that skips permissions
+// answers yes to whatever its provider still asks, a flag on the argv or not:
+// Claude Code launched with --dangerously-skip-permissions still asks through
+// can_use_tool, default_to_no included.
+func TestSkipPermissionsAnswersEveryAsk(t *testing.T) {
+	for name, tc := range map[string]struct {
+		provider, prompt string
+	}{
+		"claude":            {providers.Claude, "perm"},
+		"claude default no": {providers.Claude, "perm-no"},
+		"codex":             {providers.Codex, "perm"},
+		"acp":               {providers.OMP, "perm"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			r := newRig(t, tc.provider)
+			_, _ = r.db.SetSetting(t.Context(), api.SetSettingOptions{Key: "provider." + tc.provider + ".skip-permissions", Value: "true"})
+			if err := r.setView(api.ViewChat); err != nil {
+				t.Fatalf("SetView: %v", err)
+			}
+			r.prompt(tc.prompt)
+			r.turnEnd(0)
+			for _, it := range r.history() {
+				if it.Kind == api.ItemPermission {
+					t.Errorf("the ask became an item: %+v", it.Permission)
+				}
+			}
+		})
+	}
+}
+
 // TestShutdownStopsEveryChat ends every process on the way out.
 func TestShutdownStopsEveryChat(t *testing.T) {
 	r := newRig(t, providers.OMP)

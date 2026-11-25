@@ -91,7 +91,7 @@ func TestCodexChatArgsAreGlobalOverridesThenAppServer(t *testing.T) {
 
 // TestChatBirthCarriesWhatTheArgvCannot: the model and effort reach the
 // protocol only where no flag carried them, and only at birth; skip-permissions
-// becomes lich answering yes where the ACP server has no flag for it.
+// becomes lich answering yes on every provider, whatever its argv carried.
 func TestChatBirthCarriesWhatTheArgvCannot(t *testing.T) {
 	t.Parallel()
 	svc := New(stubBins{model: "m1", effort: "low", skipPerms: true}, nil, events.New())
@@ -101,10 +101,10 @@ func TestChatBirthCarriesWhatTheArgvCannot(t *testing.T) {
 	}{
 		{providers.OMP, "", ChatBirth{Model: "m1", Effort: "low", AutoApprove: true}},
 		{providers.OMP, "conv", ChatBirth{AutoApprove: true}},
-		{providers.Antigravity, "", ChatBirth{Model: "m1", Effort: "low"}},
+		{providers.Antigravity, "", ChatBirth{Model: "m1", Effort: "low", AutoApprove: true}},
 		{providers.Codex, "", ChatBirth{Model: "m1", Effort: "low", AutoApprove: true}},
-		{providers.Claude, "", ChatBirth{}},
-		{providers.Kiro, "", ChatBirth{}},
+		{providers.Claude, "", ChatBirth{AutoApprove: true}},
+		{providers.Kiro, "", ChatBirth{AutoApprove: true}},
 	}
 	for _, tc := range cases {
 		if got := svc.chatBirth(api.StartOptions{ID: "s1", Kind: tc.kind, Resume: tc.resume}); got != tc.want {
