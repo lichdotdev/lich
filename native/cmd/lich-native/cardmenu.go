@@ -23,6 +23,7 @@ var (
 	icNewFolder  = icons.Lucide("plus")
 	icMenuFork   = icons.Lucide("git-fork")
 	icMenuCopy   = icons.Lucide("copy")
+	icMenuUnlink = icons.Lucide("unlink")
 )
 
 // cardMenu is the session card's right-click menu, cut to what this window
@@ -54,6 +55,7 @@ func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename
 		ui.MenuEntry{Kind: ui.MenuSubTrigger, Label: i18n.T("sidebar.sessionCard.openIn"), Icon: icOpenIn, Sub: openInMenu(sv, act)},
 		pullRequestItem(sv, act),
 	)
+	entries = append(entries, linkPRItems(sv, act)...)
 	if sv.Kind != "shell" {
 		entries = append(entries, scheduleItem(sv, act))
 	}
@@ -177,4 +179,18 @@ func pullRequestItem(sv *sessionView, act *sidebarAction) ui.MenuEntry {
 		item.OnClick = func() { act.activate, act.openPR, act.openPRURL = id, number, url }
 	}
 	return item
+}
+
+// linkPRItems are Link pull request…, which asks for one, and Unlink pull
+// request, on a session showing one.
+func linkPRItems(sv *sessionView, act *sidebarAction) []ui.MenuEntry {
+	id := sv.ID
+	items := []ui.MenuEntry{{Label: i18n.T(forgeKey(sv.forge, "sidebar.sessionCard.linkPullRequest", "sidebar.sessionCard.linkMergeRequest")),
+		Icon: icPRLinked, OnClick: func() { act.linkPR = id }}}
+	if sv.pr == nil {
+		return items
+	}
+	url := sv.pr.URL
+	return append(items, ui.MenuEntry{Label: i18n.T(forgeKey(sv.prForge(), "sidebar.sessionCard.unlinkPullRequest", "sidebar.sessionCard.unlinkMergeRequest")),
+		Icon: icMenuUnlink, OnClick: func() { act.unlinkPR = prUnlink{id: id, url: url} }})
 }

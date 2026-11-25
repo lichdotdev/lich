@@ -41,17 +41,20 @@ type model struct {
 	// pendingOrder is a tab drag the backend has not confirmed: the strip
 	// shows it, the store's order does not hold it. projects-reordered
 	// settles it, a refused reorder drops it.
-	pendingOrder  []string
-	status        *statusStore
-	usage         *footerUsage
-	quota         *planQuota
-	cwd           map[string]sessionCwd          // session id -> last session-cwd report
-	agent         map[string]string              // session id -> provider CLI live in its PTY
-	sandbox       map[string]sandboxEvent        // session id -> how its spawn was confined
-	relay         map[string]sessionRelay        // session id -> request open with another
-	git           map[string]backend.DiffStats   // shown path -> its branch and changes
-	base          map[string]*backend.BaseStatus // shown path -> where it stands against its base
-	prs           map[string]prLookup            // shown path -> its open pull request
+	pendingOrder []string
+	status       *statusStore
+	usage        *footerUsage
+	quota        *planQuota
+	cwd          map[string]sessionCwd          // session id -> last session-cwd report
+	agent        map[string]string              // session id -> provider CLI live in its PTY
+	sandbox      map[string]sandboxEvent        // session id -> how its spawn was confined
+	relay        map[string]sessionRelay        // session id -> request open with another
+	git          map[string]backend.DiffStats   // shown path -> its branch and changes
+	base         map[string]*backend.BaseStatus // shown path -> where it stands against its base
+	prs          map[string]prLookup            // shown path -> its open pull request
+	// prLinks is each session's pull requests linked or unlinked by hand,
+	// newest first (sessionpr_store.go).
+	prLinks       map[string][]backend.SessionPullRequest
 	forges        *forgeStore
 	activeProject string // project id on screen
 	home          bool   // Home is on screen instead
@@ -508,6 +511,10 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			if m.prChanged != nil {
 				m.prChanged()
 			}
+		case api.SessionPullRequestsEvent.Name:
+			if list, err := backend.Decode(ev, api.SessionPullRequestsEvent); err == nil {
+				m.setSessionPRs(list)
+			}
 		case api.BranchPullRequestEvent.Name:
 			if b, err := backend.Decode(ev, api.BranchPullRequestEvent); err == nil {
 				m.setBranchPR(b)
@@ -714,9 +721,15 @@ type sessionView struct {
 	tool      sessionTool  // Name "" outside a tool call
 	reason    string       // what a waiting session is blocked on, "" for unsaid
 	git       backend.DiffStats
-	base      *backend.BaseStatus  // nil without a base to stand against
-	pr        *backend.PullRequest // PR of the shown path's branch in any state, nil for none
-	forge     string               // the shown path's forge, "" while it is read
+	base      *backend.BaseStatus // nil without a base to stand against
+	// pr is the session's pull request in any state, nil for none: its newest
+	// hand link (prLink), else its shown path's branch's unless unlinked.
+	// prOthers are the rest, branchPR the branch's whatever was unlinked.
+	pr       *backend.PullRequest
+	prLink   *backend.SessionPullRequest
+	prOthers []*backend.PullRequest
+	branchPR *backend.PullRequest
+	forge    string // the shown path's forge, "" while it is read
 	// profileName is the profile the session runs in, "" for Personal;
 	// continueIn are the other logins its conversation could move to.
 	profileName string
@@ -743,6 +756,8 @@ func (m *model) viewOf(p backend.Project, s backend.Session, now time.Time) sess
 	usage, _ := m.usage.get(s.ID)
 	st, page := m.browsers.states[s.ID], m.pages[s.ID]
 	web := webView{url: pageURL(st), title: pageTitle(st), headed: st.Headed, shown: page != nil, focused: page != nil && page.focused}
+	branchPR := m.prs[shown].pr
+	pr, prLink, prOthers := pickSessionPR(branchPR, m.prLinks[s.ID])
 	split := ""
 	if i := m.layouts.of(s.ID); i >= 0 {
 		split = m.layouts.tabs[i].ID
@@ -751,7 +766,7 @@ func (m *model) viewOf(p backend.Project, s backend.Session, now time.Time) sess
 		Session: s, projectID: p.ID, path: sessionPath(p, s), shown: shown, host: m.cwd[s.ID].Host, web: web,
 		status: m.status.status(s.ID), unread: m.status.unread(s.ID), turn: m.status.turn(s.ID), age: age, aged: aged, idle: idle, idled: idled,
 		agent: m.agent[s.ID], sandbox: m.sandbox[s.ID], git: m.git[shown],
-		base: m.base[shown], pr: m.prs[shown].pr, forge: m.forges.peek(shown),
+		base: m.base[shown], pr: pr, prLink: prLink, prOthers: prOthers, branchPR: branchPR, forge: m.forges.peek(shown),
 		relay: m.relay[s.ID], tool: tool, reason: m.status.reason(s.ID), browser: m.browsers.states[s.ID].Open,
 		profileName: m.profileNameOf(s.Kind, s.Profile), continueIn: m.continueTargets(s.Kind, s.Profile),
 		split: split, running: usage.Model,

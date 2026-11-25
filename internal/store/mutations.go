@@ -426,6 +426,9 @@ func (s *Service) reopen(newSessionID, where string, args ...any) (*Session, err
 		if err != nil {
 			return err
 		}
+		if _, err := tx.Exec(`UPDATE session_pull_requests SET session_id = ? WHERE session_id = ?`, newSessionID, old.ID); err != nil {
+			return fmt.Errorf("move the pull requests of %q: %w", old.ID, err)
+		}
 		if _, err := tx.Exec(`DELETE FROM sessions WHERE id = ?`, old.ID); err != nil {
 			return fmt.Errorf("drop parked session %q: %w", old.ID, err)
 		}

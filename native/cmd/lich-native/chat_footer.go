@@ -204,7 +204,7 @@ func (u *window) chatCrumbs(gtx C, th *ui.Theme, sv sessionView, in footerInput,
 		ft.changes = nil
 	}
 	// A pull request waits for its checkout's forge, so no wrong logo flashes.
-	if ft.checkout == nil && ft.changes == nil && (sv.pr == nil || sv.forge == "") {
+	if ft.checkout == nil && ft.changes == nil && (sv.pr == nil || sv.prForge() == "") {
 		return D{}
 	}
 	// The footer's clicks (the Git panel, Review, the pull request) act on the
@@ -252,7 +252,7 @@ func (u *window) crumbsTail(gtx C, th *ui.Theme, sv sessionView, in footerInput,
 	if ft.changes != nil {
 		items = append(items, func(gtx C) D { return u.footer.crumbChanges(gtx, th, *ft.changes, in.git, followed, size) })
 	}
-	if sv.pr != nil && sv.forge != "" {
+	if sv.pr != nil && sv.prForge() != "" {
 		items = append(items, func(gtx C) D { return u.chatPRBadge(gtx, th, sv, followed, size) })
 	}
 	gtx.Constraints.Min = image.Point{}
@@ -276,10 +276,10 @@ func (u *window) crumbsTail(gtx C, th *ui.Theme, sv sessionView, in footerInput,
 func (u *window) chatPRBadge(gtx C, th *ui.Theme, sv sessionView, followed bool, size unit.Sp) D {
 	w := u.footer.w("pr@" + sv.ID)
 	logo := th.MutedForeground
-	badge := func(gtx C) D { return prBadge(gtx, th, sv.pr, sv.forge, logo, size) }
+	badge := func(gtx C) D { return prBadge(gtx, th, &sv, logo, size) }
 	if followed {
 		if w.click.Clicked(gtx) {
-			u.openPR(prTarget(sv.pr, sv.shown, sv.path))
+			u.openPR(sv.prTarget())
 		}
 		if w.click.Hovered() {
 			logo = th.Foreground
@@ -287,10 +287,11 @@ func (u *window) chatPRBadge(gtx C, th *ui.Theme, sv sessionView, followed bool,
 		draw := badge
 		badge = func(gtx C) D { return w.click.Layout(gtx, draw) }
 	}
-	if sv.pr.Title == "" {
+	tip := sv.prTip()
+	if tip == "" {
 		return badge(gtx)
 	}
-	return th.Tooltip(u.footer.root, &w.tip, sv.pr.Title).Layout(gtx, badge)
+	return th.Tooltip(u.footer.root, &w.tip, tip).Layout(gtx, badge)
 }
 
 // crumb is a footer item drawn as a line of text under a tooltip, muted and

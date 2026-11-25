@@ -182,6 +182,7 @@ project.GitResolveFile(GitResolveFileOptions) None
 project.GlobalCommitIdentity(None) CommitIdentity
 project.Home(None) *OpenedProject
 project.Issue(NumberOptions) Issue
+project.LinkPullRequest(LinkPullRequestOptions) None
 project.ListBranches(PathOptions) Branches
 project.ListCheckouts(PathOptions) []Worktree
 project.ListPullRequests(ListPullRequestsOptions) []PRSummary
@@ -208,11 +209,13 @@ project.ResolveReviewThread(ResolveThreadOptions) None
 project.RestoreLines(RestoreLinesOptions) None
 project.RevertLines(RevertLinesOptions) RevertResult
 project.Search(SearchOptions) SearchResult
+project.SessionPullRequests(None) []SessionPullRequest
 project.SetGlobalCommitIdentity(CommitIdentityOptions) None
 project.ShowCode(ShowCodeOptions) ShowCode
 project.SubmitReview(SubmitReviewOptions) None
 project.ThreadFixes(None) []ThreadFix
 project.Tree(PathOptions) FileListing
+project.UnlinkPullRequest(UnlinkPullRequestOptions) None
 project.WorktreeAdopted(PathOptions) bool
 project.WorktreeDirty(PathOptions) bool
 project.WriteFile(WriteFileOptions) None
@@ -393,6 +396,7 @@ event session-mcp SessionMCP
 event session-opened OpenedSession
 event session-profile SessionProfile
 event session-profile-offer SessionProfileOffer
+event session-pull-requests []SessionPullRequest
 event session-relay SessionRelay
 event session-relay-stalled RelayStalled
 event session-sandbox SessionSandbox
@@ -1306,6 +1310,12 @@ Issue {
 	url string
 }
 
+LinkPullRequestOptions {
+	session string
+	path string
+	ref string
+}
+
 Branches {
 	local []string
 	remote []string
@@ -1450,6 +1460,17 @@ SearchResult {
 	tooLarge int
 }
 
+SessionPullRequest {
+	session string
+	url string
+	linked bool
+	at int64
+	forge string
+	here bool
+	pr *PullRequest
+	error,omitempty string
+}
+
 CommitIdentityOptions {
 	name string
 	email string
@@ -1492,6 +1513,11 @@ FileListing {
 	files []string
 	cut bool
 	hidden []string
+}
+
+UnlinkPullRequestOptions {
+	session string
+	url string
 }
 
 WriteFileOptions {
@@ -3047,6 +3073,16 @@ SearchMatch {
 	text string
 }
 
+PullRequest {
+	number int
+	url string
+	title string
+	state string
+	isDraft bool
+	headRefName string
+	baseRefName string
+}
+
 ReviewComment {
 	path string
 	line int
@@ -3179,16 +3215,6 @@ Syntax = map[string]SyntaxStyle
 ThemeLatest {
 	pack string
 	version string
-}
-
-PullRequest {
-	number int
-	url string
-	title string
-	state string
-	isDraft bool
-	headRefName string
-	baseRefName string
 }
 
 ChatTurnChanges {

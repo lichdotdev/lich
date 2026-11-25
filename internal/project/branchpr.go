@@ -78,6 +78,7 @@ func (s *Service) RunBranchPRWatch() {
 		for _, path := range s.followedCheckouts() {
 			s.readBranchPR(path)
 		}
+		s.refreshLinkedPRs()
 	}
 }
 
@@ -229,7 +230,12 @@ func (s *Service) BranchPullRequest(path string) (*PullRequest, error) {
 }
 
 func (g githubForge) branchPullRequest(path string) (*PullRequest, error) {
-	out, err := g.s.gh(prLookupTimeout, path, "pr", "view", "--json", "number,url,title,state,isDraft,headRefName,baseRefName")
+	return g.s.ghPRView(prLookupTimeout, path, "pr", "view", "--json", prBadgeFields)
+}
+
+// ghPRView runs a gh pr view and reads its pull request, nil for none.
+func (s *Service) ghPRView(timeout time.Duration, path string, args ...string) (*PullRequest, error) {
+	out, err := s.gh(timeout, path, args...)
 	if err != nil {
 		return nil, err
 	}

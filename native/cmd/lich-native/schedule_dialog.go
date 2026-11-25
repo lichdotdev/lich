@@ -67,8 +67,8 @@ type scheduleDialog struct {
 // tooltip's first line says, else its parked prompt.
 func (d *scheduleDialog) show(sv sessionView) {
 	d.id, d.label, d.branch, d.forge, d.number = sv.ID, sv.Label, sv.git.Branch, sv.forge, 0
-	if isOpenPR(sv.pr) {
-		d.number = sv.pr.Number
+	if isOpenPR(sv.branchPR) {
+		d.number = sv.branchPR.Number
 	}
 	d.kind, d.by, d.runs, d.armed = scheduleAtTime, "", 0, true
 	d.when.SetText("")

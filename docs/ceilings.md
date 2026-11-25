@@ -1196,6 +1196,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   to its task before passing it on, or whose turn ended and closed the errand unanswered, owes nothing and starts
   the chain over, and so does a turn that worked, on the ping-pong breaker's rule and with its gaps (Crush below 0.99.0 is
   never counted). A turn the user started while an errand is still owed keeps that errand's depth.
+- **A pull request linked to a session by hand shows on its badges, and nothing else follows it**
+  (`internal/project/sessionpr.go`, `native/cmd/lich-native/sessionpr_store.go`). The watch, its merge notice and
+  the Schedule dialog's pull request conditions still read the branch's, even one the person unlinked. A link is
+  read again on the minute tick only while its session is live, and only while it is open or its last read
+  failed, so a closed card's link keeps the state it last read and a merged one is never read again. A link made
+  by number opens on Pulls, one made by URL in the browser, since Pulls lists the project's repository only. With
+  several links the newest one is the badge and the rest are named in its tooltip, the branch's among them; an
+  unlink of the branch's pull request hides it from that session for good, until it is linked again.
 - **A session's watch reads only what the pull request of its branch says** (`internal/relay/watch.go`,
   `internal/project/branchpr.go`). GitHub only, through `gh`, and the window cannot tell a remote gh does not
   speak to: such a session's dialog says "no pull request yet" for good. Checks count once none is pending, so

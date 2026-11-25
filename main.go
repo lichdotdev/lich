@@ -284,6 +284,7 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 	// A review thread handed to a session waits for the pull request's next
 	// push across restarts, since the push comes whenever the agent gets there.
 	proj.SetThreadFixes(db)
+	proj.SetSessionPullRequests(db)
 	go proj.RunThreadFixWatch()
 	// Parking a session records the branch its checkout was on, so the history
 	// search can match a branch the row is showing (store.SetBranchOf), and a

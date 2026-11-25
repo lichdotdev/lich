@@ -528,6 +528,9 @@ func (u *window) connect() error {
 	if err := u.model.threadFixes.load(u.ctx, u.client); err != nil {
 		return err
 	}
+	if err := u.model.loadSessionPRs(u.ctx, u.client); err != nil {
+		u.logErr("read the linked pull requests", err)
+	}
 	if err := u.model.artifacts.load(u.ctx, u.client); err != nil {
 		u.logErr("read the session artifacts", err)
 	}
@@ -641,6 +644,7 @@ func (u *window) connect() error {
 	}
 	u.shortcuts.open = *flagShortcuts
 	u.servicesShot()
+	u.linkPRShot()
 	if err := u.welcomeShot(*flagWelcomeShot); err != nil {
 		return err
 	}
@@ -726,6 +730,7 @@ func (u *window) layout(gtx C) error {
 		u.layoutPalette(gtx, u.theme)
 		u.layoutWorktreeDialog(gtx, u.theme)
 		u.sidebar.schedule.layout(u.ctx, gtx, u.theme, u.client, u.showToast)
+		u.sidebar.linkPR.layout(u.ctx, gtx, u.theme, &u.root, u.client, u.model.invalidate)
 		u.layoutRemoveConfirm(gtx, u.theme)
 		u.layoutCloseWorktreeConfirm(gtx, u.theme)
 		u.layoutCloseAllConfirm(gtx, u.theme)
@@ -1305,6 +1310,14 @@ func (u *window) apply(act sidebarAction) {
 		if sv, ok := u.model.sessionViewOf(act.schedule); ok {
 			u.sidebar.schedule.show(sv)
 		}
+	}
+	if act.linkPR != "" {
+		if sv, ok := u.model.sessionViewOf(act.linkPR); ok {
+			u.sidebar.linkPR.show(sv, &u.root)
+		}
+	}
+	if l := act.unlinkPR; l.id != "" {
+		go func() { u.logErr("unlink a pull request", u.client.UnlinkPullRequest(u.ctx, l.id, l.url)) }()
 	}
 	if act.forkWorktree != "" {
 		u.showForkDialog(act.forkWorktree)
