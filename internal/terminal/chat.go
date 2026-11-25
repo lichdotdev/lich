@@ -151,23 +151,21 @@ func openCodeServer(kind string, oc2 bool, l ChatLaunch) *OpenCodeServer {
 // ChatBirth is what a chat's argv could not carry, for the protocol to set:
 // the model and effort the session was born on, empty on a resume (a birth
 // value, modelArgs), and whether every permission is answered yes, which is
-// the checkout's skip-permissions setting.
+// the checkout's skip-permissions setting. That one is set for every provider,
+// a skip flag on the argv or not: Claude Code launched with it still asks
+// through can_use_tool.
 type ChatBirth struct {
 	Model, Effort string
 	AutoApprove   bool
 }
 
-// Claude Code and Kiro take all three on their argv and Antigravity takes the
-// last (chatArgs).
+// Claude Code and Kiro take the model and effort on their argv (chatArgs).
 func (s *Service) chatBirth(opts api.StartOptions) ChatBirth {
-	var b ChatBirth
+	b := ChatBirth{AutoApprove: s.store.SkipPermissions(opts.Kind, opts.ProjectID, opts.Cwd)}
 	flagged := opts.Kind == providers.Claude || opts.Kind == providers.Kiro
 	if opts.Resume == "" && !flagged {
 		b.Model, _ = flagValue(s.store.SessionModel(opts.ID))
 		b.Effort, _ = flagValue(s.store.SessionEffort(opts.ID))
-	}
-	if !flagged && opts.Kind != providers.Antigravity {
-		b.AutoApprove = s.store.SkipPermissions(opts.Kind, opts.ProjectID, opts.Cwd)
 	}
 	return b
 }

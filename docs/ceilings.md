@@ -109,7 +109,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   notice, but Claude Code names its conversation only once the first message is sent, so until then the only
   check is that the transcript exists. An ACP server takes far fewer flags than its terminal: lich passes only
   what each `acp --help` lists, sets the birth model and effort over the protocol, and answers every permission
-  yes itself where the checkout skips permissions and the server has no flag for it. lich serves no ACP client
+  yes itself where the checkout skips permissions, on every provider, a skip flag on its argv or not: Claude Code
+  launched with `--dangerously-skip-permissions` still asks through `can_use_tool` (a compound Bash command with
+  `default_to_no`, 2.1.331), and a chat that skips permissions shows no permission card. lich serves no ACP client
   method (`fs/*`, `terminal/*`): a file the agent asked lich to write would land outside the sandbox. The text of
   lich's own notices is English, like backend error text.
 - **A chat draws a tool call running only when its provider reports the call before its end, and times it only
