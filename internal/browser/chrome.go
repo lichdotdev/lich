@@ -2,7 +2,6 @@ package browser
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log/slog"
@@ -155,9 +154,7 @@ type chromePage struct {
 	leaveMu sync.Mutex
 	held    *leave
 	leave   *leave
-	// idxMu guards idxNext, the index pageInfoScript hands out next.
-	idxMu   sync.Mutex
-	idxNext int
+	indexCounter
 }
 
 // downloadFolder is downloadDir, which the live tests point at a folder of
@@ -311,53 +308,20 @@ func (p *chromePage) Settle(ctx context.Context, since browserTime) error {
 	if err := p.run(ctx, settleAfter(func(ctx context.Context) error { return sleepCtx(ctx, navGrace) })); err != nil {
 		return err
 	}
-	return p.run(ctx, settleQuiet(p.tabs.frontTab(), since))
+	return p.run(ctx, chromeSettleQuiet(p.tabs.frontTab(), since))
 }
 
-func (p *chromePage) IndexNext() int {
-	p.idxMu.Lock()
-	defer p.idxMu.Unlock()
-	return p.idxNext
-}
-
-func (p *chromePage) SetIndexNext(n int) {
-	p.idxMu.Lock()
-	defer p.idxMu.Unlock()
-	p.idxNext = n
+// evaluate is the evalFunc of the page's own scripts, on the front tab.
+func (p *chromePage) evaluate(ctx context.Context, expr string, out any) error {
+	return p.run(ctx, chromedp.Evaluate(expr, out))
 }
 
 func (p *chromePage) Info(ctx context.Context, within string) (PageInfo, error) {
-	arg, err := json.Marshal(within)
-	if err != nil {
-		return PageInfo{}, err
-	}
-	p.idxMu.Lock()
-	base := p.idxNext
-	p.idxMu.Unlock()
-	var info struct {
-		PageInfo
-		Next int `json:"next"`
-	}
-	if err := p.run(ctx, chromedp.Evaluate(pageInfoScript+"("+strconv.Itoa(base)+", "+string(arg)+")", &info)); err != nil {
-		return PageInfo{}, err
-	}
-	if info.Error != "" {
-		return PageInfo{}, errors.New(info.Error)
-	}
-	p.idxMu.Lock()
-	p.idxNext = max(p.idxNext, info.Next)
-	p.idxMu.Unlock()
-	return info.PageInfo, nil
+	return readInfo(ctx, p.evaluate, &p.indexCounter, within)
 }
 
 func (p *chromePage) HasText(ctx context.Context, text string) (bool, error) {
-	literal, err := json.Marshal(text)
-	if err != nil {
-		return false, err
-	}
-	var has bool
-	script := fmt.Sprintf(hasTextScript, literal)
-	return has, p.run(ctx, chromedp.Evaluate(script, &has))
+	return hasText(ctx, p.evaluate, text)
 }
 
 func (p *chromePage) Click(ctx context.Context, t Target) (x, y float64, err error) {
@@ -375,16 +339,7 @@ func (p *chromePage) Type(ctx context.Context, text string, clear bool, t Target
 		}
 	}
 	if clear {
-		// Assigning el.value fires no input event, so a framework that owns the
-		// field keeps its old value; a delete through the editing commands does.
-		err := p.run(ctx, chromedp.Evaluate(`(() => {
-			const el = document.activeElement;
-			if (!el) return;
-			if (typeof el.select === 'function') el.select();
-			else document.execCommand('selectAll');
-			document.execCommand('delete');
-		})()`, nil))
-		if err != nil {
+		if err := p.evaluate(ctx, clearFieldJS, nil); err != nil {
 			return err
 		}
 	}
@@ -492,21 +447,13 @@ func settleAfter(goThere func(context.Context) error) chromedp.Action {
 		if err := goThere(ctx); err != nil {
 			return err
 		}
-		deadline := time.Now().Add(domSettle)
-		for {
-			var state string
-			if err := chromedp.Evaluate(`document.readyState`, &state).Do(ctx); err == nil &&
-				(state == "interactive" || state == "complete") {
-				return nil
-			}
-			if time.Now().After(deadline) {
-				return nil
-			}
-			if err := sleepCtx(ctx, settlePoll); err != nil {
-				return err
-			}
-		}
+		return awaitReady(ctx, evalHere)
 	})
+}
+
+// evalHere is the evalFunc of an action already running on its target.
+func evalHere(ctx context.Context, expr string, out any) error {
+	return chromedp.Evaluate(expr, out).Do(ctx)
 }
 
 // Scroll is a real wheel turn rather than window.scrollBy, so it scrolls what
@@ -514,7 +461,7 @@ func settleAfter(goThere func(context.Context) error) chromedp.Action {
 func (p *chromePage) Scroll(ctx context.Context, at *point, dy int) (x, y float64, err error) {
 	if at == nil {
 		at = new(point)
-		if err := p.run(ctx, chromedp.Evaluate(`({x: innerWidth / 2, y: innerHeight / 2})`, at)); err != nil {
+		if err := p.evaluate(ctx, viewMiddleJS, at); err != nil {
 			return 0, 0, err
 		}
 	}
@@ -645,33 +592,7 @@ type resolved struct {
 }
 
 func (p *chromePage) resolve(ctx context.Context, t Target) (point, error) {
-	args, err := json.Marshal([]any{t.Index, t.Selector, t.X, t.Y, t.shotW, t.shotH, shotScale(t.shotW, t.shotH)})
-	if err != nil {
-		return point{}, err
-	}
-	expr := resolveJS + "(" + string(args[1:len(args)-1]) + ")"
-	var r *resolved
-	if err := p.run(ctx, chromedp.Evaluate(expr, &r)); err != nil {
-		return point{}, err
-	}
-	if r == nil {
-		return point{}, fmt.Errorf("no element matches that target: the page may have changed since it was read; read it again for fresh indexes")
-	}
-	if r.Disabled {
-		return point{}, fmt.Errorf("the element is disabled: a click on it does nothing; read the page again to see what enables it")
-	}
-	if r.Covered != "" {
-		return point{}, coveredError(r.Covered)
-	}
-	if r.Resized {
-		return point{}, fmt.Errorf("the viewport is %gx%g, and was %dx%d at your last screenshot: the page was resized since; take a new screenshot before clicking at x and y",
-			r.W, r.H, t.shotW, t.shotH)
-	}
-	if r.Outside {
-		return point{}, fmt.Errorf("%g,%g is outside the %gx%g viewport: scroll first, or click by index or selector, which scroll the element into view",
-			r.X, r.Y, r.W, r.H)
-	}
-	return r.point, nil
+	return resolveTarget(ctx, p.evaluate, t)
 }
 
 func coveredError(by string) error {

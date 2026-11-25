@@ -139,33 +139,10 @@ const quietScript = `((quiet, max) => new Promise(done => {
   m = setTimeout(end, max, false);
 }))(%d, %d)`
 
-// settleQuiet waits, up to quietMax, until the fetches t began since have
-// landed and its document then goes quietFor without a change. A fetch that
-// change starts is waited for too.
-func settleQuiet(t *tab, since browserTime) chromedp.Action {
+// chromeSettleQuiet is settleQuiet on t's fetches and document.
+func chromeSettleQuiet(t *tab, since browserTime) chromedp.Action {
 	return chromedp.ActionFunc(func(ctx context.Context) error {
-		deadline := time.Now().Add(quietMax)
-		for time.Now().Before(deadline) {
-			if t.fetches.since(since) {
-				if err := sleepCtx(ctx, settlePoll); err != nil {
-					return err
-				}
-				continue
-			}
-			quiet, err := domQuiet(ctx, time.Until(deadline))
-			switch {
-			case ctx.Err() != nil:
-				return ctx.Err()
-			case err != nil:
-				// A navigation replaced the document under the observer.
-				if err := sleepCtx(ctx, settlePoll); err != nil {
-					return err
-				}
-			case quiet && !t.fetches.since(since):
-				return nil
-			}
-		}
-		return nil
+		return settleQuiet(ctx, t.fetches.since, domQuiet, since)
 	})
 }
 
