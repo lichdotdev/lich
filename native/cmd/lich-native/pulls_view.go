@@ -463,7 +463,8 @@ func stateStat(gtx C, th *ui.Theme, d backend.PRDetail) D {
 	case d.State == "CLOSED":
 		return pullState(gtx, th, icPullX, i18n.T("pulls.pullsStats.closed"), th.MutedForeground)
 	case d.IsDraft:
-		return pullState(gtx, th, icPullDashed, i18n.T("pulls.pullsStats.draft"), th.ToneWait)
+		// muted as in the list: amber is a verdict waiting on its reviewer
+		return pullState(gtx, th, icPullDashed, i18n.T("pulls.pullsStats.draft"), th.MutedForeground)
 	}
 	return pullState(gtx, th, icPullRequests, i18n.T("pulls.pullsStats.open"), th.TonePass)
 }

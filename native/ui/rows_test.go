@@ -9,9 +9,9 @@ import (
 	"gioui.org/layout"
 )
 
-// A hovered panel row lights its whole width, corners included: a rounded
-// fill set in from the sides showed its corners against a panel's seams.
-func TestPanelRowHoverFillsTheWholeRow(t *testing.T) {
+// A hovered panel row lights its whole width, rounded as the sidebar's rows
+// (contract changed: it was square, for seams panels no longer draw).
+func TestPanelRowHoverFillsTheWholeRowRounded(t *testing.T) {
 	th, click := testTheme(), new(Clickable)
 	const w, h = 200, 40
 	rig := newInputRig(t, w, h, func(gtx layout.Context) layout.Dimensions {
@@ -26,9 +26,14 @@ func TestPanelRowHoverFillsTheWholeRow(t *testing.T) {
 	if fill == rest(rig) {
 		t.Fatal("the pointer over the row did not light it")
 	}
-	for _, p := range []image.Point{{m, m}, {m + w - 1, m}, {m, m + h - 1}, {m + w - 1, m + h - 1}} {
+	for _, p := range []image.Point{{m, m + h/2}, {m + w - 1, m + h/2}} {
 		if lit.RGBAAt(p.X, p.Y) != fill {
-			t.Errorf("the hover left %v unlit", p)
+			t.Errorf("the hover left the edge %v unlit", p)
+		}
+	}
+	for _, p := range []image.Point{{m, m}, {m + w - 1, m + h - 1}} {
+		if lit.RGBAAt(p.X, p.Y) == fill {
+			t.Errorf("the hover filled the corner %v: want it rounded", p)
 		}
 	}
 }

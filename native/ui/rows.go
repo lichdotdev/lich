@@ -39,9 +39,8 @@ func (th *Theme) NavRow(gtx C, click *Clickable, on bool, height, padX unit.Dp, 
 
 // PanelRow is a list row of a panel, the width it is given, its content set
 // in by edge and padX from the sides and Space(2) high. It takes the ghost
-// fill under the pointer only while live, square and the row's whole width:
-// a rounded fill set in from the sides shows its corners against the seams a
-// panel draws between rows. content draws on the row's own surface.
+// fill under the pointer only while live, rounded as the sidebar's rows.
+// content draws on the row's own surface.
 func (th *Theme) PanelRow(gtx C, click *Clickable, live bool, edge, padX unit.Dp, content func(gtx C, th *Theme) D) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return click.Layout(gtx, func(gtx C) D {
@@ -50,7 +49,7 @@ func (th *Theme) PanelRow(gtx C, click *Clickable, live bool, edge, padX unit.Dp
 			bg = th.Over(Alpha(th.Accent, GhostHoverFill))
 		}
 		return layout.Background{}.Layout(gtx,
-			func(gtx C) D { return Fill(gtx, bg, 0) },
+			func(gtx C) D { return Fill(gtx, bg, RadiusMD) },
 			func(gtx C) D {
 				return layout.Inset{Left: edge + padX, Right: edge + padX, Top: Space(2), Bottom: Space(2)}.Layout(gtx, func(gtx C) D {
 					return content(gtx, th.On(bg))

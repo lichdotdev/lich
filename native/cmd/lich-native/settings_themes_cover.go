@@ -129,11 +129,13 @@ func coverCode(t themeLook) [][]inkSpan {
 	}
 }
 
-// doneLine is a turn's end as the chat writes it: Done, then the lines it
+// doneLine is a turn's end as the chat draws it: the check, then the lines it
 // added and removed in the theme's tones.
 func doneLine(gtx C, th *ui.Theme, p ui.Palette, size, leading unit.Sp) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(th.Text(size, i18n.T("chat.done.done")).In(p.Foreground).Leading(leading).Layout),
+		layout.Rigid(func(gtx C) D {
+			return labeledGlyph(gtx, i18n.T("chat.done.done"), func(gtx C) D { return icCheck.Layout(gtx, unit.Dp(size), p.TonePass) })
+		}),
 		layout.Rigid(th.Text(size, " +18").In(p.TonePass).Leading(leading).Layout),
 		layout.Rigid(th.Text(size, " −4").In(p.Destructive).Leading(leading).Layout),
 	)

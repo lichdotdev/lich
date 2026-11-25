@@ -119,7 +119,7 @@ func unquote(v string) string {
 const propsKeyWidth = 28
 
 // layoutProps draws a document's frontmatter as a table of keys and values,
-// each value on at most two lines, over a separator.
+// each value on at most two lines, set apart from the body by space.
 func layoutProps(gtx C, th *ui.Theme, props []property) D {
 	children := make([]layout.FlexChild, 0, 2*len(props)+2)
 	for i, p := range props {
@@ -142,6 +142,6 @@ func layoutProps(gtx C, th *ui.Theme, props []property) D {
 			)
 		}))
 	}
-	children = append(children, ui.VGap(4), layout.Rigid(th.Separator))
+	children = append(children, ui.VGap(6))
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }

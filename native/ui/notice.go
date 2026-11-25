@@ -29,17 +29,12 @@ type FootnoteStyle struct {
 func (th *Theme) Footnote(text string) FootnoteStyle { return FootnoteStyle{Text: text, theme: th} }
 
 func (f FootnoteStyle) Layout(gtx C) D {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(f.theme.Separator),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: Space(3), Right: Space(3), Top: Space(2), Bottom: Space(2)}.Layout(gtx,
-				func(gtx C) D {
-					l := f.theme.Text(TextXS, f.Text).Muted()
-					l.MaxLines = 0
-					return l.Layout(gtx)
-				})
-		}),
-	)
+	// set apart from what it notes by space, not a rule
+	return layout.Inset{Left: Space(3), Right: Space(3), Top: Space(3), Bottom: Space(2)}.Layout(gtx, func(gtx C) D {
+		l := f.theme.Text(TextXS, f.Text).Muted()
+		l.MaxLines = 0
+		return l.Layout(gtx)
+	})
 }
 
 // PanelNoticeStyle is a notice of a full-size screen's panel, text-sm, set in

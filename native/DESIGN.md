@@ -282,7 +282,7 @@ own width pushes the rows' right edge in, and their hover lands farther from the
 
 The geometry is shared; the look is not. Every screen lays out on the island's edge, its rows' padding and
 the sidebar's hover shape, and keeps what makes it itself: the Settings pane its reading column, the Pulls list
-its rows that light square across the whole width, as a `PanelRow` does. Matching a screen to the sidebar means its
+its columns. Its rows and a `PanelRow` light rounded, as the sidebar's do. Matching a screen to the sidebar means its
 spacing, never its decoration.
 
 ### The backdrop
@@ -960,7 +960,7 @@ to the chrome takes the same gap rather than a number of its own.
   that commit alone; the row's click still opens its body.
 - **States are glyphs** (`pullState`): Open, Merged, Closed, Draft, Approved, Changes requested and Resolved are
   a glyph in the state's tone, each word the glyph's semantic label; a branch with nothing in the way of a merge
-  says nothing. A draft on a list row is muted, since amber on a row is the verdict waiting on its reviewer.
+  says nothing. A draft is muted, on a list row and in the head alike, since amber on a row is the verdict waiting on its reviewer.
 - **Actions** stand at the right. In a comment, reply or edit box, Cancel then the action, which wears
   Ctrl+Enter's cap (`ctrlEnterCap`, Cmd+Enter on macOS) or `↵`'s where Enter sends; Resolve is filled at its
   thread line's end (outline once resolved); Merge ends the header's actions and Commit ends the merge strip; a

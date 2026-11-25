@@ -187,8 +187,7 @@ var (
 
 // row is one pull request across the index: "#N title" over who, when and
 // its branch, then its checks, verdict and checkout in columns. The cursor's
-// row is filled once the keyboard moved it, square and seam to seam like the
-// seams themselves: a rounded fill inset from them shows its corners.
+// row is filled once the keyboard moved it, rounded as the sidebar's rows.
 func (p *pullsScreen) row(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Time) D {
 	click := p.rowClicks[pr.Number]
 	if click == nil {
@@ -208,7 +207,7 @@ func (p *pullsScreen) row(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Ti
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				return layout.Background{}.Layout(gtx,
-					func(gtx C) D { return ui.Fill(gtx, bg, 0) },
+					func(gtx C) D { return ui.Fill(gtx, bg, ui.RadiusMD) },
 					func(gtx C) D {
 						return layout.Inset{Left: pullsRowEdge, Right: pullsRowEdge}.Layout(gtx, func(gtx C) D {
 							return rowContent(gtx, th.On(bg), pr, checkoutName(checkout), p.forge(), now)
