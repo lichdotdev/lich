@@ -117,7 +117,8 @@ Non-negotiable rules. A violation means the work is not done.
 ## Releases
 
 The version comes from the git tag (`git describe` in the Taskfile, env `VERSION` overrides) and is injected into
-`build/linux/nfpm/nfpm.yaml` — never hand-edit it there. Before tagging:
+`build/linux/nfpm/nfpm.yaml` — never hand-edit it there. A release candidate (`vX.Y.Z-rc.N`, the beta channel)
+skips most of this list: `.claude/skills/lich-release-candidate/`. Before tagging a stable release:
 
 - [ ] Local gate green, backend with `-race`.
 - [ ] Cut the `CHANGELOG.md` section the Keep a Changelog way: `[Unreleased]` stays at the top, emptied, and its
