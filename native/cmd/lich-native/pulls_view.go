@@ -87,9 +87,9 @@ type pullView struct {
 	conflictsPanel                           ui.DropdownPanelState
 	conflictsRows                            widget.List
 	// files is the Files tab, the dock's Review cards in pull request mode;
-	// viewed is each PR's ticks, by URL, kept while the window lives.
+	// viewed is each PR's ticks, by URL, read from the store once a window.
 	files  *reviewPanel
-	viewed map[string]map[string]string
+	viewed map[string]*viewedTicks
 	// busy is the action in flight ("session", "approve", "merge"), which its
 	// button says it is doing; set off the frame.
 	busyMu sync.Mutex
@@ -151,7 +151,7 @@ func (v *pullView) init() {
 	v.commitOpen = map[string]*ui.Bool{}
 	v.commitClicks = map[string]*ui.Clickable{}
 	v.checkClicks = map[string]*ui.Clickable{}
-	v.viewed = map[string]map[string]string{}
+	v.viewed = map[string]*viewedTicks{}
 	v.pending = map[string]*pendingReview{}
 	v.talk.init()
 	v.md = markdown.Cache{}

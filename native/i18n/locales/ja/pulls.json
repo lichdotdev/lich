@@ -191,7 +191,11 @@
     "loadFailed": "差分を読み込めませんでした: {error}",
     "hideTree": "ファイルツリーを隠す",
     "showTree": "ファイルツリーを表示",
-    "viewed": "{total} 件中 {viewed} 件を確認済み"
+    "viewed": "{total} 件中 {viewed} 件を確認済み",
+    "changedSinceReview": "確認後に変更あり",
+    "filesChangedSinceReview": {
+      "other": "{date} の確認以降に {count} 件のファイルが変更されました"
+    }
   },
   "reviewThread": {
     "replyFailed": "返信に失敗しました: {error}",

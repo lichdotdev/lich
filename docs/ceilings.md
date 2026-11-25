@@ -1458,6 +1458,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   held (`provider_session_tombstones`, kept by triggers). A row deleted before that table existed left no stone,
   so its conversation lists once, as if started outside lich, on every provider but Claude Code, which carries
   the name lich spawned it under (`docs/providers/claude.md`, Transcript & cost).
+- **A pull request's Viewed ticks are kept by its page URL, on this machine, for 90 days after the last one**
+  (`internal/store/viewedfiles.go`, `native/cmd/lich-native/pulls_viewed.go`): a tick stores a hash of the
+  file's diff against the base, never the diff, so a file that moved comes back unticked and flagged "changed
+  since your review" and shows its whole diff again, not the change since the tick. A repository renamed or
+  transferred has new URLs and starts with none, and ticks follow no GitHub account: a review made on another
+  machine, or in GitHub's own page, is not seen. Nothing collects the rows of a merged or closed pull request;
+  instead, each start drops every pull request whose latest tick is older than `viewedFilesTTL`, so one still
+  under review keeps them all. A window reads a pull request's ticks once, when its Files tab first opens, so a
+  second window already showing it does not see a tick the first one made until it restarts.
 - **An external conversation matches a project only in a checkout's own directory** (`store.ExternalSessions`):
   a conversation started in a subdirectory of a project is not offered, because a session lich opens runs in
   the project's directory or a worktree and nowhere below it. Checkouts come from `git worktree list`, run for

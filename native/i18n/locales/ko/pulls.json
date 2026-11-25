@@ -187,7 +187,11 @@
     "loadFailed": "diff를 불러오지 못했습니다: {error}",
     "hideTree": "파일 트리 숨기기",
     "showTree": "파일 트리 표시",
-    "viewed": "{total}개 중 {viewed}개 확인함"
+    "viewed": "{total}개 중 {viewed}개 확인함",
+    "changedSinceReview": "확인 후 변경됨",
+    "filesChangedSinceReview": {
+      "other": "{date} 확인 이후 파일 {count}개가 변경됨"
+    }
   },
   "reviewThread": {
     "replyFailed": "답글 실패: {error}",

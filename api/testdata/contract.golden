@@ -283,6 +283,7 @@ store.ForgetSession(SessionIDOptions) None
 store.GetSetting(GetSettingOptions) string
 store.LoadState(None) []Project
 store.MarkForked(SessionIDOptions) None
+store.MarkViewed(MarkViewedOptions) None
 store.PurgeWorktreeSessions(WorktreeSessionsOptions) None
 store.RecentProjects(SearchTermOptions) []RecentProject
 store.RenameFolder(RenameProjectFolderOptions) []string
@@ -297,6 +298,8 @@ store.SetSessionFolder(SessionFolderOptions) None
 store.SetSessionPinned(SessionPinnedOptions) None
 store.SetSessionUnread(SessionUnreadOptions) None
 store.SetSetting(SetSettingOptions) None
+store.UnmarkViewed(UnmarkViewedOptions) None
+store.ViewedFiles(ViewedFilesOptions) []ViewedFile
 subagent.Vetoed(None) []SubagentVeto
 system.AttachNative(AttachNativeOptions) None
 system.Diagnostics(None) Diagnostics
@@ -2002,6 +2005,12 @@ Project {
 	sessions []Session
 }
 
+MarkViewedOptions {
+	pr string
+	path string
+	hash string
+}
+
 WorktreeSessionsOptions {
 	projectId string
 	path string
@@ -2098,6 +2107,21 @@ SetSettingOptions {
 	key string
 	projectId string
 	value string
+}
+
+UnmarkViewedOptions {
+	pr string
+	path string
+}
+
+ViewedFilesOptions {
+	pr string
+}
+
+ViewedFile {
+	path string
+	hash string
+	viewedAt int64
 }
 
 SubagentVeto {

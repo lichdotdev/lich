@@ -14,6 +14,9 @@ func Store(d *rpc.Handler, s *store.Service) {
 	rpc.Handle(d, api.StoreCostTotals, s.CostTotals)
 	rpc.Handle(d, api.StoreGetSetting, s.GetSetting)
 	rpc.Handle(d, api.StoreSetSetting, s.SetSetting)
+	rpc.Handle(d, api.StoreViewedFiles, s.ViewedFiles)
+	rpc.Handle(d, api.StoreMarkViewed, s.MarkViewed)
+	rpc.Handle(d, api.StoreUnmarkViewed, s.UnmarkViewed)
 }
 
 func storeProjects(d *rpc.Handler, s *store.Service) {

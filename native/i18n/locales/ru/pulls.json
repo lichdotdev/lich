@@ -202,7 +202,14 @@
     "loadFailed": "Не удалось загрузить изменения: {error}",
     "hideTree": "Скрыть дерево файлов",
     "showTree": "Показать дерево файлов",
-    "viewed": "Просмотрено {viewed} из {total}"
+    "viewed": "Просмотрено {viewed} из {total}",
+    "changedSinceReview": "изменён после вашего просмотра",
+    "filesChangedSinceReview": {
+      "one": "{count} файл изменён после вашего просмотра {date}",
+      "few": "{count} файла изменены после вашего просмотра {date}",
+      "many": "{count} файлов изменены после вашего просмотра {date}",
+      "other": "{count} файла изменены после вашего просмотра {date}"
+    }
   },
   "reviewThread": {
     "replyFailed": "Не удалось ответить: {error}",
