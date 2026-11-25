@@ -238,3 +238,19 @@ func TestMarkdownKeepsThematicBreak(t *testing.T) {
 		t.Fatalf("blocks = %+v, want a rule between two paragraphs", blocks)
 	}
 }
+
+// A body streamed in keeps the heights its blocks were laid out at: laid out
+// again with only its end in the window, it is as tall as before plus what
+// came in, not the estimate of blocks it no longer draws.
+func TestAStreamedBodyKeepsTheHeightOfTheBlocksBeforeItsEnd(t *testing.T) {
+	src := strings.Repeat("## Heading\n\nA paragraph that wraps once or twice in the column, a few more words to wrap.\n\n```go\nfunc x() {\n\treturn\n}\n```\n\n", 60)
+	m, th := Cache{}, markdownTheme()
+	gtx, _ := markdownFrame(800)
+	whole := m.Layout(gtx, th, "k", src, nil).Size.Y
+	gtx, _ = markdownFrame(800)
+	end := Window{Top: whole - 800, Bottom: whole + 1600}
+	got := m.LayoutWindow(gtx, th, "k", src+"More", nil, end).Size.Y
+	if got < whole {
+		t.Errorf("the body went from %dpx to %dpx when a word came in at its end", whole, got)
+	}
+}

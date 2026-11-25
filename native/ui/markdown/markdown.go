@@ -6,6 +6,7 @@ import (
 	"image"
 	"image/color"
 	"math"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -204,8 +205,16 @@ func (m Cache) text(th *ui.Theme, key, src string, paths *Paths, lk look) *markd
 		linked = paths.Version
 	}
 	if t.src != src || t.fg != fg || t.fonts != fonts || t.shaper != th.Shaper || t.blocks == nil || t.linked != linked || t.highlight != th.Code.Highlight || t.look != lk {
+		// A body streamed in only grows at its last block: the ones before
+		// keep their heights, or the blocks out of the window fall back to the
+		// estimate and the body shrinks and grows back frame after frame.
+		kept := t.heights
+		if t.fonts != fonts || t.shaper != th.Shaper || t.look != lk || !strings.HasPrefix(src, t.src) {
+			kept = nil
+		}
 		t.src, t.fg, t.fonts, t.shaper, t.look, t.blocks = src, fg, fonts, th.Shaper, lk, renderLook(th, src, lk)
 		t.heights, t.linked, t.highlight = make([]int, len(t.blocks)), linked, th.Code.Highlight
+		copy(t.heights, kept[:max(len(kept)-1, 0)])
 		t.keepCopies()
 		if paths != nil {
 			unmarkUnlinked(t.blocks, paths.Link)
