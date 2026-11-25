@@ -24,6 +24,10 @@ type ChatSink interface {
 	// BackgroundWork is whether session id's agent has work of its own
 	// running in the background, where its protocol says so.
 	BackgroundWork(id string) bool
+	// Relaunch closes session id's chat, runs move, and opens the chat again
+	// on its conversation and settings, wherever move left them. Refused
+	// while a turn runs.
+	Relaunch(ctx context.Context, id string, move func() error) error
 }
 
 // SetChat wires the chat service the relay's prompts reach a chat through.

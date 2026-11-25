@@ -203,7 +203,8 @@ func (s *Service) profileSessions(kind, slug string) int {
 // resuming it. Moving back is the same call. Nothing else moves: not the other
 // sessions in the profile, and not the project's own profile. A session that
 // has its id but no transcript yet, before its first prompt, has nothing to
-// move: it starts afresh in the target profile.
+// move: it starts afresh in the target profile. A session drawn as a chat has
+// its chat closed and opened again around the move instead (ChatSink.Relaunch).
 //
 // It refuses a turn in progress: a provider-reported turn still open, which a
 // permission prompt is part of. A turn a usage limit stopped has ended, so a
@@ -217,9 +218,6 @@ func (s *Service) ContinueIn(ctx context.Context, opts api.ContinueInOptions) (a
 		return api.None{}, errors.New("this session has no conversation to continue yet")
 	}
 	started := s.spawnOf(opts.ID)
-	if started.chat {
-		return api.None{}, errors.New("switch this session to its terminal before moving it to another profile")
-	}
 	kind := sessionKind(started.kind, s.store.SessionKind(opts.ID))
 	if !hasProfiles(kind) {
 		return api.None{}, fmt.Errorf("a %s session has no profiles to continue in", kind)
@@ -233,34 +231,55 @@ func (s *Service) ContinueIn(ctx context.Context, opts api.ContinueInOptions) (a
 	if _, err := profilestores[kind].configDir(opts.Profile); err != nil {
 		return api.None{}, err
 	}
+	if profilestore.IsPersonal(opts.Profile) {
+		opts.Profile = ""
+	}
+	if started.chat {
+		err = s.chat.Relaunch(ctx, opts.ID, func() error {
+			_, err := s.moveConversation(opts, kind, conversation)
+			return err
+		})
+	} else {
+		err = s.moveTerminal(opts, started, kind, conversation)
+	}
+	if err != nil {
+		return api.None{}, err
+	}
+	// After the respawn: a reader that re-reads on this event (the quota of
+	// the session's account) must find the process already under the profile.
+	events.Send(s.hub.Emit, api.SessionProfileEvent, profileEvent{ID: opts.ID, Profile: opts.Profile})
+	return api.None{}, nil
+}
+
+// moveTerminal ends a session's terminal, moves its conversation and brings
+// the terminal back up on it, where it was when the move failed.
+func (s *Service) moveTerminal(opts api.ContinueInOptions, started spawn, kind, conversation string) error {
 	live := s.live(opts.ID)
 	if live {
 		if err := s.endProcess(opts.ID, ""); err != nil {
-			return api.None{}, fmt.Errorf("end the session before moving it: %w", err)
+			return fmt.Errorf("end the session before moving it: %w", err)
 		}
 	}
-	err = profilestores[kind].moveTo(conversation, opts.Profile)
+	conversation, err := s.moveConversation(opts, kind, conversation)
+	return s.respawnAfter(err, live, opts.ID, started, kind, conversation)
+}
+
+// moveConversation carries a session's conversation to opts.Profile and
+// records it there, with no process running it. It answers the conversation
+// to resume, "" when nothing was written yet to carry over.
+func (s *Service) moveConversation(opts api.ContinueInOptions, kind, conversation string) (string, error) {
+	err := profilestores[kind].moveTo(conversation, opts.Profile)
 	if errors.Is(err, profilestore.ErrNoConversation) {
 		// Nothing written yet to carry over: the card starts afresh there.
 		if err := s.setConversation(opts.ID, ""); err != nil {
-			return api.None{}, err
+			return conversation, err
 		}
 		conversation, err = "", nil
 	}
 	if err != nil {
-		return api.None{}, s.respawnAfter(err, live, opts.ID, started, kind, conversation)
+		return conversation, err
 	}
-	if profilestore.IsPersonal(opts.Profile) {
-		opts.Profile = ""
-	}
-	if err := s.store.SetSessionProfile(opts.ID, opts.Profile); err != nil {
-		return api.None{}, err
-	}
-	err = s.respawnAfter(nil, live, opts.ID, started, kind, conversation)
-	// After the respawn: a reader that re-reads on this event (the quota of
-	// the session's account) must find the process already under the profile.
-	events.Send(s.hub.Emit, api.SessionProfileEvent, profileEvent{ID: opts.ID, Profile: opts.Profile})
-	return api.None{}, err
+	return conversation, s.store.SetSessionProfile(opts.ID, opts.Profile)
 }
 
 // sessionKind is the provider of a session being moved: its running spawn's,

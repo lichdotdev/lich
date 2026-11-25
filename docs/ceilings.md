@@ -2636,7 +2636,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   the person's config lights yanks itself, a yank's flash are laid over the text on the visible lines only, and
   one broken over a wrapped row is not; a message of many lines (`:ls`, `:reg`, `:messages`) shows its last
   15 in the strip, with no pager; the completion menu is Neovim's popupmenu (Ctrl-N, Ctrl-X Ctrl-O, which an
-  attached LSP fills, and the built-in LSP completion), drawn by lich under the word; a plugin that draws its own
+  attached LSP fills, and the built-in LSP completion), drawn by lich under the word, each item's kind a badge
+  (LSP's kind names and Vim's letters, an unknown one a dot), its detail (the item's menu) at the right and the
+  chosen item's info beside the menu as plain text, Markdown fences dropped and cut at 14 lines; a plugin that draws its own
   floating windows (nvim-cmp, blink.cmp) shows no menu, and the command line's completion is not drawn; a file whose filetype has a server in vim.lua's
   short table (gopls, typescript-language-server, basedpyright or pyright, rust-analyzer, clangd,
   lua-language-server, jdtls) gets it started by lich, with completion as you type, when the person's config has
