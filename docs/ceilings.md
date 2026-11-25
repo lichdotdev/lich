@@ -839,10 +839,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   release page for a tarball, and lich never runs it. The prompt has no Later, comes back when swiped away,
   and every hourly check raises it again once its action closed it. `lich.appUpdateDismissed` is not read for
   a required release.
-- **The beta channel reaches neither Homebrew nor Scoop** (`internal/appupdate`, `betaInstallCommand`): a
-  pre-release is published on GitHub only, never to the AUR, the tap or the Scoop manifest, so a cask or Scoop
-  install on beta gets the release page instead of a command. The Windows installer updates from the button as
-  on stable; a deb or rpm install pins `install.sh` to the tag (`LICH_TAG`), and Arch builds the PKGBUILD the
+- **The beta channel does not reach Scoop, and reaches Homebrew through a second cask** (`internal/appupdate`,
+  `betaInstallCommand`, `brewCommand`): a pre-release never goes to the AUR, the Scoop manifest or the tap's
+  `lich` cask, so a Scoop install on beta gets the release page instead of a command. The tap's `lich@beta` cask
+  follows every release and pre-release, and installs the same `Lich.app` as `lich`, so moving a cask install
+  between channels swaps one cask for the other (`brew uninstall` without `--zap`, which leaves lich's data). A
+  lich learns which one holds it from the `lich@beta` directory under `/opt/homebrew/Caskroom` or
+  `/usr/local/Caskroom`; a Homebrew under any other prefix is taken for `lich`. The Windows installer updates
+  from the button as on stable; a deb or rpm install pins `install.sh` to the tag (`LICH_TAG`), and Arch builds the PKGBUILD the
   pre-release ships, under the AUR's own `lich-bin` name, so the next stable release from the AUR replaces it.
   Back on stable, a pre-release build is never moved down: it waits for the release it precedes. Only tags
   shaped `X.Y.Z-label.N` count as pre-releases (`semver.IsPreRelease`); a build between tags never updates.

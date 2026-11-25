@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- **A Homebrew install follows the beta channel through the `lich@beta` cask.** Pick Beta in Settings › Updates › Channel, and the update command swaps the cask for you.
+
 ## [0.93.0] - 2026-11-25
 
 ### Added
