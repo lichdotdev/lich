@@ -311,7 +311,7 @@ type sentSketch struct {
 // files, which a confined session reads too, and answers with its path.
 func (u *window) uploadSketch(session string, s sentSketch) (string, error) {
 	if s.frame == nil && s.native {
-		shot, err := shootPage(u.ctx, session)
+		shot, err := u.shootPage(u.ctx, session)
 		if err != nil {
 			return "", fmt.Errorf("shoot the page: %w", err)
 		}

@@ -92,6 +92,8 @@ type browserPaneUI struct {
 	// native is the front tab's lich-browser window the pane shows, nil
 	// where the pane draws the screencast.
 	native *webview.Page
+	// shotPicked is whether -browser-pick pointed at this pane's page.
+	shotPicked bool
 	// nativeSize is the page area's size in the last layout; overlaySent is
 	// what the page was last told to draw over itself (overlayScript).
 	nativeSize  image.Point
@@ -369,6 +371,7 @@ func (u *window) browserPage(gtx C, p *browserPaneUI, session string, st api.Bro
 	p.notes.cuts, p.notes.rings = p.notes.cuts[:0], p.notes.rings[:0]
 	paint.FillShape(gtx.Ops, u.theme.Background, clip.Rect{Max: size}.Op())
 	native := u.placeNativePage(gtx, p, st)
+	u.shotPick(p, session)
 	want := api.BrowserViewOptions{ID: session, W: int(float32(size.X) / scale), H: int(float32(size.Y) / scale), Scale: float64(scale), Drawn: native}
 	if want.W > 0 && want.H > 0 && want != p.view {
 		attach := p.view.ID == ""

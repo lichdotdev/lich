@@ -368,6 +368,43 @@ func TestAPagePopsOutAndBackWithoutReloading(t *testing.T) {
 	}
 }
 
+func TestTheWindowsLayerDrawsTheLatestAndABareSnapshotLeavesItOut(t *testing.T) {
+	c := start(t)
+	c.open("b1", "data:text/html,<body style='margin:0;background:rgb(255,255,255)'>", 200, 100, 1)
+	layer := func(color string) string {
+		return `(() => { let h = document.getElementById('` + browserwire.LayerID + `');
+			if (!h) { h = document.createElement('div'); h.id = '` + browserwire.LayerID + `';
+				h.style.cssText = 'position:fixed;inset:0'; document.documentElement.appendChild(h); }
+			h.style.background = '` + color + `'; })()`
+	}
+	for _, color := range []string{"rgb(0,0,255)", "rgb(0,255,0)", "rgb(255,0,0)"} {
+		c.must(browserwire.Draw, browserwire.DrawParams{Page: "b1", Script: layer(color)}, nil)
+	}
+	got := c.eval("b1", "new Promise(r => setTimeout(() => r(getComputedStyle(document.getElementById('"+browserwire.LayerID+"')).backgroundColor), 200))")
+	if got != `"rgb(255, 0, 0)"` {
+		t.Fatalf("the layer is %s, want the last drawing's red", got)
+	}
+	middle := func(bare bool) (r, g, b uint32) {
+		var s browserwire.SnapshotResult
+		c.must(browserwire.Snapshot, browserwire.SnapshotParams{Page: "b1", Bare: bare}, &s)
+		img, err := png.Decode(bytes.NewReader(s.PNG))
+		if err != nil {
+			t.Fatal(err)
+		}
+		r, g, b, _ = img.At(100, 50).RGBA()
+		return r >> 8, g >> 8, b >> 8
+	}
+	if r, g, b := middle(true); r != 0xff || g != 0xff || b != 0xff {
+		t.Fatalf("a bare snapshot shows %d,%d,%d, want the page's white under the layer", r, g, b)
+	}
+	if r, g, b := middle(false); r != 0xff || g != 0 || b != 0 {
+		t.Fatalf("a snapshot shows %d,%d,%d, want the layer's red", r, g, b)
+	}
+	if got := c.eval("b1", "document.getElementById('"+browserwire.LayerID+"').style.visibility"); got != `""` {
+		t.Fatalf("after a bare snapshot the layer's visibility is %s, want it shown again", got)
+	}
+}
+
 func TestARequestForAPageNotOpenFails(t *testing.T) {
 	c := start(t)
 	if err := c.call(browserwire.Eval, browserwire.EvalParams{Page: "b9", Script: "1"}, nil); err == nil || !strings.Contains(err.Error(), "b9") {

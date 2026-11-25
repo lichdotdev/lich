@@ -53,6 +53,7 @@ const (
 	PopOut    = "popOut"
 	PopIn     = "popIn"
 	Raise     = "raise"
+	Draw      = "draw"
 )
 
 // Events.
@@ -161,6 +162,22 @@ type KeyParams struct {
 type TextParams struct {
 	Page string `json:"page"`
 	Text string `json:"text"`
+}
+
+// SnapshotParams' Bare leaves the window's layer out of the shot.
+type SnapshotParams struct {
+	Page string `json:"page"`
+	Bare bool   `json:"bare,omitempty"`
+}
+
+// LayerID is the id of the element the window's draw scripts draw its layer
+// in, which a bare snapshot hides.
+const LayerID = "lich-note-rings"
+
+// DrawParams is a script drawing the window's layer over the front tab.
+type DrawParams struct {
+	Page   string `json:"page"`
+	Script string `json:"script"`
 }
 
 type SnapshotResult struct {

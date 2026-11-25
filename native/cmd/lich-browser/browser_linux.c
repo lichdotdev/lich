@@ -8,6 +8,7 @@
 #include <string.h>
 
 extern void lichBrowserRun(uintptr_t handle);
+extern void lichDrawn(uintptr_t key);
 extern void lichEvaluated(uintptr_t handle, char *json, char *error);
 extern void lichSnapshot(uintptr_t handle, unsigned char *data, int width, int height, int stride, char *error);
 
@@ -389,4 +390,28 @@ static void snapshotted(GObject *view, GAsyncResult *result, gpointer handle) {
 void lich_tab_snapshot(LichTab *tab, uintptr_t handle) {
 	webkit_web_view_get_snapshot(WEBKIT_WEB_VIEW(tab->view), WEBKIT_SNAPSHOT_REGION_VISIBLE, WEBKIT_SNAPSHOT_OPTIONS_NONE,
 	                             NULL, snapshotted, (gpointer)handle);
+}
+
+// lich_tab_run runs script in the page's own world for what it does.
+void lich_tab_run(LichTab *tab, const char *script) {
+	webkit_web_view_evaluate_javascript(WEBKIT_WEB_VIEW(tab->view), script, -1, NULL, EVAL_SOURCE, NULL, NULL, NULL);
+}
+
+static void drawn(GObject *view, GAsyncResult *result, gpointer key) {
+	GError *error = NULL;
+	JSCValue *value = webkit_web_view_evaluate_javascript_finish(WEBKIT_WEB_VIEW(view), result, &error);
+	if (value) {
+		g_object_unref(value);
+	}
+	if (error) {
+		g_error_free(error);
+	}
+	lichDrawn((uintptr_t)key);
+}
+
+// lich_tab_draw runs script like lich_tab_run, telling the page key once the
+// page ran it.
+void lich_tab_draw(LichTab *tab, const char *script, uintptr_t key) {
+	webkit_web_view_evaluate_javascript(WEBKIT_WEB_VIEW(tab->view), script, -1, NULL, EVAL_SOURCE, NULL, drawn,
+	                                    (gpointer)key);
 }

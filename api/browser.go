@@ -56,9 +56,6 @@ var (
 	// BrowserTabNav is the person opening, selecting or closing a tab in the
 	// pane, the window's side of BrowserTabAction.
 	BrowserTabNav = define[BrowserTabOptions, None]("browser.TabNav")
-	// BrowserNativeLoad is a main-frame load event of the page the window
-	// draws itself in place of the screencast, for the session's front tab.
-	BrowserNativeLoad = define[BrowserNativeLoadOptions, None]("browser.NativeLoad")
 	// BrowserWindow is the window's X window, which lich-browser's pages sit
 	// in, and zero before the window closes it.
 	BrowserWindow = define[BrowserWindowOptions, None]("browser.Window")
@@ -80,6 +77,15 @@ var (
 	// now, after the page scrolled or changed.
 	BrowserElementAt = define[BrowserPointOptions, BrowserElement]("browser.ElementAt")
 	BrowserLocate    = define[BrowserLocateOptions, []BrowserRect]("browser.Locate")
+	// BrowserDraw is the window drawing its layer over a page lich-browser
+	// shows in it: the notes, the sketch and the agent's cursor, which the
+	// window cannot draw over another process's window. A newer drawing
+	// takes the place of one the page has not run yet. It is never the
+	// agent's: no turn, no act.
+	BrowserDraw = define[BrowserDrawOptions, None]("browser.Draw")
+	// BrowserSnapshot is the PNG of what such a page shows, the window's
+	// layer left out, for the sketch's picture.
+	BrowserSnapshot = define[SessionIDOptions, []byte]("browser.Snapshot")
 )
 
 var (
@@ -336,15 +342,11 @@ type BrowserHandle struct {
 	Downloads []BrowserDownload `json:"downloads,omitempty"`
 }
 
-// BrowserNativeLoadOptions is session ID's front tab as the window's own page
-// sees it: Loading from its main frame's load start until that load
-// finished, failed or was cancelled, and URL, set only for a load the page
-// started itself (a link the person followed, a form, back or forward),
-// where it landed after any redirect.
-type BrowserNativeLoadOptions struct {
-	ID      string `json:"id"`
-	Loading bool   `json:"loading"`
-	URL     string `json:"url,omitempty"`
+// BrowserDrawOptions is a script that draws the window's layer over session
+// ID's page (browserwire.LayerID).
+type BrowserDrawOptions struct {
+	ID     string `json:"id"`
+	Script string `json:"script"`
 }
 
 // BrowserOpenOptions loads a URL in the session's browser, creating a headless

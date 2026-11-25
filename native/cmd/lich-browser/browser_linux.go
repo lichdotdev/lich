@@ -116,6 +116,7 @@ var handlers = map[string]handler{
 	browserwire.PopOut:    now((*browser).popOut),
 	browserwire.PopIn:     now((*browser).popIn),
 	browserwire.Raise:     now((*browser).raise),
+	browserwire.Draw:      now((*browser).draw),
 	browserwire.Eval:      later((*browser).eval),
 	browserwire.Snapshot:  later((*browser).snapshot),
 }

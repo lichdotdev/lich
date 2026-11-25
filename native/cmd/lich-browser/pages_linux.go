@@ -44,6 +44,8 @@ type page struct {
 	buttons uint32
 	// waiting are the wire's input events the page has yet to get.
 	waiting []*waiter
+	// drawing is the window's layer, one script in the page at a time.
+	drawing latest
 }
 
 type tab struct {

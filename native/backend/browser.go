@@ -33,6 +33,18 @@ func (c *Client) SetBrowserWindow(ctx context.Context, xid uint64) error {
 	return err
 }
 
+// BrowserDraw hands session id's page the window's layer to draw over itself.
+func (c *Client) BrowserDraw(ctx context.Context, id, script string) error {
+	_, err := callMethod(ctx, c, api.BrowserDraw, api.BrowserDrawOptions{ID: id, Script: script})
+	return err
+}
+
+// BrowserSnapshot is the PNG of session id's page, the window's layer left
+// out.
+func (c *Client) BrowserSnapshot(ctx context.Context, id string) ([]byte, error) {
+	return callMethod(ctx, c, api.BrowserSnapshot, api.SessionIDOptions{ID: id})
+}
+
 // RunningBrowsers is every session browser the backend runs.
 func (c *Client) RunningBrowsers(ctx context.Context) ([]api.BrowserState, error) {
 	return callMethod(ctx, c, api.BrowserRunning, api.None{})

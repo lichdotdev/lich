@@ -7,6 +7,7 @@ import (
 
 	"gioui.org/f32"
 
+	"github.com/lichdotdev/lich/browserwire"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -100,7 +101,7 @@ func cssColor(c color.NRGBA) string {
 // calls rather than markup, which a page enforcing Trusted Types refuses.
 const pageOverlayScript = `((o, trail, ring) => {
 	` + pageCursorScript + `
-	const id = 'lich-note-rings';
+	const id = '` + browserwire.LayerID + `';
 	let host = document.getElementById(id);
 	window.__lichHold = o.hold;
 	if (!window.__lichWheel) {

@@ -58,6 +58,8 @@ void lich_tab_allow(LichTab *tab, const char *leaf, const char *host, const char
 void lich_tab_eval(LichTab *tab, const char *program, const char *body, uintptr_t handle);
 int lich_js_parses(const char *code);
 void lich_tab_snapshot(LichTab *tab, uintptr_t handle);
+void lich_tab_run(LichTab *tab, const char *script);
+void lich_tab_draw(LichTab *tab, const char *script, uintptr_t key);
 const char *lich_tab_uri(LichTab *tab);
 const char *lich_tab_title(LichTab *tab);
 int lich_tab_loading(LichTab *tab);

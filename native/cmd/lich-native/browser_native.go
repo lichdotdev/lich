@@ -1,9 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
-	"errors"
 	"image"
+	"image/draw"
+	"image/png"
 	"log"
 	"slices"
 	"time"
@@ -97,7 +99,7 @@ func (u *window) cutNativePages() {
 		o.Cursor = p.pageCursor
 		if script := overlayScript(o); script != p.overlaySent {
 			p.overlaySent = script
-			drawOverPage(session, script)
+			u.drawOverPage(p, session, script)
 		}
 	}
 }
@@ -164,26 +166,35 @@ func keyboardFromPages(gtx C) {
 	event.Op(gtx.Ops, windowPress)
 }
 
-// errNoPageRoute is the window asking lich-browser's page for what no
-// backend RPC carries yet.
-var errNoPageRoute = errors.New("lich-browser's page: the backend has no call for this yet")
+// drawOverPage hands the page the notes' and the agent's layer to draw over
+// itself (pageOverlayScript): the window cannot draw over another process's
+// window. Queued behind the pane's other calls, a newer drawing replaces one
+// not yet sent.
+func (u *window) drawOverPage(p *browserPaneUI, session, script string) {
+	p.queue.push(browserCall{merge: "draw", send: func(ctx context.Context) error {
+		return u.client.BrowserDraw(ctx, session, script)
+	}})
+}
 
-// drawOverPage would hand the page the notes' and the agent's layer to draw
-// over itself (pageOverlayScript).
-//
-// shortcut: no backend RPC runs a window's script in the page without it
-// counting as the agent's eval, so nothing is drawn over a page lich-browser
-// shows; a browser.Draw call in api brings it back.
-func drawOverPage(string, string) {}
+// pageShotWait bounds a shot of the page for the sketch's picture.
+const pageShotWait = 5 * time.Second
 
 // shootPage is the page as it shows, without the layer the notes draw over
-// it, for the sketch's picture.
-//
-// shortcut: no backend RPC hands the window a snapshot of the page, so a
-// sketch over a page lich-browser shows cannot be sent; a browser.Snapshot
-// call in api brings it back.
-func shootPage(context.Context, string) (*image.RGBA, error) {
-	return nil, errNoPageRoute
+// it, for the sketch's picture, which draws the strokes itself.
+func (u *window) shootPage(ctx context.Context, session string) (*image.RGBA, error) {
+	ctx, cancel := context.WithTimeout(ctx, pageShotWait)
+	defer cancel()
+	raw, err := u.client.BrowserSnapshot(ctx, session)
+	if err != nil {
+		return nil, err
+	}
+	img, err := png.Decode(bytes.NewReader(raw))
+	if err != nil {
+		return nil, err
+	}
+	rgba := image.NewRGBA(img.Bounds())
+	draw.Draw(rgba, rgba.Bounds(), img, img.Bounds().Min, draw.Src)
+	return rgba, nil
 }
 
 // nativeNotesInput takes, over a page the window draws itself, only what the
@@ -256,16 +267,19 @@ const windowWait = 2 * time.Second
 
 // setBrowserWindow tells the backend the window's X window when it changed,
 // so lich-browser sends the keys its pages get only for sitting under the
-// pointer there. It waits for the answer: the zero that says the window is
-// gone comes just before the process may end.
+// pointer there; one the backend did not take is told again at the next
+// ViewEvent. It waits for the answer: the zero that says the window is gone
+// comes just before the process may end. A backend that restarts drops the
+// window (markLost), and lich's next window tells the new one.
 func (u *window) setBrowserWindow(xid uint64) {
 	if xid == u.browserWindow {
 		return
 	}
-	u.browserWindow = xid
 	ctx, cancel := context.WithTimeout(u.ctx, windowWait)
 	defer cancel()
 	if err := u.client.SetBrowserWindow(ctx, xid); err != nil {
 		log.Printf("browser window: %v", err)
+		return
 	}
+	u.browserWindow = xid
 }

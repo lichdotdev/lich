@@ -175,7 +175,44 @@ type shot struct {
 	err                 error
 }
 
-func (b *browser) snapshot(o browserwire.PageParams, done func(any, error)) {
+func (b *browser) draw(o browserwire.DrawParams) (any, error) {
+	p, err := b.page(o.Page)
+	if err != nil {
+		return nil, err
+	}
+	if p.drawing.offer(o.Script) {
+		p.sendDrawing(o.Script)
+	}
+	return nil, nil
+}
+
+func (p *page) sendDrawing(script string) {
+	s := C.CString(script)
+	defer C.free(unsafe.Pointer(s))
+	C.lich_tab_draw(p.front.c, s, C.uintptr_t(p.key))
+}
+
+//export lichDrawn
+func lichDrawn(key C.uintptr_t) {
+	p := the.byKey[uintptr(key)]
+	if p == nil {
+		return
+	}
+	if script, ok := p.drawing.done(); ok {
+		p.sendDrawing(script)
+	}
+}
+
+// layerVisibility shows or hides the window's layer.
+const layerVisibility = `(h => h && (h.style.visibility = %q))(document.getElementById(%q))`
+
+func (t *tab) run(script string) {
+	s := C.CString(script)
+	defer C.free(unsafe.Pointer(s))
+	C.lich_tab_run(t.c, s)
+}
+
+func (b *browser) snapshot(o browserwire.SnapshotParams, done func(any, error)) {
 	p, err := b.page(o.Page)
 	if err != nil {
 		done(nil, err)
@@ -194,7 +231,13 @@ func (b *browser) snapshot(o browserwire.PageParams, done func(any, error)) {
 		}
 		done(browserwire.SnapshotResult{PNG: buf.Bytes(), W: int(math.Round(float64(s.width) / scale)), H: int(math.Round(float64(s.height) / scale))}, nil)
 	}
-	C.lich_tab_snapshot(p.front.c, C.uintptr_t(cgo.NewHandle(answer)))
+	// The page takes the hide, the shot and the show in that order.
+	front := p.front
+	if o.Bare {
+		front.run(fmt.Sprintf(layerVisibility, "hidden", browserwire.LayerID))
+		defer front.run(fmt.Sprintf(layerVisibility, "", browserwire.LayerID))
+	}
+	C.lich_tab_snapshot(front.c, C.uintptr_t(cgo.NewHandle(answer)))
 }
 
 //export lichSnapshot
