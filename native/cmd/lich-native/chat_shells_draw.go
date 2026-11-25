@@ -92,13 +92,7 @@ func (u *window) shellsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView) D 
 
 func shellRow(gtx C, th *ui.Theme, s backend.ChatShell) D {
 	ic, ink, state := shellState(th, s)
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return ic.Layout(gtx, toolsGlyph, ink) }),
-		ui.Gap(2),
-		layout.Flexed(1, th.Text(ui.TextSM, cleanLine(s.Command)).Mono().Truncated().Layout),
-		ui.Gap(toolsMetaGap),
-		layout.Rigid(th.Text(ui.TextXS, shellMeta(gtx, s, state)).Muted().Layout),
-	)
+	return toolsRow(gtx, th, ic, ink, th.Text(ui.TextSM, cleanLine(s.Command)).Mono(), th.Text(ui.TextXS, ""), shellMeta(gtx, s, state))
 }
 
 // shellDetail is one shell: its command, state and running time, what the
@@ -139,22 +133,11 @@ func (u *window) shellDetail(gtx C, th *ui.Theme, p *chatPane, id string, s back
 	return t.scrolled(gtx, th, head, lines, foot)
 }
 
-// shellHead is Back, then the shell's glyph, command and time.
+// shellHead is Back, then the shell's command and time.
 func shellHead(gtx C, th *ui.Theme, t *chatTools, s backend.ChatShell) D {
-	back := th.Button(&t.back, i18n.T("chat.shells.back"))
-	back.Icon, back.Variant, back.Size = icToolsBack, ui.VariantGhost, ui.SizeXS
-	ic, ink, state := shellState(th, s)
-	return layout.Inset{Left: ui.Space(1), Right: ui.Space(2), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(back.Layout),
-			ui.Gap(2),
-			layout.Rigid(func(gtx C) D { return ic.Layout(gtx, toolsGlyph, ink) }),
-			ui.Gap(1.5),
-			layout.Flexed(1, th.Text(ui.TextSM, cleanLine(s.Command)).Mono().Weight(font.SemiBold).Truncated().Layout),
-			ui.Gap(toolsMetaGap),
-			layout.Rigid(th.Text(ui.TextXS, shellMeta(gtx, s, state)).Muted().Layout),
-		)
-	})
+	_, _, state := shellState(th, s)
+	title := th.Text(ui.TextSM, cleanLine(s.Command)).Mono().Weight(font.Medium)
+	return toolsBackHead(gtx, th, &t.back, i18n.T("chat.shells.back"), title, shellMeta(gtx, s, state), nil)
 }
 
 func shellStop(gtx C, th *ui.Theme, t *chatTools) D {

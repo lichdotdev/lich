@@ -3,7 +3,6 @@ package main
 import (
 	"strings"
 
-	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
 
@@ -99,20 +98,13 @@ func (t *chatTools) pluginLines(th *ui.Theme, plugins []api.ChatPlugin, grouped 
 	for i, pl := range plugins {
 		if grouped && pl.Marketplace != market {
 			market = pl.Marketplace
-			lines = append(lines, pluginGroupLine(th, market))
+			lines = append(lines, toolsGroupLine(th, market, ""))
 		}
 		lines = append(lines, func(gtx C) D {
 			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return chatPluginRow(gtx, th, pl) })
 		})
 	}
 	return lines
-}
-
-func pluginGroupLine(th *ui.Theme, name string) layout.Widget {
-	return func(gtx C) D {
-		return layout.Inset{Left: ui.Space(2), Top: ui.Space(2), Bottom: ui.Space(0.5)}.Layout(gtx,
-			th.Text(ui.TextXS, name).Weight(font.SemiBold).Layout)
-	}
 }
 
 // pluginGlyph is a plugin's mark: on, off, or not installed.
@@ -163,30 +155,21 @@ func chatPluginRow(gtx C, th *ui.Theme, pl api.ChatPlugin) D {
 		end = append(end, layout.Rigid(th.TinyChip(i18n.T("chat.plugins.updateChip"), th.ToneWait).Layout), ui.Gap(1.5))
 	}
 	end = append(end, layout.Rigid(th.Text(ui.TextXS, pluginMeta(pl)).Muted().Layout))
-	return twoLineRow(gtx, th, pluginGlyph(th, pl), name.Layout, pl.Description, end)
+	return descRow(gtx, th, pluginGlyph(th, pl), name.Truncated().Layout, pl.Description, end)
 }
 
-// twoLineRow is a glyph, a name over its muted description, and the row's
-// end.
-func twoLineRow(gtx C, th *ui.Theme, glyph, name layout.Widget, desc string, end []layout.FlexChild) D {
-	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-		row := []layout.FlexChild{
-			layout.Rigid(glyph),
-			ui.Gap(2),
-			layout.Flexed(1, func(gtx C) D {
-				// the row's height reaches here from pickerRow; a name with no
-				// description under it would sit at the top instead of the middle
-				gtx.Constraints.Min.Y = 0
-				col := []layout.FlexChild{layout.Rigid(name)}
-				if desc != "" {
-					col = append(col, layout.Rigid(th.Text(ui.TextXS, cleanLine(desc)).Muted().Truncated().Layout))
-				}
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx, col...)
-			}),
-			ui.Gap(toolsMetaGap),
-		}
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, append(row, end...)...)
-	})
+// descRow is a glyph, a name, its muted description on the rest of the line,
+// and the row's end.
+func descRow(gtx C, th *ui.Theme, glyph, name layout.Widget, desc string, end []layout.FlexChild) D {
+	row := []layout.FlexChild{
+		layout.Rigid(glyph),
+		ui.Gap(2),
+		layout.Rigid(toolsName(name)),
+		ui.Gap(2),
+		layout.Flexed(1, th.Text(ui.TextXS, cleanLine(desc)).Muted().Truncated().Layout),
+		ui.Gap(toolsMetaGap),
+	}
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, append(row, end...)...)
 }
 
 func (t *chatTools) marketLines(th *ui.Theme, markets []api.ChatMarketplace) []layout.Widget {
@@ -197,7 +180,7 @@ func (t *chatTools) marketLines(th *ui.Theme, markets []api.ChatMarketplace) []l
 			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D {
 				glyph := func(gtx C) D { return icMarket.Layout(gtx, toolsGlyph, th.MutedForeground) }
 				count := th.Text(ui.TextXS, i18n.T("chat.plugins.pluginCount", i18n.Args{"count": m.Plugins})).Muted().Layout
-				return twoLineRow(gtx, th, glyph, th.Text(ui.TextSM, m.Name).Layout, m.Source, []layout.FlexChild{layout.Rigid(count)})
+				return descRow(gtx, th, glyph, th.Text(ui.TextSM, m.Name).Truncated().Layout, m.Source, []layout.FlexChild{layout.Rigid(count)})
 			})
 		}
 	}

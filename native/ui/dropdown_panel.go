@@ -9,6 +9,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 	"gioui.org/unit"
 	"gioui.org/widget"
 )
@@ -208,8 +209,20 @@ func (th *Theme) PopoverPanel(gtx C, content func(gtx C, th *Theme) D) D {
 	d := content(inner, th.On(th.Popover))
 	call := macro.Stop()
 	size := image.Pt(gtx.Constraints.Max.X, d.Size.Y+2*pad)
-	menuCore{th: th}.drawSurface(gtx, size)
+	th.popoverSurface(gtx, size)
 	defer op.Offset(image.Pt(pad, pad)).Push(gtx.Ops).Pop()
 	call.Add(gtx.Ops)
 	return D{Size: size}
+}
+
+// popoverSurface is a menu's surface, rounded-lg and over a toast's shadow:
+// a PopoverPanel stands over the conversation's text, not over a trigger,
+// and without the shadow it reads as part of it.
+func (th *Theme) popoverSurface(gtx C, size image.Point) {
+	r := gtx.Dp(RadiusLG)
+	toastShadow(gtx, size, r)
+	rr := clip.UniformRRect(image.Rectangle{Max: size}, r)
+	ring := clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(2 * gtx.Dp(1))}.Op()
+	paint.FillShape(gtx.Ops, th.Over(Alpha(th.Foreground, menuRingOpacity)), ring)
+	paint.FillShape(gtx.Ops, th.Popover, rr.Op(gtx.Ops))
 }

@@ -113,7 +113,7 @@ func ruleRow(gtx C, th *ui.Theme, r api.ChatPermissionRule) D {
 		glyph = func(gtx C) D { return icToolsOff.Layout(gtx, toolsGlyph, th.MutedForeground) }
 	}
 	end := []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, permSourceLabel(r.Source)).Muted().Layout)}
-	return twoLineRow(gtx, th, glyph, name.Layout, r.Description, end)
+	return descRow(gtx, th, glyph, name.Truncated().Layout, r.Description, end)
 }
 
 // iconRow is a glyph and a line.
@@ -147,23 +147,10 @@ func folderLine(th *ui.Theme, path, meta string) layout.Widget {
 	}
 }
 
-// detailHead is a detail's Back and its title, cut to its line.
+// detailHead is a detail's Back and its title.
 func (t *chatTools) detailHead(th *ui.Theme, back, title string) layout.Widget {
-	return t.detailHeadOf(th, back, th.Text(ui.TextSM, title).Weight(font.SemiBold).Truncated())
-}
-
-// detailHeadOf is a detail's Back and its title as given.
-func (t *chatTools) detailHeadOf(th *ui.Theme, back string, title ui.LabelStyle) layout.Widget {
-	b := th.Button(&t.back, back)
-	b.Icon, b.Variant, b.Size = icToolsBack, ui.VariantGhost, ui.SizeXS
 	return func(gtx C) D {
-		return layout.Inset{Left: ui.Space(1), Right: ui.Space(2), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(b.Layout),
-				ui.Gap(2),
-				layout.Flexed(1, title.Layout),
-			)
-		})
+		return toolsBackHead(gtx, th, &t.back, back, th.Text(ui.TextSM, title).Weight(font.SemiBold), "", nil)
 	}
 }
 
@@ -187,8 +174,7 @@ func (t *chatTools) addRuleView(gtx C, th *ui.Theme, l api.ChatPermissionList, r
 			}),
 			layout.Rigid(th.Separator),
 			layout.Rigid(func(gtx C) D {
-				return layout.Inset{Left: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(0.5)}.Layout(gtx,
-					th.Text(ui.TextXS, i18n.T("chat.permissions.saveIn")).Weight(font.SemiBold).Layout)
+				return toolsGroupLine(th, i18n.T("chat.permissions.saveIn"), "")(gtx)
 			}),
 		)
 	}
@@ -202,8 +188,8 @@ func (t *chatTools) addRuleView(gtx C, th *ui.Theme, l api.ChatPermissionList, r
 			return pickerRow(gtx, th, &t.rows[i], t.cursor == i, func(gtx C, th *ui.Theme) D {
 				who, file := permDestination(d)
 				end := []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, file).Mono().Muted().Layout)}
-				return twoLineRow(gtx, th, func(gtx C) D { return icFolder.Layout(gtx, toolsGlyph, th.MutedForeground) },
-					th.Text(ui.TextSM, permSourceLabel(d)).Layout, who, end)
+				return descRow(gtx, th, func(gtx C) D { return icFolder.Layout(gtx, toolsGlyph, th.MutedForeground) },
+					th.Text(ui.TextSM, permSourceLabel(d)).Truncated().Layout, who, end)
 			})
 		}
 	}
@@ -238,9 +224,12 @@ func (t *chatTools) ruleDetail(gtx C, th *ui.Theme, l api.ChatPermissionList, ru
 	default:
 		foot = toolsFootNote(th, i18n.T("chat.permissions.readOnly"))
 	}
-	// the rule is the title, whole: Remove names it as the settings file holds it
-	title := th.Text(ui.TextSM, r.Rule).Weight(font.SemiBold).Wrapped()
-	return t.scrolled(gtx, th, t.detailHeadOf(th, i18n.T("chat.permissions.back"), title), lines, foot)
+	// the rule stands whole under the head, wrapped: Remove names it as the
+	// settings file holds it
+	rule := func(gtx C) D {
+		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Bottom: ui.Space(1)}.Layout(gtx, th.Text(ui.TextSM, r.Rule).Weight(font.SemiBold).Wrapped().Layout)
+	}
+	return t.scrolled(gtx, th, t.detailHead(th, i18n.T("chat.permissions.back"), ""), append([]layout.Widget{rule}, lines...), foot)
 }
 
 // modesView is Codex's /permissions: its modes, the one in force checked

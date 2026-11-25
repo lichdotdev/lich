@@ -189,10 +189,16 @@
   },
   "plan": {
     "count": "{done}/{total}",
-    "more": "+{more} more · {done} of {total} done"
+    "title": "Tasks",
+    "done": "{done} of {total} done"
   },
   "tools": {
     "loading": "Loading…",
+    "keys": {
+      "move": "move",
+      "open": "open",
+      "close": "close"
+    },
     "mcpTitle": "MCP servers",
     "serverCount": {
       "one": "{count} server",

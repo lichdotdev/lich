@@ -33,18 +33,8 @@ func (u *window) pluginDetailView(gtx C, th *ui.Theme, t *chatTools, l api.ChatP
 // pluginDetail is a detail's head, its lines and its buttons, with what the
 // last action left to say, or why lich's own takes none.
 func (t *chatTools) pluginDetail(gtx C, th *ui.Theme, back, name, sub string, lines []layout.Widget, acts []chatPluginAction, fixed bool) D {
-	b := th.Button(&t.back, back)
-	b.Icon, b.Variant, b.Size = icToolsBack, ui.VariantGhost, ui.SizeXS
 	head := func(gtx C) D {
-		return layout.Inset{Left: ui.Space(1), Right: ui.Space(2), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(b.Layout),
-				ui.Gap(2),
-				layout.Rigid(th.Text(ui.TextSM, name).Weight(font.SemiBold).Layout),
-				ui.Gap(2),
-				layout.Flexed(1, th.Text(ui.TextXS, sub).Muted().Truncated().Layout),
-			)
-		})
+		return toolsBackHead(gtx, th, &t.back, back, th.Text(ui.TextSM, name).Weight(font.SemiBold), sub, nil)
 	}
 	t.mu.Lock()
 	note, running := t.plug.note, t.plug.running

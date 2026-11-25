@@ -17,8 +17,12 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// toolsMetaGap is the gap, in spacing steps, before a row's muted end.
-const toolsMetaGap = 3
+const (
+	// toolsMetaGap is the gap, in spacing steps, before a row's muted end.
+	toolsMetaGap = 3
+	// toolsNameShare is how much of a row its name may take.
+	toolsNameShare = 0.6
+)
 
 var (
 	icToolsPending  = icons.Lucide("circle-dashed")
@@ -28,78 +32,173 @@ var (
 	icToolsBack     = icons.Lucide("chevron-left")
 	toolsMaxH       = unit.Dp(460)
 	toolsLabelW     = ui.Space(32)
-	toolsGlyph      = ui.Space(3.5)
+	toolsGlyph      = ui.Space(4)
+	toolsHeadH      = ui.Space(10)
 	toolsGroupOrder = []string{"user", "project", "local", "claudeai", "other"}
 )
 
 // chatToolsPanel draws the open panel over the composer's box, as wide as it
 // and a gap above it, deferred so it stands over the conversation, no
 // taller than room: the slash list's place.
-func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView, room int) {
+func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView, working bool, room int) {
 	t := &p.tools
 	if !t.opened() {
 		return
 	}
 	u.pollTools(gtx, p, sv.ID)
+	g := gtx
+	lift := p.panelLift()
+	g.Constraints = layout.Constraints{Max: image.Pt(gtx.Constraints.Max.X, max(min(gtx.Dp(toolsMaxH), room-lift), 0))}
+	macro := op.Record(gtx.Ops)
+	d := th.PopoverPanel(g, func(gtx C, th *ui.Theme) D {
+		return withKeys(gtx, th, t.kind, func(gtx C) D {
+			return u.toolsView(gtx, th, p, sv, working)
+		})
+	})
+	call := macro.Stop()
+	m := op.Record(gtx.Ops)
+	op.Offset(image.Pt(0, -d.Size.Y-gtx.Dp(ui.Space(2))-lift)).Add(gtx.Ops)
+	call.Add(gtx.Ops)
+	t.watchOutside(gtx, d.Size)
+	op.Defer(gtx.Ops, m.Stop())
+}
+
+// toolsView is the open panel's screen.
+func (u *window) toolsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, working bool) D {
+	t := &p.tools
 	t.mu.Lock()
 	mcp, skills, plugins, loaded := t.mcp, t.skills, t.plugins, t.loaded
 	memory, agents := t.mem.list, t.mem.agents
 	t.mu.Unlock()
-	g := gtx
-	g.Constraints = layout.Constraints{Max: image.Pt(gtx.Constraints.Max.X, max(min(gtx.Dp(toolsMaxH), room), 0))}
-	macro := op.Record(gtx.Ops)
-	d := th.PopoverPanel(g, func(gtx C, th *ui.Theme) D {
-		switch {
-		case t.kind == chatShellsPanel:
-			return u.shellsView(gtx, th, p, sv)
-		case t.kind == chatChildrenPanel:
-			return u.childrenView(gtx, th, p, sv)
-		case t.kind == chatWorkflowsPanel:
-			return u.workflowsView(gtx, th, p, sv)
-		case !loaded:
-			return toolsNote(gtx, th, i18n.T("chat.tools.loading"))
-		case t.kind == chatMCPCommand:
-			return u.mcpView(gtx, th, p, sv, mcp)
-		case t.kind == chatPluginCommand:
-			return u.pluginsView(gtx, th, p, sv, plugins)
-		case t.kind == chatPermissionsCommand:
-			return u.permissionsView(gtx, th, p, sv)
-		case t.kind == chatHooksCommand:
-			return u.hooksView(gtx, th, p, sv)
-		case t.kind == chatMemoryCommand:
-			return u.memoryView(gtx, th, p, sv, memory)
-		case t.kind == chatAgentsCommand:
-			return u.agentsView(gtx, th, p, sv, agents)
-		}
-		return u.skillsView(gtx, th, p, sv, skills)
-	})
-	call := macro.Stop()
-	m := op.Record(gtx.Ops)
-	op.Offset(image.Pt(0, -d.Size.Y-gtx.Dp(ui.Space(2)))).Add(gtx.Ops)
-	call.Add(gtx.Ops)
-	op.Defer(gtx.Ops, m.Stop())
+	switch {
+	case t.kind == chatPlanPanel:
+		return u.planView(gtx, th, p, sv.ID, working)
+	case t.kind == chatShellsPanel:
+		return u.shellsView(gtx, th, p, sv)
+	case t.kind == chatChildrenPanel:
+		return u.childrenView(gtx, th, p, sv)
+	case t.kind == chatWorkflowsPanel:
+		return u.workflowsView(gtx, th, p, sv)
+	case !loaded:
+		return toolsNote(gtx, th, i18n.T("chat.tools.loading"))
+	case t.kind == chatMCPCommand:
+		return u.mcpView(gtx, th, p, sv, mcp)
+	case t.kind == chatPluginCommand:
+		return u.pluginsView(gtx, th, p, sv, plugins)
+	case t.kind == chatPermissionsCommand:
+		return u.permissionsView(gtx, th, p, sv)
+	case t.kind == chatHooksCommand:
+		return u.hooksView(gtx, th, p, sv)
+	case t.kind == chatMemoryCommand:
+		return u.memoryView(gtx, th, p, sv, memory)
+	case t.kind == chatAgentsCommand:
+		return u.agentsView(gtx, th, p, sv, agents)
+	}
+	return u.skillsView(gtx, th, p, sv, skills)
 }
 
+// toolsNote is the panel's empty state: a list with nothing in it, or a
+// provider that reports nothing for the command.
 func toolsNote(gtx C, th *ui.Theme, s string) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return layout.UniformInset(ui.Space(2)).Layout(gtx, th.Text(ui.TextSM, s).Muted().Wrapped().Layout)
+	e := th.InlineEmptyState(s, "", nil)
+	e.Pad = ui.Space(3)
+	return e.Layout(gtx)
 }
 
 // toolsHead is the panel's title, its count muted beside it and an optional
 // control at the end.
 func toolsHead(gtx C, th *ui.Theme, title, count string, end layout.Widget) D {
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	row := []layout.FlexChild{
+	return toolsHeadRow(gtx, ui.Space(2), []layout.FlexChild{
 		layout.Rigid(th.Text(ui.TextSM, title).Weight(font.SemiBold).Layout),
 		ui.Gap(2),
-		layout.Flexed(1, th.Text(ui.TextXS, count).Muted().Layout),
+		layout.Flexed(1, th.Text(ui.TextXS, count).Muted().Truncated().Layout),
+	}, end)
+}
+
+// toolsBackHead is a detail's head: Back to the list, a ghost SizeXS button
+// with a chevron, in the title's place, then the title, sub muted beside it
+// and an optional control at the end.
+func toolsBackHead(gtx C, th *ui.Theme, back *ui.Clickable, label string, title ui.LabelStyle, sub string, end layout.Widget) D {
+	b := th.Button(back, label)
+	b.Icon, b.Variant, b.Size = icToolsBack, ui.VariantGhost, ui.SizeXS
+	return toolsHeadRow(gtx, ui.Space(1), []layout.FlexChild{
+		layout.Rigid(b.Layout),
+		ui.Gap(2),
+		layout.Rigid(title.Truncated().Layout),
+		ui.Gap(2),
+		layout.Flexed(1, th.Text(ui.TextXS, sub).Muted().Truncated().Layout),
+	}, end)
+}
+
+// toolsName is a row's name, cut at toolsNameShare of the row so a long one
+// leaves its facts in view.
+func toolsName(name layout.Widget) layout.Widget {
+	return func(gtx C) D {
+		gtx.Constraints.Max.X = int(float32(gtx.Constraints.Max.X) * toolsNameShare)
+		return name(gtx)
 	}
+}
+
+// toolsHeadRow is a head's line, toolsHeadH tall, its control at the end.
+func toolsHeadRow(gtx C, left unit.Dp, row []layout.FlexChild, end layout.Widget) D {
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	if end != nil {
 		row = append(row, layout.Rigid(end))
 	}
-	return layout.Inset{Left: ui.Space(2), Right: ui.Space(1), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Left: left, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+		gtx.Constraints.Min.Y = gtx.Dp(toolsHeadH)
+		return layout.W.Layout(gtx, func(gtx C) D {
+			gtx.Constraints.Min.X = gtx.Constraints.Max.X
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
+		})
+	})
+}
+
+// toolsGroupLine is a group's label over its rows, uppercase as the
+// palette's, and its file muted beside it.
+func toolsGroupLine(th *ui.Theme, label, file string) layout.Widget {
+	return func(gtx C) D {
+		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(2.5), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+			row := []layout.FlexChild{layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(label)).Muted().Weight(font.SemiBold).Leading(text2XSLeading).Layout)}
+			if file != "" {
+				row = append(row, ui.Gap(1.5), layout.Flexed(1, th.Text(ui.Text2XS, file).Muted().Truncated().Leading(text2XSLeading).Layout))
+			}
+			return layout.Flex{Alignment: layout.Baseline}.Layout(gtx, row...)
+		})
+	}
+}
+
+// toolsKeysLine is the panel's foot: the keys it takes, since it never holds
+// the focus that would show them.
+func toolsKeysLine(gtx C, th *ui.Theme, hints [][2]string) D {
+	row := make([]layout.FlexChild, len(hints))
+	for i, h := range hints {
+		row[i] = layout.Rigid(func(gtx C) D {
+			return layout.Inset{Right: ui.Space(4)}.Layout(gtx, th.KeyHint(h[0], h[1]).Layout)
+		})
+	}
+	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 	})
+}
+
+// withKeys is view over the keys' line, a hairline between them, the view
+// given the room the line leaves.
+func withKeys(gtx C, th *ui.Theme, kind string, view layout.Widget) D {
+	m := op.Record(gtx.Ops)
+	keys := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+		layout.Rigid(th.Separator),
+		layout.Rigid(func(gtx C) D { return toolsKeysLine(gtx, th, toolsHints(kind)) }),
+	)
+	keysCall := m.Stop()
+	g := gtx
+	g.Constraints.Max.Y = max(gtx.Constraints.Max.Y-keys.Size.Y, 0)
+	g.Constraints.Min.Y = 0
+	d := view(g)
+	defer op.Offset(image.Pt(0, d.Size.Y)).Push(gtx.Ops).Pop()
+	keysCall.Add(gtx.Ops)
+	return D{Size: image.Pt(max(d.Size.X, keys.Size.X), d.Size.Y+keys.Size.Y)}
 }
 
 // toolsGroup is where a server's scope files it in the list.
@@ -168,7 +267,7 @@ func (u *window) mcpView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l api
 	for i, s := range servers {
 		if g := toolsGroup(s.Scope); g != group {
 			group = g
-			lines = append(lines, mcpGroupLine(th, g, s.Config))
+			lines = append(lines, toolsGroupLine(th, toolsGroupLabel(g), s.Config))
 		}
 		lines = append(lines, func(gtx C) D {
 			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return mcpRow(gtx, th, s) })
@@ -180,36 +279,34 @@ func (u *window) mcpView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l api
 	return t.scrolled(gtx, th, head, lines, nil)
 }
 
-func mcpGroupLine(th *ui.Theme, g, config string) layout.Widget {
-	return func(gtx C) D {
-		return layout.Inset{Left: ui.Space(2), Top: ui.Space(2), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
-			row := []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, toolsGroupLabel(g)).Weight(font.SemiBold).Layout)}
-			if config != "" {
-				row = append(row, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextXS, config).Muted().Truncated().Layout))
-			}
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
-		})
-	}
-}
-
 func mcpRow(gtx C, th *ui.Theme, s api.ChatMCPServer) D {
 	ic, ink, state := mcpStatus(th, s)
 	meta := state
 	if s.Status == api.MCPConnected {
 		meta = i18n.T("chat.tools.toolCount", i18n.Args{"count": len(s.Tools)})
 	}
-	name := th.Text(ui.TextSM, s.Name)
+	name := th.Text(ui.TextSM, s.Name).Weight(font.Medium)
 	if s.Status == api.MCPDisabled {
 		name = name.Muted()
 	}
+	desc := th.Text(ui.TextXS, "").Muted()
+	if s.Status == api.MCPFailed && s.Error != "" {
+		desc = th.Text(ui.TextXS, cleanLine(s.Error)).In(th.Destructive)
+	}
+	return toolsRow(gtx, th, ic, ink, name, desc, meta)
+}
+
+// toolsRow is a panel's row on one line: its state glyph, the name, what it
+// is muted on the rest of the line and its facts at the end.
+func toolsRow(gtx C, th *ui.Theme, ic *icons.Icon, ink color.NRGBA, name, desc ui.LabelStyle, meta string) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return ic.Layout(gtx, toolsGlyph, ink) }),
 		ui.Gap(2),
-		layout.Rigid(name.Layout),
+		layout.Rigid(toolsName(name.Truncated().Layout)),
+		ui.Gap(2),
+		layout.Flexed(1, desc.Truncated().Layout),
 		ui.Gap(toolsMetaGap),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, th.Text(ui.TextXS, meta).Muted().Truncated().Layout)
-		}),
+		layout.Rigid(th.Text(ui.TextXS, meta).Muted().Layout),
 	)
 }
 
@@ -336,20 +433,12 @@ func (u *window) skillsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l 
 
 func skillRow(gtx C, th *ui.Theme, s api.ChatSkill) D {
 	ic, ink := icCheck, th.TonePass
-	name := th.Text(ui.TextSM, s.Name)
+	name := th.Text(ui.TextSM, s.Name).Weight(font.Medium)
 	if s.State == api.SkillOff {
 		ic, ink, name = icToolsOff, th.MutedForeground, name.Muted()
 	}
 	if s.Locked != "" {
 		ink = ui.Alpha(ink, 0.55)
 	}
-	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return ic.Layout(gtx, toolsGlyph, ink) }),
-		ui.Gap(2),
-		layout.Rigid(name.Layout),
-		ui.Gap(toolsMetaGap),
-		layout.Flexed(1, func(gtx C) D {
-			return layout.E.Layout(gtx, th.Text(ui.TextXS, skillMeta(s)).Muted().Truncated().Layout)
-		}),
-	)
+	return toolsRow(gtx, th, ic, ink, name, th.Text(ui.TextXS, cleanLine(s.Description)).Muted(), skillMeta(s))
 }

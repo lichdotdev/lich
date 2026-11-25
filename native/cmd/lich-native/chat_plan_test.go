@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/f32"
 	"gioui.org/op/paint"
 
 	"github.com/lichdotdev/lich/api"
@@ -67,50 +68,36 @@ func TestThePlanLineShowsTheCountAndTheTaskRunning(t *testing.T) {
 	writeShot(t, r, "plan-folded.png")
 }
 
-// A click unfolds the task before the one running, it and the next, and
-// counts the rest; a second click folds it back.
-func TestAClickUnfoldsThePlanAndASecondFoldsIt(t *testing.T) {
+// A click on the line opens every task in the panel over the composer, with
+// how many are done; a second click shuts it. (Contract changed: the line used
+// to unfold three tasks in place.)
+func TestAClickOnThePlanOpensItsPanelAndASecondShutsIt(t *testing.T) {
 	r := planFrames(t, planItems(1, fivePlan...))
 	r.click(t, r.at(t, "2/5"))
-	if !r.showsAll("Accept a date with no offset", "Accepting +hh:mm and Z", "Cover the cases in tests", "+2 more · 2 of 5 done") {
-		t.Fatalf("the click did not unfold the list:\n%s", r.drawn())
-	}
-	if r.shows("Read the parser") || r.shows("Update the README") {
-		t.Errorf("the unfolded list drew past the task after the one running:\n%s", r.drawn())
+	r.frame()
+	if !r.showsAll("Tasks", "2 of 5 done", "Read the parser", "Accept a date with no offset", "Cover the cases in tests", "Update the README") {
+		t.Fatalf("the click did not open the task list's panel:\n%s", r.drawn())
 	}
 	writeShot(t, r, "plan-open.png")
-	r.click(t, r.at(t, "Accepting +hh:mm and Z"))
-	if r.shows("Cover the cases in tests") {
-		t.Errorf("a second click left the list open:\n%s", r.drawn())
+	r.click(t, r.at(t, "2/5"))
+	r.frame()
+	if r.shows("Update the README") {
+		t.Errorf("a second click left the panel open:\n%s", r.drawn())
 	}
 }
 
-// The unfolded list keeps three tasks where the list has them, sliding back
-// from its end and starting at its first.
-func TestThePlanWindowKeepsThreeTasks(t *testing.T) {
-	at := func(statuses ...string) []api.ChatPlanEntry {
-		var es []api.ChatPlanEntry
-		for _, s := range statuses {
-			es = append(es, api.ChatPlanEntry{Status: s})
-		}
-		return es
+// A press outside the open panel shuts it, as one outside a popover does.
+func TestAPressOutsideThePlanPanelShutsIt(t *testing.T) {
+	r := planFrames(t, planItems(1, fivePlan...))
+	r.click(t, r.at(t, "2/5"))
+	r.frame()
+	if !r.shows("Update the README") {
+		t.Fatalf("the panel did not open:\n%s", r.drawn())
 	}
-	done, run, todo := api.PlanCompleted, api.PlanInProgress, api.PlanPending
-	cases := []struct {
-		name     string
-		entries  []api.ChatPlanEntry
-		from, to int
-	}{
-		{"first running", at(run, todo, todo, todo), 0, 3},
-		{"middle running", at(done, done, run, todo, todo), 1, 4},
-		{"last running", at(done, done, done, run), 1, 4},
-		{"none running", at(done, todo, todo, todo), 0, 3},
-		{"two tasks", at(done, run), 0, 2},
-	}
-	for _, c := range cases {
-		if from, to := planWindow(c.entries); from != c.from || to != c.to {
-			t.Errorf("%s: window %d..%d, want %d..%d", c.name, from, to, c.from, c.to)
-		}
+	r.click(t, f32.Pt(2, 2))
+	r.frame()
+	if r.shows("Update the README") {
+		t.Errorf("a press outside left the panel open:\n%s", r.drawn())
 	}
 }
 

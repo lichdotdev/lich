@@ -131,12 +131,16 @@ type chatView struct {
 	// tools is the /mcp or /skills panel, in the slash list's place, and
 	// search the Ctrl+R search of the messages sent; history is the ↑/↓ walk.
 	tools chatTools
-	// shellsChip is the composer's chip of the shells running.
+	// shellsChip is the activity strip's pill of the shells running.
 	shellsChip footerWidgets
-	// childrenChip is the composer's chip of the sessions this one opened.
+	// childrenChip is the activity strip's pill of the sessions this one
+	// opened.
 	childrenChip footerWidgets
-	search       chatSearch
-	history      chatHistory
+	// stripH is the activity strip's height this frame: its panels stand
+	// over it, never on their anchor.
+	stripH  int
+	search  chatSearch
+	history chatHistory
 	// attached are the files the next message carries, drawn as cards over
 	// the text in cardList; fileCards are the cards' controls, by path in the
 	// composer and by item and path in a sent message.
@@ -491,6 +495,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	if keys {
 		u.shellsChipActs(gtx, p)
 		u.childrenChipActs(gtx, p)
+		u.planActs(gtx, p, sv.ID)
 		u.toolsActs(gtx, p, sv.ID)
 	}
 	// The model panel's search holds the keys while the panel is open.
@@ -655,8 +660,12 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return u.chatAsking(gtx, th, p, sv) }),
 		layout.Rigid(func(gtx C) D { return u.chatWorkflow(gtx, th, p, sv.ID) }),
-		layout.Rigid(func(gtx C) D { return u.chatPlan(gtx, th, &p.plan, sv.ID, working) }),
 		layout.Rigid(func(gtx C) D { return u.chatQueue(gtx, th, p, sv.ID) }),
+		layout.Rigid(func(gtx C) D {
+			d := u.chatActivity(gtx, th, p, sv, working)
+			p.stripH = d.Size.Y
+			return d
+		}),
 		layout.Rigid(func(gtx C) D {
 			// the box's fill keeps near the theme's own ground and its edge
 			// leans to the theme's primary, as the backdrop around it does
@@ -691,7 +700,7 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			files, _, _ := p.files.get()
 			p.mention.refresh(gtx, &p.editor, files)
 			p.mention.layout(gtx, th, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))
-			u.chatToolsPanel(gtx, th, p, sv, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))
+			u.chatToolsPanel(gtx, th, p, sv, working, p.slashRoom-d.Size.Y-gtx.Dp(2*chatComposerGap))
 			return d
 		}),
 		layout.Rigid(func(gtx C) D {

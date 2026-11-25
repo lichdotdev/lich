@@ -13,8 +13,9 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// The background shells of a chat (api.ChatShells) are counted by a chip in
-// the composer's foot while one runs, Claude Code's "2 shells", and listed in
+// The background shells of a chat (api.ChatShells) are counted by a pill in
+// the activity strip over the composer while one runs, Claude Code's
+// "2 shells", and listed in
 // a panel in the slash list's place that /tasks opens too, Claude Code's
 // dialog: each shell's command, state and running time, and in its detail
 // the end of its output and Stop.
@@ -25,7 +26,6 @@ const (
 	chatShellsPanel = "/tasks"
 	// chatBashesCommand is /tasks' other name in Claude Code.
 	chatBashesCommand = "/bashes"
-	chipShells        = "shells"
 )
 
 // chatShellKinds is the providers whose chat reports its background shells.
@@ -50,11 +50,11 @@ type chatShellOut struct {
 	stop          ui.Clickable
 }
 
-// openShells opens the shells' panel. The box keeps what was typed: typing
-// more shuts it.
-func (p *chatPane) openShells() {
+// openPanel opens a panel lich reads itself, with nothing to fetch. The box
+// keeps what was typed: typing more shuts it.
+func (p *chatPane) openPanel(kind string) {
 	t := &p.tools
-	t.open(chatShellsPanel)
+	t.open(kind)
 	t.mu.Lock()
 	t.loaded, t.base = true, p.editor.Len()
 	t.mu.Unlock()
@@ -101,7 +101,7 @@ func (u *window) shellsChipActs(gtx C, p *chatPane) {
 		p.tools.shut()
 		return
 	}
-	p.openShells()
+	p.openPanel(chatShellsPanel)
 }
 
 // shellActs runs the shells' panel: a row opens its shell, and in a shell
