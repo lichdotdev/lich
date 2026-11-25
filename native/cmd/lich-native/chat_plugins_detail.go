@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image"
 	"slices"
 	"strings"
 
@@ -102,22 +103,31 @@ func (t *chatTools) pluginFoot(th *ui.Theme, l api.ChatPluginList) layout.Widget
 	return footButtons(append(append(first, rest...), last...))
 }
 
+// pluginButtons is a detail's actions at the right of its foot: what removes
+// in Destructive, trusting a hook filled, the rest secondary.
 func (t *chatTools) pluginButtons(gtx C, th *ui.Theme, acts []chatPluginAction, running string) D {
 	if len(acts) == 0 {
 		return D{}
 	}
-	var row []layout.FlexChild
+	row := []layout.FlexChild{layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} })}
 	for i, a := range acts {
 		if i > 0 {
 			row = append(row, ui.Gap(1.5))
 		}
 		b := th.Button(t.act(a.key()), a.label)
 		b.Variant, b.Size = ui.VariantSecondary, ui.SizeSM
+		switch {
+		case a.removes():
+			b.Variant = ui.VariantDestructive
+		case a.action == api.HookTrust:
+			b.Variant = ui.VariantDefault
+		}
 		b.Busy = running == a.key()
 		b.Disabled = running != "" && !b.Busy
 		row = append(row, layout.Rigid(b.Layout))
 	}
 	return layout.UniformInset(ui.Space(1.5)).Layout(gtx, func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 	})
 }

@@ -73,10 +73,13 @@ func (th *Theme) fade(c color.NRGBA) color.NRGBA {
 // its natural width, or the minimum constraint when wider (w-full), and
 // centers its content either way.
 type ButtonStyle struct {
-	Click    *Clickable
-	Text     string
-	Icon     *icons.Icon // leading, optional
-	Keys     string      // a key cap leading the text, the key that presses it
+	Click *Clickable
+	Text  string
+	Icon  *icons.Icon // leading, optional
+	Keys  string      // a key cap leading the text, the key that presses it
+	// AlsoKeys is a second key that presses it, in a cap after the text: a
+	// permission's one-time reject takes its digit and Esc.
+	AlsoKeys string
 	Variant  Variant
 	Size     Size
 	Disabled bool
@@ -196,6 +199,9 @@ func (b ButtonStyle) content(gtx C, geo buttonGeometry, fg color.NRGBA) D {
 		children = append(children, layout.Rigid(func(gtx C) D {
 			return b.theme.Text(geo.text, b.Text).In(fg).Weight(font.Medium).Layout(gtx)
 		}))
+	}
+	if b.AlsoKeys != "" {
+		children = append(children, layout.Rigid(layout.Spacer{Width: geo.gap}.Layout), layout.Rigid(b.theme.KeyCap(b.AlsoKeys).Layout))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }

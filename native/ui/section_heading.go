@@ -20,7 +20,7 @@ type SectionHeadingStyle struct {
 }
 
 func (th *Theme) SectionHeading(text string) SectionHeadingStyle {
-	return SectionHeadingStyle{Text: text, Size: TextXS, Weight: font.Medium, theme: th}
+	return SectionHeadingStyle{Text: text, Size: TextXS, Weight: font.SemiBold, theme: th}
 }
 
 func (h SectionHeadingStyle) Layout(gtx C) D {

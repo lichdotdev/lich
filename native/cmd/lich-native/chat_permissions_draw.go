@@ -73,7 +73,6 @@ func (t *chatTools) permissionsHead(gtx C, th *ui.Theme, l api.ChatPermissionLis
 			}
 			return d
 		}),
-		layout.Rigid(th.Separator),
 	)
 }
 
@@ -172,7 +171,6 @@ func (t *chatTools) addRuleView(gtx C, th *ui.Theme, l api.ChatPermissionList, r
 				in.Bare, in.Height = true, pickerRowH
 				return in.Layout(gtx)
 			}),
-			layout.Rigid(th.Separator),
 			layout.Rigid(func(gtx C) D {
 				return toolsGroupLine(th, i18n.T("chat.permissions.saveIn"), "")(gtx)
 			}),

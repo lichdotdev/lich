@@ -134,7 +134,7 @@ func (u *window) chatWorkerNote(gtx C, th *ui.Theme, p *chatPane, key string, en
 	if meta != "" {
 		row = append(row, ui.Gap(2), layout.Rigid(th.Text(ui.TextSM, meta).Muted().Layout))
 	}
-	row = append(row, ui.Gap(3), layout.Flexed(1, func(gtx C) D { return chatHairline(gtx, th) }))
+
 	children := []layout.FlexChild{layout.Rigid(func(gtx C) D {
 		return click.Layout(gtx, func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...) })
 	})}
@@ -157,7 +157,7 @@ func workerNoteText(env envelope) (title, meta, body string) {
 	who := i18n.Args{"label": env.from}
 	switch env.kind {
 	case "worker-finished":
-		return i18n.T("chat.notification.finished", who), i18n.T("chat.notification.answered"), env.text["summary"]
+		return i18n.T("chat.notification.finished", who), "", env.text["summary"]
 	case "worker-failed":
 		return i18n.T("chat.notification.failed", who), "", env.text["error"]
 	case "worker-stopped":

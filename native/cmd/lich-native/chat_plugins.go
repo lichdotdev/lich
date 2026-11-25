@@ -104,7 +104,7 @@ func (a chatPluginAction) key() string { return a.action + "|" + a.scope }
 
 // removes is whether a takes the plugin or the marketplace away.
 func (a chatPluginAction) removes() bool {
-	return a.action == api.PluginUninstall || a.action == api.MarketplaceRemove
+	return a.action == api.PluginUninstall || a.action == api.MarketplaceRemove || a.action == api.PermissionRemove
 }
 
 // chatPluginActions is what the detail offers on p, of what its provider takes:

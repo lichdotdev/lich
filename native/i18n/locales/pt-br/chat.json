@@ -86,7 +86,8 @@
       }
     },
     "latest": "Mais recente",
-    "newActivity": "Novidades"
+    "newActivity": "Novidades",
+    "edited": "Editados"
   },
   "done": {
     "done": "Concluído",
@@ -98,7 +99,7 @@
     "placeholder": "Pergunte ao {provider} sobre este projeto",
     "send": "Enviar",
     "stop": "Parar",
-    "shell": "Modo shell · Enter roda o comando"
+    "shell": "Modo shell"
   },
   "option": {
     "model": "Modelo",
@@ -110,8 +111,7 @@
   "permit": {
     "allowOnce": "Permitir",
     "allowAlways": "Sempre permitir",
-    "rejectOnce": "Negar",
-    "escDenies": "nega"
+    "rejectOnce": "Negar"
   },
   "choice": {
     "manual": "Manual",
@@ -177,7 +177,7 @@
     "sendNow": "Enviar agora",
     "count": {"one": "{count} na fila", "other": "{count} na fila"},
     "drop": "Tirar da fila",
-    "edit": "↑ edita a fila"
+    "edit": "editar"
   },
   "search": {
     "label": "Busque nas suas mensagens",
@@ -290,7 +290,7 @@
     }
   },
   "shells": {
-    "move": "Ctrl+B para rodar em segundo plano",
+    "move": "para o segundo plano",
     "count": {
       "one": "{count} shell",
       "other": "{count} shells"
@@ -314,7 +314,6 @@
   "workflow": {
     "count": "{name} {done}/{total}",
     "progress": "{done}/{total}",
-    "failed": "falhou",
     "agents": {
       "one": "{count} agente",
       "other": "{count} agentes"
@@ -523,6 +522,10 @@
       "off": "Os hooks estão desligados (disableAllHooks), então nenhum destes roda.",
       "safeMode": "O modo seguro está ligado, então estes hooks não rodam.",
       "bareMode": "O modo bare está ligado, então estes hooks não rodam."
+    },
+    "needTrust": {
+      "one": "{count} precisa de confiança",
+      "other": "{count} precisam de confiança"
     }
   },
   "memory": {
@@ -559,7 +562,6 @@
   "notification": {
     "from": "De {label}",
     "finished": "{label} terminou",
-    "answered": "respondeu",
     "failed": "{label} falhou",
     "stopped": "{label} foi encerrada",
     "stoppedBy": "por {label}",

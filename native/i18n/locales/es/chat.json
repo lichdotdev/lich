@@ -86,7 +86,8 @@
       }
     },
     "latest": "Lo último",
-    "newActivity": "Novedades"
+    "newActivity": "Novedades",
+    "edited": "Editados"
   },
   "done": {
     "done": "Hecho",
@@ -98,7 +99,7 @@
     "placeholder": "Pregúntale a {provider} sobre este proyecto",
     "send": "Enviar",
     "stop": "Detener",
-    "shell": "Modo shell · Enter ejecuta el comando"
+    "shell": "Modo shell"
   },
   "option": {
     "model": "Modelo",
@@ -110,8 +111,7 @@
   "permit": {
     "allowOnce": "Permitir",
     "allowAlways": "Permitir siempre",
-    "rejectOnce": "Denegar",
-    "escDenies": "deniega"
+    "rejectOnce": "Denegar"
   },
   "choice": {
     "manual": "Manual",
@@ -177,7 +177,7 @@
     "sendNow": "Enviar ahora",
     "count": {"one": "{count} en cola", "other": "{count} en cola"},
     "drop": "Quitar de la cola",
-    "edit": "↑ edita la cola"
+    "edit": "editar"
   },
   "search": {
     "label": "Busca en tus mensajes",
@@ -290,7 +290,7 @@
     }
   },
   "shells": {
-    "move": "Ctrl+B para ejecutar en segundo plano",
+    "move": "al segundo plano",
     "count": {
       "one": "{count} shell",
       "other": "{count} shells"
@@ -314,7 +314,6 @@
   "workflow": {
     "count": "{name} {done}/{total}",
     "progress": "{done}/{total}",
-    "failed": "falló",
     "agents": {
       "one": "{count} agente",
       "other": "{count} agentes"
@@ -523,6 +522,10 @@
       "off": "Los hooks están apagados (disableAllHooks), así que ninguno de estos se ejecuta.",
       "safeMode": "El modo seguro está activo, así que estos hooks no se ejecutan.",
       "bareMode": "El modo bare está activo, así que estos hooks no se ejecutan."
+    },
+    "needTrust": {
+      "one": "{count} necesita confianza",
+      "other": "{count} necesitan confianza"
     }
   },
   "memory": {
@@ -559,7 +562,6 @@
   "notification": {
     "from": "De {label}",
     "finished": "{label} terminó",
-    "answered": "respondió",
     "failed": "{label} falló",
     "stopped": "{label} se cerró",
     "stoppedBy": "por {label}",

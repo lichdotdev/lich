@@ -112,7 +112,8 @@
       }
     },
     "latest": "К последнему",
-    "newActivity": "Новые события"
+    "newActivity": "Новые события",
+    "edited": "Изменено"
   },
   "done": {
     "done": "Готово",
@@ -124,7 +125,7 @@
     "placeholder": "Спросите {provider} об этом проекте",
     "send": "Отправить",
     "stop": "Остановить",
-    "shell": "Режим оболочки · Enter выполняет команду"
+    "shell": "Режим оболочки"
   },
   "option": {
     "model": "Модель",
@@ -136,8 +137,7 @@
   "permit": {
     "allowOnce": "Разрешить",
     "allowAlways": "Всегда разрешать",
-    "rejectOnce": "Запретить",
-    "escDenies": "запрещает"
+    "rejectOnce": "Запретить"
   },
   "choice": {
     "manual": "Ручной",
@@ -205,7 +205,7 @@
     "sendNow": "Отправить сейчас",
     "count": {"one": "{count} в очереди", "few": "{count} в очереди", "many": "{count} в очереди", "other": "{count} в очереди"},
     "drop": "Убрать из очереди",
-    "edit": "↑ правка очереди"
+    "edit": "правка"
   },
   "search": {
     "label": "Поиск по вашим сообщениям",
@@ -336,7 +336,7 @@
     }
   },
   "shells": {
-    "move": "Ctrl+B, чтобы перевести в фон",
+    "move": "в фон",
     "count": {
       "one": "{count} оболочка",
       "few": "{count} оболочки",
@@ -364,7 +364,6 @@
   "workflow": {
     "count": "{name} {done}/{total}",
     "progress": "{done}/{total}",
-    "failed": "ошибка",
     "agents": {
       "one": "{count} агент",
       "few": "{count} агента",
@@ -597,6 +596,12 @@
       "off": "Хуки выключены (disableAllHooks), поэтому ни один из них не запускается.",
       "safeMode": "Включён безопасный режим, поэтому эти хуки не запускаются.",
       "bareMode": "Включён режим bare, поэтому эти хуки не запускаются."
+    },
+    "needTrust": {
+      "one": "{count} ждёт доверия",
+      "few": "{count} ждут доверия",
+      "many": "{count} ждут доверия",
+      "other": "{count} ждут доверия"
     }
   },
   "memory": {
@@ -637,7 +642,6 @@
   "notification": {
     "from": "От {label}",
     "finished": "{label}: готово",
-    "answered": "ответ получен",
     "failed": "{label}: сбой",
     "stopped": "{label}: закрыта",
     "stoppedBy": "закрыла {label}",

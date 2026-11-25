@@ -276,11 +276,6 @@ func (u *window) composerStrip(gtx C, th *ui.Theme, p *chatPane, fill color.NRGB
 				})
 			})
 		}),
-		layout.Rigid(func(gtx C) D {
-			size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(1))
-			paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: size}.Op())
-			return D{Size: size}
-		}),
 	)
 }
 

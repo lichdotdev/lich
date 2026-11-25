@@ -73,7 +73,8 @@
       }
     },
     "latest": "최신으로",
-    "newActivity": "새 활동"
+    "newActivity": "새 활동",
+    "edited": "편집함"
   },
   "done": {
     "done": "완료",
@@ -85,7 +86,7 @@
     "placeholder": "이 프로젝트에 대해 {provider}에게 물어보세요",
     "send": "보내기",
     "stop": "중지",
-    "shell": "셸 모드 · Enter로 명령 실행"
+    "shell": "셸 모드"
   },
   "option": {
     "model": "모델",
@@ -97,8 +98,7 @@
   "permit": {
     "allowOnce": "허용",
     "allowAlways": "항상 허용",
-    "rejectOnce": "거부",
-    "escDenies": "거부"
+    "rejectOnce": "거부"
   },
   "choice": {
     "manual": "수동",
@@ -163,7 +163,7 @@
     "sendNow": "지금 보내기",
     "count": {"other": "대기 중 {count}개"},
     "drop": "대기열에서 빼기",
-    "edit": "↑ 대기열 편집"
+    "edit": "편집"
   },
   "search": {
     "label": "보낸 메시지 검색",
@@ -267,7 +267,7 @@
     }
   },
   "shells": {
-    "move": "Ctrl+B로 백그라운드에서 실행",
+    "move": "백그라운드로",
     "count": {
       "other": "셸 {count}개"
     },
@@ -289,7 +289,6 @@
   "workflow": {
     "count": "{name} {done}/{total}",
     "progress": "{done}/{total}",
-    "failed": "실패",
     "agents": {
       "other": "에이전트 {count}개"
     },
@@ -486,6 +485,9 @@
       "off": "훅이 꺼져 있어 (disableAllHooks) 이 중 어느 것도 실행되지 않습니다.",
       "safeMode": "안전 모드라서 이 훅들은 실행되지 않습니다.",
       "bareMode": "베어 모드라서 이 훅들은 실행되지 않습니다."
+    },
+    "needTrust": {
+      "other": "{count}개 신뢰 필요"
     }
   },
   "memory": {
@@ -520,7 +522,6 @@
   "notification": {
     "from": "{label}에서 보냄",
     "finished": "{label} 완료",
-    "answered": "답변함",
     "failed": "{label} 실패",
     "stopped": "{label} 닫힘",
     "stoppedBy": "{label}이(가) 닫음",

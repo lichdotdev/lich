@@ -250,7 +250,7 @@ func (s *chatSlash) layout(gtx C, th *ui.Theme, room int) {
 	}
 	surfaceOverBox(gtx, th, &s.motion, max(min(gtx.Dp(slashMaxH), room), 0), func(gtx C, th *ui.Theme) D {
 		return th.ThinScrollArea(&s.list).Layout(gtx, len(shown), func(gtx C, i int) D {
-			return pickerRow(gtx, th, &s.rows[i], i == s.cursor, func(gtx C, th *ui.Theme) D {
+			return toolsPick(gtx, th, &s.rows[i], i == s.cursor, func(gtx C, th *ui.Theme) D {
 				return slashRow(gtx, th, shown[i], skills)
 			})
 		})

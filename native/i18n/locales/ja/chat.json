@@ -73,7 +73,8 @@
       }
     },
     "latest": "最新へ",
-    "newActivity": "新しい動き"
+    "newActivity": "新しい動き",
+    "edited": "編集"
   },
   "done": {
     "done": "完了",
@@ -85,7 +86,7 @@
     "placeholder": "このプロジェクトについて{provider}に質問",
     "send": "送信",
     "stop": "停止",
-    "shell": "シェルモード · Enterでコマンドを実行"
+    "shell": "シェルモード"
   },
   "option": {
     "model": "モデル",
@@ -97,8 +98,7 @@
   "permit": {
     "allowOnce": "許可",
     "allowAlways": "常に許可",
-    "rejectOnce": "拒否",
-    "escDenies": "で拒否"
+    "rejectOnce": "拒否"
   },
   "choice": {
     "manual": "手動",
@@ -163,7 +163,7 @@
     "sendNow": "今すぐ送信",
     "count": {"other": "{count}件待機中"},
     "drop": "キューから外す",
-    "edit": "↑ でキューを編集"
+    "edit": "編集"
   },
   "search": {
     "label": "送ったメッセージを検索",
@@ -267,7 +267,7 @@
     }
   },
   "shells": {
-    "move": "Ctrl+B でバックグラウンド実行",
+    "move": "バックグラウンドへ",
     "count": {
       "other": "シェル {count} 件"
     },
@@ -289,7 +289,6 @@
   "workflow": {
     "count": "{name} {done}/{total}",
     "progress": "{done}/{total}",
-    "failed": "失敗",
     "agents": {
       "other": "エージェント {count} 件"
     },
@@ -486,6 +485,9 @@
       "off": "フックがオフ (disableAllHooks) のため、どれも実行されません。",
       "safeMode": "セーフモードのため、これらのフックは実行されません。",
       "bareMode": "ベアモードのため、これらのフックは実行されません。"
+    },
+    "needTrust": {
+      "other": "{count} 件が信頼待ち"
     }
   },
   "memory": {
@@ -520,7 +522,6 @@
   "notification": {
     "from": "{label} から",
     "finished": "{label} が完了しました",
-    "answered": "回答済み",
     "failed": "{label} が失敗しました",
     "stopped": "{label} は閉じられました",
     "stoppedBy": "{label} が閉じました",

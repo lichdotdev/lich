@@ -86,7 +86,8 @@
       }
     },
     "latest": "Latest",
-    "newActivity": "New activity"
+    "newActivity": "New activity",
+    "edited": "Edited"
   },
   "done": {
     "done": "Done",
@@ -98,7 +99,7 @@
     "placeholder": "Ask {provider} about this project",
     "send": "Send",
     "stop": "Stop",
-    "shell": "Shell mode · Enter runs the command"
+    "shell": "Shell mode"
   },
   "option": {
     "model": "Model",
@@ -110,8 +111,7 @@
   "permit": {
     "allowOnce": "Allow",
     "allowAlways": "Always allow",
-    "rejectOnce": "Deny",
-    "escDenies": "denies"
+    "rejectOnce": "Deny"
   },
   "choice": {
     "manual": "Manual",
@@ -177,7 +177,7 @@
     "sendNow": "Send now",
     "count": {"one": "{count} queued", "other": "{count} queued"},
     "drop": "Remove from the queue",
-    "edit": "↑ edits the queue"
+    "edit": "edit"
   },
   "search": {
     "label": "Search your messages",
@@ -290,7 +290,7 @@
     }
   },
   "shells": {
-    "move": "Ctrl+B to run in background",
+    "move": "to the background",
     "count": {
       "one": "{count} shell",
       "other": "{count} shells"
@@ -314,7 +314,6 @@
   "workflow": {
     "count": "{name} {done}/{total}",
     "progress": "{done}/{total}",
-    "failed": "failed",
     "agents": {
       "one": "{count} agent",
       "other": "{count} agents"
@@ -523,6 +522,10 @@
       "off": "Hooks are turned off (disableAllHooks), so none of these run.",
       "safeMode": "Safe mode is on, so these hooks do not run.",
       "bareMode": "Bare mode is on, so these hooks do not run."
+    },
+    "needTrust": {
+      "one": "{count} needs trust",
+      "other": "{count} need trust"
     }
   },
   "memory": {
@@ -559,7 +562,6 @@
   "notification": {
     "from": "From {label}",
     "finished": "{label} finished",
-    "answered": "answered",
     "failed": "{label} failed",
     "stopped": "{label} was stopped",
     "stoppedBy": "by {label}",

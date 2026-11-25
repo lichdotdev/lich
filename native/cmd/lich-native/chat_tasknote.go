@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image"
 	"strconv"
 	"strings"
 
@@ -119,8 +120,7 @@ func (u *window) chatTaskNote(gtx C, th *ui.Theme, p *chatPane, kind, key string
 			layout.Flexed(1, func(gtx C) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 					layout.Rigid(th.Text(ui.TextSM, n.summary).Weight(font.Medium).In(tone).Layout),
-					ui.Gap(3),
-					layout.Flexed(1, func(gtx C) D { return chatHairline(gtx, th) }),
+					layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
 				)
 			}),
 		}

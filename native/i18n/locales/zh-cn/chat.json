@@ -73,7 +73,8 @@
       }
     },
     "latest": "最新",
-    "newActivity": "新动态"
+    "newActivity": "新动态",
+    "edited": "已编辑"
   },
   "done": {
     "done": "完成",
@@ -85,7 +86,7 @@
     "placeholder": "向 {provider} 询问有关此项目的问题",
     "send": "发送",
     "stop": "停止",
-    "shell": "Shell 模式 · 按 Enter 运行命令"
+    "shell": "Shell 模式"
   },
   "option": {
     "model": "模型",
@@ -97,8 +98,7 @@
   "permit": {
     "allowOnce": "允许",
     "allowAlways": "始终允许",
-    "rejectOnce": "拒绝",
-    "escDenies": "拒绝"
+    "rejectOnce": "拒绝"
   },
   "choice": {
     "manual": "手动",
@@ -163,7 +163,7 @@
     "sendNow": "立即发送",
     "count": {"other": "{count} 条排队中"},
     "drop": "移出队列",
-    "edit": "↑ 编辑队列"
+    "edit": "编辑"
   },
   "search": {
     "label": "搜索已发送的消息",
@@ -267,7 +267,7 @@
     }
   },
   "shells": {
-    "move": "Ctrl+B 转到后台运行",
+    "move": "转到后台",
     "count": {
       "other": "{count} 个 shell"
     },
@@ -289,7 +289,6 @@
   "workflow": {
     "count": "{name} {done}/{total}",
     "progress": "{done}/{total}",
-    "failed": "失败",
     "agents": {
       "other": "{count} 个智能体"
     },
@@ -486,6 +485,9 @@
       "off": "钩子已关闭（disableAllHooks），所以这些都不会运行。",
       "safeMode": "安全模式已开启，所以这些钩子不会运行。",
       "bareMode": "精简模式已开启，所以这些钩子不会运行。"
+    },
+    "needTrust": {
+      "other": "{count} 个待信任"
     }
   },
   "memory": {
@@ -520,7 +522,6 @@
   "notification": {
     "from": "来自 {label}",
     "finished": "{label} 已完成",
-    "answered": "已回复",
     "failed": "{label} 失败了",
     "stopped": "{label} 已被关闭",
     "stoppedBy": "由 {label} 关闭",

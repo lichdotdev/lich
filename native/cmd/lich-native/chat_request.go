@@ -91,7 +91,7 @@ func (u *window) requestRows(gtx C, th *ui.Theme, p *chatPane, key string, f *ch
 		}))
 	}
 	if f.open {
-		rows = append(rows, ui.VGap(2), layout.Rigid(func(gtx C) D { return chatHairline(gtx, th) }), ui.VGap(2),
+		rows = append(rows, ui.VGap(3),
 			layout.Rigid(th.Text(ui.TextXS, expandTabs(env.text["prompt"])).Muted().Wrapped().Layout))
 	}
 	return rows

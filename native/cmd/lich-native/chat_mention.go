@@ -244,7 +244,7 @@ func (m *chatMention) layout(gtx C, th *ui.Theme, room int) {
 	}
 	surfaceOverBox(gtx, th, &m.motion, max(min(gtx.Dp(slashMaxH), room), 0), func(gtx C, th *ui.Theme) D {
 		return th.ThinScrollArea(&m.list).Layout(gtx, len(shown), func(gtx C, i int) D {
-			return pickerRow(gtx, th, &m.rows[i], i == m.cursor, func(gtx C, th *ui.Theme) D {
+			return toolsPick(gtx, th, &m.rows[i], i == m.cursor, func(gtx C, th *ui.Theme) D {
 				return mentionRow(gtx, th, shown[i])
 			})
 		})

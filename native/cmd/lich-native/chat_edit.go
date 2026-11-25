@@ -1,7 +1,6 @@
 package main
 
 import (
-	"image"
 	"path"
 	"path/filepath"
 	"strings"
@@ -9,8 +8,6 @@ import (
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -24,7 +21,8 @@ const diffNoFile = "/dev/null"
 // chatEdit is a call that changed a file: one line with the file's type, its
 // path and its counts, the diff under it once clicked; a Ctrl+click opens the
 // file instead. While the call runs its path shimmers; failed, it says so.
-// Edits one after another share one ground, the first of them heading it.
+// Edits one after another are one group under a label, the first of them
+// heading it; the group stands on the conversation, with no ground.
 func (u *window) chatEdit(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
 	t := r.item.Tool
 	if t == nil {
@@ -73,41 +71,20 @@ func (u *window) chatEdit(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r ch
 			}
 			return f.body.Layout(gtx, f.open, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-					layout.Rigid(func(gtx C) D {
-						gtx.Constraints.Min = image.Pt(gtx.Constraints.Max.X, gtx.Dp(1))
-						return ui.Fill(gtx, th.Over(th.Border), 0)
-					}),
+					ui.VGap(1),
 					layout.Rigid(func(gtx C) D { return u.chatEditDiff(gtx, th.On(th.Background), p, f, t.Diff, body) }),
 				)
 			})
 		}),
 	)
 	call := m.Stop()
-	defer chatEditGround(gtx, r, d.Size).Push(gtx.Ops).Pop()
-	paint.Fill(gtx.Ops, ui.MixOKLab(th.Card, th.Background, chatEditTint))
 	call.Add(gtx.Ops)
 	return d
 }
 
-// chatEditTint is how far an edit's ground goes from Card toward the
-// conversation's Background: a tint, not a box.
-const chatEditTint = 0.3
-
-// chatEditGround is the shape of edit row r's ground: RadiusLG at the corners
-// of its group's outer edge, square where another edit row joins it.
-func chatEditGround(gtx C, r chatRow, size image.Point) clip.RRect {
-	top, bottom := gtx.Dp(ui.RadiusLG), gtx.Dp(ui.RadiusLG)
-	if r.editAbove {
-		top = 0
-	}
-	if r.editBelow {
-		bottom = 0
-	}
-	return clip.RRect{Rect: image.Rectangle{Max: size}, NW: top, NE: top, SE: bottom, SW: bottom}
-}
-
-// chatEditsHead heads a group of edits: how many files they changed and all
-// their lines; a click opens Review, as the footer's changes item does.
+// chatEditsHead heads a group of edits, a group's label: EDITED, how many
+// files muted and all their lines in the tones; a click opens Review, as the
+// footer's changes item does.
 func (u *window) chatEditsHead(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
 	f := p.fold("edits:" + r.item.ID)
 	if f.click.Clicked(gtx) {
@@ -123,13 +100,14 @@ func (u *window) chatEditsHead(gtx C, th *ui.Theme, p *chatPane, sv sessionView,
 		_, a, d, _ := splitDiff(it.Tool.Diff)
 		added, deleted = added+a, deleted+d
 	}
-	label := chatEditsLabel(len(files))
 	return f.click.Layout(gtx, func(gtx C) D {
 		return layout.Background{}.Layout(gtx, chatEditHoverFill(th, &f.click), func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
 			return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Flexed(1, th.Text(ui.TextSM, label).Weight(font.Medium).Layout),
+					layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(i18n.T("chat.view.edited"))).Muted().Weight(font.SemiBold).Leading(text2XSLeading).Layout),
+					ui.Gap(1.5),
+					layout.Flexed(1, th.Text(ui.TextXS, chatEditsCount(len(files))).Muted().Layout),
 					ui.Gap(2),
 					layout.Rigid(th.DiffStat(added, deleted).Layout),
 					ui.Gap(2),
@@ -140,10 +118,9 @@ func (u *window) chatEditsHead(gtx C, th *ui.Theme, p *chatPane, sv sessionView,
 	})
 }
 
-// chatEditsLabel is the head of a group of edits, "Edited 3 files": the fold's
-// own clause for its edits, read on its own.
-func chatEditsLabel(files int) string {
-	return raiseFirst(i18n.T("chat.view.calls.edited", i18n.Args{"count": files}))
+// chatEditsCount is how many files a group of edits changed, beside its label.
+func chatEditsCount(files int) string {
+	return i18n.T("common.count.file", i18n.Args{"count": files})
 }
 
 // chatEditHover is how much of Accent the line takes under the pointer, the
@@ -158,6 +135,25 @@ func chatEditHoverFill(th *ui.Theme, click *ui.Clickable) layout.Widget {
 		return ui.Fill(gtx, th.Over(ui.Alpha(th.Accent, chatEditHover)), ui.RadiusMD)
 	}
 }
+
+// chatEditFailure is a failed edit's end: the failed glyph and the first line
+// of what the tool answered, which says why, cut to the room left.
+func chatEditFailure(gtx C, th *ui.Theme, t *backend.ChatToolCall) D {
+	why := cleanLine(t.Output)
+	if why == "" {
+		why = i18n.T("chat.view.toolFailed")
+	}
+	gtx.Constraints.Max.X = int(float32(gtx.Constraints.Max.X) * chatEditWhyShare)
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return icToolsFailed.Layout(gtx, ui.Space(3.5), th.Destructive) }),
+		ui.Gap(1.5),
+		layout.Flexed(1, th.Text(ui.TextXS, why).Mono().In(th.Destructive).Truncated().Layout),
+	)
+}
+
+// chatEditWhyShare is how much of the line's room a failure's reason may take,
+// leaving the file's name in view.
+const chatEditWhyShare = 0.5
 
 // chatEditLine is the edit's line: the file's type, its name, its folder
 // muted and cut first when the line is short, the counts once done or why it
@@ -185,7 +181,7 @@ func chatEditLine(gtx C, th *ui.Theme, f *chatFold, t *backend.ChatToolCall, fil
 			case running:
 				return D{}
 			case t.State == api.ToolFailed:
-				return th.Text(ui.TextSM, i18n.T("chat.view.toolFailed")).In(th.Destructive).Layout(gtx)
+				return chatEditFailure(gtx, th, t)
 			}
 			return th.DiffStat(added, deleted).Layout(gtx)
 		}),

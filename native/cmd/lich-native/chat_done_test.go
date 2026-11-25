@@ -24,15 +24,17 @@ func TestADoneLineNamesHowTheTurnEnded(t *testing.T) {
 	}
 }
 
+// The group's head is the EDITED label and how many files, in the plural the
+// language takes (contract changed: it was one sentence, "Edited 3 files").
 func TestAGroupOfEditsReadsAsTheFilesItChanged(t *testing.T) {
-	for count, want := range map[int]string{1: "Edited 1 file", 3: "Edited 3 files"} {
-		if got := chatEditsLabel(count); got != want {
+	for count, want := range map[int]string{1: "1 file", 3: "3 files"} {
+		if got := chatEditsCount(count); got != want {
 			t.Errorf("%d files read %q, want %q", count, got, want)
 		}
 	}
 	defer i18n.SetCurrent(i18n.EN)
 	i18n.SetCurrent(i18n.RU)
-	if got := chatEditsLabel(2); got != "Изменено 2 файла" {
+	if got := chatEditsCount(2); got != "2 файла" {
 		t.Errorf("two files in Russian read %q, want its few form", got)
 	}
 }

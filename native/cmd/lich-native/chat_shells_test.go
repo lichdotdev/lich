@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/lichdotdev/lich/native/i18n"
 	"slices"
 	"strings"
 	"testing"
@@ -188,7 +189,8 @@ func TestCtrlBMovesTheCommandTheTurnWaitsOn(t *testing.T) {
 	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
 	r.frames(3)
 	writeShot(t, r, "chat-background-hint.png")
-	if !r.shows("· Ctrl+B to run in background") {
+	// Ctrl+B in a cap beside what it does (contract changed: it was a sentence)
+	if !r.showsAll("Ctrl+B", i18n.T("chat.shells.move")) {
 		t.Fatalf("no hint while the turn waits on a command:\n%s", r.drawn())
 	}
 	r.pressWith("B", key.ModCtrl)

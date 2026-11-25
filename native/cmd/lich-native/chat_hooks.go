@@ -5,7 +5,6 @@ import (
 	"slices"
 	"strings"
 
-	"gioui.org/font"
 	"gioui.org/layout"
 
 	"github.com/lichdotdev/lich/api"
@@ -94,7 +93,7 @@ func (u *window) hooksView(gtx C, th *ui.Theme, p *chatPane, sv sessionView) D {
 	for i, h := range l.Hooks {
 		if h.Event != event {
 			event = h.Event
-			lines = append(lines, hookEventLine(th, h))
+			lines = append(lines, toolsGroupLine(th, h.Event, h.Summary))
 		}
 		lines = append(lines, func(gtx C) D {
 			return toolsPick(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return hookRow(gtx, th, h) })
@@ -110,22 +109,25 @@ func (u *window) hooksView(gtx C, th *ui.Theme, p *chatPane, sv sessionView) D {
 	if len(l.Errors) > 0 {
 		notes = append(notes, i18n.T("chat.permissions.skipped", i18n.Args{"files": strings.Join(l.Errors, "; ")}))
 	}
+	count := []toned{{text: i18n.T("chat.plugins.part.hooks", i18n.Args{"count": len(l.Hooks)})}}
+	if n := hooksUntrusted(l.Hooks); n > 0 {
+		count = append(count, toned{text: i18n.T("chat.hooks.needTrust", i18n.Args{"count": n}), ink: th.ToneWait})
+	}
 	head := func(gtx C) D {
-		return toolsHead(gtx, th, i18n.T("chat.hooks.title"), i18n.T("chat.plugins.part.hooks", i18n.Args{"count": len(l.Hooks)}), nil)
+		return toolsHeadTones(gtx, th, i18n.T("chat.hooks.title"), count, nil)
 	}
 	return t.scrolled(gtx, th, head, lines, footNotes(th, notes))
 }
 
-func hookEventLine(th *ui.Theme, h api.ChatHook) layout.Widget {
-	return func(gtx C) D {
-		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(2), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(th.Text(ui.TextXS, h.Event).Weight(font.SemiBold).Layout),
-				ui.Gap(1.5),
-				layout.Flexed(1, th.Text(ui.TextXS, h.Summary).Muted().Truncated().Layout),
-			)
-		})
+// hooksUntrusted counts the hooks waiting for the person's trust.
+func hooksUntrusted(hooks []api.ChatHook) int {
+	n := 0
+	for _, h := range hooks {
+		if h.Trust == api.HookUntrusted || h.Trust == api.HookModified {
+			n++
+		}
 	}
+	return n
 }
 
 // hookState is a hook's glyph and whether it runs, in words.

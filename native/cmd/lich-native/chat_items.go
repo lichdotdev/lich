@@ -470,13 +470,6 @@ func chatEarlierCalls(gtx C, th *ui.Theme, earlier *chatFold, hidden int) D {
 	})
 }
 
-// chatHairline is a 1px rule in Border across the room it is given.
-func chatHairline(gtx C, th *ui.Theme) D {
-	size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(1))
-	paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: size}.Op())
-	return D{Size: size}
-}
-
 // chatBranch lays w to the right of a connector from the fold's line: a thin
 // vertical line in Border under the fold's chevron, with a stub into the row,
 // and ending there on the last row, as the sidebar's tree links its children.
@@ -645,7 +638,7 @@ func cleanLine(s string) string {
 func expandTabs(s string) string { return strings.ReplaceAll(s, "\t", hunkTab) }
 
 // chatDiff is a tool's diff as a small window on the window's background: the
-// file's name and its +added -deleted over a hairline, then the hunks, each
+// file's name and its +added -deleted, then the hunks, each
 // added or removed line in its tone, as a thread's hunk is (hunkTail).
 func chatDiff(gtx C, th *ui.Theme, diff string) D {
 	name, added, deleted, body := splitDiff(diff)
@@ -657,7 +650,6 @@ func chatDiff(gtx C, th *ui.Theme, diff string) D {
 	d := layout.Background{}.Layout(gtx,
 		func(gtx C) D { return ui.Fill(gtx, th.Background, ui.RadiusMD) },
 		func(gtx C) D { return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...) })
-	ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusMD), th.Over(th.Border))
 	return d
 }
 
@@ -677,22 +669,13 @@ func chatDiffLines(gtx C, th *ui.Theme, body []string) D {
 }
 
 func chatDiffHead(gtx C, th *ui.Theme, name string, added, deleted int) D {
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Flexed(1, th.Text(ui.TextXS, name).Mono().Weight(font.Medium).Truncated().Layout),
-					ui.Gap(2),
-					layout.Rigid(th.DiffStat(added, deleted).Layout),
-				)
-			})
-		}),
-		layout.Rigid(func(gtx C) D {
-			h := gtx.Dp(1)
-			gtx.Constraints.Min = image.Pt(gtx.Constraints.Max.X, h)
-			return ui.Fill(gtx, th.Over(th.Border), 0)
-		}),
-	)
+	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Flexed(1, th.Text(ui.TextXS, name).Mono().Weight(font.Medium).Truncated().Layout),
+			ui.Gap(2),
+			layout.Rigid(th.DiffStat(added, deleted).Layout),
+		)
+	})
 }
 
 // splitDiff is a unified diff's file name, its added and deleted lines and the
@@ -738,9 +721,10 @@ func permitLabel(o api.ChatPermitOption) string {
 }
 
 // chatPermission is the agent asking before a tool runs: a box with the
-// tool, its diff and a button per answer the provider offers, each with the
-// digit that takes it, the suggested one filled, and Esc's hint when it has a
-// one-time reject. Answered, it is a muted line with the answer.
+// tool, its diff and a button per answer the provider offers at the row's
+// right, in the provider's order, each with the digit that takes it, the
+// suggested one filled, and Esc in the one-time reject it takes. Answered, it
+// is a muted line with the answer.
 func chatPermission(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
 	perm := it.Permission
 	tool := strings.TrimSpace(perm.Tool.Name + " " + cleanLine(perm.Tool.Title))
@@ -755,12 +739,16 @@ func chatPermission(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
 	}
 	box := th.On(th.Sidebar)
 	primary := permitSuggested(perm)
-	var buttons []layout.FlexChild
+	reject := permitOption(perm, api.PermitRejectOnce)
+	buttons := []layout.FlexChild{layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} })}
 	for i, o := range perm.Options {
 		if i > 0 {
 			buttons = append(buttons, ui.Gap(1.5))
 		}
 		b := box.Button(p.answer(it.ID, o.ID), permitLabel(o))
+		if o.ID == reject {
+			b.AlsoKeys = "Esc"
+		}
 		b.Size, b.Variant = ui.SizeSM, ui.VariantOutline
 		if i < permitDigits(perm) {
 			b.Keys = strconv.Itoa(i + 1)
@@ -769,10 +757,6 @@ func chatPermission(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
 			b.Variant = ui.VariantDefault
 		}
 		buttons = append(buttons, layout.Rigid(b.Layout))
-	}
-	if permitOption(perm, api.PermitRejectOnce) != "" {
-		buttons = append(buttons, layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
-			layout.Rigid(box.KeyHint("Esc", i18n.T("chat.permit.escDenies")).Layout))
 	}
 	return layout.Background{}.Layout(gtx,
 		func(gtx C) D { return ui.Fill(gtx, th.Sidebar, ui.RadiusMD) },
@@ -848,7 +832,8 @@ func chatLive(gtx C, th *ui.Theme, verbs, session string, r chatRow) D {
 		}),
 	}
 	if r.movable {
-		row = append(row, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextSM, "· "+i18n.T("chat.shells.move")).Muted().Layout))
+		row = append(row, ui.Gap(2), layout.Rigid(th.KeyCap("Ctrl+B").Layout), ui.Gap(1.5),
+			layout.Rigid(th.Text(ui.TextSM, i18n.T("chat.shells.move")).Muted().Layout))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 }
