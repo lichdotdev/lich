@@ -847,7 +847,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   lich learns which one holds it from the `lich@beta` directory under `/opt/homebrew/Caskroom` or
   `/usr/local/Caskroom`; a Homebrew under any other prefix is taken for `lich`. The Windows installer updates
   from the button as on stable; a deb or rpm install pins `install.sh` to the tag (`LICH_TAG`), and Arch builds the PKGBUILD the
-  pre-release ships, under the AUR's own `lich-bin` name, so the next stable release from the AUR replaces it.
+  pre-release ships with `LICH_PKGNAME` set to the installed package's own name — `lich-bin` from the AUR
+  (`/usr/bin`), `lich` from install.sh (`/usr/local/bin`) — so pacman takes it as an upgrade and the next
+  stable release replaces it under that name. A different name is a package conflict, which `--noconfirm`
+  refuses, and the stable command follows the same split: the AUR helper for `lich-bin`, install.sh for `lich`.
   Back on stable, a pre-release build is never moved down: it waits for the release it precedes. Only tags
   shaped `X.Y.Z-label.N` count as pre-releases (`semver.IsPreRelease`); a build between tags never updates.
 

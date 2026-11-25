@@ -11,6 +11,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **A Homebrew install follows the beta channel through the `lich@beta` cask.** Pick Beta in Settings › Updates › Channel, and the update command swaps the cask for you.
 
+### Fixed
+
+- **Switching between stable and beta on Arch is an ordinary package upgrade, with no removal by hand.** The update keeps the name of the package you installed, `lich` from install.sh or `lich-bin` from the AUR.
+
 ## [0.93.0] - 2026-11-25
 
 ### Added
