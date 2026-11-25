@@ -4,6 +4,7 @@ import (
 	"cmp"
 	"context"
 	"database/sql"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"os"
@@ -68,32 +69,53 @@ func (s *Service) DeleteGlobalSetting(key string) error {
 	return nil
 }
 
-// modelKey is the settings key holding the model last picked in a chat of this
-// provider, global because the choice is about the provider rather than about
-// one project or one session.
+// modelKey and effortKey are the settings keys holding the model and effort a
+// new chat of this provider starts on, as Settings › Providers names them:
+// global because the choice is about the provider rather than one project.
+// Picking another one in a chat moves only that session.
 func modelKey(providerID string) string {
 	return "provider." + providerID + ".model"
 }
 
-// ProviderModel is the model a new session of providerID starts on: the one
-// last picked in any of its chats, "" for none or on a read failure. An empty
-// answer leaves the provider on its own default, as SessionModel's does.
+func effortKey(providerID string) string {
+	return "provider." + providerID + ".effort"
+}
+
+// ProviderModel is the model a new chat of providerID starts on, "" for none
+// or on a read failure. An empty answer leaves the provider on its own
+// default, as SessionModel's does.
 func (s *Service) ProviderModel(providerID string) string {
-	value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: modelKey(providerID)})
+	return s.globalSetting(modelKey(providerID))
+}
+
+// ProviderEffort is ProviderModel for the reasoning effort.
+func (s *Service) ProviderEffort(providerID string) string {
+	return s.globalSetting(effortKey(providerID))
+}
+
+func (s *Service) globalSetting(key string) string {
+	value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: key})
 	if err != nil {
 		return ""
 	}
 	return value
 }
 
-// rememberProviderModel records model as what a new session of providerID
-// starts on. A model cleared this way is remembered as none, so the next
-// session goes back to the provider's own default.
-func (s *Service) rememberProviderModel(providerID, model string) error {
-	if model == "" {
-		return s.DeleteGlobalSetting(modelKey(providerID))
+// choicesKey is the settings key holding what the last chat of a provider
+// offered for one option category, which Settings › Providers lists as the
+// preferences to pick from: no chat open, no other place names them.
+func choicesKey(providerID, category string) string {
+	return "provider." + providerID + "." + category + ".choices"
+}
+
+// SetProviderChoices records the choices a chat of providerID offers for
+// category, replacing what an earlier chat offered.
+func (s *Service) SetProviderChoices(providerID, category string, choices []api.ChatChoice) error {
+	data, err := json.Marshal(choices)
+	if err != nil {
+		return fmt.Errorf("encode the %s choices of %q: %w", category, providerID, err)
 	}
-	_, err := s.SetSetting(context.Background(), api.SetSettingOptions{Key: modelKey(providerID), Value: model})
+	_, err = s.SetSetting(context.Background(), api.SetSettingOptions{Key: choicesKey(providerID, category), Value: string(data)})
 	return err
 }
 

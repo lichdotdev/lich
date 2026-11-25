@@ -141,6 +141,8 @@ func providerEntries() []settingEntry {
 		{titleKey: "settings.planUsageSetting.title", alsoKey: "settings.planUsageSetting.searchWords", perProvider: true},
 		{titleKey: "settings.providerBinary.title", alsoKey: "settings.providerBinary.searchWords", perProvider: true},
 		{titleKey: "settings.providerBinSettings.skipTitle", alsoKey: "settings.providerBinSettings.skipSearchWords", perProvider: true, onlyFor: kindsWhere(hasSkipFlag)},
+		{titleKey: "settings.chatPrefSetting.modelTitle", alsoKey: "settings.chatPrefSetting.modelSearchWords", perProvider: true, onlyFor: kindsWhere(hasChatPrefs)},
+		{titleKey: "settings.chatPrefSetting.effortTitle", alsoKey: "settings.chatPrefSetting.effortSearchWords", perProvider: true, onlyFor: kindsWhere(hasChatPrefs)},
 		{titleKey: "settings.ultracodeSetting.title", alsoKey: "settings.ultracodeSetting.searchWords", perProvider: true, onlyFor: kindsWhere(supportsUltracode)},
 		{titleKey: "settings.pasteUnfoldSetting.title", alsoKey: "settings.pasteUnfoldSetting.searchWords", perProvider: true, onlyFor: kindsWhere(hasPasteUnfold)},
 		{titleKey: "settings.restoreSetting.title", alsoKey: "settings.restoreSetting.searchWords", perProvider: true, onlyFor: kindsWhere(canResume)},
@@ -197,6 +199,9 @@ func providerGlobalKeys(kind string) []string {
 	}
 	if hasPasteUnfold(kind) {
 		keys = append(keys, providerPasteKey(kind))
+	}
+	if hasChatPrefs(kind) {
+		keys = append(keys, chatPrefKeys(kind)...)
 	}
 	return keys
 }
@@ -424,6 +429,8 @@ type providerSettings struct {
 	// and xdg those of the link-home providers, by kind.
 	claude, codex, omp profileSettings
 	xdg                map[string]*profileSettings
+
+	model, effort chatPrefPicker
 
 	skip, restore  ui.Enum
 	ultra          ui.SwitchState

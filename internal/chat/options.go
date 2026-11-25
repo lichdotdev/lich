@@ -157,6 +157,7 @@ func (c *chatSession) setOptions(opts []api.ChatOption) {
 		return
 	}
 	events.Send(c.svc.hub.Emit, api.ChatOptionsEvent, api.ChatOptionsUpdate{SessionID: c.id, Options: opts})
+	c.recordChoices(was, opts)
 	if opened {
 		c.recordChanges(was, opts)
 	}
@@ -178,6 +179,26 @@ func (c *chatSession) recordChanges(was, now []api.ChatOption) {
 			if err := c.svc.remember(c.id, category, value); err != nil {
 				slog.Warn("chat: record the setting", "session", c.id, "category", category, "err", err)
 			}
+		}
+	}
+}
+
+// recordChoices keeps what the chat offers for the model and the effort as
+// its provider's, the list Settings › Providers names a preference from.
+func (c *chatSession) recordChoices(was, now []api.ChatOption) {
+	choices := func(opts []api.ChatOption, category string) []api.ChatChoice {
+		if i := slices.IndexFunc(opts, func(o api.ChatOption) bool { return o.Category == category }); i >= 0 {
+			return opts[i].Choices
+		}
+		return nil
+	}
+	for _, category := range []string{api.OptionModel, api.OptionEffort} {
+		list := choices(now, category)
+		if len(list) == 0 || reflect.DeepEqual(list, choices(was, category)) {
+			continue
+		}
+		if err := c.svc.store.SetProviderChoices(c.kind, category, list); err != nil {
+			slog.Warn("chat: record the provider's choices", "kind", c.kind, "category", category, "err", err)
 		}
 	}
 }

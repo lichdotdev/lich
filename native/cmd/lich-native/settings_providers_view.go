@@ -10,6 +10,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -97,6 +98,8 @@ func (s *settingsScreen) providerPaneClicks(gtx C) {
 	for id, st := range pr.rows {
 		if st.open.Clicked(gtx) {
 			pr.open = id
+			// What its chats offered is written by them, after the book was read.
+			s.providersChanged()
 		}
 	}
 }
@@ -493,6 +496,21 @@ func (s *settingsScreen) providerScreenRows(th *ui.Theme, values scopedValues, m
 			add(i18n.T("settings.planUsageSetting.title"), func(gtx C, first bool) D { return s.planBlock(gtx, th, values, plan, first, "") })
 		}
 		add(i18n.T("settings.providerBinary.title"), func(gtx C, first bool) D { return s.binBlock(gtx, th, values, m, p, first) })
+	}
+	if hasChatPrefs(p.id) {
+		for _, pref := range []struct {
+			category, titleKey string
+			picker             *chatPrefPicker
+		}{
+			{api.OptionModel, "settings.chatPrefSetting.modelTitle", &s.providers.model},
+			{api.OptionEffort, "settings.chatPrefSetting.effortTitle", &s.providers.effort},
+		} {
+			if chatPrefShown(pref.category, chatPrefChoices(m.globals[providerChoicesKey(p.id, pref.category)]), m.globals[providerPrefKey(p.id, pref.category)]) {
+				add(i18n.T(pref.titleKey), func(gtx C, first bool) D {
+					return s.chatPrefRow(gtx, th, values, m, p, pref.category, pref.picker, first)
+				})
+			}
+		}
 	}
 	if hasSkipFlag(p.id) {
 		add(i18n.T("settings.providerBinSettings.skipTitle"), func(gtx C, first bool) D { return s.skipBlock(gtx, th, values, m, p, first) })

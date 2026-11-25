@@ -310,6 +310,17 @@
     "searchWords": "工作流 编排 多智能体 强度",
     "description": "每个 {provider} 会话启动时都开启 ultracode，无论以哪种强度运行，都会编排多智能体工作流。会话重启或恢复后仍保持开启。"
   },
+  "chatPrefSetting": {
+    "modelTitle": "模型",
+    "modelSearchWords": "模型 model 聊天 默认",
+    "modelDescription": "新的 {provider} 聊天使用此模型启动。终端会话沿用 {provider} 自身设置的模型。",
+    "effortTitle": "思考强度",
+    "effortSearchWords": "思考 推理 effort thinking 聊天 默认",
+    "effortDescription": "新的 {provider} 聊天以此思考强度启动。终端会话沿用 {provider} 自身设置的思考强度。",
+    "default": "{provider} 默认",
+    "noChoices": "打开一次 {provider} 聊天，它的选项就会显示在这里。",
+    "search": "搜索"
+  },
   "sandboxSettings": {
     "rung": {
       "off": "关闭",

@@ -330,42 +330,76 @@ func TestSessionModelRoundTrips(t *testing.T) {
 	}
 }
 
-// TestNewSessionStartsOnTheProvidersLastModel pins what a new session of a
-// provider is born on after one of its chats picked a model: that model, not
-// the provider's own default, and only for that provider.
-func TestNewSessionStartsOnTheProvidersLastModel(t *testing.T) {
+// TestChatSessionBornOnProviderPreference pins what a new session is born on:
+// the model and effort Settings › Providers names for its provider when it is
+// drawn as a chat, and nothing when it is a terminal, which runs on the
+// provider's own configuration. A pick in a chat stays that session's.
+func TestChatSessionBornOnProviderPreference(t *testing.T) {
 	svc := newTestStore(t)
+	svc.SetChatKinds(func(kind string) bool { return kind != providers.Crush })
 	_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: "p1", Name: "alpha", Path: "/tmp/alpha"})
-	add := func(id, kind string, seq int) {
+	seq := 1
+	add := func(id, kind string) {
 		t.Helper()
+		seq++
 		if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: "p1", SessionID: id, Label: id, Kind: kind, NextSeq: seq}); err != nil {
 			t.Fatalf("AddSession(%s): %v", id, err)
 		}
 	}
+	set := func(key, value string) {
+		t.Helper()
+		if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: key, Value: value}); err != nil {
+			t.Fatalf("SetSetting(%s): %v", key, err)
+		}
+	}
+	born := func(id, wantModel, wantEffort string) {
+		t.Helper()
+		if got := svc.SessionModel(id); got != wantModel {
+			t.Errorf("%s model = %q, want %q", id, got, wantModel)
+		}
+		if got := svc.SessionEffort(id); got != wantEffort {
+			t.Errorf("%s effort = %q, want %q", id, got, wantEffort)
+		}
+	}
 
-	add("oc1", providers.OpenCode, 2)
+	add("oc1", providers.OpenCode)
+	born("oc1", "", "")
 	if err := svc.SetSessionModel("oc1", "anthropic/claude-sonnet"); err != nil {
 		t.Fatalf("SetSessionModel: %v", err)
 	}
-	add("oc2", providers.OpenCode, 3)
-	if got := svc.SessionModel("oc2"); got != "anthropic/claude-sonnet" {
-		t.Errorf("new opencode session model = %q, want the last picked", got)
-	}
-	add("cc1", providers.Claude, 4)
-	if got := svc.SessionModel("cc1"); got != "" {
-		t.Errorf("new claude session model = %q, want the provider's default", got)
-	}
+	add("oc2", providers.OpenCode)
+	born("oc2", "", "")
 
-	if err := svc.SetSessionModel("cc1", "opus"); err != nil {
-		t.Fatalf("SetSessionModel: %v", err)
+	set("provider.opencode.model", "anthropic/claude-opus")
+	set("provider.opencode.effort", "high")
+	add("oc3", providers.OpenCode)
+	born("oc3", "anthropic/claude-opus", "high")
+	add("cc1", providers.Claude)
+	born("cc1", "", "")
+	add("cr1", providers.Crush)
+	set("provider.crush.model", "gpt")
+	add("cr2", providers.Crush)
+	born("cr2", "", "")
+
+	set(SessionViewKey, api.ViewTerminal)
+	add("oc4", providers.OpenCode)
+	born("oc4", "", "")
+}
+
+// TestProviderChoicesReadAsJSON pins the shape Settings › Providers reads the
+// last chat's choices in: a JSON list under provider.<id>.<category>.choices.
+func TestProviderChoicesReadAsJSON(t *testing.T) {
+	svc := newTestStore(t)
+	choices := []api.ChatChoice{{ID: "opus", Label: "Opus"}, {ID: "sonnet", Label: "Sonnet"}}
+	if err := svc.SetProviderChoices(providers.Claude, api.OptionModel, choices); err != nil {
+		t.Fatalf("SetProviderChoices: %v", err)
 	}
-	add("cc2", providers.Claude, 5)
-	if got := svc.SessionModel("cc2"); got != "opus" {
-		t.Errorf("new claude session model = %q, want opus", got)
+	got, err := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: "provider.claude.model.choices"})
+	if err != nil {
+		t.Fatalf("GetSetting: %v", err)
 	}
-	add("oc3", providers.OpenCode, 6)
-	if got := svc.SessionModel("oc3"); got != "anthropic/claude-sonnet" {
-		t.Errorf("new opencode session model = %q, want opencode's own last pick", got)
+	if want := `[{"id":"opus","label":"Opus"},{"id":"sonnet","label":"Sonnet"}]`; got != want {
+		t.Errorf("choices = %s, want %s", got, want)
 	}
 }
 

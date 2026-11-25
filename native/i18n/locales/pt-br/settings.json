@@ -310,6 +310,17 @@
     "searchWords": "fluxo de trabalho orquestração multiagente esforço",
     "description": "Toda sessão de {provider} começa com o ultracode ligado, orquestrando fluxos multiagente no esforço em que rodar. Ele continua ligado quando a sessão reinicia ou é retomada."
   },
+  "chatPrefSetting": {
+    "modelTitle": "Modelo",
+    "modelSearchWords": "modelo chat preferido padrão",
+    "modelDescription": "Chats novos do {provider} começam neste modelo. Sessões de terminal seguem o modelo configurado no próprio {provider}.",
+    "effortTitle": "Esforço",
+    "effortSearchWords": "esforço effort raciocínio thinking chat preferido padrão",
+    "effortDescription": "Chats novos do {provider} começam neste esforço. Sessões de terminal seguem o esforço configurado no próprio {provider}.",
+    "default": "Padrão do {provider}",
+    "noChoices": "Abra um chat do {provider} uma vez e as opções dele aparecem aqui.",
+    "search": "Buscar"
+  },
   "sandboxSettings": {
     "rung": {
       "off": "Desligado",

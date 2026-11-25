@@ -306,6 +306,17 @@
     "searchWords": "워크플로 오케스트레이션 멀티 에이전트 effort",
     "description": "모든 {provider} 세션이 ultracode를 켠 채 시작해, 어떤 effort로 실행되든 멀티 에이전트 워크플로를 조율합니다. 세션을 다시 시작하거나 재개해도 켜진 채로 유지됩니다."
   },
+  "chatPrefSetting": {
+    "modelTitle": "모델",
+    "modelSearchWords": "모델 model 채팅 기본값",
+    "modelDescription": "새 {provider} 채팅은 이 모델로 시작합니다. 터미널 세션은 {provider} 자체에 설정된 모델을 씁니다.",
+    "effortTitle": "추론 강도",
+    "effortSearchWords": "추론 강도 effort thinking 채팅 기본값",
+    "effortDescription": "새 {provider} 채팅은 이 추론 강도로 시작합니다. 터미널 세션은 {provider} 자체에 설정된 강도를 씁니다.",
+    "default": "{provider} 기본값",
+    "noChoices": "{provider} 채팅을 한 번 열면 선택지가 여기에 나타납니다.",
+    "search": "검색"
+  },
   "sandboxSettings": {
     "rung": {
       "off": "끔",

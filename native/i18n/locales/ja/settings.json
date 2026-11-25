@@ -310,6 +310,17 @@
     "searchWords": "ワークフロー オーケストレーション マルチエージェント エフォート",
     "description": "すべての {provider} セッションを ultracode オンで開始し、エフォートに関係なくマルチエージェントのワークフローを組み立てて実行します。再起動や再開をしてもオンのままです。"
   },
+  "chatPrefSetting": {
+    "modelTitle": "モデル",
+    "modelSearchWords": "モデル model チャット 既定",
+    "modelDescription": "{provider} の新しいチャットはこのモデルで始まります。ターミナルのセッションは {provider} 自体で設定したモデルを使います。",
+    "effortTitle": "エフォート",
+    "effortSearchWords": "エフォート 推論 effort thinking チャット 既定",
+    "effortDescription": "{provider} の新しいチャットはこのエフォートで始まります。ターミナルのセッションは {provider} 自体で設定したエフォートを使います。",
+    "default": "{provider} の既定",
+    "noChoices": "{provider} のチャットを一度開くと、選択肢がここに表示されます。",
+    "search": "検索"
+  },
   "sandboxSettings": {
     "rung": {
       "off": "オフ",

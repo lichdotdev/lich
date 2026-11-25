@@ -3,6 +3,7 @@
 package chat
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"slices"
@@ -246,6 +247,29 @@ func TestChatOpensOnItsStoredModelAndEffort(t *testing.T) {
 			}
 			r.current(api.OptionModel, tc.model)
 			r.current(api.OptionEffort, tc.effort)
+		})
+	}
+}
+
+// TestChatRecordsTheProvidersChoices: what a chat offers for the model and
+// the effort is kept for its provider, the list Settings › Providers picks a
+// preference from when no chat is open.
+func TestChatRecordsTheProvidersChoices(t *testing.T) {
+	for _, kind := range []string{providers.Claude, providers.Codex, providers.OMP} {
+		t.Run(kind, func(t *testing.T) {
+			r := newRig(t, kind)
+			if err := r.setView(api.ViewChat); err != nil {
+				t.Fatalf("SetView: %v", err)
+			}
+			for _, category := range []string{api.OptionModel, api.OptionEffort} {
+				o, _ := r.option(category)
+				want, _ := json.Marshal(o.Choices)
+				key := "provider." + kind + "." + category + ".choices"
+				r.eventually(key, func() bool {
+					got, _ := r.db.GetSetting(t.Context(), api.GetSettingOptions{Key: key})
+					return len(o.Choices) > 0 && got == string(want)
+				})
+			}
 		})
 	}
 }

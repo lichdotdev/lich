@@ -397,9 +397,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   without asking, so their chat has none; the checkout's skip-permissions setting still answers every question
   yes (above). Kiro CLI offers no effort over ACP, opencode one only for a model that has one, and what Cursor
   CLI offers was not measured past its login. The model and effort picked become the session's own, which a new
-  conversation starts on. The model is also kept for the provider, not for the project or the profile, so the next
-  session of that agent starts on it in every project and under every account; one that account cannot run is not
-  set and the chat says so where its protocol answers. The mode is kept for the session's later chats, because
+  conversation starts on, and only that session's. A new session drawn as a chat is born on the model and effort
+  Settings › Providers names for its provider, global rather than per project or profile, so it starts on them in
+  every project and under every account; one that account cannot run is not set and the chat says so where its
+  protocol answers. A session born in its terminal is passed neither and runs on the provider's own configuration,
+  and one switched to a chat later keeps what it was born on. Settings lists what the provider's last chat offered,
+  so a provider never opened in a chat lists nothing yet, and Claude Code's efforts are those of the model that chat
+  ran. Crush has no chat, so no preference. The mode is kept for the session's later chats, because
   Claude Code resumes on the mode of the last turn, not one picked after it, and oh-my-pi on its default. A later
   chat leaves the model and effort to the provider's resume, which for Claude Code loses the effort and, after a
   turn in plan mode, came back on

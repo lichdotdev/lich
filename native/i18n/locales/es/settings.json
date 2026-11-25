@@ -310,6 +310,17 @@
     "searchWords": "workflow orquestación multiagente esfuerzo orchestration multi-agent effort",
     "description": "Todas las sesiones de {provider} arrancan con ultracode activado y orquestan flujos de trabajo multiagente con el esfuerzo con el que se ejecuten. Sigue activado cuando una sesión se reinicia o se reanuda."
   },
+  "chatPrefSetting": {
+    "modelTitle": "Modelo",
+    "modelSearchWords": "modelo chat preferido predeterminado",
+    "modelDescription": "Los chats nuevos de {provider} empiezan con este modelo. Las sesiones de terminal usan el modelo configurado en el propio {provider}.",
+    "effortTitle": "Esfuerzo",
+    "effortSearchWords": "esfuerzo effort razonamiento thinking chat preferido predeterminado",
+    "effortDescription": "Los chats nuevos de {provider} empiezan con este esfuerzo. Las sesiones de terminal usan el esfuerzo configurado en el propio {provider}.",
+    "default": "Predeterminado de {provider}",
+    "noChoices": "Abre un chat de {provider} una vez y sus opciones aparecerán aquí.",
+    "search": "Buscar"
+  },
   "sandboxSettings": {
     "rung": {
       "off": "Desactivado",

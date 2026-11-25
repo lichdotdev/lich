@@ -318,6 +318,17 @@
     "searchWords": "воркфлоу оркестрация мультиагентный усилие workflow orchestration multi-agent effort",
     "description": "Каждая сессия {provider} запускается с включённым ultracode и оркестрирует мультиагентные воркфлоу при любом уровне усилия. Остаётся включённым при перезапуске и возобновлении сессии."
   },
+  "chatPrefSetting": {
+    "modelTitle": "Модель",
+    "modelSearchWords": "модель model чат по умолчанию",
+    "modelDescription": "Новые чаты {provider} запускаются на этой модели. Сессии в терминале используют модель, заданную в самом {provider}.",
+    "effortTitle": "Глубина рассуждений",
+    "effortSearchWords": "рассуждения effort thinking чат по умолчанию",
+    "effortDescription": "Новые чаты {provider} запускаются с этой глубиной рассуждений. Сессии в терминале используют глубину, заданную в самом {provider}.",
+    "default": "По умолчанию в {provider}",
+    "noChoices": "Откройте чат {provider} один раз, и его варианты появятся здесь.",
+    "search": "Поиск"
+  },
   "sandboxSettings": {
     "rung": {
       "off": "Выкл.",

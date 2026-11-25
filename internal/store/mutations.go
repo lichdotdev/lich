@@ -165,20 +165,20 @@ func (s *Service) addSession(
 	// The profile is a birth value like the model: the project's setting moving
 	// later does not move a session that already has a conversation.
 	profile := s.bornProfile(kind, projectID)
-	// The model is the birth value the provider last ran: a new session inherits
-	// the one picked in the provider's last chat, instead of asking again.
-	model := ""
-	if providers.Known(kind) {
-		model = s.ProviderModel(kind)
-	}
 	// With the row for the sandbox's reason: the first spawn reads it, a chat's
 	// or a terminal's.
 	view := s.bornView(kind)
+	// A chat is born on the provider's preferred model and effort; a terminal
+	// is left to the provider's own configuration, which the user set there.
+	model, effort := "", ""
+	if view == api.ViewChat && providers.Known(kind) {
+		model, effort = s.ProviderModel(kind), s.ProviderEffort(kind)
+	}
 	return s.tx(func(tx *sql.Tx) error {
 		if _, err := tx.Exec(
-			`INSERT INTO sessions (id, project_id, label, kind, path, origin_session_id, origin_label, sandbox, folder, profile, model, view, position)
-			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
-			sessionID, projectID, label, kind, path, originID, originLabel, sandbox, folder, profile, model, view, projectID,
+			`INSERT INTO sessions (id, project_id, label, kind, path, origin_session_id, origin_label, sandbox, folder, profile, model, effort, view, position)
+			 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, `+nextSessionPosition+`)`,
+			sessionID, projectID, label, kind, path, originID, originLabel, sandbox, folder, profile, model, effort, view, projectID,
 		); err != nil {
 			return fmt.Errorf("insert session %q: %w", sessionID, err)
 		}
@@ -756,26 +756,11 @@ func (s *Service) SetSessionTitle(sessionID, title string) (bool, error) {
 // It is written right after the row is created, and again when the person
 // picks another model in the session's chat (internal/chat). A session whose
 // row is gone matches nothing and is not an error.
-//
-// The pick is also remembered per provider (rememberProviderModel), which is
-// what lets a session opened afterwards start on it instead of the provider's
-// own default.
 func (s *Service) SetSessionModel(sessionID, model string) error {
-	var kind string
-	err := s.db.QueryRow(
-		`UPDATE sessions SET model = ? WHERE id = ? RETURNING kind`, model, sessionID,
-	).Scan(&kind)
-	if errors.Is(err, sql.ErrNoRows) {
-		return nil
-	}
-	if err != nil {
+	if _, err := s.db.Exec(
+		`UPDATE sessions SET model = ? WHERE id = ?`, model, sessionID,
+	); err != nil {
 		return fmt.Errorf("set model on %q: %w", sessionID, err)
-	}
-	if !providers.Known(kind) {
-		return nil
-	}
-	if err := s.rememberProviderModel(kind, model); err != nil {
-		return fmt.Errorf("remember the model of %q: %w", kind, err)
 	}
 	return nil
 }

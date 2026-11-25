@@ -310,6 +310,17 @@
     "searchWords": "workflow orchestration multi-agent effort",
     "description": "Every {provider} session starts with ultracode on, orchestrating multi-agent workflows at whatever effort it runs. It stays on when a session restarts or resumes."
   },
+  "chatPrefSetting": {
+    "modelTitle": "Model",
+    "modelSearchWords": "model chat preferred default",
+    "modelDescription": "New {provider} chats start on this model. Terminal sessions keep the model set in {provider} itself.",
+    "effortTitle": "Effort",
+    "effortSearchWords": "effort reasoning thinking chat preferred default",
+    "effortDescription": "New {provider} chats start at this effort. Terminal sessions keep the effort set in {provider} itself.",
+    "default": "{provider}'s default",
+    "noChoices": "Open a {provider} chat once and its options show up here.",
+    "search": "Search"
+  },
   "sandboxSettings": {
     "rung": {
       "off": "Off",
