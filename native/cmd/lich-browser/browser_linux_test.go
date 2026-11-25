@@ -341,6 +341,33 @@ func TestALoadThatFailsSaysWhy(t *testing.T) {
 	}
 }
 
+func TestAPagePopsOutAndBackWithoutReloading(t *testing.T) {
+	c := start(t)
+	c.open("b1", "data:text/html,<title>Kept</title>", 400, 300, 1)
+	c.eval("b1", "window.kept = 42")
+	for _, step := range []struct {
+		method string
+		popped bool
+	}{{browserwire.PopOut, true}, {browserwire.Raise, true}, {browserwire.PopIn, false}} {
+		from := c.mark()
+		c.must(step.method, browserwire.PageParams{Page: "b1"}, nil)
+		if step.method != browserwire.Raise {
+			var tabs browserwire.TabsEvent
+			raw, _ := c.event(from, browserwire.EventTabs, nil)
+			json.Unmarshal(raw, &tabs)
+			if out := tabs.Tabs[0].XID == 0; out != step.popped {
+				t.Fatalf("after %s the tab's xid is %d, want it 0 only while out", step.method, tabs.Tabs[0].XID)
+			}
+		}
+		if got := c.eval("b1", "window.kept"); got != "42" {
+			t.Fatalf("after %s the page holds %s: it reloaded", step.method, got)
+		}
+	}
+	if err := c.call(browserwire.PopIn, browserwire.PageParams{Page: "b1"}, nil); err == nil {
+		t.Fatal("a page not out popped in")
+	}
+}
+
 func TestARequestForAPageNotOpenFails(t *testing.T) {
 	c := start(t)
 	if err := c.call(browserwire.Eval, browserwire.EvalParams{Page: "b9", Script: "1"}, nil); err == nil || !strings.Contains(err.Error(), "b9") {

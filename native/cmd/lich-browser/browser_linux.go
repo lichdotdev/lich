@@ -113,6 +113,9 @@ var handlers = map[string]handler{
 	browserwire.Text:      awaited((*browser).text),
 	browserwire.Dialog:    now((*browser).answerDialog),
 	browserwire.Files:     now((*browser).answerFiles),
+	browserwire.PopOut:    now((*browser).popOut),
+	browserwire.PopIn:     now((*browser).popIn),
+	browserwire.Raise:     now((*browser).raise),
 	browserwire.Eval:      later((*browser).eval),
 	browserwire.Snapshot:  later((*browser).snapshot),
 }

@@ -85,7 +85,7 @@ static GdkSeat *seat(void) { return gdk_display_get_default_seat(gdk_display_get
 // and keys typed into an input go nowhere. It takes nothing from X: the
 // person's keyboard stays where it is.
 void lich_tab_focus(LichTab *tab) {
-	GtkWindow *holder = GTK_WINDOW(tab->holder);
+	GtkWindow *holder = GTK_WINDOW(gtk_widget_get_toplevel(tab->view));
 	if (gtk_window_get_focus(holder) != tab->view) {
 		gtk_widget_grab_focus(tab->view);
 	}
@@ -93,7 +93,7 @@ void lich_tab_focus(LichTab *tab) {
 		return;
 	}
 	GdkEvent *e = gdk_event_new(GDK_FOCUS_CHANGE);
-	e->focus_change.window = g_object_ref(gtk_widget_get_window(tab->holder));
+	e->focus_change.window = g_object_ref(gtk_widget_get_window(GTK_WIDGET(holder)));
 	e->focus_change.in = TRUE;
 	inject(e, gdk_seat_get_keyboard(seat()));
 }
@@ -159,7 +159,7 @@ static int is_modifier(guint keyval) {
 
 void lich_tab_key(LichTab *tab, int press, guint keyval, guint state) {
 	GdkEvent *e = gdk_event_new(press ? GDK_KEY_PRESS : GDK_KEY_RELEASE);
-	e->key.window = g_object_ref(gtk_widget_get_window(tab->holder));
+	e->key.window = g_object_ref(gtk_widget_get_window(gtk_widget_get_toplevel(tab->view)));
 	e->key.time = now();
 	e->key.state = state;
 	e->key.keyval = keyval;

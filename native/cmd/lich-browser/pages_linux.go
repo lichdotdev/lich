@@ -120,6 +120,7 @@ func (b *browser) placeTab(t *tab, c *C.LichTab) {
 	C.lich_tab_zoom(c, C.double(p.scale))
 	p.tabs = append(p.tabs, t)
 	p.front = t
+	p.showFront()
 	b.sendTabs(p)
 }
 
@@ -135,6 +136,9 @@ func (b *browser) close(o browserwire.PageParams) (any, error) {
 		return nil, err
 	}
 	b.settle(p)
+	if p.poppedOut() {
+		C.lich_page_pop_in(p.c)
+	}
 	for _, t := range p.tabs {
 		b.dropTab(t)
 	}
@@ -190,6 +194,7 @@ func (b *browser) selectTab(o browserwire.TabParams) (any, error) {
 		return nil, err
 	}
 	p.front = t
+	p.showFront()
 	b.sendTabs(p)
 	return nil, nil
 }
@@ -212,6 +217,7 @@ func (b *browser) closeTab(t *tab) error {
 	p.tabs = slices.Delete(p.tabs, i, i+1)
 	if p.front == t {
 		p.front = p.tabs[max(0, i-1)]
+		p.showFront()
 	}
 	b.dropTab(t)
 	b.sendTabs(p)
@@ -261,9 +267,13 @@ func (b *browser) relayout(p *page) {
 func (b *browser) sendTabs(p *page) {
 	ev := browserwire.TabsEvent{Page: p.id, Tabs: make([]browserwire.Tab, 0, len(p.tabs))}
 	for _, t := range p.tabs {
+		xid := uint64(t.c.xid)
+		if p.poppedOut() {
+			xid = 0
+		}
 		ev.Tabs = append(ev.Tabs, browserwire.Tab{
 			ID: t.id, URL: C.GoString(C.lich_tab_uri(t.c)), Title: C.GoString(C.lich_tab_title(t.c)),
-			Loading: C.lich_tab_loading(t.c) != 0, Front: t == p.front, XID: uint64(t.c.xid), Icon: t.icon,
+			Loading: C.lich_tab_loading(t.c) != 0, Front: t == p.front, XID: xid, Icon: t.icon,
 		})
 	}
 	b.wire.event(browserwire.EventTabs, ev)

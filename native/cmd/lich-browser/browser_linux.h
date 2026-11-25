@@ -8,17 +8,23 @@
 
 // LichPage is what a page's tabs share: cookies and storage, its scripts, its
 // downloads. key is the Go page's, which a callback names it by.
+typedef struct LichTab LichTab;
+
 typedef struct {
 	WebKitWebContext *context;
 	WebKitUserContentManager *content;
 	WebKitSettings *settings;
 	uintptr_t key;
+	// popped is the page's own window while it is popped out, showing
+	// shown's view.
+	GtkWidget *popped;
+	LichTab *shown;
 } LichPage;
 
 // LichTab is one tab: its X window, which the window reparents into its own,
 // and the view GTK draws there. width and height are its size off screen, in
 // device pixels.
-typedef struct {
+struct LichTab {
 	Display *x;
 	Window xid;
 	GdkWindow *window;
@@ -28,7 +34,7 @@ typedef struct {
 	uintptr_t key;
 	int width, height;
 	int embedded;
-} LichTab;
+};
 
 void lich_browser_invoke(uintptr_t handle);
 int lich_browser_init(void);
@@ -62,6 +68,11 @@ void lich_tab_mouse(LichTab *tab, int kind, double x, double y, guint button, gu
 void lich_tab_key(LichTab *tab, int press, guint keyval, guint state);
 void lich_tab_text(LichTab *tab, const char *text);
 guint lich_keyval_for(gunichar c);
+
+void lich_page_pop_out(LichPage *page, LichTab *tab, int width, int height);
+void lich_page_show(LichPage *page, LichTab *tab);
+void lich_page_pop_in(LichPage *page);
+void lich_page_raise(LichPage *page);
 
 void lich_dialog_answer(WebKitScriptDialog *dialog, int accept, const char *text);
 void lich_files_answer(WebKitFileChooserRequest *request, const char **paths, int n);

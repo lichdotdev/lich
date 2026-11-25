@@ -95,6 +95,15 @@ static void allocate(LichTab *tab, int width, int height) {
 	gtk_widget_size_allocate(tab->view, &area);
 }
 
+// lich_tab_fit lays a view back in its own X window out at that window's
+// size, which no ConfigureNotify tells when it did not change.
+void lich_tab_fit(LichTab *tab) {
+	XWindowAttributes a;
+	if (XGetWindowAttributes(tab->x, tab->xid, &a)) {
+		allocate(tab, a.width, a.height);
+	}
+}
+
 // follow sizes the view to its X window, which the window resizes once it
 // holds it, and puts a window handed back to the root off screen again.
 static GdkFilterReturn follow(GdkXEvent *xevent, GdkEvent *event, gpointer data) {
