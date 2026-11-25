@@ -76,6 +76,9 @@ func TestShellsGroupNameAnExitCodeAndClose(t *testing.T) {
 	if !r.showsAll("RUNNING", "ENDED", "2 running", "exit 3", "close") || r.shows("failed") {
 		t.Fatalf("the groups or the exit code are not drawn:\n%s", r.drawn())
 	}
+	// the panel grows in before its × takes a click (contract changed: it opens
+	// with a motion)
+	r.frames(1)
 	r.click(t, r.controlOf(t, "2 running"))
 	if p.tools.opened() {
 		t.Errorf("the × left the panel open:\n%s", r.drawn())

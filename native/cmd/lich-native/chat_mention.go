@@ -1,7 +1,6 @@
 package main
 
 import (
-	"image"
 	"strings"
 	"unicode"
 	"unicode/utf8"
@@ -10,7 +9,6 @@ import (
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/ui"
@@ -36,6 +34,7 @@ type chatMention struct {
 	rows      []ui.Clickable
 	list      widget.List
 	moved     bool
+	motion    panelMotion
 	// blocked keeps the list shut while the keys belong to something else.
 	blocked bool
 	// taking is an Enter (mentionPick) or Tab (mentionComplete) taken before
@@ -233,7 +232,9 @@ func (m *chatMention) pick(ed *widget.Editor, i int) {
 
 // layout draws the open list where the slash list stands.
 func (m *chatMention) layout(gtx C, th *ui.Theme, room int) {
-	if len(m.shown) == 0 {
+	shown := m.shown
+	m.motion.track(gtx.Now, len(shown) > 0, "")
+	if len(shown) == 0 {
 		return
 	}
 	m.list.Axis = layout.Vertical
@@ -241,21 +242,13 @@ func (m *chatMention) layout(gtx C, th *ui.Theme, room int) {
 		m.list.ScrollTo(max(m.cursor-2, 0))
 		m.moved = false
 	}
-	g := gtx
-	g.Constraints = layout.Constraints{Max: image.Pt(gtx.Constraints.Max.X, max(min(gtx.Dp(slashMaxH), room), 0))}
-	macro := op.Record(gtx.Ops)
-	d := th.PopoverPanel(g, func(gtx C, th *ui.Theme) D {
-		return th.ThinScrollArea(&m.list).Layout(gtx, len(m.shown), func(gtx C, i int) D {
+	surfaceOverBox(gtx, th, &m.motion, max(min(gtx.Dp(slashMaxH), room), 0), func(gtx C, th *ui.Theme) D {
+		return th.ThinScrollArea(&m.list).Layout(gtx, len(shown), func(gtx C, i int) D {
 			return pickerRow(gtx, th, &m.rows[i], i == m.cursor, func(gtx C, th *ui.Theme) D {
-				return mentionRow(gtx, th, m.shown[i])
+				return mentionRow(gtx, th, shown[i])
 			})
 		})
 	})
-	call := macro.Stop()
-	rec := op.Record(gtx.Ops)
-	op.Offset(image.Pt(0, -d.Size.Y-gtx.Dp(ui.Space(2)))).Add(gtx.Ops)
-	call.Add(gtx.Ops)
-	op.Defer(gtx.Ops, rec.Stop())
 }
 
 // mentionRow is one path: a folder's glyph or the file's icon, its name in

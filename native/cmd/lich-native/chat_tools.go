@@ -71,6 +71,7 @@ type chatTools struct {
 	rows      []ui.Clickable
 	back      ui.Clickable
 	close     ui.Clickable
+	motion    panelMotion
 	toolsBtn  ui.Clickable
 	sortBtn   ui.Clickable
 	acts      map[string]*ui.Clickable

@@ -1,7 +1,6 @@
 package main
 
 import (
-	"image"
 	"slices"
 	"strings"
 	"unicode"
@@ -10,7 +9,6 @@ import (
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/unit"
 	"gioui.org/widget"
 
@@ -47,6 +45,7 @@ type chatSlash struct {
 	rows      []ui.Clickable
 	list      widget.List
 	moved     bool
+	motion    panelMotion
 	// blocked keeps the list shut while the keys belong to something else.
 	blocked bool
 	// picking is an Enter or Tab taken before the editor read the keys of
@@ -238,30 +237,24 @@ func (s *chatSlash) pick(ed *widget.Editor, i int) {
 // layout draws the open list over the composer's box, as wide as it and a gap
 // above it, deferred so it stands over the conversation, no taller than room.
 func (s *chatSlash) layout(gtx C, th *ui.Theme, room int) {
-	if len(s.shown) == 0 {
+	shown := s.shown
+	s.motion.track(gtx.Now, len(shown) > 0, "")
+	if len(shown) == 0 {
 		return
 	}
-	skills := slices.ContainsFunc(s.shown, func(c backend.ChatCommand) bool { return c.Skill })
+	skills := slices.ContainsFunc(shown, func(c backend.ChatCommand) bool { return c.Skill })
 	s.list.Axis = layout.Vertical
 	if s.moved {
 		s.list.ScrollTo(max(s.cursor-2, 0))
 		s.moved = false
 	}
-	g := gtx
-	g.Constraints = layout.Constraints{Max: image.Pt(gtx.Constraints.Max.X, max(min(gtx.Dp(slashMaxH), room), 0))}
-	macro := op.Record(gtx.Ops)
-	d := th.PopoverPanel(g, func(gtx C, th *ui.Theme) D {
-		return th.ThinScrollArea(&s.list).Layout(gtx, len(s.shown), func(gtx C, i int) D {
+	surfaceOverBox(gtx, th, &s.motion, max(min(gtx.Dp(slashMaxH), room), 0), func(gtx C, th *ui.Theme) D {
+		return th.ThinScrollArea(&s.list).Layout(gtx, len(shown), func(gtx C, i int) D {
 			return pickerRow(gtx, th, &s.rows[i], i == s.cursor, func(gtx C, th *ui.Theme) D {
-				return slashRow(gtx, th, s.shown[i], skills)
+				return slashRow(gtx, th, shown[i], skills)
 			})
 		})
 	})
-	call := macro.Stop()
-	m := op.Record(gtx.Ops)
-	op.Offset(image.Pt(0, -d.Size.Y-gtx.Dp(ui.Space(2)))).Add(gtx.Ops)
-	call.Add(gtx.Ops)
-	op.Defer(gtx.Ops, m.Stop())
 }
 
 // slashRow is one command: a glyph that tells a skill from a command where

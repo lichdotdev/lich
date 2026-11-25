@@ -43,9 +43,11 @@ var (
 
 // chatToolsPanel draws the open panel over the composer's box, as wide as it
 // and a gap above it, deferred so it stands over the conversation, no
-// taller than room: the slash list's place.
+// taller than room: the slash list's place. It grows out of the box's right
+// corner, where the chips that open it stand.
 func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView, working bool, room int) {
 	t := &p.tools
+	t.motion.track(gtx.Now, t.opened(), t.kind+"|"+t.detail)
 	if !t.opened() {
 		return
 	}
@@ -55,6 +57,7 @@ func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView
 	g.Constraints = layout.Constraints{Max: image.Pt(gtx.Constraints.Max.X, max(min(gtx.Dp(toolsMaxH), room-lift), 0))}
 	macro := op.Record(gtx.Ops)
 	d := th.PopoverPanel(g, func(gtx C, th *ui.Theme) D {
+		defer t.motion.fade(gtx)()
 		return withKeys(gtx, th, t, u.toolsFootAct(th, p, sv), func(gtx C) D {
 			return u.toolsView(gtx, th, p, sv, working)
 		})
@@ -62,7 +65,9 @@ func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView
 	call := macro.Stop()
 	m := op.Record(gtx.Ops)
 	op.Offset(image.Pt(0, -d.Size.Y-gtx.Dp(ui.Space(2))-lift)).Add(gtx.Ops)
+	pop := t.motion.push(gtx, d.Size, d.Size.X)
 	call.Add(gtx.Ops)
+	pop()
 	t.watchOutside(gtx, d.Size)
 	op.Defer(gtx.Ops, m.Stop())
 }
