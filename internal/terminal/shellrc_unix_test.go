@@ -35,7 +35,7 @@ func TestAddToShellRCWritesTheShellsOwnFile(t *testing.T) {
 
 func TestAddToShellRCLeavesAFileThatHasTheFolder(t *testing.T) {
 	home := t.TempDir()
-	rc := filepath.Join(home, ".bashrc")
+	rc, _ := shellRC("bash", home, "")
 	before := "export PATH=\"$HOME/.local/bin:$PATH\"\n"
 	if err := os.WriteFile(rc, []byte(before), 0o644); err != nil {
 		t.Fatal(err)

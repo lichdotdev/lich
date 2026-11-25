@@ -29,8 +29,20 @@ func TestMain(m *testing.M) {
 	// A lich session exports the port its own lich listens on; the terminal
 	// service under test binds a port of its own.
 	_ = os.Unsetenv("LICH_LISTEN_PORT")
-	os.Exit(m.Run())
+	// The fakes write their coverage as they exit, which can be after their
+	// test's cleanup: a directory of the test's own would fail that cleanup.
+	dir, err := os.MkdirTemp("", "chat-fake-cover-")
+	if err != nil {
+		panic(err)
+	}
+	fakeCoverDir = dir
+	code := m.Run()
+	_ = os.RemoveAll(dir)
+	os.Exit(code)
 }
+
+// fakeCoverDir is the GOCOVERDIR every fake of this test binary shares.
+var fakeCoverDir string
 
 // rig is a chat service over a real store and terminal service, whose
 // provider is the fake (fake_test.go).
@@ -53,7 +65,12 @@ type event struct {
 
 func newRig(t *testing.T, kind string) *rig {
 	t.Helper()
-	home := t.TempDir()
+	// Resolved, as the CLI's own working directory is: macOS's temp dir is
+	// under /var, a link to /private/var.
+	home, err := filepath.EvalSymlinks(t.TempDir())
+	if err != nil {
+		t.Fatal(err)
+	}
 	t.Setenv("HOME", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, "config"))
 	t.Setenv("CLAUDE_CONFIG_DIR", filepath.Join(home, "claude"))
@@ -87,7 +104,7 @@ func newRig(t *testing.T, kind string) *rig {
 	})
 	// The fake is this test binary: built with -coverprofile it warns on stderr
 	// without GOCOVERDIR, and a CLI's stderr becomes the error the chat reports.
-	env := []string{fakeEnv + "=1", fakeLogEnv + "=" + r.log, "PATH=" + os.Getenv("PATH"), "HOME=" + home, "GOCOVERDIR=" + t.TempDir()}
+	env := []string{fakeEnv + "=1", fakeLogEnv + "=" + r.log, "PATH=" + os.Getenv("PATH"), "HOME=" + home, "GOCOVERDIR=" + fakeCoverDir}
 	for _, key := range []string{"LICH_CHAT_FAKE_NOLOAD", fakeLegacyEnv, fakeKiroCommandsEnv, fakeNoSkillsEnv, fakeNoMemoryEnv, claudeChildEnv} {
 		if v := os.Getenv(key); v != "" {
 			env = append(env, key+"="+v)
