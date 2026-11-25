@@ -2,7 +2,11 @@
 # Rendered by .github/workflows/release.yml (the tag, the pkgver pacman can
 # read and the checksums) and pushed to the AUR, or attached to a pre-release
 # for the beta channel — edit this template, never the AUR copy.
-pkgname=lich-bin
+# The AUR publishes this as lich-bin, and install.sh installs its own package
+# as lich (/usr/local/bin). A pre-release keeps whichever name the installed
+# one has, so pacman takes it as an upgrade instead of a conflict it would
+# refuse under --noconfirm. The updater sets LICH_PKGNAME from the install.
+pkgname="${LICH_PKGNAME:-lich-bin}"
 pkgver=@PKGVER@
 _tag=@VERSION@
 pkgrel=1

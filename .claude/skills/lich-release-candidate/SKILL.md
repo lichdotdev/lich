@@ -53,7 +53,7 @@ From `internal/appupdate`, for the record when a tester asks:
 |---|---|
 | Windows installer | The prompt's button runs the RC's `setup.exe` |
 | deb, rpm | `install.sh` pinned with `LICH_TAG=vX.Y.Z-rc.N` |
-| Arch | `makepkg -si` on the RC's `PKGBUILD`, under the AUR's `lich-bin` name |
+| Arch | `makepkg -si` on the RC's `PKGBUILD`, named after the installed package: the AUR's `lich-bin` (`/usr/bin`) or install.sh's `lich` (`/usr/local/bin`), which the update command sets with `LICH_PKGNAME` |
 | Homebrew | `brew upgrade --cask lichdotdev/tap/lich@beta`, swapping `lich` for it the first time |
 | Scoop, tarball | The release page only |
 

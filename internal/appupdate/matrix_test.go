@@ -35,6 +35,9 @@ func TestUpgradeMatrix(t *testing.T) {
 		{"deb", "linux", "amd64", []string{"usr/local/bin/lich-native"}, "usr/local/bin/lich", debian, "paste " + installScript},
 		{"rpm", "linux", "amd64", []string{"usr/local/bin/lich-native"}, "usr/local/bin/lich", fedora, "paste " + installScript},
 		{"aur lich-bin", "linux", "amd64", []string{"usr/bin/lich-native"}, "usr/bin/lich", arch, "paste yay -S lich-bin" + restartChain},
+		// install.sh installs nfpm's package named lich into /usr/local/bin; a
+		// helper would add lich-bin beside it instead of replacing it.
+		{"install.sh on arch", "linux", "amd64", []string{"usr/local/bin/lich-native"}, "usr/local/bin/lich", arch, "paste " + installScript},
 		// A package installed over a tarball would leave /restart relaunching the
 		// tarball's lich, so the tarball gets the release page, on Arch too.
 		{"linux tarball", "linux", "amd64", []string{"opt/lich/lich-native"}, "opt/lich/lich", debian, "release page"},
