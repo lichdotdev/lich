@@ -45,7 +45,8 @@ const (
 	toastCancelDark  = 0.3
 )
 
-// toastShadow is sonner's box-shadow: 0 4px 12px rgba(0,0,0,.1).
+// toastShadow is sonner's box-shadow: 0 4px 12px rgba(0,0,0,.1). It stays
+// short so the shadow falls in the gutter over the footer's balloons.
 var toastShadow = BoxShadow{Y: 4, Blur: 12, Alpha: 0.1}
 
 // The description's color is sonner's own, not a token: #3f3f3f, and

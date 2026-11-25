@@ -132,9 +132,9 @@ func TestSwatchHintOpensAboveTheCell(t *testing.T) {
 	frame()
 	g.hover(dropdownRowCenter(0))
 	frame()
-	// The submenu animates in for menuDuration, its hit areas moving with
+	// The submenu animates in for surfaceEnter, its hit areas moving with
 	// it; the pointer reaches a cell once it has settled.
-	now = now.Add(menuDuration)
+	now = now.Add(surfaceEnter)
 	frame()
 	cell := swatchGridAt.Add(image.Pt(30+14, 30+14))
 	g.hover(cell)

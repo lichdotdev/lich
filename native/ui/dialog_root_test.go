@@ -45,7 +45,7 @@ func TestDialogDropdownAnchorsAtItsTrigger(t *testing.T) {
 		router.Frame(&ops)
 	}
 	frame()
-	now = now.Add(dialogTransition)
+	now = now.Add(surfaceEnter)
 	frame()
 	// The body sits under the header, centered: probe down the middle column
 	// for the trigger.

@@ -522,30 +522,28 @@ func (m menuCore) drawPanel(gtx C, lv *menuLevel, anchor image.Rectangle, place 
 	return box
 }
 
-// menuDuration is the content's duration-100.
-const menuDuration = 100 * time.Millisecond
-
-// menuEnter starts a panel's animate-in: fade-in-0, zoom-in-95 from the
+// menuEnter starts a panel's animate-in: fade-in-0, a zoom from
+// surfaceZoomFrom from the
 // anchor (origin-(--transform-origin)) and slide-in-2 from the anchor's
-// side, over menuDuration from its first frame. Hit testing stays on the
+// side, over surfaceEnter from its first frame. Hit testing stays on the
 // final box. The returned func pops what it pushed, and the transform is
 // where the panel stands this frame.
 //
 // ponytail: no animate-out; a closed menu is gone at once. Adding it means
-// drawing the last entries for menuDuration after close.
+// drawing the last entries for surfaceEnter after close.
 func menuEnter(gtx C, lv *menuLevel, side Side, anchor, size image.Point) (func(), f32.Affine2D) {
 	if lv.shown.IsZero() {
 		lv.shown = gtx.Now
 	}
 	elapsed := gtx.Now.Sub(lv.shown)
-	if elapsed >= menuDuration {
+	if elapsed >= surfaceEnter {
 		return func() {}, f32.Affine2D{}
 	}
 	gtx.Execute(op.InvalidateCmd{})
-	p := ease(float32(elapsed) / float32(menuDuration))
+	p := easeOut(float32(elapsed) / float32(surfaceEnter))
 	origin, toward := menuOrigin(side, anchor, size)
 	slide := toward.Mul(float32(gtx.Dp(Space(2))) * (1 - p))
-	scale := zoomFrom + (1-zoomFrom)*p
+	scale := surfaceZoomFrom + (1-surfaceZoomFrom)*p
 	motion := f32.Affine2D{}.Scale(origin, f32.Pt(scale, scale)).Offset(slide)
 	transform := op.Affine(motion).Push(gtx.Ops)
 	opacity := paint.PushOpacity(gtx.Ops, p)
@@ -668,11 +666,12 @@ func (m menuCore) scrolled(lv *menuLevel, rows []menuRow, pad, view, height int)
 	return min(max(scroll, 0), height-view)
 }
 
-// drawSurface is rounded-md bg-popover ring-1 ring-foreground/10. The ring
-// is a 2px stroke on the edge whose inner half the fill covers, leaving 1px
-// outside the box as a box-shadow ring does, over the surface under the menu.
-// ponytail: no shadow-md; a 10% black shadow barely reads on the dark theme.
+// drawSurface is rounded-md bg-popover ring-1 ring-foreground/10 over the
+// middle elevation. The ring is a 2px stroke on the edge whose inner half the
+// fill covers, leaving 1px outside the box as a box-shadow ring does, over the
+// surface under the menu.
 func (m menuCore) drawSurface(gtx C, size image.Point) {
+	ElevationMid.Paint(gtx, size, gtx.Dp(RadiusMD))
 	rr := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(RadiusMD))
 	ring := clip.Stroke{Path: rr.Path(gtx.Ops), Width: float32(2 * gtx.Dp(1))}.Op()
 	paint.FillShape(gtx.Ops, m.th.Over(Alpha(m.th.Foreground, menuRingOpacity)), ring)
@@ -722,8 +721,8 @@ func (m menuCore) rowColors(e MenuEntry, highlighted bool) menuColors {
 
 func (m menuCore) measureRow(gtx C, e MenuEntry, highlighted bool) menuRow {
 	if e.Kind == MenuSeparator {
-		inset := gtx.Dp(Space(1)) // mx-1 my-1
-		return menuRow{bg: m.panel.Over(m.panel.Border), padL: inset, padY: inset, height: gtx.Dp(1) + 2*inset, separator: true}
+		// groups are set apart by space, not a rule
+		return menuRow{height: gtx.Dp(menuGap), separator: true}
 	}
 	padL, padR, padY := m.geo.box(e)
 	col := m.rowColors(e, highlighted)
@@ -813,8 +812,6 @@ func (r menuRow) draw(gtx C, rect image.Rectangle) {
 	defer op.Offset(rect.Min).Push(gtx.Ops).Pop()
 	size := rect.Size()
 	if r.separator {
-		line := image.Rect(r.padL, r.padY, size.X-r.padL, r.padY+gtx.Dp(1))
-		paint.FillShape(gtx.Ops, r.bg, clip.Rect(line).Op())
 		return
 	}
 	if r.bg.A > 0 {

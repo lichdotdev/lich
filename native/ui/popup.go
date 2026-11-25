@@ -250,6 +250,13 @@ func (b *popupBackdrop) layout(gtx C, window image.Point) {
 // zoomFrom is zoom-in-95 / zoom-out-95.
 const zoomFrom = 0.95
 
+// surfaceZoomFrom and surfaceEnter are how a menu or a dialog opens, the
+// composer's panels' motion: from 0.92, over 160ms ease-out.
+const (
+	surfaceZoomFrom = 0.92
+	surfaceEnter    = 160 * time.Millisecond
+)
+
 // transition is tw-animate-css's animate-in and animate-out, in their default
 // "ease": how far a popup is in, running backwards once closed.
 type transition struct {

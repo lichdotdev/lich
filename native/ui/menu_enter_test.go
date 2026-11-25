@@ -67,8 +67,8 @@ func TestMenuPanelFadesIn(t *testing.T) {
 	if first := frame(); near(first, th.Popover) {
 		t.Errorf("first frame already shows the panel's %v, want it fading in", first)
 	}
-	now = now.Add(menuDuration)
+	now = now.Add(surfaceEnter)
 	if settled := frame(); !near(settled, th.Popover) {
-		t.Errorf("after menuDuration the panel reads %v, want %v", settled, th.Popover)
+		t.Errorf("after surfaceEnter the panel reads %v, want %v", settled, th.Popover)
 	}
 }

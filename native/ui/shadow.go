@@ -13,6 +13,25 @@ import (
 // step shows as bands.
 const shadowStep unit.Dp = 2
 
+// Elevation is a floating surface's shadow, its BoxShadows painted in order.
+// The window has three, by how high the surface stands (DESIGN.md, Elevation):
+// a tooltip low, what opens over a screen (menus, popovers, the composer's
+// panels, toasts) in the middle, and a dialog high.
+type Elevation []BoxShadow
+
+var (
+	ElevationLow  = Elevation{{Y: 2, Blur: 6, Alpha: 0.3}}
+	ElevationMid  = Elevation{{Y: 12, Blur: 32, Alpha: 0.45}, {Y: 2, Blur: 6, Alpha: 0.3}}
+	ElevationHigh = Elevation{{Y: 24, Blur: 56, Alpha: 0.55}, {Y: 4, Blur: 12, Alpha: 0.35}}
+)
+
+// Paint paints each shadow under a box of size with corners of radius.
+func (e Elevation) Paint(gtx C, size image.Point, radius int) {
+	for _, s := range e {
+		s.Paint(gtx, size, radius)
+	}
+}
+
 // BoxShadow is CSS's box-shadow 0 Y Blur rgba(0,0,0,Alpha).
 type BoxShadow struct {
 	Y, Blur unit.Dp

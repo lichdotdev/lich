@@ -58,7 +58,7 @@ func (r *dialogRig) frame() (dismissed, underClicked bool) {
 func (r *dialogRig) settle() {
 	r.open = true
 	r.frame()
-	r.now = r.now.Add(dialogTransition)
+	r.now = r.now.Add(surfaceEnter)
 	r.frame()
 }
 
@@ -151,13 +151,13 @@ func TestDialogCloseRunsTheTransitionOut(t *testing.T) {
 	r.settle()
 	r.open = false
 	r.frame()
-	r.now = r.now.Add(dialogTransition / 2)
+	r.now = r.now.Add(dialogExit / 2)
 	r.frame()
 	r.click(image.Pt(10, 10))
 	if _, clicked := r.frame(); clicked {
 		t.Error("mid fade-out: the click reached the content, want the scrim still up")
 	}
-	r.now = r.now.Add(dialogTransition)
+	r.now = r.now.Add(dialogExit)
 	r.frame()
 	r.click(image.Pt(10, 10))
 	if _, clicked := r.frame(); !clicked {
@@ -235,7 +235,7 @@ func TestDialogRawPanelHangsFromTopOverItsOwnScrim(t *testing.T) {
 		r.router.Frame(&r.ops)
 	}
 	frame()
-	r.now = r.now.Add(dialogTransition)
+	r.now = r.now.Add(surfaceEnter)
 	frame()
 	if raw.Max.X != 400 || raw.Min.X != 400 {
 		t.Errorf("the widget is laid out at the panel's width, got %v", raw)
@@ -268,7 +268,7 @@ func TestDialogAnimatingCoversTheCloseTransition(t *testing.T) {
 	if !r.state.Animating(r.gtx()) {
 		t.Fatal("a dialog still fading out is not animating")
 	}
-	r.now = r.now.Add(dialogTransition)
+	r.now = r.now.Add(dialogExit)
 	if r.state.Animating(r.gtx()) {
 		t.Fatal("a dialog done fading out is animating")
 	}
@@ -297,7 +297,7 @@ func TestOverlayCountSeesADialogUntilItHasFaded(t *testing.T) {
 	if !frame() {
 		t.Fatal("a fading dialog stopped counting before it faded")
 	}
-	r.now = r.now.Add(dialogTransition)
+	r.now = r.now.Add(dialogExit)
 	frame()
 	if frame() {
 		t.Fatal("a faded dialog still counts")
@@ -312,7 +312,7 @@ func TestOverlayCountBoxesTheSettledPanel(t *testing.T) {
 	r.open = true
 	r.th.Overlays.Frame()
 	r.frame()
-	r.now = r.now.Add(dialogTransition)
+	r.now = r.now.Add(surfaceEnter)
 	r.th.Overlays.Frame()
 	r.frame()
 	boxes := r.th.Overlays.Boxes()
@@ -325,7 +325,7 @@ func TestOverlayCountBoxesTheSettledPanel(t *testing.T) {
 	}
 	r.open = false
 	r.frame()
-	r.now = r.now.Add(dialogTransition)
+	r.now = r.now.Add(dialogExit)
 	r.th.Overlays.Frame()
 	r.frame()
 	if boxes := r.th.Overlays.Boxes(); len(boxes) != 0 {

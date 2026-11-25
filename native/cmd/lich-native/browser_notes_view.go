@@ -44,11 +44,7 @@ var (
 var (
 	notePopoverWidth = unit.Dp(280)
 	// noteFieldMin is the mockup's min-height: 80px, so the field reads as one.
-	noteFieldMin = ui.Space(20)
-	// noteShadows is the mockup's 0 12px 32px rgba(0,0,0,.45), 0 2px 6px
-	// rgba(0,0,0,.3): the popover floats over a website, where a hairline alone
-	// is lost on a light page.
-	noteShadows   = []ui.BoxShadow{{Y: 12, Blur: 32, Alpha: 0.45}, {Y: 2, Blur: 6, Alpha: 0.3}}
+	noteFieldMin  = ui.Space(20)
 	noteRowHeight = ui.Space(6.5)
 	noteTrayHead  = ui.Space(9)
 	noteTrayPad   = ui.Space(2)
@@ -288,9 +284,7 @@ func (u *window) notePopover(gtx C, p *browserPaneUI, scale float32) {
 	defer op.Offset(at).Push(gtx.Ops).Pop()
 	defer noteEnter(gtx, n.openedAt, el.Sub(at), d.Size)()
 	radius := gtx.Dp(ui.RadiusLG)
-	for _, s := range noteShadows {
-		s.Paint(gtx, d.Size, radius)
-	}
+	ui.ElevationMid.Paint(gtx, d.Size, radius)
 	shape := clip.UniformRRect(image.Rectangle{Max: d.Size}, radius)
 	paint.FillShape(gtx.Ops, th.Popover, shape.Op(gtx.Ops))
 	area := shape.Push(gtx.Ops)
