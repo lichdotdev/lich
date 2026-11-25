@@ -321,6 +321,19 @@
     "add": "Quote",
     "remove": "Remove"
   },
+  "copy": {
+    "menu": {
+      "copy": "Copy",
+      "upToHere": "Copy conversation up to here"
+    },
+    "you": "You",
+    "edited": "Edited {path} (+{added} −{deleted})",
+    "attachments": {
+      "one": "The attached file was not copied, only its name.",
+      "other": "The attached files were not copied, only their names."
+    },
+    "incomplete": "(incomplete)"
+  },
   "plugins": {
     "title": "Plugins",
     "installedCount": {

@@ -299,6 +299,18 @@
     "add": "인용",
     "remove": "빼기"
   },
+  "copy": {
+    "menu": {
+      "copy": "복사",
+      "upToHere": "여기까지의 대화 복사"
+    },
+    "you": "나",
+    "edited": "{path} 편집 (+{added} −{deleted})",
+    "attachments": {
+      "other": "첨부 파일은 복사되지 않았고 이름만 들어 있습니다."
+    },
+    "incomplete": "(미완료)"
+  },
   "plugins": {
     "title": "플러그인",
     "installedCount": {

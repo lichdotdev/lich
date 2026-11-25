@@ -126,6 +126,14 @@ func (s *MenuState) OpenAtPointer(root *Root) {
 	s.menuOpen(image.Rectangle{Min: at, Max: at}, image.Point{})
 }
 
+// OpenFrom opens a ContextMenu as a right press at local, in the coordinates
+// its Layout sits at, does: for a menu whose trigger cannot hold the presses
+// of what it covers, as content drawn past the trigger's bounds.
+func (s *MenuState) OpenFrom(root *Root, local f32.Point) {
+	at := root.pointer.Round()
+	s.menuOpen(image.Rectangle{Min: at, Max: at}, root.origin(local))
+}
+
 func (s *MenuState) menuOpen(anchor image.Rectangle, origin image.Point) {
 	s.open, s.focus, s.anchor, s.origin = true, true, anchor, origin
 	s.levels = []*menuLevel{{highlight: -1}}

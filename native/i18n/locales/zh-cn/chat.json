@@ -299,6 +299,18 @@
     "add": "引用",
     "remove": "移除"
   },
+  "copy": {
+    "menu": {
+      "copy": "复制",
+      "upToHere": "复制到此为止的对话"
+    },
+    "you": "你",
+    "edited": "编辑了 {path} (+{added} −{deleted})",
+    "attachments": {
+      "other": "附件未复制，只保留了文件名。"
+    },
+    "incomplete": "(未完成)"
+  },
   "plugins": {
     "title": "插件",
     "installedCount": {

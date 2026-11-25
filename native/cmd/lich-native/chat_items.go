@@ -78,23 +78,7 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 			return u.chatEnvelopes(gtx, th, p, it, envs)
 		}
 		c := p.copyOf(it.ID)
-		return c.hover(gtx, func(gtx C, over bool) D {
-			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return u.sentCards(gtx, th, p, it.ID, it.Files) }),
-				layout.Rigid(func(gtx C) D {
-					if it.Text == "" {
-						return D{}
-					}
-					return u.chatUser(gtx, th, p, it.ID, it.Text)
-				}),
-				ui.VGap(1),
-				layout.Rigid(func(gtx C) D {
-					return layout.E.Layout(gtx, func(gtx C) D {
-						return u.chatStampRow(gtx, th, c, it.Text, func(gtx C) D { return u.chatDatedStamp(gtx, th, p, it) }, over, true)
-					})
-				}),
-			)
-		})
+		return u.messageMenu(gtx, th, p, sv, c, it.ID, "user:"+it.ID, it.Text, func(gtx C) D { return u.chatUserRow(gtx, th, p, c, it) })
 	case api.ItemAgent:
 		return u.chatAgent(gtx, th, p, sv, r)
 	case api.ItemCompaction:
@@ -116,6 +100,27 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 		return chatQuestion(gtx, th, it)
 	}
 	return th.Text(ui.TextSM, expandTabs(it.Text)).Muted().Wrapped().Layout(gtx)
+}
+
+// chatUserRow is the person's message: its cards, its text and its time line.
+func (u *window) chatUserRow(gtx C, th *ui.Theme, p *chatPane, c *chatCopy, it backend.ChatItem) D {
+	return c.hover(gtx, func(gtx C, over bool) D {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return u.sentCards(gtx, th, p, it.ID, it.Files) }),
+			layout.Rigid(func(gtx C) D {
+				if it.Text == "" {
+					return D{}
+				}
+				return u.chatUser(gtx, th, p, it.ID, it.Text)
+			}),
+			ui.VGap(1),
+			layout.Rigid(func(gtx C) D {
+				return layout.E.Layout(gtx, func(gtx C) D {
+					return u.chatStampRow(gtx, th, c, it.Text, func(gtx C) D { return u.chatDatedStamp(gtx, th, p, it) }, over, true)
+				})
+			}),
+		)
+	})
 }
 
 // chatStamp is the time an item began, in the window's short clock, muted,
@@ -848,9 +853,19 @@ func chatLive(gtx C, th *ui.Theme, verbs, session string, r chatRow) D {
 // chatAgent is an answer's text with its model, effort and time under it.
 func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
 	it := r.item
+	c := p.copyOf(it.ID)
+	text := it.Text
+	if r.runText != "" {
+		text = r.runText
+	}
+	return u.messageMenu(gtx, th, p, sv, c, it.ID, it.ID, text, func(gtx C) D { return u.chatAnswer(gtx, th, p, sv, r, c) })
+}
+
+// chatAnswer is chatAgent's text and, on the run's last text, its foot.
+func (u *window) chatAnswer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow, c *chatCopy) D {
+	it := r.item
 	src := it.Text
 	notify := func(t ui.Toast) { u.toaster.Show(t) }
-	c := p.copyOf(it.ID)
 	return c.hover(gtx, func(gtx C, over bool) D {
 		body := []layout.FlexChild{
 			layout.Rigid(func(gtx C) D {

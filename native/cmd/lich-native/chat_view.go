@@ -80,6 +80,8 @@ type chatView struct {
 	// last was, for one that is playing its exit.
 	rows ui.Presence
 	seen map[string]chatRow
+	// drawn are this frame's rows, which a message's menu copies up to it.
+	drawn []chatRow
 	// keys are the rows of the frame before, swap the live line turning into
 	// the closing line, run the list's way back to its end, and anchored the
 	// message that started the turn, held near the top of the view.
@@ -330,6 +332,7 @@ func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
 	u.backdrops.stirOf(sv.ID).keep(gtx.Now, u.model.chat.isRunning(sv.ID), p.editor.Len(), p.start.empty)
 	u.chatActs(gtx, p, sv, keys, working, permissionWaiting(items), questionWaiting(items))
 	rows := chatRows(items, sv.Kind, working, gtx.Now)
+	p.drawn = rows
 	u.terms.readLinkKey(gtx)
 	p.paths = u.chatPaths(p, sv, len(items))
 	th := u.theme.On(u.theme.Background)

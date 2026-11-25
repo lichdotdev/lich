@@ -319,6 +319,15 @@ func (t *markdownText) dropSelection() {
 	}
 }
 
+// Selection is the selected text of the body drawn under key, as Ctrl+C
+// copies it: "" for none.
+func (m Cache) Selection(key string) string {
+	if t, ok := m[key]; ok {
+		return t.selection()
+	}
+	return ""
+}
+
 // DropSelection lets go of the selection in every body of m.
 func (m Cache) DropSelection() {
 	for _, t := range m {
