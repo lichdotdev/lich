@@ -857,7 +857,7 @@ func (u *window) chatAnswer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r 
 	return c.hover(gtx, func(gtx C, over bool) D {
 		body := []layout.FlexChild{
 			layout.Rigid(func(gtx C) D {
-				links := markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths, Quote: u.quoteButton(p, th, gtx.Metric)}
+				links := markdown.Links{Open: func(url string) { u.openChatLink(sv.ID, notify, url) }, Paths: p.paths, Quote: u.quoteButton(p, th, gtx.Metric)}
 				return p.md.LayoutLinksWindow(gtx, th, it.ID, src, links, p.window)
 			}),
 		}
