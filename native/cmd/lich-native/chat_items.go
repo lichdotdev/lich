@@ -66,7 +66,7 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 		if p.swap.key == chatRowKey(r) && p.swap.playing(gtx.Now) {
 			return u.chatSwapLine(gtx, th, p, sv, r)
 		}
-		return u.chatDone(gtx, th, p, sv, r, 1, 1)
+		return u.chatDone(gtx, th, sv, r, 1)
 	case chatRowDay:
 		return layout.Center.Layout(gtx, th.Text(ui.TextXS, dayLabel(time.UnixMilli(r.day).In(gtx.Now.Location()), gtx.Now)).Muted().Layout)
 	}

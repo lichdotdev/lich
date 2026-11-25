@@ -1,14 +1,10 @@
 package main
 
 import (
-	"image"
-	"strconv"
-
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op/paint"
 
-	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -32,26 +28,15 @@ func chatDoneWord(reason string) string {
 	return i18n.T("chat.done.done")
 }
 
-// chatChangesText is the files of a turn's count, "3 files".
-func chatChangesText(c api.ChatTurnChanges) string {
-	return i18n.T("chat.done.files", i18n.Args{"count": c.Files})
-}
-
 // chatDone is the line that closes a finished turn: the word that says how it
-// ended and, muted, what the turn changed in the checkout,
-// with a hairline to the column's edge as the turn's tool calls have. The count
-// of files and lines is the click: it opens Review, where the footer's changes
-// item does. A turn with no count to give (the checkout could not be read, or
-// the turn was read back with the history) says its word alone. The word and
-// count are drawn at opacity shown, and the hairline over share rule
-// of its room from its left end: both 1 at rest, less while the live line
+// ended, then, muted, its calls and how long it took, and "no changes" when
+// the checkout says the turn changed nothing; what it did change is on its
+// edits' rows (chatEdit). A turn with no count to give (the checkout could not
+// be read, or the turn was read back with the history) says its word alone.
+// The line is drawn at opacity shown: 1 at rest, less while the live line
 // turns into this one.
-func (u *window) chatDone(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow, shown, rule float32) D {
+func (u *window) chatDone(gtx C, th *ui.Theme, sv sessionView, r chatRow, shown float32) D {
 	end, _ := u.model.chat.endOf(sv.ID, r.turn)
-	f := p.fold("done:" + strconv.Itoa(r.turn))
-	if f.click.Clicked(gtx) {
-		u.dock.show(dockReview)
-	}
 	word := th.Text(ui.TextSM, chatDoneWord(end.StopReason)).Weight(font.Medium)
 	if end.StopReason == stopError {
 		word = word.In(th.Destructive)
@@ -65,40 +50,15 @@ func (u *window) chatDone(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r ch
 			return w(gtx)
 		})
 	}
+	muted := func(s string) []layout.FlexChild {
+		return []layout.FlexChild{ui.Gap(2), faded(th.Text(ui.TextSM, "·").Muted().Layout), ui.Gap(2), faded(th.Text(ui.TextSM, s).Muted().Layout)}
+	}
 	line := []layout.FlexChild{faded(word.Layout)}
 	if len(r.tools) > 0 {
-		work := i18n.T("chat.view.toolCalls", i18n.Args{"count": len(r.tools)}) + " · " + chatTook(r.took)
-		line = append(line, ui.Gap(2), faded(th.Text(ui.TextSM, "·").Muted().Layout), ui.Gap(2), faded(th.Text(ui.TextSM, work).Muted().Layout))
+		line = append(line, muted(i18n.T("chat.view.toolCalls", i18n.Args{"count": len(r.tools)})+" · "+chatTook(r.took))...)
 	}
-	if c := end.Changes; c != nil {
-		line = append(line, ui.Gap(2), faded(th.Text(ui.TextSM, "·").Muted().Layout), ui.Gap(2), faded(func(gtx C) D { return u.chatDoneCount(gtx, th, f, *c) }))
+	if c := end.Changes; c != nil && c.Files == 0 {
+		line = append(line, muted(i18n.T("chat.done.noChanges"))...)
 	}
-	line = append(line, ui.Gap(3), layout.Flexed(1, func(gtx C) D {
-		d := D{Size: image.Pt(gtx.Constraints.Max.X, gtx.Dp(1))}
-		gtx.Constraints.Max.X = int(float32(gtx.Constraints.Max.X)*rule + 0.5)
-		chatHairline(gtx, th)
-		return d
-	}))
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...)
-}
-
-// chatDoneCount is "no changes", or the clickable files with the lines added in
-// TonePass and removed in Destructive.
-func (u *window) chatDoneCount(gtx C, th *ui.Theme, f *chatFold, c api.ChatTurnChanges) D {
-	if c.Files == 0 {
-		return th.Text(ui.TextSM, i18n.T("chat.done.noChanges")).Muted().Layout(gtx)
-	}
-	return f.click.Layout(gtx, func(gtx C) D {
-		fg := th.MutedForeground
-		if f.click.Hovered() {
-			fg = th.Foreground
-		}
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(th.Text(ui.TextSM, chatChangesText(c)).In(fg).Layout),
-			ui.Gap(2),
-			layout.Rigid(th.Text(ui.TextSM, "+"+strconv.Itoa(c.Added)).In(th.TonePass).Layout),
-			ui.Gap(1.5),
-			layout.Rigid(th.Text(ui.TextSM, "−"+strconv.Itoa(c.Removed)).In(th.Destructive).Layout),
-		)
-	})
 }

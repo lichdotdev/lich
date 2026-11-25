@@ -17,12 +17,10 @@ import (
 // The chat view): a row that becomes another plays the change in its slot.
 const (
 	// The live line turning into the closing line: the flame, verb and clock
-	// go by chatSwapOut, the word and count come in up to chatSwapIn,
-	// the hairline runs out to the edge up to chatSwapRule, and the slot takes
-	// the closing line's height over chatSwapHeight.
+	// go by chatSwapOut, the word and count come in up to chatSwapIn, and the
+	// slot takes the closing line's height over chatSwapHeight.
 	chatSwapOut    = 120 * time.Millisecond
 	chatSwapIn     = 280 * time.Millisecond
-	chatSwapRule   = 360 * time.Millisecond
 	chatSwapHeight = 160 * time.Millisecond
 	// chatToEndRun is the list's run back to its end when a message is sent
 	// from above it.
@@ -56,18 +54,17 @@ type chatSwap struct {
 }
 
 // playing is whether the swap plays at now.
-func (s chatSwap) playing(now time.Time) bool { return s.key != "" && now.Sub(s.at) < chatSwapRule }
+func (s chatSwap) playing(now time.Time) bool { return s.key != "" && now.Sub(s.at) < chatSwapIn }
 
 // chatSwapLine is the closing line r while the live line turns into it.
 func (u *window) chatSwapLine(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r chatRow) D {
 	s := p.swap
 	out := 1 - chatPhase(gtx, s.at, 0, chatSwapOut, paneEaseIn)
 	in := chatPhase(gtx, s.at, chatSwapOut, chatSwapIn, paneEaseOut)
-	rule := chatPhase(gtx, s.at, chatSwapOut, chatSwapRule, paneEaseOut)
 	height := chatPhase(gtx, s.at, 0, chatSwapHeight, paneEaseOut)
 	return chatCrossfade(gtx, layout.W, height, out, 1,
 		func(gtx C) D { return chatLive(gtx, th, u.chatVerbs, sv.ID, s.live) },
-		func(gtx C) D { return u.chatDone(gtx, th, p, sv, r, in, rule) })
+		func(gtx C) D { return u.chatDone(gtx, th, sv, r, in) })
 }
 
 // chatCrossfade draws out leaving and in arriving in one slot, each placed in
