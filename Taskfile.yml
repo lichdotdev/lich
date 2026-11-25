@@ -100,17 +100,17 @@ tasks:
 
   dev:
     desc: Dev mode — the native window on a backend with its own DB and port
-    deps: [build:native]
+    deps: [build:native, build:browser]
     cmds:
       # Dev isolation: separate DB (LICH_DEV, store.databasePath) and listener
       # port, so a daily-driver lich keeps running untouched; LICH_DEV also
       # gives the window its own class, lichdev. go run leaves the binary in a
-      # temp dir, where nothing sits beside it; the pin names the window
-      # build:native made. The build reports "dev" unless VERSION is set:
+      # temp dir, where nothing sits beside it; the pins name the window and
+      # lich-browser build:native and build:browser made. The build reports "dev" unless VERSION is set:
       # `VERSION=Unreleased task dev` is how the What's new dialog is smoked
       # against the [Unreleased] changelog section, `VERSION=v0.44.0` against
       # a release.
-      - cmd: LICH_DEV=1 LICH_LISTEN_PORT=47822 LICH_NATIVE="{{.ROOT_DIR}}/{{.BIN_DIR}}/lich-native" go run {{if env "VERSION"}}-ldflags "-X main.version={{.VERSION}}" {{end}}.
+      - cmd: LICH_DEV=1 LICH_LISTEN_PORT=47822 LICH_NATIVE="{{.ROOT_DIR}}/{{.BIN_DIR}}/lich-native" LICH_BROWSER="{{.ROOT_DIR}}/{{.BIN_DIR}}/lich-browser" go run {{if env "VERSION"}}-ldflags "-X main.version={{.VERSION}}" {{end}}.
 
   gallery:
     desc: Build the UI kit gallery into bin/lich-gallery and open it (cgo, no libghostty-vt)

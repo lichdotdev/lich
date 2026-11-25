@@ -2398,32 +2398,23 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   falls through it; Windows will need a region cut out of the WebView2's child window (`SetWindowRgn`, its
   rectangles combined with `RGN_DIFF`) set before the frame is presented, or a composition controller that lets
   the window's drawing stand over the page.
-- **Select on a page the window draws itself shows the window's drawing through cuts in the page**
-  (`native/internal/webview`, `docs/browser-tab.md`): on X11 the WebKitGTK page is a child window over the pane,
-  and the window's drawing over it shows only where that window is cut away (X SHAPE). The outlines are drawn into
-  the page instead, in a layer of their own appended to its document, which the page's own scripts can see. Menus,
+- **Select on a page lich-browser shows in the window shows the window's drawing through cuts in the page**
+  (`native/internal/webview`, `docs/browser-tab.md`): on X11 the page is lich-browser's X window, reparented into
+  the window over the pane, and the window's drawing over it shows only where that window is cut away (X SHAPE).
+  The outlines are drawn into the page instead, in a layer of their own appended to its document
+  (`browser.Draw`), which the page's own scripts can see. Menus,
   dropdown panels and tooltips cut the page where they land (`ui.Root.Popups`); a popup drawn outside those three
   has no cut and stays under it. A cut shows the
   window's drawing only while the window is not fullscreen: fullscreen, XWayland hands the window's frame to the
   compositor whole and the cuts stay dark (measured on Umbriel with the NVIDIA GPU, 2026-11-19). The sketch's
   strokes and the eraser are drawn in that layer too, and while strokes stand on the page the layer keeps the wheel
   from scrolling it; keys (arrows, Page Down) still scroll a page whose strokes then point at the wrong place. The
-  sketch's picture is a shot of the page (`webkit_web_view_get_snapshot`) with the layer hidden for it. The element is read in WebKit, whose context keeps no cookies
-  of Chrome's, so on a page the person signed into only one of them the selector the agent gets may not match the
-  agent's page. macOS will need the overlay plane on top of the WKWebView, a `hitTest:` that lets clicks fall
+  sketch's picture is a shot of the page (`browser.Snapshot`) with the layer hidden for it. macOS will need the overlay plane on top of the WKWebView, a `hitTest:` that lets clicks fall
   through where the window draws (as Sikemux's `hit_test_outside_holes` does) and the scripts run in the page's
   own content world (`WKContentWorld.pageWorld`), since they read React's fiber on the element. Windows will need
   `ExecuteScript` for the scripts and either a window region cut out of the WebView2's child window
   (`SetWindowRgn`) or a composition controller for anything drawn over the page, which Sikemux has not done:
   its pages cover its menus.
-- **A load in the page the window draws itself reaches the agent's page by its URL only**
-  (`native/internal/webview`, `browser.NativeLoad`): on X11 the pane shows a WebKitGTK page and the agent drives
-  Chrome, so a link the person follows there is loaded again in Chrome by the URL WebKit committed to. A form
-  the person posts is fetched again as a plain GET, and a page that only changes its URL in place (`pushState`, a
-  hash) is never told to the backend, since WebKit's `load-changed` fires on loads only. The tab's spinner runs until both
-  pages finished. The agent's Chrome keeps running the page the person sees, without frames: a video plays in
-  both, so its decoding is paid twice. macOS and Windows draw the screencast yet, where Chrome's own load events
-  cover the tab.
 - **The new-tab page is the backend's page in the window's colors and words, as of the last time the window sent
   them** (`internal/newtab`, `docs/browser-tab.md`): a tab already open keeps its look until it is opened again, and
   before the window has sent any it is the dark theme in English. It has a listener of its own from port 27000,
