@@ -1,3 +1,25 @@
+## [0.93.0] - 2026-11-25
+
+### Added
+
+- **Desenhe retângulos, elipses e setas em uma página do navegador.** Ative Desenhar, escolha uma forma no botão de ferramenta com contorno e arraste para posicioná-la.
+- **Um canal beta entrega as release candidates antes da versão estável.** Escolha-o em Configurações › Atualizações › Canal; instalações via Homebrew e Scoop no beta recebem a página da release em vez de um comando.
+- **Clique em uma extensão instalada para ver a página dela no catálogo.** Em Configurações › Extensões › Instaladas, uma linha listada no catálogo abre o mesmo detalhe que o card dela, com Atualizar quando há uma versão mais nova.
+
+### Changed
+
+- **O detalhe de uma extensão cresce com a janela.** Em uma tela alta ou ultrawide, o diálogo e as capturas de tela ocupam mais espaço dela.
+- **Um artefato Markdown abre renderizado, na aba Artifacts.** Clicar em um arquivo `.md` na aba Artifacts do dock o mostra formatado, como faz a pré-visualização de Markdown da aba Código, em vez do código-fonte no navegador.
+- **Threads de revisão enviadas a uma sessão só são resolvidas quando o agente as corrige.** Uma pergunta ou um ponto para o time volta para você na sessão em vez de receber "Fixing this" no GitHub. Uma thread que o agente corrigiu é resolvida, com uma resposta que cita o commit, depois que esse commit recebe push.
+
+### Fixed
+
+- **Cliques no navegador da sessão continuam esperando as requisições deles quando o relógio do sistema muda.**
+- **O erro de inicialização da janela agora aponta para o log da janela nativa.** Esse log contém o erro do processo da janela quando ele encerra antes de abri-la.
+- **Uma mensagem para uma sessão do Claude Code que acabou de abrir não fica mais sem ser enviada no prompt dela.**
+- **Mudar o modelo do advisor, o modo rápido, o thinking ou o ultracode em uma conta do Claude Code não os muda mais nas suas outras contas.** Cada perfil agora guarda essas opções junto com o próprio modelo e esforço padrão, além da escolha de trocar de modelo quando as salvaguardas sinalizam uma mensagem.
+- **Digitar na paleta de comandos aberta sobre uma página do navegador não empilha mais cada letra no início.** A página retomava o teclado a cada quadro; agora a paleta, e qualquer campo sobre a página, fica com ele até fechar.
+
 ## [0.92.0] - 2026-11-16
 
 ### Added

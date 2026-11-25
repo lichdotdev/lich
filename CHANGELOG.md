@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.93.0] - 2026-11-25
+
 ### Added
 
 - **Draw rectangles, ellipses and arrows on a browser page.** Turn on Draw, choose a shape from the outlined tool button, and drag to place it.
@@ -6791,7 +6793,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.92.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.93.0...HEAD
+[0.93.0]: https://github.com/lichdotdev/lich/compare/v0.92.0...v0.93.0
 [0.92.0]: https://github.com/lichdotdev/lich/compare/v0.91.0...v0.92.0
 [0.91.0]: https://github.com/lichdotdev/lich/compare/v0.90.1...v0.91.0
 [0.90.1]: https://github.com/lichdotdev/lich/compare/v0.90.0...v0.90.1
