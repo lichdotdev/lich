@@ -316,6 +316,10 @@
     "remove": "Remove",
     "pasteNeedsTool": "Pasting an image needs wl-paste (wl-clipboard) or xclip"
   },
+  "quote": {
+    "add": "Quote",
+    "remove": "Remove"
+  },
   "plugins": {
     "title": "Plugins",
     "installedCount": {

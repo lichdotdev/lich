@@ -845,7 +845,8 @@ func (u *window) chatAgent(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r c
 	return c.hover(gtx, func(gtx C, over bool) D {
 		body := []layout.FlexChild{
 			layout.Rigid(func(gtx C) D {
-				return p.md.LayoutLinksWindow(gtx, th, it.ID, src, markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths}, p.window)
+				links := markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths, Quote: u.quoteButton(p, th, gtx.Metric)}
+				return p.md.LayoutLinksWindow(gtx, th, it.ID, src, links, p.window)
 			}),
 		}
 		// a text another follows reads on into it: the run's last one keeps

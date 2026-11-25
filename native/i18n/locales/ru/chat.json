@@ -360,6 +360,10 @@
     "remove": "Убрать",
     "pasteNeedsTool": "Чтобы вставить изображение, нужен wl-paste (wl-clipboard) или xclip"
   },
+  "quote": {
+    "add": "Цитировать",
+    "remove": "Убрать"
+  },
   "plugins": {
     "title": "Плагины",
     "installedCount": {

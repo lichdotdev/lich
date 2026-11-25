@@ -294,6 +294,10 @@
     "remove": "移除",
     "pasteNeedsTool": "粘贴图片需要 wl-paste（wl-clipboard）或 xclip"
   },
+  "quote": {
+    "add": "引用",
+    "remove": "移除"
+  },
   "plugins": {
     "title": "插件",
     "installedCount": {

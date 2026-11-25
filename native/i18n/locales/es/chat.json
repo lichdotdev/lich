@@ -316,6 +316,10 @@
     "remove": "Quitar",
     "pasteNeedsTool": "Para pegar una imagen hace falta wl-paste (wl-clipboard) o xclip"
   },
+  "quote": {
+    "add": "Citar",
+    "remove": "Quitar"
+  },
   "plugins": {
     "title": "Plugins",
     "installedCount": {

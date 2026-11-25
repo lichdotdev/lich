@@ -29,10 +29,10 @@ func (s *chatStore) suggestionOf(id string) string {
 }
 
 // shownSuggestion is the suggestion session id's box draws in place of its
-// placeholder, "" when there is none or the box is not idle: it holds text or
-// a file, a turn runs or a message waits to go, or the queue holds one.
+// placeholder, "" when there is none or the box is not idle: it holds text, a
+// file or a quote, a turn runs or a message waits to go, or the queue holds one.
 func (u *window) shownSuggestion(p *chatPane, id string) string {
-	if p.editor.Len() > 0 || len(p.attached) > 0 || p.tools.opened() || p.picker.panel.Opened() {
+	if p.editor.Len() > 0 || len(p.attached) > 0 || len(p.quotes) > 0 || p.tools.opened() || p.picker.panel.Opened() {
 		return ""
 	}
 	if u.model.chat.isRunning(id) || len(u.model.chat.queued(id)) > 0 {

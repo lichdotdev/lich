@@ -294,6 +294,10 @@
     "remove": "빼기",
     "pasteNeedsTool": "이미지를 붙여 넣으려면 wl-paste (wl-clipboard) 또는 xclip이 필요합니다"
   },
+  "quote": {
+    "add": "인용",
+    "remove": "빼기"
+  },
   "plugins": {
     "title": "플러그인",
     "installedCount": {

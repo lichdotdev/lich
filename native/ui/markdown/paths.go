@@ -15,6 +15,15 @@ import (
 type Links struct {
 	Open  func(url string)
 	Paths *Paths
+	// Quote, when set, draws a control for the body's selection while there
+	// is one and no press is still making it, text being what Ctrl+C copies.
+	// The body stands it over the selection's first line, outside its
+	// layout, and a press on it keeps the selection.
+	Quote func(gtx C, text string) D
+	// quoteAt is the cell Quote stands over, -1 for none, and quoteText the
+	// selection it is handed.
+	quoteAt   int
+	quoteText string
 }
 
 // Paths makes the paths written in code that Link takes open with Open on a

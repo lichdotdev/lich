@@ -22,11 +22,11 @@ var chatRunShellKinds = []string{claudeKind, codexKind, opencodeKind}
 const chatShellMark = "!"
 
 // shellLine is the command the composer holds when it is one, for a chat of
-// kind: the text after a leading "!", with no file attached, which a command
-// could not carry.
+// kind: the text after a leading "!", with no file attached nor text quoted,
+// which a command could not carry.
 func (p *chatPane) shellLine(kind string) (string, bool) {
 	text := p.editor.Text()
-	if len(p.attached) > 0 || !strings.HasPrefix(text, chatShellMark) || !slices.Contains(chatRunShellKinds, kind) {
+	if len(p.attached) > 0 || len(p.quotes) > 0 || !strings.HasPrefix(text, chatShellMark) || !slices.Contains(chatRunShellKinds, kind) {
 		return "", false
 	}
 	return strings.TrimSpace(strings.TrimPrefix(text, chatShellMark)), true
