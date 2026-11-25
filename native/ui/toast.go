@@ -1,9 +1,9 @@
 package ui
 
 import (
-	"image"
 	"image/color"
 	"math"
+	"slices"
 	"strconv"
 	"sync"
 	"time"
@@ -237,16 +237,16 @@ type Toaster struct {
 	hidden  bool
 	hovered bool
 	pressed bool
-	// box is where the last frame drew the stack, in the pixels of the
-	// context Layout ran in; empty with no toast up.
-	box image.Rectangle
+	// covers are where the last frame drew each toast, in the pixels of the
+	// context Layout ran in; none with no toast up.
+	covers []Cover
 }
 
-// Box is where the last frame drew the stack, empty with no toast up.
-func (t *Toaster) Box() image.Rectangle {
+// Covers are where the last frame drew each toast, none with no toast up.
+func (t *Toaster) Covers() []Cover {
 	t.mu.Lock()
 	defer t.mu.Unlock()
-	return t.box
+	return slices.Clone(t.covers)
 }
 
 // Show raises t, or replaces the toast with its ID, and returns that ID.

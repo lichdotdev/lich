@@ -163,12 +163,13 @@ func (p DropdownPanelStyle) overlay(gtx C) {
 	}
 	box, side := place.box(gtx, anchor, size, window)
 	s.box = box
-	p.Root.popups = append(p.Root.popups, box)
 	area := clip.Rect(box).Push(gtx.Ops)
 	event.Op(gtx.Ops, &s.panel)
 	area.Pop()
 	defer op.Offset(box.Min).Push(gtx.Ops).Pop()
-	defer menuEnter(gtx, &s.panel, side, s.anchor.Min.Sub(box.Min), size)()
+	enter, motion := menuEnter(gtx, &s.panel, side, s.anchor.Min.Sub(box.Min), size)
+	defer enter()
+	p.Root.popups = append(p.Root.popups, menuCover(gtx, motion, box.Min, size))
 	call.Add(gtx.Ops)
 }
 

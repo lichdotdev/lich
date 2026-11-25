@@ -18,6 +18,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/internal/webview"
+	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/pagescript"
 )
 
@@ -122,13 +123,17 @@ func pageCuts(r image.Rectangle, own, covers []image.Rectangle) []image.Rectangl
 // has to cut out of itself (cutNativePages).
 func (u *window) floatingBoxes() []image.Rectangle {
 	var boxes []image.Rectangle
-	for _, b := range []image.Rectangle{u.sidebar.peek.box, u.dock.peek.box, u.toaster.Box()} {
+	for _, b := range []image.Rectangle{u.sidebar.peek.box, u.dock.peek.box} {
 		if !b.Empty() {
 			boxes = append(boxes, b)
 		}
 	}
-	boxes = append(boxes, u.theme.Overlays.Boxes()...)
-	return append(boxes, u.root.Popups()...)
+	for _, covers := range [][]ui.Cover{u.toaster.Covers(), u.theme.Overlays.Boxes(), u.root.Popups()} {
+		for _, c := range covers {
+			boxes = append(boxes, c.Rects()...)
+		}
+	}
+	return boxes
 }
 
 // putNativePageAway hides the page of a pane no longer drawn, and ends it

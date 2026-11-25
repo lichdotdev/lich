@@ -319,7 +319,7 @@ func TestOverlayCountBoxesTheSettledPanel(t *testing.T) {
 	if len(boxes) != 1 {
 		t.Fatalf("boxes %v, want the one panel", boxes)
 	}
-	b := boxes[0]
+	b := boxes[0].Box
 	if b.Dx() != int(DialogWidthMD) || b.Min.X+b.Max.X != dialogTestWindow.X || b.Min.Y+b.Max.Y != dialogTestWindow.Y {
 		t.Errorf("box %v, want %v wide and centered in %v", b, DialogWidthMD, dialogTestWindow)
 	}

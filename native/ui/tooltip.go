@@ -157,7 +157,6 @@ func (t TooltipStyle) drawBubble(gtx C, triggerSize image.Point, progress float3
 	window := image.Rectangle{Max: t.Root.window}.Sub(t.State.origin)
 	place := popupPlace{side: t.Side, sideOffset: tooltipSideOffset}
 	box, side := place.box(gtx, image.Rectangle{Max: triggerSize}, size, window)
-	t.Root.popups = append(t.Root.popups, box.Add(t.State.origin))
 	pl := m.anchor(side, box, triggerSize)
 	bg, border := t.colors()
 
@@ -165,7 +164,9 @@ func (t TooltipStyle) drawBubble(gtx C, triggerSize image.Point, progress float3
 	op.Offset(pl.box.Min).Add(gtx.Ops)
 	slide := pl.towardTrigger.Mul(float32(gtx.Dp(tooltipSlide)) * (1 - progress))
 	scale := zoomFrom + (1-zoomFrom)*progress
-	op.Affine(f32.Affine2D{}.Scale(pl.origin, f32.Pt(scale, scale)).Offset(slide)).Add(gtx.Ops)
+	motion := f32.Affine2D{}.Scale(pl.origin, f32.Pt(scale, scale)).Offset(slide)
+	op.Affine(motion).Add(gtx.Ops)
+	t.cover(gtx, m, motion, pl, size)
 	opacity := paint.PushOpacity(gtx.Ops, progress)
 	rect := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(RadiusMD))
 	paint.FillShape(gtx.Ops, bg, rect.Op(gtx.Ops))
@@ -178,6 +179,22 @@ func (t TooltipStyle) drawBubble(gtx C, triggerSize image.Point, progress float3
 	offset.Pop()
 	opacity.Pop()
 	op.Defer(gtx.Ops, macro.Stop())
+}
+
+// cover leaves the bubble and its arrow, which reaches past the bubble,
+// uncovered where they stand this frame.
+func (t TooltipStyle) cover(gtx C, m tooltipMetrics, motion f32.Affine2D, pl tooltipPlacement, size image.Point) {
+	at := pl.box.Min.Add(t.State.origin)
+	ring := (m.border + 1) / 2
+	bubble := coverOf(motion, at, size, gtx.Dp(RadiusMD), ring)
+	scale, _, _, _, _, _ := motion.Elems()
+	reach := scale * float32(math.Ceil(float64(m.arrowHalf)*math.Sqrt2))
+	tip := motion.Transform(pl.arrow)
+	arrow := image.Rectangle{
+		Min: tip.Sub(f32.Pt(reach, reach)).Round(),
+		Max: tip.Add(f32.Pt(reach, reach)).Round(),
+	}.Add(at)
+	t.Root.popups = append(t.Root.popups, bubble, Cover{Box: arrow})
 }
 
 // tooltipArrow is the size-2.5 rotate-45 square centered at c.

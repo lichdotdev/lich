@@ -122,7 +122,7 @@ func (d DialogStyle) Layout(gtx C) (dismissed bool) {
 // included, for what draws over the window and must step aside for them.
 type OverlayCount struct {
 	shown, last int
-	boxes       []image.Rectangle
+	boxes       []Cover
 }
 
 // Frame closes a frame's count; call it once a frame, before the overlays.
@@ -131,7 +131,7 @@ func (c *OverlayCount) Frame() { c.last, c.shown, c.boxes = c.shown, 0, c.boxes[
 // Boxes are where this frame's dialog panels landed, in window coordinates:
 // what a native window over the window's content has to leave uncovered for
 // them to show, as Root.Popups are for menus.
-func (c *OverlayCount) Boxes() []image.Rectangle {
+func (c *OverlayCount) Boxes() []Cover {
 	if c == nil {
 		return nil
 	}
@@ -206,7 +206,8 @@ func (d DialogStyle) overlay(gtx C, amount float32) {
 	zoom := zoomFrom + (1-zoomFrom)*amount
 	if c := d.theme.Overlays; c != nil {
 		half := f32.Pt(float32(size.X), float32(size.Y)).Mul(zoom / 2)
-		c.boxes = append(c.boxes, image.Rectangle{Min: center.Sub(half).Round(), Max: center.Add(half).Round()})
+		box := image.Rectangle{Min: center.Sub(half).Round(), Max: center.Add(half).Round()}
+		c.boxes = append(c.boxes, Cover{Box: box, Radius: int(zoom * float32(gtx.Dp(d.radius()))), Ring: gtx.Dp(1)})
 	}
 	defer op.Affine(f32.Affine2D{}.Scale(center, f32.Pt(zoom, zoom))).Push(gtx.Ops).Pop()
 	defer op.Offset(origin).Push(gtx.Ops).Pop()

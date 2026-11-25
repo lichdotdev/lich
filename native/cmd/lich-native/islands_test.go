@@ -3,6 +3,7 @@ package main
 import (
 	"image"
 	"image/color"
+	"slices"
 	"testing"
 	"time"
 
@@ -223,8 +224,9 @@ func TestATabTakesOnlyItsPill(t *testing.T) {
 	}
 }
 
-// A toast is a cover: a native page under it is cut where the stack is
-// drawn, and whole again once it is gone.
+// A toast is a cover: a native page under it is cut where the toast is
+// drawn, ring included, its rounded corners left to the page, and whole
+// again once it is gone.
 func TestAToastCutsTheNativePageUnderIt(t *testing.T) {
 	u := &window{sidebar: &sidebar{}, dock: &dock{}, toastFloor: 60}
 	r := newFrameRig(rigWindow, nil)
@@ -239,8 +241,19 @@ func TestAToastCutsTheNativePageUnderIt(t *testing.T) {
 	page := image.Rect(rigWindow.X/2, 0, rigWindow.X, rigWindow.Y)
 	cuts := pageCuts(page, nil, u.floatingBoxes())
 	title := labelBox(t, r, "Saved").Min.Sub(page.Min)
-	if len(cuts) != 1 || !title.In(cuts[0]) {
-		t.Fatalf("the page's cuts are %v, want one around the toast's title at %v", cuts, title)
+	if !slices.ContainsFunc(cuts, title.In) {
+		t.Fatalf("the page's cuts are %v, want them around the toast's title at %v", cuts, title)
+	}
+	toasts := u.toaster.Covers()
+	if len(toasts) != 1 {
+		t.Fatalf("toaster covers %v, want the one toast", toasts)
+	}
+	box := toasts[0].Box.Sub(page.Min)
+	if ring := image.Pt(box.Min.X+box.Dx()/2, box.Min.Y-1); !slices.ContainsFunc(cuts, ring.In) {
+		t.Errorf("the toast's ring at %v is under the page", ring)
+	}
+	if corner := box.Min; slices.ContainsFunc(cuts, corner.In) {
+		t.Errorf("the toast's rounded corner at %v shows the window's background", corner)
 	}
 	u.toaster.Dismiss(id)
 	r.settle(t)

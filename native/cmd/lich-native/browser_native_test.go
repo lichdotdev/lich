@@ -30,24 +30,6 @@ func TestAPageWithNoCoverKeepsItsOwnCutsOnly(t *testing.T) {
 	}
 }
 
-func TestARoundedCutLeavesThePageItsCornersAndCoversTheRest(t *testing.T) {
-	r := image.Rect(10, 20, 110, 60)
-	cut := roundedCut(r, 8, 0)
-	covered := func(p image.Point) bool {
-		return slices.ContainsFunc(cut, p.In)
-	}
-	for _, p := range []image.Point{{10, 20}, {109, 20}} {
-		if covered(p) {
-			t.Fatalf("top corner pixel %v is cut: a rounded corner leaves it to the page", p)
-		}
-	}
-	for _, p := range []image.Point{{10, 59}, {109, 59}, {60, 20}, {10, 40}, {60, 40}} {
-		if !covered(p) {
-			t.Fatalf("pixel %v is not cut: only the top corners are rounded", p)
-		}
-	}
-}
-
 func TestTheSameOverlayMakesTheSameScript(t *testing.T) {
 	rings := []pageRing{{X: 1, Y: 2, W: 30, H: 40, Radius: 8, Width: 1.5, Dash: 5, Fill: 0x1a, March: true}}
 	if overlayScript(pageOverlay{Rings: rings}) != overlayScript(pageOverlay{Rings: slices.Clone(rings)}) {

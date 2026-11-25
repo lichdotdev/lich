@@ -507,7 +507,6 @@ func (m menuCore) drawPanel(gtx C, lv *menuLevel, anchor image.Rectangle, place 
 		call = macro.Stop()
 	}
 	box, side := place.box(gtx, anchor, size, window)
-	m.root.popups = append(m.root.popups, box)
 	pos := box.Min
 	for i := range lv.rows {
 		lv.rows[i] = lv.rows[i].Add(pos)
@@ -516,7 +515,9 @@ func (m menuCore) drawPanel(gtx C, lv *menuLevel, anchor image.Rectangle, place 
 	event.Op(gtx.Ops, lv)
 	area.Pop()
 	defer op.Offset(pos).Push(gtx.Ops).Pop()
-	defer menuEnter(gtx, lv, side, anchor.Min.Sub(pos), size)()
+	enter, motion := menuEnter(gtx, lv, side, anchor.Min.Sub(pos), size)
+	defer enter()
+	m.root.popups = append(m.root.popups, menuCover(gtx, motion, pos, size))
 	call.Add(gtx.Ops)
 	return box
 }
@@ -527,29 +528,37 @@ const menuDuration = 100 * time.Millisecond
 // menuEnter starts a panel's animate-in: fade-in-0, zoom-in-95 from the
 // anchor (origin-(--transform-origin)) and slide-in-2 from the anchor's
 // side, over menuDuration from its first frame. Hit testing stays on the
-// final box. The returned func pops what it pushed.
+// final box. The returned func pops what it pushed, and the transform is
+// where the panel stands this frame.
 //
 // ponytail: no animate-out; a closed menu is gone at once. Adding it means
 // drawing the last entries for menuDuration after close.
-func menuEnter(gtx C, lv *menuLevel, side Side, anchor, size image.Point) func() {
+func menuEnter(gtx C, lv *menuLevel, side Side, anchor, size image.Point) (func(), f32.Affine2D) {
 	if lv.shown.IsZero() {
 		lv.shown = gtx.Now
 	}
 	elapsed := gtx.Now.Sub(lv.shown)
 	if elapsed >= menuDuration {
-		return func() {}
+		return func() {}, f32.Affine2D{}
 	}
 	gtx.Execute(op.InvalidateCmd{})
 	p := ease(float32(elapsed) / float32(menuDuration))
 	origin, toward := menuOrigin(side, anchor, size)
 	slide := toward.Mul(float32(gtx.Dp(Space(2))) * (1 - p))
 	scale := zoomFrom + (1-zoomFrom)*p
-	transform := op.Affine(f32.Affine2D{}.Scale(origin, f32.Pt(scale, scale)).Offset(slide)).Push(gtx.Ops)
+	motion := f32.Affine2D{}.Scale(origin, f32.Pt(scale, scale)).Offset(slide)
+	transform := op.Affine(motion).Push(gtx.Ops)
 	opacity := paint.PushOpacity(gtx.Ops, p)
 	return func() {
 		opacity.Pop()
 		transform.Pop()
-	}
+	}, motion
+}
+
+// menuCover is a panel's cover (drawSurface) at at, where its entrance has
+// it this frame.
+func menuCover(gtx C, motion f32.Affine2D, at, size image.Point) Cover {
+	return coverOf(motion, at, size, gtx.Dp(RadiusMD), gtx.Dp(1))
 }
 
 // menuOrigin is base-ui's transform origin for a panel placed on side of an

@@ -2,7 +2,6 @@ package main
 
 import (
 	"image"
-	"math"
 
 	"gioui.org/unit"
 
@@ -28,30 +27,7 @@ func noteRing(gtx C, r image.Rectangle) image.Rectangle {
 // by top and its bottom ones by bottom, so the page still shows past a
 // rounded corner.
 func (n *browserNotes) cut(r image.Rectangle, top, bottom int) {
-	n.cuts = append(n.cuts, roundedCut(r, top, bottom)...)
-}
-
-// roundedCut is r with its top corners rounded by top and its bottom ones by
-// bottom, as the rows of pixels a rounded corner leaves whole.
-func roundedCut(r image.Rectangle, top, bottom int) []image.Rectangle {
-	top, bottom = min(top, r.Dy()/2, r.Dx()/2), min(bottom, r.Dy()/2, r.Dx()/2)
-	rows := []image.Rectangle{image.Rect(r.Min.X, r.Min.Y+top, r.Max.X, r.Max.Y-bottom)}
-	for i := range top {
-		in := cornerInset(top, i)
-		rows = append(rows, image.Rect(r.Min.X+in, r.Min.Y+i, r.Max.X-in, r.Min.Y+i+1))
-	}
-	for i := range bottom {
-		in := cornerInset(bottom, i)
-		rows = append(rows, image.Rect(r.Min.X+in, r.Max.Y-i-1, r.Max.X-in, r.Max.Y-i))
-	}
-	return rows
-}
-
-// cornerInset is how far in from the side a corner of radius rounds row i,
-// counted from the edge it rounds.
-func cornerInset(radius, i int) int {
-	dy := float64(radius) - float64(i) - 0.5
-	return int(math.Round(float64(radius) - math.Sqrt(float64(radius*radius)-dy*dy)))
+	n.cuts = append(n.cuts, ui.RoundedRows(r, top, bottom)...)
 }
 
 // pageRing is a ring a page the window draws itself draws over its own

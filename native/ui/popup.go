@@ -28,13 +28,13 @@ type Root struct {
 	overlay struct{ _ byte }
 	// popups are where this frame's menus, dropdown panels and tooltips
 	// landed, in window coordinates.
-	popups []image.Rectangle
+	popups []Cover
 }
 
 // Popups are where this frame's menus, dropdown panels and tooltips landed,
 // in window coordinates: what a native window over the window's content has
 // to leave uncovered for them to show.
-func (r *Root) Popups() []image.Rectangle { return r.popups }
+func (r *Root) Popups() []Cover { return r.popups }
 
 func (r *Root) Layout(gtx C, w layout.Widget) D {
 	r.window = gtx.Constraints.Max

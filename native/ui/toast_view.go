@@ -174,7 +174,7 @@ func (s ToasterStyle) frame(gtx C) []func() {
 		gtx.Execute(op.InvalidateCmd{At: wake})
 	}
 	if len(t.stack.entries) == 0 {
-		t.hovered, t.pressed, t.box = false, false, image.Rectangle{}
+		t.hovered, t.pressed, t.covers = false, false, t.covers[:0]
 		return clicked
 	}
 	s.place(gtx)
@@ -185,10 +185,11 @@ func (s ToasterStyle) frame(gtx C) []func() {
 	}
 	off := op.Offset(at).Push(gtx.Ops)
 	entries := t.stack.entries
-	t.box = image.Rectangle{}
+	t.covers = t.covers[:0]
 	for _, e := range slices.Backward(entries) {
-		s.paint(gtx, e)
-		t.box = t.box.Union(boundsOf(e.view.place, e.view.boxSize).Add(at))
+		if place, ok := s.paint(gtx, e); ok {
+			t.covers = append(t.covers, coverOf(place, at, e.view.boxSize, gtx.Dp(RadiusLG), gtx.Dp(toastBorder)))
+		}
 	}
 	s.areas(gtx)
 	off.Pop()
@@ -404,8 +405,9 @@ func boundsOf(a f32.Affine2D, size image.Point) image.Rectangle {
 	return image.Rect(int(lo.X), int(lo.Y), int(hi.X+0.5), int(hi.Y+0.5))
 }
 
-// paint draws one toast where place put it, plus its swipe.
-func (s ToasterStyle) paint(gtx C, e *toastEntry) {
+// paint draws one toast where place put it, plus its swipe, and returns
+// that placement; false for a toast faded out.
+func (s ToasterStyle) paint(gtx C, e *toastEntry) (f32.Affine2D, bool) {
 	v := &e.view
 	swipe, opacity := v.swipe, v.alpha
 	if v.swipedOut {
@@ -419,9 +421,11 @@ func (s ToasterStyle) paint(gtx C, e *toastEntry) {
 		}
 	}
 	if opacity <= 0 {
-		return
+		return f32.Affine2D{}, false
 	}
-	defer op.Affine(v.place.Offset(swipe)).Push(gtx.Ops).Pop()
+	place := v.place.Offset(swipe)
+	defer op.Affine(place).Push(gtx.Ops).Pop()
 	defer paint.PushOpacity(gtx.Ops, opacity).Pop()
 	s.drawBox(gtx, v)
+	return place, true
 }
