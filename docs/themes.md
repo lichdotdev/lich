@@ -113,7 +113,7 @@ gruvbox.json
 
 - `name` is required and cannot exceed 128 characters.
 - `version` must be `MAJOR.MINOR.PATCH` (a leading `v` is accepted and dropped).
-  A pre-release is rejected: the update check orders no two of them.
+  A pre-release is rejected.
 - The manifest deliberately does not list the themes. Every other root-level
   `*.json` is read as one, up to 32; anything else in the repository — `README`,
   subdirectories — is ignored.

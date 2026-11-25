@@ -57,6 +57,12 @@ func TestReleasesCarryTheNotes(t *testing.T) {
 	if !slices.Equal(got, want) {
 		t.Fatalf("Releases() = %+v, want %+v", got, want)
 	}
+
+	got = ReleasesWithPre(client, url)
+	want = append([]Release{{Tag: "0.14.0-rc.1", Body: "rc"}}, want...)
+	if !slices.Equal(got, want) {
+		t.Fatalf("ReleasesWithPre() = %+v, want %+v", got, want)
+	}
 }
 
 func TestReleasesNetworkFailure(t *testing.T) {
