@@ -249,6 +249,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   which start a new one, stops them, and a conversation read back has none. A shell that ends after the turn
   makes Claude Code answer on its own (measured): `background_tasks_changed` empties and a `system/init` opens a
   turn no message started, which the chat runs as a turn of its own (`claudeWake`), busy and done on the card.
+  A failed shell's exit code is read from the prose of its `task_notification` summary ("failed with exit code 3",
+  measured on 2.1.332), the one place Claude Code writes it: a summary worded otherwise leaves the failure with no
+  code, said as "failed".
   Codex lists its background terminals only on its experimental app-server API
   (`thread/backgroundTerminals/list`, 0.170.0's schema), with no event and no output, and lich opens Codex on the
   stable one; ACP has no such report, its `terminal/*` methods being the client running commands for the agent,

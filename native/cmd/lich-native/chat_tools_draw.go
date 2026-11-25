@@ -25,15 +25,19 @@ const (
 )
 
 var (
-	icToolsPending  = icons.Lucide("circle-dashed")
-	icToolsFailed   = icons.Lucide("x")
-	icToolsAuth     = icons.Lucide("circle-alert")
-	icToolsOff      = icons.Lucide("circle")
-	icToolsBack     = icons.Lucide("chevron-left")
-	toolsMaxH       = unit.Dp(460)
-	toolsLabelW     = ui.Space(32)
-	toolsGlyph      = ui.Space(4)
-	toolsHeadH      = ui.Space(10)
+	icToolsPending = icons.Lucide("circle-dashed")
+	icToolsFailed  = icons.Lucide("x")
+	icToolsAuth    = icons.Lucide("circle-alert")
+	icToolsOff     = icons.Lucide("circle")
+	icToolsBack    = icons.Lucide("chevron-left")
+	icToolsClose   = icons.Lucide("x")
+	toolsMaxH      = unit.Dp(460)
+	toolsLabelW    = ui.Space(32)
+	toolsGlyph     = ui.Space(4)
+	toolsHeadH     = ui.Space(10)
+	// toolsCloseRoom is the head's end the close stands in: its SizeIconXS
+	// square between two Space(1).
+	toolsCloseRoom  = ui.Space(8)
 	toolsGroupOrder = []string{"user", "project", "local", "claudeai", "other"}
 )
 
@@ -51,7 +55,7 @@ func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView
 	g.Constraints = layout.Constraints{Max: image.Pt(gtx.Constraints.Max.X, max(min(gtx.Dp(toolsMaxH), room-lift), 0))}
 	macro := op.Record(gtx.Ops)
 	d := th.PopoverPanel(g, func(gtx C, th *ui.Theme) D {
-		return withKeys(gtx, th, t.kind, func(gtx C) D {
+		return withKeys(gtx, th, t, u.toolsFootAct(th, p, sv), func(gtx C) D {
 			return u.toolsView(gtx, th, p, sv, working)
 		})
 	})
@@ -61,6 +65,15 @@ func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView
 	call.Add(gtx.Ops)
 	t.watchOutside(gtx, d.Size)
 	op.Defer(gtx.Ops, m.Stop())
+}
+
+// toolsFootAct is the action the open view puts at the end of the keys' line:
+// a running shell's Stop, nothing elsewhere.
+func (u *window) toolsFootAct(th *ui.Theme, p *chatPane, sv sessionView) layout.Widget {
+	if p.tools.kind == chatShellsPanel {
+		return u.shellStopAct(th, p, sv.ID)
+	}
+	return nil
 }
 
 // toolsView is the open panel's screen.
@@ -146,7 +159,7 @@ func toolsHeadRow(gtx C, left unit.Dp, row []layout.FlexChild, end layout.Widget
 	if end != nil {
 		row = append(row, layout.Rigid(end))
 	}
-	return layout.Inset{Left: left, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Left: left, Right: toolsCloseRoom}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.Y = gtx.Dp(toolsHeadH)
 		return layout.W.Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -169,36 +182,71 @@ func toolsGroupLine(th *ui.Theme, label, file string) layout.Widget {
 	}
 }
 
-// toolsKeysLine is the panel's foot: the keys it takes, since it never holds
-// the focus that would show them.
-func toolsKeysLine(gtx C, th *ui.Theme, hints [][2]string) D {
-	row := make([]layout.FlexChild, len(hints))
-	for i, h := range hints {
-		row[i] = layout.Rigid(func(gtx C) D {
-			return layout.Inset{Right: ui.Space(4)}.Layout(gtx, th.KeyHint(h[0], h[1]).Layout)
-		})
+// toolsKeysLine is the panel's foot: Escape's hint, since the panel never
+// holds the focus that would show it, at the right, or at the left with act
+// at the right.
+func toolsKeysLine(gtx C, hint, act layout.Widget) D {
+	fill := layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} })
+	row := []layout.FlexChild{fill, layout.Rigid(hint)}
+	if act != nil {
+		row = []layout.FlexChild{layout.Rigid(hint), fill, layout.Rigid(act)}
 	}
-	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(3), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 	})
 }
 
-// withKeys is view over the keys' line, a hairline between them, the view
-// given the room the line leaves.
-func withKeys(gtx C, th *ui.Theme, kind string, view layout.Widget) D {
+// withKeys is view over the keys' line, set apart by space alone: Escape's
+// hint, and act at the line's end where the view has one. The panel's close
+// stands at the head's end, over the view, so every head keeps its room.
+func withKeys(gtx C, th *ui.Theme, t *chatTools, act layout.Widget, view layout.Widget) D {
 	m := op.Record(gtx.Ops)
-	keys := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Separator),
-		layout.Rigid(func(gtx C) D { return toolsKeysLine(gtx, th, toolsHints(kind)) }),
-	)
+	keys := toolsKeysLine(gtx, th.KeyHint("Esc", toolsEscHint(t)).Layout, act)
 	keysCall := m.Stop()
 	g := gtx
 	g.Constraints.Max.Y = max(gtx.Constraints.Max.Y-keys.Size.Y, 0)
 	g.Constraints.Min.Y = 0
 	d := view(g)
+	toolsClose(gtx, th, t, max(d.Size.X, keys.Size.X))
 	defer op.Offset(image.Pt(0, d.Size.Y)).Push(gtx.Ops).Pop()
 	keysCall.Add(gtx.Ops)
 	return D{Size: image.Pt(max(d.Size.X, keys.Size.X), d.Size.Y+keys.Size.Y)}
+}
+
+// toolsClose is the panel's ghost ×, centred on the head's line at its end.
+func toolsClose(gtx C, th *ui.Theme, t *chatTools, width int) {
+	b := th.Button(&t.close, "")
+	b.Icon, b.Variant, b.Size = icToolsClose, ui.VariantGhost, ui.SizeIconXS
+	m := op.Record(gtx.Ops)
+	d := b.Layout(gtx)
+	call := m.Stop()
+	at := image.Pt(width-d.Size.X-gtx.Dp(ui.Space(1)), (gtx.Dp(toolsHeadH)-d.Size.Y)/2)
+	defer op.Offset(at).Push(gtx.Ops).Pop()
+	call.Add(gtx.Ops)
+}
+
+// toolsEscHint is what Escape does: back from a detail, else shut the panel.
+func toolsEscHint(t *chatTools) string {
+	if t.detail != "" {
+		return i18n.T("chat.tools.keys.back")
+	}
+	return i18n.T("chat.tools.keys.close")
+}
+
+// toolsPick is a panel's row, its Enter key cap at the end while the cursor
+// is on it: the key stands where it acts.
+func toolsPick(gtx C, th *ui.Theme, click *ui.Clickable, cursor bool, content func(gtx C, th *ui.Theme) D) D {
+	return pickerRow(gtx, th, click, cursor, func(gtx C, th *ui.Theme) D {
+		if !cursor {
+			return content(gtx, th)
+		}
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Flexed(1, func(gtx C) D { return content(gtx, th) }),
+			ui.Gap(2),
+			layout.Rigid(th.KeyCap("↵").Layout),
+		)
+	})
 }
 
 // toolsGroup is where a server's scope files it in the list.
@@ -270,7 +318,7 @@ func (u *window) mcpView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l api
 			lines = append(lines, toolsGroupLine(th, toolsGroupLabel(g), s.Config))
 		}
 		lines = append(lines, func(gtx C) D {
-			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return mcpRow(gtx, th, s) })
+			return toolsPick(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return mcpRow(gtx, th, s) })
 		})
 	}
 	head := func(gtx C) D {
@@ -408,7 +456,7 @@ func (u *window) skillsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l 
 	lines := make([]layout.Widget, len(shown))
 	for i, s := range shown {
 		lines[i] = func(gtx C) D {
-			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return skillRow(gtx, th, s) })
+			return toolsPick(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return skillRow(gtx, th, s) })
 		}
 	}
 	var foot layout.Widget

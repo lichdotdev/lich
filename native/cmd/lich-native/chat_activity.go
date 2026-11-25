@@ -10,7 +10,6 @@ import (
 	"gioui.org/op"
 	"gioui.org/op/clip"
 
-	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -105,16 +104,4 @@ func (u *window) outsideActs(gtx C, p *chatPane) {
 			t.shut()
 		}
 	}
-}
-
-// toolsHints is the keys the panel of kind takes: the task list's rows open
-// nothing.
-func toolsHints(kind string) [][2]string {
-	move := [2]string{"↑↓", i18n.T("chat.tools.keys.move")}
-	open := [2]string{"↵", i18n.T("chat.tools.keys.open")}
-	esc := [2]string{"Esc", i18n.T("chat.tools.keys.close")}
-	if kind == chatPlanPanel {
-		return [][2]string{esc}
-	}
-	return [][2]string{move, open, esc}
 }
