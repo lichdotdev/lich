@@ -455,7 +455,8 @@ func reviewerChips(gtx C, th *ui.Theme, reviewers []backend.PRReviewer) D {
 	return ui.Wrap{GapX: ui.Space(4), GapY: ui.Space(1.5)}.Layout(gtx, items...)
 }
 
-// commitRows is PullsCommits: each commit, its body behind a click.
+// commitRows is PullsCommits: each commit, its body behind a click, and on
+// hover View changes.
 func (v *pullView) commitRows(gtx C, th *ui.Theme, d backend.PRDetail) []layout.Widget {
 	if len(d.Commits) == 0 {
 		return []layout.Widget{func(gtx C) D { return th.PanelNotice(i18n.T("pulls.pullsCommits.none"), pullsPadX).Layout(gtx) }}
@@ -471,7 +472,10 @@ func (v *pullView) commitRows(gtx C, th *ui.Theme, d backend.PRDetail) []layout.
 				open.Value = !open.Value
 			}
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return commitRow(gtx, th, c, click, body != "", open.Value, now) }),
+				layout.Rigid(func(gtx C) D {
+					view := func(gtx C) D { return v.viewChanges(gtx, th, d, i) }
+					return commitRow(gtx, th, c, click, body != "", open.Value, now, view)
+				}),
 				layout.Rigid(func(gtx C) D {
 					if !open.Value {
 						return D{}
@@ -486,9 +490,9 @@ func (v *pullView) commitRows(gtx C, th *ui.Theme, d backend.PRDetail) []layout.
 	return rows
 }
 
-// commitRow is a commit's headline, who and when, the chevron when it has a
-// body to open, and its short oid.
-func commitRow(gtx C, th *ui.Theme, c backend.PRCommit, click *ui.Clickable, hasBody, open bool, now time.Time) D {
+// commitRow is a commit's headline, who and when, view while the row is
+// hovered, the chevron when it has a body to open, and its short oid.
+func commitRow(gtx C, th *ui.Theme, c backend.PRCommit, click *ui.Clickable, hasBody, open bool, now time.Time, view layout.Widget) D {
 	return th.PanelRow(gtx, click, hasBody, pullsRowEdge, pullsRowPadX, func(gtx C, th *ui.Theme) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Flexed(1, func(gtx C) D {
@@ -496,6 +500,12 @@ func commitRow(gtx C, th *ui.Theme, c backend.PRCommit, click *ui.Clickable, has
 					layout.Rigid(th.Text(ui.TextSM, c.Headline).Weight(font.Medium).Layout),
 					layout.Rigid(th.Text(ui.TextXS, commitMeta(c, now)).Muted().Layout),
 				)
+			}),
+			layout.Rigid(func(gtx C) D {
+				if !click.Hovered() {
+					return D{}
+				}
+				return layout.Inset{Right: ui.Space(2)}.Layout(gtx, view)
 			}),
 			layout.Rigid(func(gtx C) D {
 				if !hasBody {
@@ -507,7 +517,7 @@ func commitRow(gtx C, th *ui.Theme, c backend.PRCommit, click *ui.Clickable, has
 				}
 				return layout.Inset{Right: ui.Space(2)}.Layout(gtx, func(gtx C) D { return ic.Layout(gtx, ui.Space(3.5), th.MutedForeground) })
 			}),
-			layout.Rigid(th.Text(ui.TextXS, c.OID[:min(len(c.OID), 7)]).Mono().Muted().Layout),
+			layout.Rigid(th.Text(ui.TextXS, shortOID(c.OID)).Mono().Muted().Layout),
 		)
 	})
 }

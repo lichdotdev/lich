@@ -104,6 +104,9 @@ func (c *fileCard) imageSides(gtx C, p *reviewPanel) D {
 	afterRef := ""
 	if f := p.pr; f != nil {
 		wantBefore = func() { c.bin.before.wantMergeBase(p.client, p.checkout, old, f, c.git.blobs) }
+		if f.base != "" {
+			wantBefore = func() { c.bin.before.want(p.client, p.checkout, old, f.base, c.git.blobs) }
+		}
 		afterRef = f.head
 	}
 	var sides []layout.FlexChild

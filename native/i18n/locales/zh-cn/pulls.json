@@ -59,7 +59,8 @@
     "required": "必需"
   },
   "pullsCommits": {
-    "none": "没有提交。"
+    "none": "没有提交。",
+    "viewChanges": "查看改动"
   },
   "pullsConflicts": {
     "loading": "正在判断哪些文件存在冲突…",
@@ -195,7 +196,13 @@
     "changedSinceReview": "查看后有改动",
     "filesChangedSinceReview": {
       "other": "自 {date} 查看以来，{count} 个文件有改动"
-    }
+    },
+    "allCommits": "所有提交",
+    "commits": {
+      "other": "{count} 个提交"
+    },
+    "rangeNote": "正在查看 {range} · 评论和已查看不可用",
+    "rangeHint": "Shift+点击可选择范围"
   },
   "reviewThread": {
     "replyFailed": "回复失败：{error}",

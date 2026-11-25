@@ -92,6 +92,7 @@ func projectPullRequests(d *rpc.Handler, s *project.Service) {
 	rpc.Handle(d, api.ProjectPullRequestAvatar, s.PullRequestAvatar)
 	rpc.Handle(d, api.ProjectPullRequestDiff, s.PullRequestDiff)
 	rpc.Handle(d, api.ProjectPullRequestMergeBase, s.PullRequestMergeBase)
+	rpc.Handle(d, api.ProjectCommitRangeDiff, s.CommitRangeDiff)
 	rpc.Handle(d, api.ProjectPullRequestConflicts, s.PullRequestConflicts)
 	rpc.Handle(d, api.ProjectCreatePullRequest, s.CreatePullRequest)
 	rpc.Handle(d, api.ProjectMergePullRequest, s.MergePullRequest)

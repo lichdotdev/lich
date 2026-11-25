@@ -45,8 +45,11 @@ type pullsStore struct {
 	conflicts map[string]*pullsRead[[]string]
 	checkouts map[string]*pullsRead[[]backend.Worktree]
 	diffs     map[string]*pullsRead[string]
-	talks     map[string]*pullsRead[*backend.PRConversation]
-	accounts  map[string]*pullsRead[backend.GitHubAccountState]
+	// ranges is by checkout and commits, and never stale: commits do not
+	// change.
+	ranges   map[string]*pullsRead[backend.CommitRangeDiff]
+	talks    map[string]*pullsRead[*backend.PRConversation]
+	accounts map[string]*pullsRead[backend.GitHubAccountState]
 	// avatars is by address, and never stale: GitHub's address changes with
 	// the picture.
 	avatars map[string]*pullsRead[*ui.AvatarImage]
@@ -61,6 +64,7 @@ func newPullsStore(ctx context.Context, c *backend.Client, forges *forgeStore, i
 		conflicts: map[string]*pullsRead[[]string]{},
 		checkouts: map[string]*pullsRead[[]backend.Worktree]{},
 		diffs:     map[string]*pullsRead[string]{},
+		ranges:    map[string]*pullsRead[backend.CommitRangeDiff]{},
 		talks:     map[string]*pullsRead[*backend.PRConversation]{},
 		accounts:  map[string]*pullsRead[backend.GitHubAccountState]{},
 		avatars:   map[string]*pullsRead[*ui.AvatarImage]{},
@@ -190,6 +194,12 @@ func (s *pullsStore) conflictFiles(path string, d *backend.PRDetail) pullsRead[[
 func (s *pullsStore) diff(path string, number int) pullsRead[string] {
 	return read(s, s.diffs, fmt.Sprint(path, "\x00", number), func() (string, error) {
 		return s.client.PullRequestDiff(s.ctx, path, number)
+	})
+}
+
+func (s *pullsStore) commitRange(path, first, last string) pullsRead[backend.CommitRangeDiff] {
+	return read(s, s.ranges, path+"\x00"+first+".."+last, func() (backend.CommitRangeDiff, error) {
+		return s.client.CommitRangeDiff(s.ctx, path, first, last)
 	})
 }
 

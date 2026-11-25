@@ -202,7 +202,9 @@ func (c *fileCard) headerRow(gtx C, th *ui.Theme, p *reviewPanel) D {
 		}))
 	switch {
 	case p.pr != nil:
-		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return c.viewedTick(gtx, th, p) }))
+		if p.pr.base == "" {
+			children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return c.viewedTick(gtx, th, p) }))
+		}
 	case conflicted:
 		children = append(children, c.conflictActions(th, p)...)
 	case p.reverts(c.git.path):
@@ -408,6 +410,10 @@ func (c *fileCard) menuEntries(p *reviewPanel) []ui.MenuEntry {
 	// The last of injectEntries is Comment for the session.
 	entries[len(entries)-1].Spot = func(gtx C, row layout.Widget) D { return p.spot(gtx, tourReviewItem, row) }
 	if p.pr != nil {
+		if p.pr.base != "" {
+			// Add file alone: a run's line numbers are not the checkout's.
+			return entries[:1]
+		}
 		if p.pr.toReview == nil {
 			return entries
 		}

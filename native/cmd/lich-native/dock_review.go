@@ -138,6 +138,10 @@ type reviewPanel struct {
 type prFiles struct {
 	number int
 	head   string
+	// base is a run of commits' old side, its first one's parent: lines and
+	// ticks belong to the whole pull request's diff, so a run takes neither.
+	// "" for the whole pull request.
+	base string
 	// mergeBase is the old side every image card reads, asked once per head.
 	mergeBase mergeBaseMemo
 	url       string // the pull request's page
@@ -157,11 +161,11 @@ type prFiles struct {
 }
 
 func (f *prFiles) isViewed(c *fileCard) bool {
-	return f.viewed.state(c.git.path, c.gitHash) == viewedAsIs
+	return f.base == "" && f.viewed.state(c.git.path, c.gitHash) == viewedAsIs
 }
 
 func (f *prFiles) changedSinceReview(c *fileCard) bool {
-	return f.viewed.state(c.git.path, c.gitHash) == changedSinceReview
+	return f.base == "" && f.viewed.state(c.git.path, c.gitHash) == changedSinceReview
 }
 
 type gapAnswer struct {

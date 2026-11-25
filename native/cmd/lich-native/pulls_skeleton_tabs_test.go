@@ -19,7 +19,7 @@ func TestTabSkeletonRowsAreLoadedRowsHeight(t *testing.T) {
 	th := rowMetaTheme(t)
 	gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Constraints{Max: image.Pt(1200, 800)}}
 	commit := backend.PRCommit{OID: "0123456789abcdef", Headline: "fix: a thing", Name: "ana", Date: rowMetaNow.Format("2006-01-02T15:04:05Z")}
-	if loaded, got := commitRow(gtx, th, commit, new(ui.Clickable), false, false, rowMetaNow).Size.Y, skeletonCommitRow(gtx, th, 0).Size.Y; got != loaded {
+	if loaded, got := commitRow(gtx, th, commit, new(ui.Clickable), false, false, rowMetaNow, nil).Size.Y, skeletonCommitRow(gtx, th, 0).Size.Y; got != loaded {
 		t.Errorf("commit skeleton row is %dpx tall, a loaded one %dpx", got, loaded)
 	}
 	d := backend.PRDetail{CheckRuns: []api.CheckItem{{Name: "test", Description: "Go tests", State: "passed"}}}

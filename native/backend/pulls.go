@@ -137,6 +137,14 @@ func (c *Client) PullRequestDiff(ctx context.Context, path string, number int) (
 	return callMethod(ctx, c, api.ProjectPullRequestDiff, api.NumberOptions{Path: path, Number: number})
 }
 
+type CommitRangeDiff = api.CommitRangeDiff
+
+// CommitRangeDiff is the diff of a pull request's commits first to last
+// alone, from first's parent.
+func (c *Client) CommitRangeDiff(ctx context.Context, path, first, last string) (CommitRangeDiff, error) {
+	return callMethod(ctx, c, api.ProjectCommitRangeDiff, api.CommitRangeOptions{Path: path, First: first, Last: last})
+}
+
 // PullRequestMergeBase is the commit pull request number's diff is taken
 // from: the old side of every file in it.
 func (c *Client) PullRequestMergeBase(ctx context.Context, path string, number int) (string, error) {
