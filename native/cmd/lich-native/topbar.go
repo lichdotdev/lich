@@ -53,14 +53,15 @@ type topbar struct {
 	sort  ui.Sortable
 	list  layout.List
 	// laid is where each tab was drawn, in window pixels.
-	laid     []laidTab
-	tabs     map[string]*tabState
-	open     openMenu
-	bell     bellMenu
-	hints    map[string]*ui.Tooltip
-	menu     ui.MenuState
-	menuOpen ui.Clickable
-	pulls    ui.Clickable
+	laid      []laidTab
+	separator image.Rectangle
+	tabs      map[string]*tabState
+	open      openMenu
+	bell      bellMenu
+	hints     map[string]*ui.Tooltip
+	menu      ui.MenuState
+	menuOpen  ui.Clickable
+	pulls     ui.Clickable
 	// tour is the window's guided tour, which points at the menu.
 	tour     *driver.Tour
 	confirm  closeConfirm

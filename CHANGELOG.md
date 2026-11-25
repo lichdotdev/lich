@@ -66,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Project tabs show a one-pixel border when selected, hovered or dragged.** The selected tab uses the sidebar surface; close controls hide while dragging, tabs have a 5px gap, including 5px of space on either side of the divider between pinned and regular tabs.
 - **Review reads in a narrow dock: long lines wrap, the diff has one column of line numbers and Revert sits in it.** Point at a change to turn its first line number into the revert button. Collapsed, the dock comes out on Review at 60% of the stage, and from 820 px wide Review offers Split.
 - **A session's status in the sidebar is one 3x3 of pixels that moves from state to state.** A snake runs through it while the agent works, circles its border in amber while it waits on you and fills it green when a turn ends unread; the chat's running turn shows the same snake, the composer's list of the sessions it opened shows each one's 3x3, and a project's tab says the same with three dots that run, go back and forth, or light up.
 - **The collapsed sidebar shows each session's status on the corner of its provider's mark.** Its nodes, search and new session button are gone, since pointing at the rail brings the sidebar out with all of them; its profile button opens the same usage and logins panel as the open sidebar's account row, and its Services button counts what runs, as the open footer does.
