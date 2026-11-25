@@ -31,7 +31,8 @@
       "updates": "アップデート",
       "help": "ヘルプ",
       "services": "サービス",
-      "extensions": "拡張機能"
+      "extensions": "拡張機能",
+      "chat": "チャット"
     },
     "notYet": "まだありません",
     "projectDesc": "このプロジェクトでグローバルから変更している項目です。変更のない行はグローバルに従います。"
@@ -250,6 +251,12 @@
     "comfortable": "標準",
     "wide": "ワイド",
     "full": "全幅"
+  },
+  "chatVerbsSetting": {
+    "title": "作業中の言葉",
+    "searchWords": "作業中 言葉 動詞 考え中 ターン スピナー",
+    "description": "1行に1つ。エージェントの作業中、ターンごとにこの中から1つを表示します。",
+    "reset": "既定に戻す"
   },
   "windowButtonsSetting": {
     "title": "ボタン",

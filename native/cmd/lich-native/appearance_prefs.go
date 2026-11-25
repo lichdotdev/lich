@@ -37,6 +37,7 @@ const (
 	copyOnSelectKey     = "lich.terminal.copyOnSelect"
 	windowButtonsKey    = "window.buttons"
 	chatWidthKey        = "lich.chat.width"
+	chatVerbsKey        = "lich.chat.verbs"
 )
 
 // Bounds and steps for the zoom and the font sizes.
@@ -95,6 +96,7 @@ type appearancePrefs struct {
 	copyOnSelect   bool
 	windowButtons  string
 	chatWidth      string
+	chatVerbs      string // "" is the interface language's
 }
 
 // clampZoom bounds a zoom and snaps it to one decimal.
@@ -192,7 +194,7 @@ func parseNumber(raw string, fallback float64) float64 {
 // loadAppearancePrefs reads the stored values.
 func loadAppearancePrefs(ctx context.Context, c *backend.Client) (appearancePrefs, error) {
 	raw := map[string]string{}
-	for _, key := range []string{zoomKey, browserZoomKey, terminalFontSizeKey, terminalFontKey, editorFontSizeKey, editorFontKey, uiFontKey, costBudgetKey, closeActionKey, copyOnSelectKey, windowButtonsKey, chatWidthKey} {
+	for _, key := range []string{zoomKey, browserZoomKey, terminalFontSizeKey, terminalFontKey, editorFontSizeKey, editorFontKey, uiFontKey, costBudgetKey, closeActionKey, copyOnSelectKey, windowButtonsKey, chatWidthKey, chatVerbsKey} {
 		v, err := c.GetSetting(ctx, key, "")
 		if err != nil {
 			return appearancePrefs{}, err
@@ -212,6 +214,7 @@ func loadAppearancePrefs(ctx context.Context, c *backend.Client) (appearancePref
 		copyOnSelect:   copyOnSelectOf(raw[copyOnSelectKey]),
 		windowButtons:  windowButtonsOf(raw[windowButtonsKey]),
 		chatWidth:      chatWidthOf(raw[chatWidthKey]),
+		chatVerbs:      raw[chatVerbsKey],
 	}
 	return p, nil
 }
@@ -236,7 +239,7 @@ func fontFailure(title string) ui.Toast {
 // applyAppearance puts p on screen: the interface and page zooms, the terminals'
 // font, and the ceiling the cost readout colours against.
 func (u *window) applyAppearance(p appearancePrefs) {
-	u.zoom, u.browserZoom, u.chatWidth = p.zoom, p.browserZoom, p.chatWidth
+	u.zoom, u.browserZoom, u.chatWidth, u.chatVerbs = p.zoom, p.browserZoom, p.chatWidth, p.chatVerbs
 	if u.caption.Load().leftReserve > 0 {
 		u.win.Option(app.TrafficLights(trafficLightsBar(p)))
 	}

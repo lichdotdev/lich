@@ -16,16 +16,9 @@ import (
 // goes back to the list.
 func (u *window) mcpDetail(gtx C, th *ui.Theme, t *chatTools, s api.ChatMCPServer, offered []string) D {
 	acts := mcpActions(s, offered)
-	back := th.Button(&t.back, i18n.T("chat.tools.back"))
-	back.Icon, back.Variant, back.Size = icToolsBack, ui.VariantGhost, ui.SizeXS
 	head := func(gtx C) D {
-		return layout.Inset{Left: ui.Space(1), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(back.Layout),
-				ui.Gap(2),
-				layout.Rigid(th.Text(ui.TextSM, s.Name).Weight(font.SemiBold).Layout),
-			)
-		})
+		_, _, state := mcpStatus(th, s)
+		return toolsBackHead(gtx, th, &t.back, i18n.T("chat.tools.back"), th.Text(ui.TextSM, s.Name).Weight(font.SemiBold), state, nil)
 	}
 	lines := mcpFacts(th, s)
 	if t.showTools {

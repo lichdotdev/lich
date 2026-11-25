@@ -31,7 +31,8 @@
       "updates": "Actualizaciones",
       "help": "Ayuda",
       "services": "Servicios",
-      "extensions": "Extensiones"
+      "extensions": "Extensiones",
+      "chat": "Chat"
     },
     "notYet": "Aún no está aquí",
     "projectDesc": "Lo que este proyecto cambia respecto a Global. Una fila sin cambios sigue a Global."
@@ -250,6 +251,12 @@
     "comfortable": "Cómodo",
     "wide": "Ancho",
     "full": "Completo"
+  },
+  "chatVerbsSetting": {
+    "title": "Palabras del turno",
+    "searchWords": "palabras verbos pensando trabajando turno spinner",
+    "description": "Una por línea. Mientras el agente trabaja, cada turno muestra una de ellas.",
+    "reset": "Restablecer"
   },
   "windowButtonsSetting": {
     "title": "Botones",

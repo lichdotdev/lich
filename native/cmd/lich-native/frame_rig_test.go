@@ -192,6 +192,20 @@ func (r *frameRig) at(t *testing.T, label string) f32.Point {
 	return f32.Point{}
 }
 
+// glyphAt is a point on the first glyph drawn with label, for a control
+// that takes no click, as a disabled button.
+func (r *frameRig) glyphAt(t *testing.T, label string) f32.Point {
+	t.Helper()
+	for _, n := range r.nodes() {
+		if n.Desc.Label == label {
+			glyph := n.Desc.Bounds.Min.Add(image.Pt(2, 2))
+			return f32.Pt(float32(glyph.X), float32(glyph.Y))
+		}
+	}
+	t.Fatalf("nothing drawn as %q:\n%s", label, r.drawn())
+	return f32.Point{}
+}
+
 func (r *frameRig) smallestClickAt(p image.Point) (image.Rectangle, bool) {
 	var best image.Rectangle
 	for _, n := range r.nodes() {

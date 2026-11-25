@@ -164,7 +164,7 @@ func TestTheLiveLineSaysItCompacts(t *testing.T) {
 	if !r.shows("Compacting the conversation") {
 		t.Fatalf("the live line does not say it compacts:\n%s", r.drawn())
 	}
-	verb := chatVerb("s1", 2)
+	verb := chatVerb("", "s1", 2)
 	if strings.Contains(r.drawn(), verb) {
 		t.Errorf("the live line still names the turn %q", verb)
 	}

@@ -204,6 +204,8 @@ type window struct {
 	browserZoom float64
 	// chatWidth is the chat width setting, "" before it is read.
 	chatWidth string
+	// chatVerbs is the working words setting, "" for the language's own.
+	chatVerbs string
 	win       *app.Window
 	closer    closePrompt
 	// notifier is the desktop channel; optIn its one-time question.

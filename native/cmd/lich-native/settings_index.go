@@ -15,6 +15,7 @@ const (
 	sectionHotkeys        = "hotkeys"
 	sectionProviders      = "providers"
 	sectionSandbox        = "sandbox"
+	sectionChat           = "chat"
 	sectionVersionControl = "version-control"
 	sectionEditor         = "editor"
 	sectionUpdates        = "updates"
@@ -125,7 +126,6 @@ var settingsSections = []settingsSection{
 	}, rows: []settingEntry{
 		{titleKey: "settings.appearanceSettings.zoomTitle", key: zoomKey, groupKey: groupInterface},
 		{titleKey: "settings.settingsAppearance.uiFontTitle", alsoKey: "settings.settingsAppearance.uiFontSearchWords", key: uiFontKey, groupKey: groupInterface},
-		{titleKey: "settings.chatWidthSetting.title", alsoKey: "settings.chatWidthSetting.searchWords", key: chatWidthKey, groupKey: groupInterface},
 		{titleKey: "settings.themesPage.catalogRow", alsoKey: "settings.themesPage.catalogSearchWords", key: themesCatalogKey, groupKey: groupThemes},
 		{titleKey: "settings.themesPage.installedRow", alsoKey: "settings.themesPage.installedSearchWords", key: themesInstalledKey, groupKey: groupThemes},
 		{titleKey: "settings.fontSetting.title", alsoKey: "settings.fontSetting.searchWords", key: terminalFontKey, groupKey: groupTerminal},
@@ -148,6 +148,10 @@ var settingsSections = []settingsSection{
 		{titleKey: "settings.sandboxSettings.sshTitle", alsoKey: "settings.sandboxSettings.sshSearchWords", key: sshAgentKey, scope: scopeOverridable, groupKey: "settings.sandboxSettings.carryTitle"},
 		{titleKey: "settings.sandboxSettings.ghTitle", alsoKey: "settings.sandboxSettings.ghSearchWords", key: ghTokenKey, scope: scopeOverridable, groupKey: "settings.sandboxSettings.carryTitle"},
 	}, unported: sandboxRungEntries()},
+	{id: sectionChat, labelKey: "settings.settings.section.chat", icon: icons.Lucide("message-square"), navGroupKey: navGroupAgents, rows: []settingEntry{
+		{titleKey: "settings.chatWidthSetting.title", alsoKey: "settings.chatWidthSetting.searchWords", key: chatWidthKey},
+		{titleKey: "settings.chatVerbsSetting.title", alsoKey: "settings.chatVerbsSetting.searchWords", key: chatVerbsKey},
+	}},
 	{id: sectionVersionControl, labelKey: "settings.settings.section.versionControl", icon: icons.Lucide("git-branch"), navGroupKey: navGroupWorkspace, rows: []settingEntry{
 		{titleKey: "settings.vcsToolsSetting.title", alsoKey: "settings.vcsToolsSetting.searchWords", key: vcsToolsKey},
 		{titleKey: "settings.versionControlSettings.account", alsoKey: "settings.versionControlSettings.accountSearchWords", key: vcsAccountKey, scope: scopeProjectOnly},

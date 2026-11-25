@@ -31,7 +31,8 @@
       "updates": "更新",
       "help": "帮助",
       "services": "服务",
-      "extensions": "扩展"
+      "extensions": "扩展",
+      "chat": "聊天"
     },
     "notYet": "这里还没有",
     "projectDesc": "此项目与全局设置不同的地方。未更改的项沿用全局设置。"
@@ -250,6 +251,12 @@
     "comfortable": "舒适",
     "wide": "宽",
     "full": "全宽"
+  },
+  "chatVerbsSetting": {
+    "title": "工作中提示词",
+    "searchWords": "工作中 提示词 动词 思考 轮次 转圈",
+    "description": "每行一个。代理工作时，每一轮显示其中一个。",
+    "reset": "恢复默认"
   },
   "windowButtonsSetting": {
     "title": "按钮",

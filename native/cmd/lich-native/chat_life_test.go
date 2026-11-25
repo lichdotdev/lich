@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"maps"
 	"slices"
 	"strings"
 	"testing"
@@ -480,18 +481,33 @@ func TestEveryLanguageHasVerbsForALiveTurn(t *testing.T) {
 }
 
 func TestATurnKeepsItsVerbAndTurnsDifferInTheirs(t *testing.T) {
-	first := chatVerb("s1", 1)
+	first := chatVerb("", "s1", 1)
 	for range 50 {
-		if got := chatVerb("s1", 1); got != first {
+		if got := chatVerb("", "s1", 1); got != first {
 			t.Fatalf("the turn's verb moved from %q to %q", first, got)
 		}
 	}
 	seen := map[string]bool{}
 	for turn := range 40 {
-		seen[chatVerb("s1", turn)] = true
+		seen[chatVerb("", "s1", turn)] = true
 	}
 	if len(seen) < 4 {
 		t.Errorf("40 turns used %d verbs, want the list spread", len(seen))
+	}
+}
+
+func TestTurnsPickFromTheWorkingWordsSetLeavingBlankLinesOut(t *testing.T) {
+	custom := "  Pondering \n\n\tMulling\n   \n"
+	seen := map[string]bool{}
+	for turn := range 40 {
+		seen[chatVerb(custom, "s1", turn)] = true
+	}
+	if want := map[string]bool{"Pondering": true, "Mulling": true}; !maps.Equal(seen, want) {
+		t.Errorf("40 turns used %v, want %v", seen, want)
+	}
+	defaults := chatDefaultVerbs()
+	if got := chatVerb(" \n\n", "s1", 1); !slices.Contains(defaults, got) {
+		t.Errorf("a setting with no word picked %q, want one of the language's %v", got, defaults)
 	}
 }
 
@@ -499,7 +515,7 @@ func TestALiveTurnShowsItsVerbWithTheTimeItRunAndNothingMovesOnceItEnds(t *testi
 	items := []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 59), Text: "go"}}
 	_, r := lifeFrames(t, items, true)
 	r.frame()
-	if verb := chatVerb("s1", 1); !r.shows(verb) {
+	if verb := chatVerb("", "s1", 1); !r.shows(verb) {
 		t.Errorf("no %q:\n%s", verb, r.drawn())
 	}
 	if r.shows(i18n.T("chat.view.verbs")) {
@@ -510,7 +526,7 @@ func TestALiveTurnShowsItsVerbWithTheTimeItRunAndNothingMovesOnceItEnds(t *testi
 	}
 	_, r = lifeFrames(t, items, false)
 	r.settle(t)
-	if r.shows(chatVerb("s1", 1)) {
+	if r.shows(chatVerb("", "s1", 1)) {
 		t.Error("a turn that is over still names itself")
 	}
 }

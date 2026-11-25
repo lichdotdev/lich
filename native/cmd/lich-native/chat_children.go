@@ -8,6 +8,7 @@ import (
 	"strings"
 	"time"
 
+	"gioui.org/font"
 	"gioui.org/layout"
 
 	"github.com/lichdotdev/lich/native/i18n"
@@ -17,7 +18,6 @@ import (
 const (
 	// chatChildrenPanel is the panel's kind in chatTools.
 	chatChildrenPanel = "children"
-	chipChildren      = "children"
 	// chatChildMarks is how many of the children's marks the chip stacks.
 	chatChildMarks = 3
 )
@@ -119,11 +119,7 @@ func (u *window) childrenChipActs(gtx C, p *chatPane) {
 		p.tools.shut()
 		return
 	}
-	t := &p.tools
-	t.open(chatChildrenPanel)
-	t.mu.Lock()
-	t.loaded, t.base = true, p.editor.Len()
-	t.mu.Unlock()
+	p.openPanel(chatChildrenPanel)
 }
 
 // childrenActs runs the panel: a row opens its session.
@@ -159,32 +155,32 @@ func (u *window) childrenView(gtx C, th *ui.Theme, p *chatPane, sv sessionView) 
 	return t.scrolled(gtx, th, head, lines, nil)
 }
 
-// childRow is a child: its provider's mark with its status corner, its
-// name, the provider, model, branch and how long it has been in its state, and what it waits on in ToneWait. One no longer working reads
-// muted.
+// childRow is a child on one line: its provider's mark with its status
+// corner, its name, what it waits on in ToneWait or its provider, model and
+// branch muted, and how long it has been in its state. One no longer working
+// reads muted.
 func (u *window) childRow(gtx C, th *ui.Theme, k sessionView) D {
-	ink := th.Foreground
+	name := th.Text(ui.TextSM, k.Label).Weight(font.Medium)
 	if childRank(k) == 2 {
-		ink = th.MutedForeground
+		name = name.Muted()
 	}
-	lines := []layout.FlexChild{
-		layout.Rigid(th.Text(ui.TextSM, k.Label).In(ink).Truncated().Layout),
-		layout.Rigid(th.Text(ui.TextXS, u.childMeta(k)).Muted().Truncated().Layout),
-	}
+	about := th.Text(ui.TextXS, u.childMeta(k)).Muted()
 	if k.status == statusWaiting && k.reason != "" {
-		lines = append(lines, layout.Rigid(th.Text(ui.TextXS, cleanLine(k.reason)).In(th.ToneWait).Truncated().Layout))
+		about = th.Text(ui.TextXS, cleanLine(k.reason)).In(th.ToneWait)
 	}
-	return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return u.childMark(gtx, th, k) }),
-			ui.Gap(2.5),
-			layout.Flexed(1, func(gtx C) D { return layout.Flex{Axis: layout.Vertical}.Layout(gtx, lines...) }),
-		)
-	})
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return u.childMark(gtx, th, k) }),
+		ui.Gap(1.5),
+		layout.Rigid(toolsName(name.Truncated().Layout)),
+		ui.Gap(2),
+		layout.Flexed(1, about.Truncated().Layout),
+		ui.Gap(toolsMetaGap),
+		layout.Rigid(th.Text(ui.TextXS, childAge(k)).Mono().Muted().Layout),
+	)
 }
 
-// childMeta is "Codex · GPT-5.6 · fix-412 · 4m": the provider, the model,
-// the branch and how long the child has been in its state.
+// childMeta is "Codex · GPT-5.6 · fix-412": the provider, the model and the
+// branch.
 func (u *window) childMeta(k sessionView) string {
 	kind := childKind(k)
 	parts := []string{kind}
@@ -197,13 +193,19 @@ func (u *window) childMeta(k sessionView) string {
 	if k.git.Branch != "" {
 		parts = append(parts, k.git.Branch)
 	}
+	return strings.Join(parts, " · ")
+}
+
+// childAge is how long k has been in its state: working or waiting, or
+// since it ended.
+func childAge(k sessionView) string {
 	switch {
 	case k.aged:
-		parts = append(parts, chatElapsed(k.age))
+		return chatElapsed(k.age)
 	case k.idled:
-		parts = append(parts, i18n.T("chat.children.ended", i18n.Args{"time": chatElapsed(k.idle)}))
+		return i18n.T("chat.children.ended", i18n.Args{"time": chatElapsed(k.idle)})
 	}
-	return strings.Join(parts, " · ")
+	return ""
 }
 
 // childMark is k's provider mark with the sidebar's status corner

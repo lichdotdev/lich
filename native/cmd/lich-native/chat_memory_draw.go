@@ -5,7 +5,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/unit"
 
@@ -34,7 +33,7 @@ func (u *window) memoryView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l 
 	var lines []layout.Widget
 	for i, r := range rows {
 		if r.note != nil && (i == 0 || rows[i-1].note == nil) {
-			lines = append(lines, memoryGroupLine(th, i18n.T("chat.memory.saved"), ""))
+			lines = append(lines, toolsGroupLine(th, i18n.T("chat.memory.saved"), ""))
 		}
 		lines = append(lines, func(gtx C) D {
 			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return memoryRowView(gtx, th, sv.path, r) })
@@ -44,18 +43,6 @@ func (u *window) memoryView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l 
 		return toolsHead(gtx, th, i18n.T("chat.memory.title"), i18n.T("chat.memory.fileCount", i18n.Args{"count": len(l.Files)}), nil)
 	}
 	return t.scrolled(gtx, th, head, lines, nil)
-}
-
-func memoryGroupLine(th *ui.Theme, label, detail string) layout.Widget {
-	return func(gtx C) D {
-		return layout.Inset{Left: ui.Space(2), Top: ui.Space(2), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
-			row := []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, label).Weight(font.SemiBold).Layout)}
-			if detail != "" {
-				row = append(row, ui.Gap(1.5), layout.Rigid(th.Text(ui.TextXS, detail).Muted().Truncated().Layout))
-			}
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
-		})
-	}
 }
 
 func memoryRowView(gtx C, th *ui.Theme, checkout string, r memoryRow) D {
@@ -144,7 +131,7 @@ func (u *window) agentsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l 
 	for i, a := range agents {
 		if g := agentGroup(a.Source); g != group {
 			group = g
-			lines = append(lines, memoryGroupLine(th, agentGroupLabel(g), agentGroupDir(sv.path, g, a.Path)))
+			lines = append(lines, toolsGroupLine(th, agentGroupLabel(g), agentGroupDir(sv.path, g, a.Path)))
 		}
 		lines = append(lines, func(gtx C) D {
 			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return agentRow(gtx, th, a) })
@@ -195,7 +182,7 @@ func agentRow(gtx C, th *ui.Theme, a api.ChatAgent) D {
 	}
 	glyph := func(gtx C) D { return icAgent.Layout(gtx, toolsGlyph, th.MutedForeground) }
 	end := []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, strings.Join(meta, " · ")).Muted().Layout)}
-	return twoLineRow(gtx, th, glyph, th.Text(ui.TextSM, a.Name).Layout, a.Description, end)
+	return descRow(gtx, th, glyph, th.Text(ui.TextSM, a.Name).Truncated().Layout, a.Description, end)
 }
 
 // newAgentLine is the /agents panel's foot: the new subagent's name and

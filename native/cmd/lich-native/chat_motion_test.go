@@ -109,7 +109,7 @@ func TestAChatRowLeavesByHeightAndOpacityWithoutScale(t *testing.T) {
 	items := []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 59), Text: "go"}}
 	u, r := lifeFrames(t, items, true)
 	r.frames(3)
-	verb := chatVerb("s1", 1)
+	verb := chatVerb("", "s1", 1)
 	r.frame()
 	rest := labelBox(t, r, verb)
 	restInk, gpu := labelInk(t, r, verb, 40)
@@ -160,7 +160,7 @@ func TestTheLiveLineTurnsIntoDoneInItsSlot(t *testing.T) {
 	items := []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, At: novDay(18, 17, 59), Text: "go"}}
 	u, r := lifeFrames(t, items, true)
 	r.frames(3)
-	verb, done := chatVerb("s1", 1), i18n.T("chat.done.done")
+	verb, done := chatVerb("", "s1", 1), i18n.T("chat.done.done")
 	centre := func(label string) int { b := labelBox(t, r, label); return (b.Min.Y + b.Max.Y) / 2 }
 	top, verbAt := labelTop(t, r, "go"), centre(verb)
 	u.model.chat.turn(api.ChatTurn{SessionID: "s1"})

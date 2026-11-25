@@ -49,7 +49,9 @@ func TestWorkflowLineOpensItsAgents(t *testing.T) {
 	}
 	r.click(t, r.at(t, "title-probe 3/5"))
 	writeShot(t, r, "workflow-panel.png")
-	if !r.showsAll("Measure", "title:antigravity", "title:kiro", "1m 48s") {
+	// Group labels are uppercase since the composer panels share the palette's
+	// group heading (contract changed).
+	if !r.showsAll("MEASURE", "title:antigravity", "title:kiro", "1m 48s") {
 		t.Fatalf("the agents are not listed:\n%s", r.drawn())
 	}
 	r.click(t, r.at(t, "title:opencode"))

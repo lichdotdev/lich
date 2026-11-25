@@ -61,7 +61,7 @@ func (u *window) chatRow(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r cha
 		if r.compacting {
 			return chatCompacting(gtx, th, r)
 		}
-		return chatLive(gtx, th, sv.ID, r)
+		return chatLive(gtx, th, u.chatVerbs, sv.ID, r)
 	case chatRowDone:
 		if p.swap.key == chatRowKey(r) && p.swap.playing(gtx.Now) {
 			return u.chatSwapLine(gtx, th, p, sv, r)
@@ -786,20 +786,38 @@ func chatPermission(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
 // at its own length.
 const chatVerbSep = "|"
 
-// chatVerb is the verb a turn is named by while it runs: one of the language's
-// own, picked by the session and the turn, so it holds for the whole turn and
-// is the same on every frame.
-func chatVerb(session string, turn int) string {
-	verbs := strings.Split(i18n.T("chat.view.verbs"), chatVerbSep)
+// chatVerb is the verb a turn is named by while it runs: one of custom, the
+// working words setting, or of the language's own when it names none, picked
+// by the session and the turn, so it holds for the whole turn and is the same
+// on every frame.
+func chatVerb(custom, session string, turn int) string {
+	verbs := chatVerbsOf(custom)
+	if len(verbs) == 0 {
+		verbs = chatDefaultVerbs()
+	}
 	h := fnv.New32a()
 	fmt.Fprintf(h, "%s:%d", session, turn)
 	return verbs[int(h.Sum32()%uint32(len(verbs)))]
 }
 
+// chatVerbsOf is the working words setting's list: one per line, blank lines
+// and the spaces around a word dropped.
+func chatVerbsOf(raw string) []string {
+	var verbs []string
+	for line := range strings.Lines(raw) {
+		if v := strings.TrimSpace(line); v != "" {
+			verbs = append(verbs, v)
+		}
+	}
+	return verbs
+}
+
+func chatDefaultVerbs() []string { return strings.Split(i18n.T("chat.view.verbs"), chatVerbSep) }
+
 // chatLive is the turn in flight: the spinner, then a verb of the turn shimmering
 // with the time it has run, and Claude Code's Ctrl+B hint while the turn
 // waits on a command it moves.
-func chatLive(gtx C, th *ui.Theme, session string, r chatRow) D {
+func chatLive(gtx C, th *ui.Theme, verbs, session string, r chatRow) D {
 	row := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return chatSpinner(gtx, th) }),
 		ui.Gap(2),
@@ -809,7 +827,7 @@ func chatLive(gtx C, th *ui.Theme, session string, r chatRow) D {
 			if r.took > 0 {
 				since = gtx.Now.Add(-r.took)
 			}
-			return chatLiveLabel(gtx, th, chatVerb(session, r.turn), th.MutedForeground, since)
+			return chatLiveLabel(gtx, th, chatVerb(verbs, session, r.turn), th.MutedForeground, since)
 		}),
 	}
 	if r.movable {
