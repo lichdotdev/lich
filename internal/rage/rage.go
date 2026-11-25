@@ -177,6 +177,7 @@ func (c *Collector) Bundle(w io.Writer, root string) (Report, error) {
 	}
 	files = append(files, logFiles(report.LogPath, token)...)
 	files = append(files, logFiles(logging.NativePath(report.ConfigDir), token)...)
+	files = append(files, logFiles(logging.BrowserPath(report.ConfigDir), token)...)
 	if live != nil {
 		files = append(files, bundleFile{"goroutines.txt", c.goroutines(live)})
 	}

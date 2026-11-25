@@ -156,6 +156,27 @@ func TestBundleCarriesTheNativeWindowLog(t *testing.T) {
 	}
 }
 
+// lich-browser logs to its own file beside lich.log; a page that crashed or
+// never loaded is read from there.
+func TestBundleCarriesTheLichBrowserLog(t *testing.T) {
+	configDir := lichDir(t, "live line\n", "")
+	path := filepath.Join(configDir, "lich", "lich-browser.log")
+	if err := os.WriteFile(path, []byte("webkit line token="+liveToken+"\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	c := collector(t, configDir, &singleton.Info{PID: 42, Port: 47821, Token: liveToken}, true)
+
+	files, _ := bundle(t, c, "r")
+
+	got, ok := files["r/logs/lich-browser.log"]
+	if !ok || !strings.Contains(got, "webkit line") {
+		t.Errorf("bundle has no lich-browser log (got %v)", keys(files))
+	}
+	if strings.Contains(got, liveToken) {
+		t.Error("the lich-browser log carries the loopback token")
+	}
+}
+
 func TestBundleNeverCarriesTheLoopbackToken(t *testing.T) {
 	configDir := lichDir(t,
 		"time=x msg=\"chromium shell opening\" url=http://127.0.0.1:47821/?token="+liveToken+" more=1\n"+
