@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.93.1] - 2026-11-25
+
 ### Added
 
 - **A Homebrew install follows the beta channel through the `lich@beta` cask.** Pick Beta in Settings › Updates › Channel, and the update command swaps the cask for you.
@@ -6801,7 +6803,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   CPU, costing ~40ms per frame in a full-size window. Under Xwayland typing is
   stall-free at full frame rate.
 
-[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.93.0...HEAD
+[Unreleased]: https://github.com/lichdotdev/lich/compare/v0.93.1...HEAD
+[0.93.1]: https://github.com/lichdotdev/lich/compare/v0.93.0...v0.93.1
 [0.93.0]: https://github.com/lichdotdev/lich/compare/v0.92.0...v0.93.0
 [0.92.0]: https://github.com/lichdotdev/lich/compare/v0.91.0...v0.92.0
 [0.91.0]: https://github.com/lichdotdev/lich/compare/v0.90.1...v0.91.0

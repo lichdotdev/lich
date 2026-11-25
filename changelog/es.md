@@ -1,3 +1,13 @@
+## [0.93.1] - 2026-11-25
+
+### Added
+
+- **Una instalación con Homebrew sigue el canal beta mediante el cask `lich@beta`.** Elige Beta en Ajustes › Actualizaciones › Canal, y el comando de actualización cambia el cask por ti.
+
+### Fixed
+
+- **Cambiar entre estable y beta en Arch es una actualización de paquete normal, sin desinstalar nada a mano.** La actualización conserva el nombre del paquete que instalaste, `lich` desde install.sh o `lich-bin` desde AUR.
+
 ## [0.93.0] - 2026-11-25
 
 ### Added
