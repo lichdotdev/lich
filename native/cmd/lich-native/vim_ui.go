@@ -24,7 +24,21 @@ type vimCmdline struct {
 	lead int
 }
 
+// vimPum is Neovim's completion menu: its items and the one chosen, -1 for
+// none.
+type vimPum struct {
+	items    []vimPumItem
+	selected int
+}
+
+// vimPumItem is a completion: the word it puts in, and its kind as the
+// source names it ("func", "v").
+type vimPumItem struct {
+	word, kind string
+}
+
 type vimUI struct {
+	pum      *vimPum
 	buf      int
 	cursors  []vimCursor
 	mode     int
@@ -103,6 +117,19 @@ func (u *vimUI) applyOne(name string, args []any) {
 		}
 	case "msg_history_show":
 		u.msg, u.msgError = vimHistoryText(argAt(args, 0)), false
+	case "popupmenu_show":
+		// The command line's completion (grid -1) is not drawn.
+		if intOf(argAt(args, 4)) == -1 {
+			u.pum = nil
+			return
+		}
+		u.pum = &vimPum{items: vimPumItems(argAt(args, 0)), selected: intOf(argAt(args, 1))}
+	case "popupmenu_select":
+		if u.pum != nil {
+			u.pum.selected = intOf(argAt(args, 0))
+		}
+	case "popupmenu_hide":
+		u.pum = nil
 	case "msg_clear":
 		u.msg, u.msgError = "", false
 	}
@@ -222,4 +249,17 @@ func vimMessageTail(msg string) string {
 		return msg
 	}
 	return strings.Join(lines[len(lines)-vimMessageLines:], "\n")
+}
+
+// vimPumItems reads popupmenu_show's [word, kind, menu, info] items.
+func vimPumItems(raw any) []vimPumItem {
+	items, _ := raw.([]any)
+	out := make([]vimPumItem, 0, len(items))
+	for _, it := range items {
+		parts, _ := it.([]any)
+		word, _ := argAt(parts, 0).(string)
+		kind, _ := argAt(parts, 1).(string)
+		out = append(out, vimPumItem{word: word, kind: kind})
+	}
+	return out
 }

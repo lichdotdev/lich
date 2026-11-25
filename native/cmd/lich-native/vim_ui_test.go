@@ -106,3 +106,27 @@ func TestVimUIStacksAListAndShowsItsTail(t *testing.T) {
 		t.Fatalf("a long message kept %d lines", strings.Count(tail, "\n")+1)
 	}
 }
+
+func TestVimUIFollowsTheCompletionMenu(t *testing.T) {
+	var u vimUI
+	items := []any{[]any{"Relaunch", "func", "", ""}, []any{"NoWindowArg", "const", "", ""}}
+	u.apply([]any{"popupmenu_show", []any{items, int64(-1), int64(4), int64(8), int64(1)}})
+	if u.pum == nil || len(u.pum.items) != 2 || u.pum.items[1].kind != "const" || u.pum.selected != -1 {
+		t.Fatalf("menu = %+v", u.pum)
+	}
+	u.apply([]any{"popupmenu_select", []any{int64(1)}})
+	if u.pum.selected != 1 {
+		t.Fatalf("selected %d after a select", u.pum.selected)
+	}
+	u.apply([]any{"popupmenu_show", []any{items, int64(0), int64(0), int64(1), int64(-1)}})
+	if u.pum != nil {
+		t.Fatal("the command line's completion was taken for the editor's")
+	}
+}
+
+func TestVimWordStartIsWhereTheCompletedWordBegins(t *testing.T) {
+	st := vimState0(t, "  restart.Rela\n")
+	if got := vimWordStart(st, 14); got != 10 {
+		t.Fatalf("word starts at %d, want 10", got)
+	}
+}

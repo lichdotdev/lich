@@ -49,6 +49,7 @@ type vimBuffer struct {
 	// yank is the last yank's text, lit until yankUntil.
 	yank      []godemirror.SelectionRange
 	yankUntil time.Time
+	pum       vimPumView
 }
 
 // vimShown is a :s preview in the editor: bytes from..to of the text are

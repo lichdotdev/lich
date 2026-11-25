@@ -95,6 +95,7 @@ func (f *fileEditor) paintVimCursor(gtx C) {
 		return
 	}
 	paint.FillShape(gtx.Ops, f.vimCursorColor(c), clip.Rect(r).Op())
+	f.paintVimPum(gtx, u)
 }
 
 // paintVimMatches lays the highlighted search's matches over their text.
