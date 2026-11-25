@@ -449,7 +449,9 @@
     "hideWhitespaceSearchWords": "пробелы отступы ревью игнорировать space indentation review ignore",
     "interfaceGroup": "Интерфейс",
     "vimTitle": "Режим Vim",
-    "vimSearchWords": "vim neovim nvim модальный клавиши сочетания"
+    "vimSearchWords": "vim neovim nvim модальный клавиши сочетания",
+    "relativeNumbersTitle": "Относительные номера строк",
+    "relativeNumbersSearchWords": "относительные номера relativenumber vim строки поле"
   },
   "settingsNav": {
     "scopeLabel": "Область",
@@ -502,7 +504,8 @@
     "hideWhitespaceDescription": "Не показывать на вкладке «Ревью» изменения, которые затрагивают только пробелы.",
     "vimDescription": "Правьте файлы клавишами самого Vim: их исполняет ваш Neovim с вашим конфигом.",
     "vimMissing": "Нужен Neovim 0.10 или новее в PATH.",
-    "vimEditConfig": "Изменить конфиг"
+    "vimEditConfig": "Изменить конфиг",
+    "relativeNumbersDescription": "Нумерует каждую строку по расстоянию до строки курсора, а строку курсора по её номеру."
   },
   "settingsTheme": {
     "autoLightDark": "Авто светлая/тёмная"

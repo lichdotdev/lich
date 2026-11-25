@@ -441,7 +441,9 @@
     "hideWhitespaceSearchWords": "espaço indentação revisão ignorar",
     "interfaceGroup": "Interface",
     "vimTitle": "Modo Vim",
-    "vimSearchWords": "vim neovim nvim modal teclas atalhos"
+    "vimSearchWords": "vim neovim nvim modal teclas atalhos",
+    "relativeNumbersTitle": "Números de linha relativos",
+    "relativeNumbersSearchWords": "relativo número relativenumber vim margem linhas"
   },
   "settingsNav": {
     "scopeLabel": "Escopo",
@@ -494,7 +496,8 @@
     "hideWhitespaceDescription": "Na aba Revisão, omite as mudanças que só mexem no espaçamento.",
     "vimDescription": "Edite arquivos com as teclas do próprio Vim, rodadas pelo seu Neovim e pela sua config.",
     "vimMissing": "Precisa do Neovim 0.10 ou mais novo no PATH.",
-    "vimEditConfig": "Editar config"
+    "vimEditConfig": "Editar config",
+    "relativeNumbersDescription": "Numera cada linha pela distância até a do cursor; a do cursor mostra o próprio número."
   },
   "settingsTheme": {
     "autoLightDark": "Claro/escuro automático"

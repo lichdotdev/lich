@@ -441,7 +441,9 @@
     "hideWhitespaceSearchWords": "espacio sangría revisión ignorar",
     "interfaceGroup": "Interfaz",
     "vimTitle": "Modo Vim",
-    "vimSearchWords": "vim neovim nvim modal teclas atajos"
+    "vimSearchWords": "vim neovim nvim modal teclas atajos",
+    "relativeNumbersTitle": "Números de línea relativos",
+    "relativeNumbersSearchWords": "relativo número relativenumber vim margen líneas"
   },
   "settingsNav": {
     "scopeLabel": "Ámbito",
@@ -494,7 +496,8 @@
     "hideWhitespaceDescription": "Omite los cambios que solo afectan al espaciado en la pestaña Revisión.",
     "vimDescription": "Edita archivos con las teclas del propio Vim, ejecutadas por tu Neovim y su configuración.",
     "vimMissing": "Necesita Neovim 0.10 o posterior en el PATH.",
-    "vimEditConfig": "Editar configuración"
+    "vimEditConfig": "Editar configuración",
+    "relativeNumbersDescription": "Numera cada línea por su distancia a la del cursor; la del cursor muestra su propio número."
   },
   "settingsTheme": {
     "autoLightDark": "Claro/oscuro automático"

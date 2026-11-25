@@ -441,7 +441,9 @@
     "hideWhitespaceSearchWords": "space indentation review ignore",
     "interfaceGroup": "Interface",
     "vimTitle": "Vim mode",
-    "vimSearchWords": "vim neovim nvim modal keys keybindings"
+    "vimSearchWords": "vim neovim nvim modal keys keybindings",
+    "relativeNumbersTitle": "Relative line numbers",
+    "relativeNumbersSearchWords": "relative number relativenumber vim gutter lines"
   },
   "settingsNav": {
     "scopeLabel": "Scope",
@@ -494,7 +496,8 @@
     "hideWhitespaceDescription": "Leave out changes that only touch spacing in the Review tab.",
     "vimDescription": "Edit files with Vim's own keys, run by your Neovim and its config.",
     "vimMissing": "Needs Neovim 0.10 or newer on your PATH.",
-    "vimEditConfig": "Edit config"
+    "vimEditConfig": "Edit config",
+    "relativeNumbersDescription": "Number each line by its distance from the cursor's, the cursor's own line by its number."
   },
   "settingsTheme": {
     "autoLightDark": "Auto light/dark"

@@ -115,3 +115,19 @@ func TestVimClickColPutsTheCursorOnTheLastCharacterSelected(t *testing.T) {
 		t.Fatalf("backward drag ended on %d,%d; want 1,0", row, col)
 	}
 }
+
+func TestRelativeNumberCountsFromTheCursorsLine(t *testing.T) {
+	ed, err := codeview.NewTextEditor(fonts.SystemMono, 13)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ed.SetState(godemirror.EditorStateConfig{Doc: "a\nb\nc\nd\ne", Selection: godemirror.SingleSelection(4, 4)}); err != nil {
+		t.Fatal(err)
+	}
+	st := ed.State()
+	for lineNo, want := range map[int]string{1: "2", 2: "1", 3: "3", 4: "1", 5: "2"} {
+		if got := relativeNumber(lineNo, st); got != want {
+			t.Errorf("line %d = %q, want %q", lineNo, got, want)
+		}
+	}
+}

@@ -437,7 +437,9 @@
     "hideWhitespaceSearchWords": "공백 들여쓰기 리뷰 무시 whitespace",
     "interfaceGroup": "인터페이스",
     "vimTitle": "Vim 모드",
-    "vimSearchWords": "vim neovim nvim 모달 키 단축키"
+    "vimSearchWords": "vim neovim nvim 모달 키 단축키",
+    "relativeNumbersTitle": "상대 줄 번호",
+    "relativeNumbersSearchWords": "상대 번호 relativenumber vim 줄 번호 여백"
   },
   "settingsNav": {
     "scopeLabel": "범위",
@@ -490,7 +492,8 @@
     "hideWhitespaceDescription": "리뷰 탭에서 공백만 바뀐 변경 사항을 뺍니다.",
     "vimDescription": "Vim 본래의 키로 파일을 편집합니다. 내 Neovim과 그 설정으로 실행됩니다.",
     "vimMissing": "PATH에 Neovim 0.10 이상이 있어야 합니다.",
-    "vimEditConfig": "설정 편집"
+    "vimEditConfig": "설정 편집",
+    "relativeNumbersDescription": "각 줄을 커서 줄로부터의 거리로 표시하고, 커서 줄에는 실제 줄 번호를 표시합니다."
   },
   "settingsTheme": {
     "autoLightDark": "자동 라이트/다크"

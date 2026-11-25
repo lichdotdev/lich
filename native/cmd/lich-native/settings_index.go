@@ -140,6 +140,7 @@ var settingsSections = []settingsSection{
 		{titleKey: "settings.settingsAppearance.editorSizeTitle", alsoKey: "settings.settingsAppearance.editorSizeSearchWords", key: editorFontSizeKey},
 		{titleKey: "settings.settingsIndex.hideWhitespaceTitle", alsoKey: "settings.settingsIndex.hideWhitespaceSearchWords", key: hideWhitespaceKey},
 		{titleKey: "settings.diffLayoutSetting.title", alsoKey: "settings.diffLayoutSetting.searchWords", key: diffLayoutKey},
+		{titleKey: "settings.settingsIndex.relativeNumbersTitle", alsoKey: "settings.settingsIndex.relativeNumbersSearchWords", key: relativeKey},
 		{titleKey: "settings.settingsIndex.vimTitle", alsoKey: "settings.settingsIndex.vimSearchWords", key: vimKey},
 	}},
 	{id: sectionProviders, labelKey: "settings.settings.section.providers", icon: icons.Lucide("blocks"), navGroupKey: navGroupAgents,

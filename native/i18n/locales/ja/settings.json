@@ -441,7 +441,9 @@
     "hideWhitespaceSearchWords": "空白 スペース インデント レビュー 無視",
     "interfaceGroup": "インターフェース",
     "vimTitle": "Vim モード",
-    "vimSearchWords": "vim neovim nvim モーダル キー キーバインド"
+    "vimSearchWords": "vim neovim nvim モーダル キー キーバインド",
+    "relativeNumbersTitle": "相対行番号",
+    "relativeNumbersSearchWords": "相対 番号 relativenumber vim 行番号 ガター"
   },
   "settingsNav": {
     "scopeLabel": "スコープ",
@@ -494,7 +496,8 @@
     "hideWhitespaceDescription": "レビュータブで、空白だけに関わる変更を除外します。",
     "vimDescription": "Vim 本来のキーでファイルを編集します。あなたの Neovim とその設定で動きます。",
     "vimMissing": "PATH に Neovim 0.10 以降が必要です。",
-    "vimEditConfig": "設定を編集"
+    "vimEditConfig": "設定を編集",
+    "relativeNumbersDescription": "各行をカーソル行からの距離で番号付けし、カーソル行には実際の行番号を表示します。"
   },
   "settingsTheme": {
     "autoLightDark": "ライト/ダークを自動切り替え"

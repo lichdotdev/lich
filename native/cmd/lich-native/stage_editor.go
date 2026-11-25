@@ -104,6 +104,8 @@ type editorEnv struct {
 	comments *commentStore
 	notify   func(ui.Toast)
 	vim      *vimHost
+	// relative numbers the lines by their distance from the cursor's.
+	relative bool
 }
 
 func newFileEditor(client *backend.Client, invalidate func(), family string, size unit.Sp, checkout string) *fileEditor {
@@ -394,6 +396,10 @@ func (f *fileEditor) source(gtx C, th *ui.Theme) (D, error) {
 	code := func(gtx C) D {
 		gtx.Constraints.Min = gtx.Constraints.Max
 		f.ed.Theme = f.env.code
+		f.ed.FormatNumber = nil
+		if f.env.relative {
+			f.ed.FormatNumber = relativeNumber
+		}
 		if f.vimOn() {
 			f.ed.Theme = vimHideCaret(f.ed.Theme)
 		}
@@ -458,4 +464,14 @@ func (f *fileEditor) setFont(family string, size unit.Sp) {
 // gutter's last column, down the whole code area.
 func gutterRule(g godemirror.Geometry, height int) image.Rectangle {
 	return image.Rect(g.GutterWidth-1, 0, g.GutterWidth, height)
+}
+
+// relativeNumber is lineNo as Vim's 'number' with 'relativenumber' spells
+// it: the cursor's line its own number, every other its distance from it.
+func relativeNumber(lineNo int, st godemirror.EditorState) string {
+	cursor := st.LineAt(st.Selection().Main().Head()).Number
+	if lineNo == cursor {
+		return strconv.Itoa(lineNo)
+	}
+	return strconv.Itoa(max(lineNo-cursor, cursor-lineNo))
 }
