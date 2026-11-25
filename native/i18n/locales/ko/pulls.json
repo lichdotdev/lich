@@ -198,7 +198,7 @@
       "other": "커밋 {count}개"
     },
     "rangeNote": "{range} 보는 중 · 댓글과 확인함은 쓸 수 없음",
-    "rangeHint": "Shift+클릭으로 범위 선택"
+    "rangeKey": "범위"
   },
   "reviewThread": {
     "replyFailed": "답글 실패: {error}",

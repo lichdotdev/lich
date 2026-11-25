@@ -48,6 +48,8 @@ type vimPumView struct {
 	list     widget.List
 	rows     []ui.Clickable
 	scrolled int
+	// motion grows the menu out of the word it completes.
+	motion panelMotion
 }
 
 // vimKind is how a completion's kind is drawn: its badge's letter and the
@@ -80,7 +82,9 @@ func vimKindOf(kind string) (vimKind, bool) {
 // documentation beside it; clicks pick in Neovim.
 func (f *fileEditor) paintVimPum(gtx C, u vimUI) {
 	p := u.pum
-	if p == nil || len(p.items) == 0 || f.vim.state == nil {
+	shown := p != nil && len(p.items) > 0 && f.vim.state != nil
+	f.vim.pum.motion.track(gtx.Now, shown, "")
+	if !shown {
 		return
 	}
 	st := f.ed.State()
@@ -114,7 +118,13 @@ func (f *fileEditor) paintVimPum(gtx C, u vimUI) {
 		pos.Y = at.Min.Y - size.Y
 	}
 	stack := op.Offset(pos).Push(gtx.Ops)
+	from := image.Pt(min(lead, size.X), 0)
+	if pos.Y < at.Max.Y {
+		from.Y = size.Y
+	}
+	grow := f.vim.pum.motion.pushFrom(gtx, size, from)
 	menu.Add(gtx.Ops)
+	grow()
 	stack.Pop()
 	if p.selected >= 0 && p.selected < len(p.items) {
 		f.paintVimPumDoc(gtx, p.items[p.selected], pos, size)

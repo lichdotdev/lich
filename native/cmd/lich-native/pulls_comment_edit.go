@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"image"
 	"strings"
 	"time"
 
@@ -151,13 +152,14 @@ func (v *pullView) editBox(gtx C, th *ui.Theme, t commentTarget, act *pullsActio
 		label = i18n.T("pulls.reviewThread.saving")
 	}
 	saveB := th.Button(save, label)
-	saveB.Size, saveB.Disabled = ui.SizeXS, body == "" || busy
+	saveB.Size, saveB.Disabled, saveB.Keys = ui.SizeXS, body == "" || busy, ctrlEnterCap()
 	cancelB := th.Button(cancel, i18n.T("common.action.cancel"))
 	cancelB.Size, cancelB.Variant = ui.SizeXS, ui.VariantGhost
-	buttons := []layout.FlexChild{layout.Rigid(saveB.Layout), ui.Gap(2), layout.Rigid(cancelB.Layout)}
+	var buttons []layout.FlexChild
 	if t.kind == reviewSummary {
-		buttons = append(buttons, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.reviewThread.verdictStays")).Muted().Layout))
+		buttons = append(buttons, layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.reviewThread.verdictStays")).Muted().Layout))
 	}
+	buttons = append(buttons, layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }), layout.Rigid(cancelB.Layout), ui.Gap(2), layout.Rigid(saveB.Layout))
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			ta := th.Textarea(ed, "")

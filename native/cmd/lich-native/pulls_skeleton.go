@@ -31,7 +31,6 @@ func (v *pullView) detailSkeleton(th *ui.Theme) layout.Widget {
 					)
 				})
 			}),
-			layout.Rigid(th.Separator),
 			layout.Flexed(1, func(gtx C) D {
 				return v.skeletonTab(gtx, th)
 			}),
@@ -147,7 +146,6 @@ func skeletonOverview(gtx C, th *ui.Theme) D {
 				layout.Rigid(func(gtx C) D {
 					return layout.Inset{Top: ui.Space(1), Bottom: overviewHeadingBottom}.Layout(gtx, heading)
 				}),
-				layout.Rigid(th.Separator),
 				layout.Flexed(1, prose),
 			)
 		}),

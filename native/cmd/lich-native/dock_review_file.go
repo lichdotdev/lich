@@ -1,12 +1,10 @@
 package main
 
 import (
-	"image"
 	"log"
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/godemirror"
@@ -169,10 +167,6 @@ func (c *fileCard) header(gtx C, p *reviewPanel) D {
 		},
 	)
 	c.headerHeight = dims.Size.Y
-	if c.open {
-		defer op.Offset(image.Pt(0, dims.Size.Y-gtx.Dp(1))).Push(gtx.Ops).Pop()
-		on.Separator(gtx)
-	}
 	return dims
 }
 

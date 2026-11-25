@@ -5,7 +5,6 @@ package main
 
 import (
 	"fmt"
-	"image"
 	"image/color"
 	"slices"
 	"strconv"
@@ -166,12 +165,6 @@ func (r *conflictResolver) gutter(gtx C, th *ui.Theme, p *reviewPanel, ours bool
 		v, btns, branch, take = r.ours, r.oursBtn, branchOrHead(p.git.Branch), icTakeRight
 	}
 	r.bands(gtx, th, ours, doc)
-	// A seam on each edge, over the bands: where a pane's code ends and the
-	// link to the next begins.
-	for _, x := range []int{0, gtx.Constraints.Max.X - gtx.Dp(1)} {
-		seam := clip.Rect{Min: image.Pt(x, 0), Max: image.Pt(x+gtx.Dp(1), gtx.Constraints.Max.Y)}
-		paint.FillShape(gtx.Ops, th.Over(th.Border), seam.Op())
-	}
 	for i, ch := range r.model.chunks {
 		off := ch.theirsOff
 		if ours {

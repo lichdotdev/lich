@@ -209,7 +209,6 @@ func (g *gitPanel) layout(gtx C, th *ui.Theme, in gitPanelInput) {
 	defer ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusLG), on.Over(on.Border))
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return g.header(gtx, on) }),
-		layout.Rigid(on.Separator),
 		layout.Flexed(1, func(gtx C) D { return g.body(gtx, on, view, in) }),
 	)
 	if !g.expanded {

@@ -72,20 +72,26 @@ func (m *panelMotion) pose(gtx C) float32 {
 // growing out of originX on its bottom edge. The returned func pops what it
 // pushed.
 func (m *panelMotion) push(gtx C, size image.Point, originX int) func() {
+	return m.pushFrom(gtx, size, image.Pt(originX, size.Y))
+}
+
+// pushFrom is push growing out of origin, a point on the surface's edge: a
+// menu under the word it completes grows from its top.
+func (m *panelMotion) pushFrom(gtx C, size, origin image.Point) func() {
 	p := m.pose(gtx)
 	if p >= 1 {
 		return func() {}
 	}
 	w, h := float32(size.X), float32(size.Y)
-	ox := float32(originX)
+	ox, oy := float32(origin.X), float32(origin.Y)
 	room := float32(gtx.Dp(panelShadowRoom))
 	lerp := func(a, b float32) int { return int(a + (b-a)*p + 0.5) }
 	// from the corner around the origin to the whole surface and its shadow
 	r := image.Rect(
-		lerp(ox-ox*panelOpenFromX, -room), lerp(h-h*panelOpenFromY, -room),
-		lerp(ox+(w-ox)*panelOpenFromX, w+room), lerp(h, h+room))
+		lerp(ox-ox*panelOpenFromX, -room), lerp(oy-oy*panelOpenFromY, -room),
+		lerp(ox+(w-ox)*panelOpenFromX, w+room), lerp(oy+(h-oy)*panelOpenFromY, h+room))
 	zoom := panelZoomFrom + (1-panelZoomFrom)*p
-	transform := op.Affine(f32.Affine2D{}.Scale(f32.Pt(ox, h), f32.Pt(zoom, zoom))).Push(gtx.Ops)
+	transform := op.Affine(f32.Affine2D{}.Scale(f32.Pt(ox, oy), f32.Pt(zoom, zoom))).Push(gtx.Ops)
 	cl := clip.Rect(r).Push(gtx.Ops)
 	opacity := paint.PushOpacity(gtx.Ops, min(p/panelFadeShare, 1))
 	return func() {

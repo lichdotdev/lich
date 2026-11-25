@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"gioui.org/io/semantic"
+	"gioui.org/op/clip"
 	"image"
 	"image/color"
 	"sync"
@@ -372,7 +374,6 @@ func (v *pullView) body(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail,
 				)
 			})
 		}),
-		layout.Rigid(th.Separator),
 		layout.Flexed(1, func(gtx C) D { return v.panelLayout(gtx, th, p, d, act) }),
 	)
 }
@@ -381,6 +382,15 @@ func (v *pullView) body(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail,
 func pullStat(gtx C, th *ui.Theme, ic *icons.Icon, text string, fg color.NRGBA) D {
 	glyph := func(gtx C) D { return pullGlyph(gtx, th, ic, ui.Space(3.5), fg) }
 	return th.Stat(gtx, glyph, text, fg)
+}
+
+// pullState is a state the glyph says alone: ic in fg, word its name for
+// screen readers.
+func pullState(gtx C, th *ui.Theme, ic *icons.Icon, word string, fg color.NRGBA) D {
+	d := pullGlyph(gtx, th, ic, ui.Space(3.5), fg)
+	defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
+	semantic.LabelOp(word).Add(gtx.Ops)
+	return d
 }
 
 // pullGlyph is ic at size, icPullRunning drawn as a BusyRing.
@@ -454,13 +464,13 @@ func (v *pullView) verdicts(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 func stateStat(gtx C, th *ui.Theme, d backend.PRDetail) D {
 	switch {
 	case d.State == "MERGED":
-		return pullStat(gtx, th, icPullMerged, i18n.T("pulls.pullsStats.merged"), th.MutedForeground)
+		return pullState(gtx, th, icPullMerged, i18n.T("pulls.pullsStats.merged"), th.MutedForeground)
 	case d.State == "CLOSED":
-		return pullStat(gtx, th, icPullX, i18n.T("pulls.pullsStats.closed"), th.MutedForeground)
+		return pullState(gtx, th, icPullX, i18n.T("pulls.pullsStats.closed"), th.MutedForeground)
 	case d.IsDraft:
-		return pullStat(gtx, th, icPullRequests, i18n.T("pulls.pullsStats.draft"), th.ToneWait)
+		return pullState(gtx, th, icPullDashed, i18n.T("pulls.pullsStats.draft"), th.ToneWait)
 	}
-	return pullStat(gtx, th, icPullRequests, i18n.T("pulls.pullsStats.open"), th.TonePass)
+	return pullState(gtx, th, icPullRequests, i18n.T("pulls.pullsStats.open"), th.TonePass)
 }
 
 func checksStat(th *ui.Theme, c backend.ChecksRollup) (*icons.Icon, string, color.NRGBA, bool) {
@@ -482,7 +492,8 @@ func mergeableStat(th *ui.Theme, d backend.PRDetail) (*icons.Icon, string, color
 	case conflictsWithBase(d):
 		return icPullX, i18n.T("pulls.pullsStats.conflictsWith", i18n.Args{"base": d.BaseRefName}), th.Destructive, true
 	case d.Mergeable == "MERGEABLE":
-		return icPullMerged, i18n.T("pulls.pullsStats.mergeable"), th.TonePass, true
+		// nothing stands in the way: the line says only what asks for work
+		return nil, "", color.NRGBA{}, false
 	}
 	return icPullDashed, i18n.T("pulls.pullsStats.checkingMergeability"), th.MutedForeground, true
 }

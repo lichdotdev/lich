@@ -131,8 +131,8 @@ func (p *reviewPanel) mergeRow(th *ui.Theme, tone color.NRGBA, left int) []layou
 	return []layout.FlexChild{
 		layout.Flexed(1, para(th.Text(ui.TextSM, mergingText(p.git)).In(tone)).Layout),
 		ui.Gap(2),
+		layout.Rigid(abort.Layout), ui.Gap(2),
 		layout.Rigid(func(gtx C) D { return th.Tooltip(p.root, &m.commitTip, blocked).Layout(gtx, commit.Layout) }),
-		ui.Gap(2), layout.Rigid(abort.Layout),
 	}
 }
 

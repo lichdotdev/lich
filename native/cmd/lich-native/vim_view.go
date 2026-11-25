@@ -177,7 +177,6 @@ func (f *fileEditor) vimStatus(gtx C, th *ui.Theme) D {
 		mode, lane = vimModeLabel(f.vim.state.mode)
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Separator),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X

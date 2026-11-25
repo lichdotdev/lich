@@ -119,14 +119,18 @@ func (v *pullView) commitPickList(gtx C, th *ui.Theme, d backend.PRDetail) D {
 		}
 		rows = append(rows, layout.Rigid(func(gtx C) D {
 			return commitPickRow(gtx, th, click, ranged && i >= from && i <= to, func(gtx C, on *ui.Theme) D {
-				return commitPickLine(gtx, on, c, now)
+				if !click.Hovered() {
+					return commitPickLine(gtx, on, c, now)
+				}
+				// Shift's cap where it acts: a Shift+click picks the range to here
+				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+					layout.Flexed(1, func(gtx C) D { return commitPickLine(gtx, on, c, now) }),
+					ui.Gap(2),
+					layout.Rigid(on.KeyHint("⇧", i18n.T("pulls.pullsFiles.rangeKey")).Layout),
+				)
 			})
 		}))
 	}
-	rows = append(rows, layout.Rigid(func(gtx C) D { return pickSeparator(gtx, th) }), layout.Rigid(func(gtx C) D {
-		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1), Bottom: ui.Space(1.5)}.Layout(gtx,
-			th.Text(ui.TextXS, i18n.T("pulls.pullsFiles.rangeHint")).Muted().Layout)
-	}))
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
 }
 
@@ -190,9 +194,9 @@ func (v *pullView) viewChanges(gtx C, th *ui.Theme, d backend.PRDetail, i int) D
 	return b.Layout(gtx)
 }
 
-// pickSeparator is a menu's separator, the -mx-1 my-1 hairline.
+// pickSeparator is the space between a menu's groups, where a hairline stood.
 func pickSeparator(gtx C, th *ui.Theme) D {
-	return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, th.Separator)
+	return layout.Spacer{Height: ui.Space(2)}.Layout(gtx)
 }
 
 func shortOID(oid string) string { return oid[:min(len(oid), 7)] }

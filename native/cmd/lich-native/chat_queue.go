@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"runtime"
 	"slices"
 
 	"gioui.org/io/event"
@@ -255,7 +254,7 @@ func (u *window) chatQueueHead(gtx C, th *ui.Theme, p *chatPane, n int) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	send := th.Button(&p.queueSend, i18n.T("chat.queue.sendNow"))
 	send.Variant, send.Size = ui.VariantGhost, ui.SizeXS
-	send.Keys = formatCombo(combo{Mod: true, Key: "Enter"}, runtime.GOOS == "darwin")
+	send.Keys = ctrlEnterCap()
 	return layout.Inset{Left: ui.Space(2), Right: ui.Space(1), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return icQueued.Layout(gtx, chatCrumbGlyph, th.MutedForeground) }),

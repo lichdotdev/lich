@@ -16,7 +16,6 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/fonts"
-	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -76,8 +75,9 @@ func requested(author string, threads backend.ThreadTally) backend.PRSummary {
 // fact on the row worth acting on, and the checkout gives way.
 func TestRowSideKeepsTheVerdictWhole(t *testing.T) {
 	th := rowMetaTheme(t)
-	whole := inkWidth(t, th.Text(ui.TextXS, i18n.T("pulls.pullsStats.changesRequested")).In(th.Destructive).Layout, th.Destructive)
 	pr := requested("ana", backend.ThreadTally{Open: 1, Total: 1})
+	// the verdict alone, a glyph since words left the row (contract changed)
+	whole := inkWidth(t, func(gtx C) D { return rowVerdict(gtx, th, pr) }, th.Destructive)
 	got := inkWidth(t, func(gtx C) D { return rowSide(gtx, th, pr, "joao-vitorino-dos-santos_snk-rapid-quartz") }, th.Destructive)
 	if got < whole {
 		t.Errorf("verdict drew %dpx of its %dpx", got, whole)

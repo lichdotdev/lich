@@ -257,7 +257,6 @@ func (d *dock) layout(gtx C, th *ui.Theme, root *ui.Root, in dockInput) (saveWid
 	defer ui.IslandBorder(gtx, size, rr, on.Over(on.Border))
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return d.header(gtx, on, root, in) }),
-		layout.Rigid(on.Separator),
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
 			return d.tour.Anchor(gtx, tourReviewPanel, func(gtx C) D {

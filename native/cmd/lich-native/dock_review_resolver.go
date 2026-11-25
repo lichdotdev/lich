@@ -124,10 +124,8 @@ func (r *conflictResolver) layout(gtx C, th *ui.Theme, p *reviewPanel) (closed b
 	closed = r.actions(gtx, p)
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return r.header(gtx, th, p) }),
-		layout.Rigid(th.Separator),
 		layout.Rigid(func(gtx C) D { return r.titles(gtx, th, p.git) }),
 		layout.Flexed(1, func(gtx C) D { return r.panes(gtx, th, p) }),
-		layout.Rigid(th.Separator),
 		layout.Rigid(func(gtx C) D { return r.footer(gtx, th, p) }),
 	)
 	r.follow()

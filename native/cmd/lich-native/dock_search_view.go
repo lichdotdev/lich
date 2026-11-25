@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"fmt"
+	"gioui.org/font"
 	"strings"
 
 	"gioui.org/io/key"
@@ -270,7 +271,7 @@ func hitGroupHeader(gtx C, th *ui.Theme, g searchGroup) D {
 func sectionHeader(gtx C, th *ui.Theme, title, count string) D {
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(2), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
-			layout.Flexed(1, th.Text(ui.Text2XS, strings.ToUpper(title)).Leading(text2XSLeading).Muted().Layout),
+			layout.Flexed(1, th.Text(ui.Text2XS, strings.ToUpper(title)).Leading(text2XSLeading).Muted().Weight(font.SemiBold).Layout),
 			layout.Rigid(th.Text(ui.Text2XS, count).Mono().Muted().Layout),
 		)
 	})

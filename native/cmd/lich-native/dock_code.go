@@ -212,7 +212,6 @@ func (c *codeTab) browse(gtx C, th *ui.Theme) D {
 			return c.searchFold.Layout(gtx, c.searching, func(gtx C) D {
 				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 					layout.Rigid(func(gtx C) D { return c.browseBox(gtx, th) }),
-					layout.Rigid(th.Separator),
 				)
 			})
 		}),

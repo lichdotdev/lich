@@ -119,7 +119,7 @@ func (p *reviewPanel) cardItem(gtx C, i int, heights map[string]cardSpan) D {
 				if i == 0 {
 					return D{}
 				}
-				dims := layout.Inset{Bottom: ui.Space(2.5)}.Layout(gtx, p.th.Separator)
+				dims := layout.Spacer{Height: ui.Space(2.5)}.Layout(gtx)
 				top += dims.Size.Y
 				return dims
 			}),
