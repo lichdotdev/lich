@@ -12,7 +12,7 @@ require (
 	github.com/lichdotdev/gio-driver v0.0.0-20261111143827-fb7064d51698
 	github.com/lichdotdev/godemirror v0.11.1-0.20261125175513-d64f3ef2d3ef
 	github.com/lichdotdev/lich v0.0.0
-	github.com/lichdotdev/lich/extension v0.0.0
+	github.com/lichdotdev/lich/extension v0.4.0
 	github.com/neovim/go-client v1.2.1
 	github.com/yuin/goldmark v1.4.13
 	golang.org/x/exp/shiny v0.0.0-20261009195045-ca0d7ba23607

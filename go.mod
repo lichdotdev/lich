@@ -11,7 +11,7 @@ require (
 	github.com/creack/pty v1.1.24
 	github.com/ebitengine/purego v0.11.2
 	github.com/lichdotdev/godemirror v0.11.1-0.20261125175513-d64f3ef2d3ef
-	github.com/lichdotdev/lich/extension v0.0.0
+	github.com/lichdotdev/lich/extension v0.4.0
 	github.com/ncruces/zenity v0.10.14
 	golang.org/x/image v0.47.0
 	golang.org/x/sys v0.49.0
