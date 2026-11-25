@@ -139,7 +139,6 @@
     "default": "Default"
   },
   "question": {
-    "freeHint": "Enter sends · Esc declines",
     "marked": {
       "one": "{count} marked",
       "other": "{count} marked"

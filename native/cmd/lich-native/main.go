@@ -101,6 +101,10 @@ func windowClass(getenv func(string) string) string {
 }
 
 type window struct {
+	// dropMotion grows in the label of the zone a carried pane would land
+	// in; dropKey is the zone it shows.
+	dropMotion panelMotion
+	dropKey    string
 	// hooksOnChat is the session whose /hooks panel opens once its chat is
 	// drawn (reviewHooks).
 	hooksOnChat string

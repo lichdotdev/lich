@@ -63,6 +63,10 @@ type browserNote struct {
 
 // browserNotes is one pane's pick and its notes.
 type browserNotes struct {
+	// chipMotion grows the bar or the folded tab in; chipKey is which one
+	// stands.
+	chipMotion panelMotion
+	chipKey    string
 	// cuts are where the notes drew over the page in the last layout, local to
 	// it: a page the window draws itself is left out there (webview.Page.Place).
 	cuts []image.Rectangle

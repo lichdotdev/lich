@@ -25,6 +25,8 @@ var (
 type themeTrialBar struct {
 	revert, keep ui.Clickable
 	packID       string
+	// motion grows the bar in from the window's foot.
+	motion panelMotion
 }
 
 // layoutThemeTrial is the bar while a theme is worn on approval: Revert and
@@ -36,10 +38,12 @@ func (s *settingsScreen) layoutThemeTrial(gtx C, th *ui.Theme) {
 	}
 	if !s.open {
 		p.look.endTrial()
+		p.bar.motion.track(gtx.Now, false, "")
 		return
 	}
 	e, ok := p.look.trying()
 	if !ok {
+		p.bar.motion.track(gtx.Now, false, "")
 		return
 	}
 	b := &p.bar
@@ -50,7 +54,9 @@ func (s *settingsScreen) layoutThemeTrial(gtx C, th *ui.Theme) {
 	if b.keep.Clicked(gtx) && !busy {
 		p.keep(b.packID, e.def.ID)
 	}
-	if e, ok = p.look.trying(); ok {
+	e, ok = p.look.trying()
+	b.motion.track(gtx.Now, ok, "")
+	if ok {
 		trialBar(gtx, th, b, e.def.Name, busy)
 	}
 }
@@ -75,7 +81,7 @@ func escapePressed(gtx C) bool {
 func trialBar(gtx C, th *ui.Theme, b *themeTrialBar, name string, busy bool) {
 	on := th.On(th.Popover)
 	revert := on.Button(&b.revert, i18n.T("settings.themesPage.revert"))
-	revert.Variant, revert.Size = ui.VariantOutline, ui.SizeSM
+	revert.Variant, revert.Size, revert.Keys = ui.VariantOutline, ui.SizeSM, "Esc"
 	keep := on.Button(&b.keep, i18n.T("settings.themesPage.keep"))
 	keep.Size, keep.Disabled = ui.SizeSM, busy
 	if busy {
@@ -95,10 +101,12 @@ func trialBar(gtx C, th *ui.Theme, b *themeTrialBar, name string, busy bool) {
 	})
 	call := macro.Stop()
 	defer op.Offset(image.Pt((window.X-d.Size.X)/2, window.Y-gtx.Dp(trialBarBelow)-d.Size.Y)).Push(gtx.Ops).Pop()
+	defer b.motion.push(gtx, d.Size, d.Size.X/2)()
 	box := gtx
 	box.Constraints = layout.Exact(d.Size)
+	ui.ElevationMid.Paint(gtx, d.Size, gtx.Dp(ui.RadiusLG))
 	ui.Fill(box, th.Popover, ui.RadiusLG)
-	ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusLG), on.Over(on.Border))
+	ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusLG), on.Over(ui.Alpha(on.Foreground, ui.FloatRingOpacity)))
 	call.Add(gtx.Ops)
 }
 

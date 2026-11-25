@@ -126,7 +126,6 @@
     "default": "默认"
   },
   "question": {
-    "freeHint": "Enter 发送 · Esc 拒绝",
     "marked": {
       "other": "已选 {count} 项"
     },

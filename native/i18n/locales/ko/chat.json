@@ -126,7 +126,6 @@
     "default": "기본값"
   },
   "question": {
-    "freeHint": "Enter 보내기 · Esc 거절",
     "marked": {
       "other": "{count}개 선택"
     },

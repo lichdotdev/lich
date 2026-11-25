@@ -11,7 +11,6 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/unit"
 
 	driver "github.com/lichdotdev/gio-driver"
@@ -251,11 +250,9 @@ func (u *window) tourPopover(gtx C, s driver.StepState) D {
 	gtx.Constraints = layout.Constraints{Min: image.Pt(width, 0), Max: image.Pt(width, gtx.Constraints.Max.Y)}
 	return layout.Stack{}.Layout(gtx,
 		layout.Expanded(func(gtx C) D {
-			ui.Fill(gtx, th.Border, ui.RadiusLG)
-			inner := gtx
-			inner.Constraints.Min = gtx.Constraints.Min.Sub(image.Pt(2, 2))
-			defer op.Offset(image.Pt(1, 1)).Push(gtx.Ops).Pop()
-			ui.Fill(inner, th.Popover, ui.RadiusLG-1)
+			ui.ElevationMid.Paint(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusLG))
+			ui.Fill(gtx, th.Popover, ui.RadiusLG)
+			ui.InsetBorder(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusLG), th.Over(ui.Alpha(th.Foreground, ui.FloatRingOpacity)))
 			return D{Size: gtx.Constraints.Min}
 		}),
 		layout.Stacked(func(gtx C) D {

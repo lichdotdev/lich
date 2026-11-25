@@ -126,7 +126,6 @@
     "default": "デフォルト"
   },
   "question": {
-    "freeHint": "Enter で送信 · Esc で断る",
     "marked": {
       "other": "{count} 件選択"
     },

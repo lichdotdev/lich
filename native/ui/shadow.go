@@ -32,6 +32,21 @@ func (e Elevation) Paint(gtx C, size image.Point, radius int) {
 	}
 }
 
+// FloatRingOpacity is the 1px ring in Foreground every floating surface
+// wears over its shadow, the menus' ring-foreground/10: a shadow is lost on a
+// light theme, the ring is not.
+const FloatRingOpacity = menuRingOpacity
+
+// Reach is how far under its box the elevation's shadow falls: what a
+// surface standing over something it must not darken keeps clear.
+func (e Elevation) Reach() unit.Dp {
+	var r unit.Dp
+	for _, s := range e {
+		r = max(r, s.Y+s.Blur/2)
+	}
+	return r
+}
+
 // BoxShadow is CSS's box-shadow 0 Y Blur rgba(0,0,0,Alpha).
 type BoxShadow struct {
 	Y, Blur unit.Dp

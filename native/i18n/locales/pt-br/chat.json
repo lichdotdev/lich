@@ -139,7 +139,6 @@
     "default": "Padrão"
   },
   "question": {
-    "freeHint": "Enter envia · Esc recusa",
     "marked": {
       "one": "{count} marcada",
       "other": "{count} marcadas"

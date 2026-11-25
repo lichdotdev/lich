@@ -139,7 +139,6 @@
     "default": "Predeterminado"
   },
   "question": {
-    "freeHint": "Enter envía · Esc rechaza",
     "marked": {
       "one": "{count} marcada",
       "other": "{count} marcadas"

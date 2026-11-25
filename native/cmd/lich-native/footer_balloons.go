@@ -134,6 +134,8 @@ func balloonPill(gtx C, th *ui.Theme, items []fitted, iw int) (op.CallOp, int) {
 	w := iw + 2*pad
 	m := op.Record(gtx.Ops)
 	pill := image.Rectangle{Max: image.Pt(w, itemH+2*pad)}
+	// it floats over the terminal's text, where it would read as one of its lines
+	ui.ElevationLow.Paint(gtx, pill.Max, gtx.Dp(ui.RadiusLG))
 	paint.FillShape(gtx.Ops, th.Sidebar, clip.UniformRRect(pill, gtx.Dp(ui.RadiusLG)).Op(gtx.Ops))
 	for _, it := range items {
 		t := op.Offset(it.at.Add(image.Pt(pad, pad))).Push(gtx.Ops)

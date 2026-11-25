@@ -165,7 +165,6 @@
     "default": "По умолчанию"
   },
   "question": {
-    "freeHint": "Enter отправляет · Esc отказывает",
     "marked": {
       "one": "Отмечен {count}",
       "few": "Отмечено {count}",

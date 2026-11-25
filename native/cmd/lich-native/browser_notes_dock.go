@@ -152,11 +152,19 @@ func (u *window) notesChip(gtx C, n *browserNotes, lift int, radius unit.Dp, bod
 		n.cut(image.Rectangle{Min: at, Max: at.Add(d.Size)}, r, r)
 	}
 	defer op.Offset(at).Push(gtx.Ops).Pop()
+	// the bar and the folded tab grow in when one takes the other's place
+	if key := strconv.Itoa(lift); key != n.chipKey {
+		n.chipKey = key
+		n.chipMotion.track(gtx.Now, false, "")
+	}
+	n.chipMotion.track(gtx.Now, true, "")
+	defer n.chipMotion.push(gtx, d.Size, d.Size.X/2)()
 	shape := clip.RRect{Rect: image.Rectangle{Max: d.Size}, NW: r, NE: r, SE: r, SW: r}
 	if lift == 0 {
 		shape.SE, shape.SW = 0, 0
 	}
-	paint.FillShape(gtx.Ops, th.Background, shape.Op(gtx.Ops))
+	ui.ElevationLow.Paint(gtx, d.Size, r)
+	paint.FillShape(gtx.Ops, th.Popover, shape.Op(gtx.Ops))
 	area := shape.Push(gtx.Ops)
 	event.Op(gtx.Ops, &n.dock)
 	for {
@@ -166,7 +174,7 @@ func (u *window) notesChip(gtx C, n *browserNotes, lift int, radius unit.Dp, bod
 	}
 	call.Add(gtx.Ops)
 	area.Pop()
-	paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Stroke{Path: shape.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
+	paint.FillShape(gtx.Ops, th.Over(ui.Alpha(th.Foreground, ui.FloatRingOpacity)), clip.Stroke{Path: shape.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
 	return d.Size.Y + lift
 }
 
