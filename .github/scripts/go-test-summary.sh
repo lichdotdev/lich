@@ -41,6 +41,13 @@ fi
 # The root package is the main bootstrap invariant #1 exempts; its logic lives
 # in internal/, so its files leave the denominator. Every other boundary is counted.
 grep -v '^github.com/lichdotdev/lich/[^/]*\.go:' "$cover" >"$cover.gated"
+# internal/chat's suite drives the fake provider through $HOME and
+# $XDG_CONFIG_HOME, which Windows does not read, so it runs on Linux and macOS
+# only (internal/chat/rig_test.go): its statements leave the Windows total
+# instead of counting as uncovered there.
+case "${1:-}" in windows*)
+  grep -v '^github.com/lichdotdev/lich/internal/chat/' "$cover.gated" >"$cover.os" && mv "$cover.os" "$cover.gated"
+esac
 total="$(go tool cover -func="$cover.gated" | awk '/^total:/ {print $3}')"
 
 min=80
