@@ -80,6 +80,17 @@ func NativePath(dir string) string {
 	return filepath.Join(dir, nativeFileName(os.Getenv("LICH_DEV") != ""))
 }
 
+// OpenBrowser opens lich-browser's log under dir, lich-browser.log
+// (lich-browser-dev.log under LICH_DEV), rotated as lich.log is: the process
+// holding the pages writes its stderr there, and a web engine's crash with it.
+func OpenBrowser(dir string) (*os.File, error) {
+	name := "lich-browser.log"
+	if os.Getenv("LICH_DEV") != "" {
+		name = "lich-browser-dev.log"
+	}
+	return openLogFile(filepath.Join(dir, name))
+}
+
 // openLogFile opens the append-mode log file at path, first rotating the
 // previous generation out of the way once it outgrew maxLogSize.
 func openLogFile(path string) (*os.File, error) {
