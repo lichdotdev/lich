@@ -2,6 +2,8 @@ package main
 
 import (
 	"fmt"
+	"gioui.org/font"
+	"strings"
 
 	"gioui.org/layout"
 
@@ -22,7 +24,7 @@ func (pf *profileFooter) panelBody(gtx C, th *ui.Theme, m *model, a sidebarAccou
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 	}
 	if len(children) > 0 {
-		children = append(children, layout.Rigid(th.Separator), ui.VGap(1))
+		children = append(children, ui.VGap(3))
 	}
 	for i, e := range flattenEntries(m.footerEntries(th, a.profile, act)) {
 		children = append(children, layout.Rigid(func(gtx C) D { return pf.entryRow(gtx, th, fmt.Sprint(i), e) }))
@@ -56,14 +58,14 @@ func flattenEntries(entries []ui.MenuEntry) []ui.MenuEntry {
 func (pf *profileFooter) entryRow(gtx C, th *ui.Theme, key string, e ui.MenuEntry) D {
 	switch e.Kind {
 	case ui.MenuSeparator:
-		return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, th.Separator)
+		return layout.Spacer{Height: ui.Space(2)}.Layout(gtx)
 	case ui.MenuLabel:
 		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 			children := []layout.FlexChild{}
 			if e.Icon != nil {
 				children = append(children, layout.Rigid(func(gtx C) D { return e.Icon.Layout(gtx, ui.Space(3.5), th.MutedForeground) }), ui.Gap(1.5))
 			}
-			children = append(children, layout.Flexed(1, th.Text(ui.TextXS, e.Label).Muted().Layout))
+			children = append(children, layout.Flexed(1, th.Text(ui.Text2XS, strings.ToUpper(e.Label)).Leading(text2XSLeading).Muted().Weight(font.SemiBold).Layout))
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 		})
 	}

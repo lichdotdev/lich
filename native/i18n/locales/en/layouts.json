@@ -10,9 +10,9 @@
       "one": "{count} more",
       "other": "{count} more"
     },
-    "hiddenWaiting": {
-      "one": "{count} more · {waiting} waiting",
-      "other": "{count} more · {waiting} waiting"
+    "waiting": {
+      "one": "{count} waiting",
+      "other": "{count} waiting"
     }
   },
   "browser": {

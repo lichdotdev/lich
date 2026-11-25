@@ -94,15 +94,13 @@ func (u *window) browserZoomPanel(gtx C, th *ui.Theme, z *browserZoomState) D {
 		return th.PopoverRow(&z.reset, func(gtx C, th *ui.Theme) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Flexed(1, th.Text(ui.TextSM, i18n.T("layouts.browser.zoomReset")).Layout),
-				layout.Rigid(th.Text(ui.TextXS, zoomChord("0", isMac)).Muted().Layout),
+				layout.Rigid(th.KeyCap(zoomChord("0", isMac)).Layout),
 			)
 		}).Layout(gtx)
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(zoomRow),
-		layout.Rigid(func(gtx C) D {
-			return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, th.Separator)
-		}),
+		ui.VGap(2),
 		layout.Rigid(resetRow),
 	)
 }

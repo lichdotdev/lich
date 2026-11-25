@@ -1,7 +1,6 @@
 package main
 
 import (
-	"image"
 	"time"
 
 	"gioui.org/layout"
@@ -203,11 +202,7 @@ func (pf *profileFooter) layout(gtx C, th *ui.Theme, root *ui.Root, m *model, a 
 		})
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D {
-			gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, gtx.Dp(1)))
-			return ui.Fill(gtx, th.Over(th.Border), 0)
-		}),
-		ui.VGap(1.5),
+		ui.VGap(2),
 		layout.Rigid(func(gtx C) D { return pf.dropdown(th, root, m, a, act, 0).Above().Spanning().Layout(gtx, row) }),
 	)
 }

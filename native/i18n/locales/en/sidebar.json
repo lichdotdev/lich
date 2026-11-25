@@ -233,6 +233,18 @@
       "failedCode": "Failed · exit {code}",
       "never": "Not started yet",
       "stoppedAt": "Stopped · {time}"
+    },
+    "runningCount": {
+      "one": "{count} running",
+      "other": "{count} running"
+    },
+    "failedCount": {
+      "one": "{count} failed",
+      "other": "{count} failed"
+    },
+    "stoppedCount": {
+      "one": "{count} stopped",
+      "other": "{count} stopped"
     }
   },
   "checkoutRow": {

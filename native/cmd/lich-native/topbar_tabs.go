@@ -31,7 +31,6 @@ var (
 	tabGlyph    = ui.Space(3.5)
 	// tabSlot is the box at a tab's end that holds the × or the status badge.
 	tabSlot           = unit.Dp(16)
-	tabSeparator      = ui.Space(4)
 	tabSeparatorWidth = unit.Dp(1)
 	tabGap            = unit.Dp(5)
 	tabGroupMargin    = unit.Dp(5)
@@ -180,7 +179,6 @@ func (t *topbar) strip(gtx C, th *ui.Theme, f topbarFrame, act *topbarAction) D 
 						return t.tab(gtx, th, f, i, w, dragEnded, act)
 					})
 				})
-				t.drawSeparator(gtx, th, f)
 				return d
 			}),
 			ui.Gap(1),
@@ -205,27 +203,13 @@ func (t *topbar) lay(gtx C, f topbarFrame, widths []int) {
 	top := gtx.Dp(tabTop)
 	strip := image.Rect(f.stripX, 0, f.stripX+gtx.Constraints.Max.X, gtx.Constraints.Max.Y)
 	x := f.stripX - t.list.Position.Offset
-	t.separator = image.Rectangle{}
 	for i, tab := range f.tabs {
 		left, right := tabMarginPixels(gtx, f.tabs, i)
-		if i > 0 && f.tabs[i-1].pinned != tab.pinned {
-			top := gtx.Dp(tabTop) + (gtx.Dp(tabHeight)-gtx.Dp(tabSeparator))/2
-			t.separator = image.Rect(x, top, x+gtx.Dp(tabSeparatorWidth), top+gtx.Dp(tabSeparator)).Intersect(strip)
-		}
 		x += left
 		r := image.Rect(x, top, x+widths[i], top+gtx.Dp(tabHeight)).Intersect(strip)
 		t.laid = append(t.laid, laidTab{id: tab.ID, rect: r})
 		x += widths[i] + right
 	}
-}
-
-func (t *topbar) drawSeparator(gtx C, th *ui.Theme, f topbarFrame) {
-	if t.separator.Empty() {
-		return
-	}
-	// separator is in window pixels, and the list already draws shifted by its scroll.
-	r := t.separator.Sub(image.Pt(f.stripX-t.list.Position.Offset, 0))
-	paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Min: r.Min, Max: r.Max}.Op())
 }
 
 // tabAt is the strip tab at window point p, "" for none.

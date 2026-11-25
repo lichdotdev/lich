@@ -1,7 +1,15 @@
 {
   "notificationsButton": {
     "title": "Notificações",
-    "caughtUp": "Tudo em dia"
+    "caughtUp": "Tudo em dia",
+    "waiting": {
+      "one": "{count} esperando",
+      "other": "{count} esperando"
+    },
+    "done": {
+      "one": "{count} pronta",
+      "other": "{count} prontas"
+    }
   },
   "openProjectMenu": {
     "open": "Abrir projeto",

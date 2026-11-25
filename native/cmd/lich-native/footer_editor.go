@@ -235,7 +235,8 @@ func (f *footer) chip(th *ui.Theme, id string, inFooter bool, in footerInput) la
 		return chipBox(gtx, th.On(th.Popover), ui.Over(th.Popover, th.Border), th.Popover, th.Foreground, id, in)
 	}
 	return func(gtx C) D {
-		bg, fg, ring := th.Surface, th.MutedForeground, th.Over(th.Border)
+		// at rest a chip is its fill alone; the ring marks the keyboard's
+		bg, fg, ring := th.Surface, th.MutedForeground, color.NRGBA{}
 		if inFooter {
 			bg, fg = th.Background, th.Foreground
 		}
@@ -310,7 +311,6 @@ func (f *footer) previewLayout(gtx C, th *ui.Theme, l footerLayout, in footerInp
 		size := image.Pt(gtx.Constraints.Max.X, gtx.Dp(footerPreviewStage))
 		gtx.Constraints = layout.Exact(size)
 		ui.Fill(gtx, th.Over(th.Background), ui.RadiusLG)
-		ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusLG), th.Over(th.Border))
 		if len(l.Left)+len(l.Right) == 0 {
 			return layout.Center.Layout(gtx, th.Text(ui.TextXS, i18n.T("settings.footerLayoutEditor.previewEmpty")).Muted().Layout)
 		}

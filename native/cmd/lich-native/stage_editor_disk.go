@@ -146,7 +146,6 @@ func (f *fileEditor) diskBanner(gtx C, th *ui.Theme) D {
 			d, _ := f.diff.Layout(gtx)
 			return d
 		}),
-		layout.Rigid(th.Separator),
 	)
 }
 

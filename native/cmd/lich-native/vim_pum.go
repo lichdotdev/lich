@@ -250,7 +250,7 @@ func (f *fileEditor) paintVimPumDoc(gtx C, it vimPumItem, pos, size image.Point)
 // Markdown fences an LSP wraps code in left out, cut to vimPumDocLines.
 func vimPumDocText(it vimPumItem) string {
 	var lines []string
-	for _, l := range strings.Split(strings.TrimSpace(it.info), "\n") {
+	for l := range strings.SplitSeq(strings.TrimSpace(it.info), "\n") {
 		if strings.HasPrefix(strings.TrimSpace(l), "```") {
 			continue
 		}

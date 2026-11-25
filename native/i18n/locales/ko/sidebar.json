@@ -229,6 +229,15 @@
       "failedCode": "실패 · 종료 코드 {code}",
       "never": "아직 시작하지 않음",
       "stoppedAt": "중지됨 · {time}"
+    },
+    "runningCount": {
+      "other": "{count}개 실행 중"
+    },
+    "failedCount": {
+      "other": "{count}개 실패"
+    },
+    "stoppedCount": {
+      "other": "{count}개 중지됨"
     }
   },
   "checkoutRow": {

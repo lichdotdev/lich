@@ -233,6 +233,18 @@
       "failedCode": "Falló · salida {code}",
       "never": "Aún sin iniciar",
       "stoppedAt": "Detenido · {time}"
+    },
+    "runningCount": {
+      "one": "{count} en marcha",
+      "other": "{count} en marcha"
+    },
+    "failedCount": {
+      "one": "{count} falló",
+      "other": "{count} fallaron"
+    },
+    "stoppedCount": {
+      "one": "{count} detenido",
+      "other": "{count} detenidos"
     }
   },
   "checkoutRow": {

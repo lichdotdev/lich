@@ -2,7 +2,7 @@ package main
 
 import (
 	"image"
-	"strconv"
+	"image/color"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -166,14 +166,38 @@ func (t *topbar) bellButton(gtx C, th *ui.Theme, items []notification, act *topb
 	})
 }
 
-func (b *bellMenu) content(gtx C, th *ui.Theme, items []notification) D {
-	count := ""
-	if len(items) > 0 {
-		count = strconv.Itoa(len(items))
+// bellHeader is the panel's title and how many sessions wait, in ToneWait,
+// and how many finished, in TonePass.
+func bellHeader(gtx C, th *ui.Theme, items []notification) D {
+	waiting, done := 0, 0
+	for _, it := range items {
+		if it.Status == statusWaiting {
+			waiting++
+		} else {
+			done++
+		}
 	}
+	row := []layout.FlexChild{layout.Flexed(1, th.Text(ui.TextXS, i18n.T("tabs.notificationsButton.title")).Weight(font.SemiBold).Layout)}
+	add := func(text string, ink color.NRGBA) {
+		if len(row) > 1 {
+			row = append(row, layout.Rigid(th.Text(ui.TextXS, " · ").Muted().Layout))
+		}
+		row = append(row, layout.Rigid(th.Text(ui.TextXS, text).In(ink).Layout))
+	}
+	if waiting > 0 {
+		add(i18n.T("tabs.notificationsButton.waiting", i18n.Args{"count": waiting}), th.ToneWait)
+	}
+	if done > 0 {
+		add(i18n.T("tabs.notificationsButton.done", i18n.Args{"count": done}), th.TonePass)
+	}
+	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
+	})
+}
+
+func (b *bellMenu) content(gtx C, th *ui.Theme, items []notification) D {
 	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return th.MenuHeader(gtx, i18n.T("tabs.notificationsButton.title"), count) }),
-		layout.Rigid(th.MenuSeparator),
+		layout.Rigid(func(gtx C) D { return bellHeader(gtx, th, items) }),
 	}
 	if len(items) == 0 {
 		children = append(children, layout.Rigid(func(gtx C) D {

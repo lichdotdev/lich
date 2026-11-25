@@ -307,7 +307,9 @@ func rowMeta(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Time) D {
 	}
 	if pr.IsDraft {
 		// muted: amber on a row is the verdict waiting on its reviewer
-		add(func(gtx C) D { return pullState(gtx, th, icPullDashed, i18n.T("pulls.pullsList.draft"), th.MutedForeground) })
+		add(func(gtx C) D {
+			return pullState(gtx, th, icPullDashed, i18n.T("pulls.pullsList.draft"), th.MutedForeground)
+		})
 	}
 	if pr.IsCrossRepository {
 		add(th.Text(ui.TextXS, i18n.T("pulls.pullsList.fork")).Muted().Layout)

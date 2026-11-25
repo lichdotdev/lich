@@ -107,10 +107,9 @@ func TestTabsArePillsOnTheCanvas(t *testing.T) {
 		{"the hovered pill", cmid, top + 3, hover},
 		{"the gutter under the hovered pill", cmid, top + pill + 2, th.Canvas},
 		{"between two tabs at rest", d.Min.X, top + pill/2, th.Canvas},
-		{"before the pinned group's hairline", separatorX - 1, top + pill/2, th.Canvas},
-		{"the pinned group's hairline", separatorX, top + pill/2, th.Over(th.Border)},
-		{"after the pinned group's hairline", separatorX + 2, top + pill/2, th.Canvas},
-		{"over the hairline's top", separatorX, top + 4, th.Canvas},
+		// the pinned group ends in a gap, set apart by space (contract changed:
+		// a hairline stood in it)
+		{"the gap after the pinned group", separatorX, top + pill/2, th.Canvas},
 	} {
 		if got := img.RGBAAt(c.x, c.y); !inkNear(got, c.want) {
 			t.Errorf("%s at (%d,%d): %v, want %v", c.name, c.x, c.y, got, c.want)
@@ -140,7 +139,9 @@ func TestDraggedActiveTabUsesAccentAndBorder(t *testing.T) {
 	}
 }
 
-func TestPinnedGroupSeparatorStaysAtTheGroupBoundaryDuringDrag(t *testing.T) {
+// A drag draws nothing in the pinned group's gap (contract changed: a hairline
+// stood there and had to stay at the boundary).
+func TestPinnedGroupGapStaysEmptyDuringDrag(t *testing.T) {
 	bar, r := tabsFrames(t)
 	r.settle(t)
 	dragTab(t, bar, r, "a", 120)
@@ -150,12 +151,14 @@ func TestPinnedGroupSeparatorStaysAtTheGroupBoundaryDuringDrag(t *testing.T) {
 	top := gtx1(tabTop)
 	p, a := laidOf(t, bar, "p"), laidOf(t, bar, "a")
 	separatorX := a.Min.X - gtx1(tabGroupMargin) - gtx1(tabSeparatorWidth)
-	if got, want := img.RGBAAt(separatorX, top+pill/2), th.Over(th.Border); !inkNear(got, want) {
-		t.Errorf("group separator moved with tab a: pixel at (%d,%d) is %v, want %v (pinned tab %v, normal tab slot %v)", separatorX, top+pill/2, got, want, p, a)
+	if got, want := img.RGBAAt(separatorX, top+pill/2), th.Canvas; !inkNear(got, want) {
+		t.Errorf("the pinned group's gap at (%d,%d) is %v, want %v (pinned tab %v, normal tab slot %v)", separatorX, top+pill/2, got, want, p, a)
 	}
 }
 
-func TestPinnedGroupSeparatorScrollsWithTheTabs(t *testing.T) {
+// A scrolled strip keeps the pinned group's gap empty (contract changed: a
+// hairline stood there and scrolled with the tabs).
+func TestPinnedGroupGapScrollsWithTheTabs(t *testing.T) {
 	r := newFrameRig(image.Pt(900, 120), nil)
 	bar := newTopbar(&ui.Root{})
 	f := topbarFrame{brandWidth: 200, stripX: 240, active: "b"}
@@ -178,8 +181,8 @@ func TestPinnedGroupSeparatorScrollsWithTheTabs(t *testing.T) {
 	img := renderRig(t, r)
 	x := laidOf(t, bar, "a").Min.X - gtx1(tabGroupMargin) - gtx1(tabSeparatorWidth)
 	y := gtx1(tabTop) + gtx1(tabHeight)/2
-	if got, want := img.RGBAAt(x, y), r.theme.Over(r.theme.Border); !inkNear(got, want) {
-		t.Errorf("group separator of a scrolled strip at (%d,%d): %v, want %v", x, y, got, want)
+	if got, want := img.RGBAAt(x, y), r.theme.Canvas; !inkNear(got, want) {
+		t.Errorf("the pinned group's gap of a scrolled strip at (%d,%d): %v, want %v", x, y, got, want)
 	}
 }
 

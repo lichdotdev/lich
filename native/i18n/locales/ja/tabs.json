@@ -1,7 +1,13 @@
 {
   "notificationsButton": {
     "title": "通知",
-    "caughtUp": "すべて確認済みです"
+    "caughtUp": "すべて確認済みです",
+    "waiting": {
+      "other": "{count} 件待ち"
+    },
+    "done": {
+      "other": "{count} 件完了"
+    }
   },
   "openProjectMenu": {
     "open": "プロジェクトを開く",

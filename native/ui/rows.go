@@ -5,8 +5,6 @@ import (
 	"image"
 
 	"gioui.org/layout"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 )
 
@@ -79,9 +77,10 @@ func (th *Theme) MenuHeader(gtx C, title, count string) D {
 	})
 }
 
-// MenuSeparator is a Separator set Space(1) off the entries around it.
+// MenuSeparator is the space between a menu's groups, where a rule stood:
+// they are set apart by space.
 func (th *Theme) MenuSeparator(gtx C) D {
-	return layout.Inset{Top: Space(1), Bottom: Space(1)}.Layout(gtx, th.Separator)
+	return layout.Spacer{Height: Space(2)}.Layout(gtx)
 }
 
 // RailHairline is the short rule that splits two blocks of the collapsed
@@ -93,13 +92,11 @@ func (th *Theme) RailHairline(gtx C) D {
 	})
 }
 
-// CaptionDivider is a 1px vertical rule of the given height, set in by inset
-// on both sides: it splits the groups of a title bar.
+// CaptionDivider is the room between the groups of a title bar, inset on
+// both sides of where a 1px rule stood: they are set apart by space.
 func (th *Theme) CaptionDivider(gtx C, inset, height unit.Dp) D {
 	return layout.Inset{Left: inset, Right: inset}.Layout(gtx, func(gtx C) D {
-		size := image.Pt(gtx.Dp(1), gtx.Dp(height))
-		paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: size}.Op())
-		return D{Size: size}
+		return D{Size: image.Pt(gtx.Dp(1), gtx.Dp(height))}
 	})
 }
 

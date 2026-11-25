@@ -1,7 +1,13 @@
 {
   "notificationsButton": {
     "title": "알림",
-    "caughtUp": "새 알림이 없습니다"
+    "caughtUp": "새 알림이 없습니다",
+    "waiting": {
+      "other": "{count}개 대기 중"
+    },
+    "done": {
+      "other": "{count}개 완료"
+    }
   },
   "openProjectMenu": {
     "open": "프로젝트 열기",

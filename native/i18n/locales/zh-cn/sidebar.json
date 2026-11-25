@@ -233,6 +233,15 @@
       "failedCode": "失败 · 退出码 {code}",
       "never": "尚未启动",
       "stoppedAt": "已停止 · {time}"
+    },
+    "runningCount": {
+      "other": "{count} 个运行中"
+    },
+    "failedCount": {
+      "other": "{count} 个失败"
+    },
+    "stoppedCount": {
+      "other": "{count} 个已停止"
     }
   },
   "checkoutRow": {

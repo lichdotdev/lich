@@ -123,11 +123,7 @@ func (f *servicesFooter) layout(gtx C, th *ui.Theme, root *ui.Root, projectID st
 	}
 	tally := tallyServices(list)
 	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D {
-			gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, gtx.Dp(1)))
-			return ui.Fill(gtx, th.Over(th.Border), 0)
-		}),
-		ui.VGap(1.5),
+		ui.VGap(2),
 		layout.Rigid(func(gtx C) D { return f.headerRow(gtx, th, root, projectID, tally, act) }),
 	}
 	switch {
@@ -181,18 +177,15 @@ func (f *servicesFooter) headerRow(gtx C, th *ui.Theme, root *ui.Root, projectID
 	})
 }
 
-// servicesTitle is the header's line: the glyph, SERVICES, the count, and
-// the rule.
+// servicesTitle is the header's line: the glyph, SERVICES and how many run
+// and failed, in their tones.
 func servicesTitle(gtx C, th *ui.Theme, t servicesTally, open, hovered bool) D {
 	fg := th.Over(ui.Alpha(th.MutedForeground, headerTitleOpacity))
 	glyph := icServices
 	if hovered {
 		fg, glyph = th.MutedForeground, foldIcon(open)
 	}
-	count := strconv.Itoa(t.up) + "/" + strconv.Itoa(t.total)
-	if t.total == 0 {
-		count = i18n.T("sidebar.services.add")
-	}
+
 	return layout.Inset{Left: rowInset, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
@@ -202,11 +195,39 @@ func servicesTitle(gtx C, th *ui.Theme, t servicesTally, open, hovered bool) D {
 			ui.Gap(1.5),
 			layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(i18n.T("sidebar.services.title"))).Leading(text2XSLeading).In(fg).Weight(font.SemiBold).Layout),
 			ui.Gap(1.5),
-			layout.Rigid(th.Text(ui.Text2XS, count).Leading(text2XSLeading).In(th.Over(ui.Alpha(th.MutedForeground, headerCountOpacity))).Weight(font.Medium).Layout),
-			ui.Gap(1.5),
-			layout.Flexed(1, th.Separator),
+			layout.Flexed(1, servicesTallyLine(th, t)),
 		)
 	})
+}
+
+// servicesTallyLine is how many services run, in TonePass, and failed, in
+// Destructive; "stopped" muted when none does either, Add when there are none.
+func servicesTallyLine(th *ui.Theme, t servicesTally) layout.Widget {
+	muted := th.Over(ui.Alpha(th.MutedForeground, headerCountOpacity))
+	var parts []toned
+	if t.up > 0 {
+		parts = append(parts, toned{text: i18n.T("sidebar.services.runningCount", i18n.Args{"count": t.up}), ink: th.TonePass})
+	}
+	if t.failed > 0 {
+		parts = append(parts, toned{text: i18n.T("sidebar.services.failedCount", i18n.Args{"count": t.failed}), ink: th.Destructive})
+	}
+	switch {
+	case t.total == 0:
+		parts = []toned{{text: i18n.T("sidebar.services.add"), ink: muted}}
+	case len(parts) == 0:
+		parts = []toned{{text: i18n.T("sidebar.services.stoppedCount", i18n.Args{"count": t.total}), ink: muted}}
+	}
+	return func(gtx C) D {
+		row := make([]layout.FlexChild, 0, 2*len(parts))
+		for i, p := range parts {
+			text := p.text
+			if i > 0 {
+				text = " · " + text
+			}
+			row = append(row, layout.Rigid(th.Text(ui.Text2XS, text).Leading(text2XSLeading).In(p.ink).Weight(font.Medium).Layout))
+		}
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
+	}
 }
 
 // servicesEntries is the header's menu: start what is down, stop what runs,
@@ -371,7 +392,8 @@ func serviceStateText(v backend.Service, now time.Time) string {
 	case api.ServiceRunning:
 		return formatAge(now.Sub(time.UnixMilli(v.StartedAt)))
 	case api.ServiceStopping:
-		return i18n.T("sidebar.services.stopping")
+		// the spinner says it is stopping
+		return ""
 	case api.ServiceFailed:
 		if v.ExitCode != nil {
 			return i18n.T("sidebar.services.exitCode", i18n.Args{"code": fmt.Sprint(*v.ExitCode)})

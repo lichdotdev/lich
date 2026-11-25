@@ -1,7 +1,15 @@
 {
   "notificationsButton": {
     "title": "Notifications",
-    "caughtUp": "You're all caught up"
+    "caughtUp": "You're all caught up",
+    "waiting": {
+      "one": "{count} waiting",
+      "other": "{count} waiting"
+    },
+    "done": {
+      "one": "{count} done",
+      "other": "{count} done"
+    }
   },
   "openProjectMenu": {
     "open": "Open project",

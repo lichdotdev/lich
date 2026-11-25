@@ -6,6 +6,9 @@ package main
 
 import (
 	"context"
+	"gioui.org/io/semantic"
+	"gioui.org/op/clip"
+	"github.com/lichdotdev/lich/native/ui/icons"
 	"image"
 	"path"
 	"path/filepath"
@@ -53,6 +56,8 @@ type editorSaved struct {
 }
 
 // actions runs Ctrl+S, which saves at once.
+var icEditorLock = icons.Lucide("lock")
+
 func (f *fileEditor) actions(gtx C) {
 	for {
 		ev, ok := gtx.Event(key.Filter{Name: "S", Required: key.ModShortcut})
@@ -211,7 +216,13 @@ func (f *fileEditor) title(gtx C, th *ui.Theme) D {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return ui.Dot(gtx, th.ToneWait, editorDirtyDot) }))
 	}
 	if f.readOnly() {
-		children = append(children, ui.Gap(3), layout.Rigid(th.Text(ui.TextXS, i18n.T("dock.editor.artifactReadOnly")).Muted().Layout))
+		// a lock says it; its word is for screen readers
+		children = append(children, ui.Gap(3), layout.Rigid(func(gtx C) D {
+			d := icEditorLock.Layout(gtx, ui.Space(3.5), th.MutedForeground)
+			defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
+			semantic.LabelOp(i18n.T("dock.editor.artifactReadOnly")).Add(gtx.Ops)
+			return d
+		}))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }

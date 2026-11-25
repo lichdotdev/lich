@@ -336,7 +336,6 @@ func (f *fileEditor) layout(gtx C, th *ui.Theme, env editorEnv) error {
 	var err error
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return f.header(gtx, th) }),
-		layout.Rigid(th.Separator),
 		layout.Rigid(func(gtx C) D { return f.diskBanner(gtx, th) }),
 		layout.Rigid(func(gtx C) D { return f.notes(gtx, th) }),
 		layout.Flexed(1, func(gtx C) D {
