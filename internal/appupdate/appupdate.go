@@ -49,6 +49,14 @@ const (
 	// installScript is the deb/rpm/other-distro update path: install.sh detects
 	// the distro, installs the matching package, and POSTs /restart itself.
 	installScript = "curl -fsSL https://raw.githubusercontent.com/" + repo + "/main/install.sh | sh"
+	// betaInstallScript is installScript pinned to a pre-release with
+	// install.sh's LICH_TAG, since releases/latest never names one.
+	betaInstallScript = "curl -fsSL https://raw.githubusercontent.com/" + repo + "/main/install.sh | LICH_TAG=v%s sh"
+	// betaPKGBUILD builds the AUR package from the PKGBUILD a pre-release ships,
+	// which the AUR never receives. The package keeps the AUR's name, so pacman
+	// takes it as an upgrade of lich-bin and the next stable release as the
+	// one after it (vercmp orders 0.93.0rc15 before 0.93.0).
+	betaPKGBUILD = `d="$(mktemp -d)" && curl -fsSL -o "$d/PKGBUILD" ` + releaseBase + `v%s/PKGBUILD && (cd "$d" && makepkg -si --noconfirm)`
 	// restartChain relaunches lich after an install that, unlike install.sh, does
 	// not know how. It POSTs the same /restart endpoint using the
 	// LICH_PORT/LICH_TOKEN every lich PTY session exports. The token stays a
@@ -106,6 +114,9 @@ type Service struct {
 	// osReleasePath is read to pick the Linux install command; a field so tests
 	// drive the arch/non-arch branches off a fixture instead of the host's file.
 	osReleasePath string
+	// beta reports whether the user picked the beta channel, read on every
+	// lookup so a switch takes effect on the next check; nil is stable.
+	beta func() bool
 
 	// seen guards last, the status of the latest lookup, and checkedAt, when it
 	// ran. Apart from mu, which Apply holds for a whole download.
@@ -116,8 +127,8 @@ type Service struct {
 
 // New returns a service that reports version as the running build and polls
 // GitHub for the latest release. install runs a downloaded Windows installer;
-// emit is the app's event hub.
-func New(version string, install func(string) error, emit func(name string, data any)) *Service {
+// emit is the app's event hub; beta reports whether pre-releases count.
+func New(version string, install func(string) error, emit func(name string, data any), beta func() bool) *Service {
 	exe, _ := os.Executable() // "" if unresolved — canSelfApply then stays false.
 	return &Service{
 		install:       install,
@@ -132,6 +143,7 @@ func New(version string, install func(string) error, emit func(name string, data
 		downloadBase:  releaseBase,
 		tagBase:       releaseTagBase,
 		osReleasePath: defaultOSRelease,
+		beta:          beta,
 	}
 }
 
@@ -151,9 +163,9 @@ func (s *Service) status() Status {
 	st := Status{
 		CurrentVersion:  s.version,
 		LatestVersion:   latest,
-		UpdateAvailable: semver.IsRelease(s.version) && latest != "" && semver.Less(s.version, latest),
+		UpdateAvailable: checksUpdates(s.version) && latest != "" && semver.Less(s.version, latest),
 		CanSelfApply:    canSelfApply(s.goos, s.goarch, s.exePath),
-		InstallCommand:  s.installCommand(),
+		InstallCommand:  s.installCommand(latest),
 	}
 	st.Required = st.UpdateAvailable && required
 	if latest != "" {
@@ -228,15 +240,25 @@ func bundled(exePath string) bool {
 	return strings.Contains(filepath.ToSlash(exePath), ".app/Contents/MacOS/")
 }
 
-// installCommand is the shell command the UI pastes to update this install, or
-// "" where no package manager owns it (the UI then offers the release page).
+// checksUpdates reports whether version is a build the update check weighs: a
+// release or a pre-release, never a dev build between tags.
+func checksUpdates(version string) bool {
+	return semver.IsRelease(version) || semver.IsPreRelease(version)
+}
+
+// installCommand is the shell command the UI pastes to update this install to
+// latest, or "" where no package manager owns it (the UI then offers the
+// release page).
 // A Scoop install is package-manager owned like Arch's, and its restart is
 // spelled for PowerShell.
 // Arch goes through its AUR helper plus an explicit restart — yay knows nothing
 // about lich's /restart — while every other distro uses install.sh, which
 // restarts itself. A Homebrew install is package-manager owned like Arch's, on
 // whichever platform it runs, and macOS ships as a cask.
-func (s *Service) installCommand() string {
+func (s *Service) installCommand(latest string) string {
+	if semver.IsPreRelease(latest) {
+		return s.betaInstallCommand(latest)
+	}
 	if bundled(s.exePath) {
 		return "brew tap " + brewTap + " && brew upgrade --cask " + brewPackage + restartChain
 	}
@@ -253,6 +275,19 @@ func (s *Service) installCommand() string {
 		return "yay -S " + aurPackage + restartChain
 	}
 	return installScript
+}
+
+// betaInstallCommand is installCommand for a pre-release, which reaches
+// neither Homebrew nor Scoop: those installs get the release page.
+func (s *Service) betaInstallCommand(latest string) string {
+	if bundled(s.exePath) || scoopOwned(s.exePath) || s.goos != "linux" || !packaged(s.exePath) {
+		return ""
+	}
+	data, _ := os.ReadFile(s.osReleasePath) // missing/unreadable → not arch → install.sh
+	if isArch(string(data)) {
+		return fmt.Sprintf(betaPKGBUILD, latest) + restartChain
+	}
+	return fmt.Sprintf(betaInstallScript, latest)
 }
 
 // packaged reports whether exePath is where the deb, rpm and AUR packages put
@@ -339,7 +374,7 @@ func parseChecksum(data []byte, asset string) string {
 // Every release in between counts, not only the latest: skipping three must
 // not skip the one that was a security fix.
 func (s *Service) latestRelease() (latest string, required bool) {
-	for _, r := range ghrelease.Releases(s.http, s.releasesURL) {
+	for _, r := range s.releases() {
 		if latest == "" || semver.Less(latest, r.Tag) {
 			latest = r.Tag
 		}
@@ -348,6 +383,15 @@ func (s *Service) latestRelease() (latest string, required bool) {
 		}
 	}
 	return latest, required
+}
+
+// releases is the list the channel picks from: the stable releases, or with
+// the beta channel the pre-releases among them.
+func (s *Service) releases() []ghrelease.Release {
+	if s.beta != nil && s.beta() {
+		return ghrelease.ReleasesWithPre(s.http, s.releasesURL)
+	}
+	return ghrelease.Releases(s.http, s.releasesURL)
 }
 
 // get issues a metadata GET (JSON, checksums) on the short-timeout client.

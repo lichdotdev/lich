@@ -389,6 +389,11 @@
   "updatesSettings": {
     "applicationTitle": "应用程序",
     "applicationSearchWords": "版本 升级 更新日志 发行说明",
+    "channelTitle": "渠道",
+    "channelSearchWords": "测试版 稳定版 候选版本 预发布 beta stable",
+    "channelDescription": "测试版会在每个候选版本发布后立即提供，早于稳定版。",
+    "channelStable": "稳定版",
+    "channelBeta": "测试版",
     "checkForUpdates": "检查更新",
     "available": "lich {version} 可用，请按提示操作。",
     "upToDate": "你使用的已是最新版本。",

@@ -5,6 +5,9 @@
 #
 #   curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh
 #
+# LICH_TAG=v0.93.0-rc.1 installs that release instead: the beta channel's
+# pre-releases, which releases/latest never names.
+#
 # POSIX sh, no bashisms; everything runs inside main() so a truncated
 # download executes nothing.
 
@@ -95,7 +98,7 @@ main() {
   have sha256sum || fail "sha256sum is required"
 
   family="$(detect_family)"
-  tag="$(latest_tag)"
+  tag="${LICH_TAG:-$(latest_tag)}"
   [ -n "$tag" ] || fail "could not resolve the latest release from ${API}"
 
   case "$family" in

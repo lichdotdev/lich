@@ -3,10 +3,10 @@ name: release
 on:
   push:
     tags:
+      # A pre-release (v0.93.0-rc.1) runs the whole build too, and is published
+      # as a GitHub pre-release: only the beta channel's updater sees it, and
+      # the AUR and Homebrew jobs skip it.
       - "v*"
-      # A pre-release (v0.68.0-pre.1) is built and uploaded by hand: running this
-      # would publish it to the AUR, Homebrew and every install's updater.
-      - "!v*-*"
     # A tag run only restores caches saved on its own ref or on main, so the
     # libghostty-vt builds it saves are never seen by the next tag: without
     # this every release rebuilds them (~14 min on the Intel mac). A run on
@@ -45,12 +45,13 @@ jobs:
         with:
           version: 0.16.0
 
-      # Gio's Linux headers; see native.yml.
+      # Gio's and WebKitGTK's Linux headers; see native.yml.
       - name: System packages
         run: |
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends \
-            gcc pkg-config libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev \
+            gcc pkg-config libgtk-3-dev libwebkit2gtk-4.1-dev libxext-dev \
+            libwayland-dev libx11-dev libx11-xcb-dev libxkbcommon-x11-dev \
             libgles2-mesa-dev libegl1-mesa-dev libffi-dev libxcursor-dev libvulkan-dev \
             cmake nasm
 
@@ -449,6 +450,25 @@ jobs:
           sha256sum lich-v* > checksums.txt
           cat checksums.txt
 
+      # The AUR never receives a pre-release, so it ships its own PKGBUILD,
+      # which the beta channel builds on Arch. The checksums are filled here
+      # instead of by updpkgsums: the tarball is in bin/, and the desktop file
+      # and icon at this tag are the ones in the checkout.
+      - name: Render pre-release PKGBUILD
+        if: contains(github.ref_name, '-')
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          core="${tag%%-*}" pre="${tag#*-}"
+          sum() { sha256sum "$1" | cut -d' ' -f1; }
+          sums="$(sum "bin/lich-v${tag}-linux-amd64.tar.zst") $(sum build/linux/lich.desktop) $(sum build/appicon.png)"
+          sed -e "s/@VERSION@/${tag}/" -e "s/@PKGVER@/${core}${pre//./}/" build/linux/aur/PKGBUILD.tpl |
+            awk -v sums="$sums" 'BEGIN { split(sums, h, " ") } /SKIP/ { sub(/SKIP/, h[++n]) } 1' > bin/PKGBUILD
+          if grep -q "SKIP\|@VERSION@\|@PKGVER@" bin/PKGBUILD; then
+            echo "PKGBUILD left a placeholder" >&2
+            exit 1
+          fi
+          cat bin/PKGBUILD
+
       # Rendered here rather than in a job of its own like the cask: the
       # checksums are already in hand, and the manifest ships in the same
       # `gh release create` as the assets it hashes, so a release never exists
@@ -480,7 +500,11 @@ jobs:
           BANNER: docs/media/og.png
         run: |
           version="${GITHUB_REF_NAME#v}"
-          awk -v ver="$version" '
+          # A pre-release has no section of its own yet: its notes are what
+          # [Unreleased] holds at its tag.
+          section="$version"
+          case "$GITHUB_REF_NAME" in *-*) section=Unreleased ;; esac
+          awk -v ver="$section" '
             $0 ~ "^## \\[" ver "\\]" { grab = 1; next }
             grab && /^## \[/ { exit }
             grab { print }
@@ -506,8 +530,12 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # A pre-release is marked one, which keeps it off releases/latest:
+          # install.sh, the Scoop manifest and the stable channel never see it.
+          pre=()
+          case "$GITHUB_REF_NAME" in *-*) pre=(--prerelease bin/PKGBUILD) ;; esac
           gh release create "$GITHUB_REF_NAME" \
-            bin/lich-v* bin/checksums.txt bin/lich.json \
+            bin/lich-v* bin/checksums.txt bin/lich.json "${pre[@]}" \
             --title "$GITHUB_REF_NAME" \
             --notes-file notes.md
 
@@ -517,6 +545,7 @@ jobs:
   # to the lich-bin AUR repo over SSH.
   aur:
     needs: [release]
+    if: ${{ !contains(github.ref_name, '-') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -524,7 +553,7 @@ jobs:
       - name: Render PKGBUILD
         run: |
           version="${GITHUB_REF_NAME#v}"
-          sed "s/@VERSION@/${version}/" build/linux/aur/PKGBUILD.tpl > PKGBUILD
+          sed -e "s/@VERSION@/${version}/" -e "s/@PKGVER@/${version}/" build/linux/aur/PKGBUILD.tpl > PKGBUILD
 
       - name: Publish lich-bin to the AUR
         uses: KSXGitHub/github-actions-deploy-aur@v4.2.0
@@ -545,6 +574,7 @@ jobs:
   # repository and never expires, so a release years from now still publishes.
   homebrew:
     needs: [release]
+    if: ${{ !contains(github.ref_name, '-') }}
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7

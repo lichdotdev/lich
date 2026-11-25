@@ -53,6 +53,9 @@ overrides:
       - libx11-xcb1
       - libxcursor1
       - libxfixes3
+      - libxext6
+      - libgtk-3-0
+      - libwebkit2gtk-4.1-0
       - fontconfig
   rpm:
     depends:
@@ -67,6 +70,9 @@ overrides:
       - libX11-xcb.so.1()(64bit)
       - libXcursor.so.1()(64bit)
       - libXfixes.so.3()(64bit)
+      - libXext.so.6()(64bit)
+      - libgtk-3.so.0()(64bit)
+      - libwebkit2gtk-4.1.so.0()(64bit)
       - fontconfig
   archlinux:
     depends:
@@ -78,6 +84,9 @@ overrides:
       - libx11
       - libxcursor
       - libxfixes
+      - libxext
+      - gtk3
+      - webkit2gtk-4.1
       - fontconfig
 
 # xz rather than the gzip default: smaller packages, and unlike zstd every
