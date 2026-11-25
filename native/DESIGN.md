@@ -1010,7 +1010,14 @@ when the row is too narrow for both. Rows stand on seams, as the Welcome's cells
 page is headed by the nav's own label, uppercase with its hairline to the column's edge (`groupHeading`).
 
 A row a project changed says so in its scope line ("Global: Claude Code · Use Global") and nothing else: no side
-bar, no tint. The search's flash is the one fill a row takes.
+bar, no tint. The search's flash is the one fill a row takes. A row whose unchanged value comes from somewhere
+other than Global names it: a new chat's model in a project follows the profile its chats are born in ("Follows
+Work: Sonnet", changed "Work: Sonnet · Use Work's").
+
+A project's scope draws only what that project can change. A row only Global sets is left out, never dimmed with a
+"Global only" pill, and the page ends on one line under a seam: the rest are the same in every project, muted, with
+Open Global (outline, `SizeSM`) at its right (`globalElsewhere`). A page with nothing a project sets is that line
+alone. The pane has no intro sentence under its title in a project; the scope lines say it.
 
 Ctrl+F (Cmd+F on macOS) focuses the search field while Settings is open, and its key cap sits at the field's
 right end while the field is empty. It is Settings' own key, not a window hotkey, and not in the Hotkeys table.
@@ -1035,12 +1042,25 @@ picker's row, a select's lead and the plugin rows. A provider with no book keeps
 An installed provider in Add provider is its mark, its name and its switch on one line; a custom path or "not
 found" stays on that line, muted.
 
-Plan usage is the usage menu's blocks (`usageBlocks`): the plan's name muted, then a window a block, its share at
-the right, the bar of twenty segments and when it resets. The account is on the profile's row, never repeated
-under the bars.
+A provider's screen sorts its blocks under group headings: Accounts (Profile, Profiles, Plan usage), New chats
+(Model, Effort), Sessions (the skip ladder, restored sessions, ultracode, pastes) and Advanced (Binary), each
+present only where the provider has it. Binary is a plain block, not a fold.
+
+Plan usage is one line a window, not the usage menu's blocks: the window's name in a fixed column, the bar of
+twenty segments taking the rest, the share in mono right-aligned, then when it resets, so every window's bar
+starts and ends together (`planLine`). A lock takes the reset's place in `Destructive`, a pace that empties the
+window first in `ToneWait`. The resets are one line, "Resets" then the grants joined by " · " (`resetsLine`).
+The account is on the profile's row, never repeated under the bars.
+
+From Global, the Profiles block is a table: each profile's row carries the model and the effort its new chats
+start on, as two `SelectTrigger`s of fixed widths (`profileModelW`, `profileEffortW`) under uppercase column
+labels, before the `⋯`. Effort shows once a chat offered one. The line saying terminals keep the provider's own
+setting is the block's detail, said once.
 
 A profile's row and a hotkey's row show their `⋯` under the pointer and while its menu is open, its room kept
-at rest so nothing on the line moves.
+at rest so nothing on the line moves. The row's hover is registered over its content with a `pointer.PassOp`,
+never under it: under, the `⋯` takes the pointer from the row that draws it, the row hides it and finds the
+pointer again, every frame, and the cursor flickers with no click landing.
 
 #### Appearance, Hotkeys and the rest
 
