@@ -5,6 +5,8 @@ import (
 	"log"
 	"strconv"
 
+	"gioui.org/layout"
+
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -55,9 +57,10 @@ type editorSettings struct {
 	hide   ui.SwitchState
 	layout ui.Enum
 	vim    ui.SwitchState
-	// nvim is whether a Neovim the editor runs is on the PATH, asked the
-	// first time the row shows.
-	nvim remote[struct{}]
+	// nvim is the config file of a Neovim the editor runs, asked the first
+	// time the row shows; an error when there is none on the PATH.
+	nvim   remote[string]
+	config ui.Clickable
 }
 
 // row answers the description and the control of the Editor row for key.
@@ -97,7 +100,12 @@ func (e *editorSettings) layoutControl(gtx C, th *ui.Theme, s *settingsScreen) D
 // vimFound is whether Neovim is on the PATH, false until the check lands.
 func (e *editorSettings) vimFound(s *settingsScreen) (found, checking bool) {
 	e.nvim.invalidate = s.invalidate
-	e.nvim.want("nvim", "nvim", func(context.Context) (struct{}, error) { return struct{}{}, vimAvailable() })
+	e.nvim.want("nvim", "nvim", func(context.Context) (string, error) {
+		if err := vimAvailable(); err != nil {
+			return "", err
+		}
+		return vimConfigFile()
+	})
 	_, loading, err := e.nvim.get()
 	return !loading && err == nil, loading
 }
@@ -119,7 +127,20 @@ func (e *editorSettings) vimControl(gtx C, th *ui.Theme, s *settingsScreen) D {
 	found, _ := e.vimFound(s)
 	// Vim left on with Neovim gone still turns off.
 	sw.Disabled = !found && !e.prefs.vim
-	return sw.Layout(gtx)
+	if !found || !e.prefs.vim || s.editVimConfig == nil {
+		return sw.Layout(gtx)
+	}
+	path, _, _ := e.nvim.get()
+	if e.config.Clicked(gtx) {
+		s.editVimConfig(path)
+	}
+	edit := th.Button(&e.config, i18n.T("settings.settingsEditor.vimEditConfig"))
+	edit.Size, edit.Variant = ui.SizeSM, ui.VariantGhost
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(edit.Layout),
+		ui.Gap(2),
+		layout.Rigid(sw.Layout),
+	)
 }
 
 // commit hands the change to the review panel at once and stores it.

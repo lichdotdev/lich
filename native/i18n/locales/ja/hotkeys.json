@@ -46,7 +46,8 @@
     "tab6": "タブ 6 へ移動",
     "tab7": "タブ 7 へ移動",
     "tab8": "タブ 8 へ移動",
-    "lastTab": "最後のタブへ移動"
+    "lastTab": "最後のタブへ移動",
+    "restartNeovim": "Neovim を再起動"
   },
   "unassigned": "未割り当て",
   "inTerminal": "ターミナルでは {keys}",

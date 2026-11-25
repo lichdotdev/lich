@@ -8,6 +8,7 @@ import (
 	"context"
 	"image"
 	"path"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -163,6 +164,9 @@ func (f *fileEditor) takeSave() {
 	f.setDirty(doc != f.base)
 	f.onSaved()
 	f.vimSaved(s.doc)
+	if h := f.env.vim; h != nil && h.inConfig(filepath.Join(f.root(), filepath.FromSlash(f.rel))) {
+		h.restart()
+	}
 	if next {
 		f.startSave(nextDo, false)
 	}

@@ -46,7 +46,8 @@
     "tab6": "转到第 6 个标签页",
     "tab7": "转到第 7 个标签页",
     "tab8": "转到第 8 个标签页",
-    "lastTab": "转到最后一个标签页"
+    "lastTab": "转到最后一个标签页",
+    "restartNeovim": "重启 Neovim"
   },
   "unassigned": "未分配",
   "inTerminal": "终端中为 {keys}",

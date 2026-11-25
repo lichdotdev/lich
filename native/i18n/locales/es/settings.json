@@ -482,7 +482,8 @@
   "settingsEditor": {
     "hideWhitespaceDescription": "Omite los cambios que solo afectan al espaciado en la pestaña Revisión.",
     "vimDescription": "Edita archivos con las teclas del propio Vim, ejecutadas por tu Neovim y su configuración.",
-    "vimMissing": "Necesita Neovim 0.10 o posterior en el PATH."
+    "vimMissing": "Necesita Neovim 0.10 o posterior en el PATH.",
+    "vimEditConfig": "Editar configuración"
   },
   "settingsTheme": {
     "autoLightDark": "Claro/oscuro automático"

@@ -395,6 +395,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.model.leave = u.leave
 	u.review.wrote = func(checkout string) { u.model.checkoutWritten(u.ctx, checkout) }
 	u.settings.applyEditor = u.takeEditorPref
+	u.settings.editVimConfig = u.editVimConfig
 	u.settings.vcs.pathOf, u.settings.vcs.onAccount = u.model.projectPath, u.model.accountChanged
 	u.settings.vcs.gitLab = u.model.forges.gitLab
 	u.settings.providers.claude.bind(u.model.profiles, u.openLoginTerminal)

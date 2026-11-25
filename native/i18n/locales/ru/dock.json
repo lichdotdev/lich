@@ -57,6 +57,8 @@
     "blame": "{author}, {age} · {summary}",
     "blameUncommitted": "Вы · Незакоммиченные изменения",
     "artifactReadOnly": "От агента · только чтение",
-    "vimFailed": "Neovim не запустился, поэтому редактор работает со своими клавишами"
+    "vimFailed": "Neovim не запустился, поэтому редактор работает со своими клавишами",
+    "vimLspMissing": "{name} не найден",
+    "vimConfigFailed": "Не удалось открыть конфиг Neovim"
   }
 }

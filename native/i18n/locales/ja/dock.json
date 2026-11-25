@@ -55,6 +55,8 @@
     "blame": "{author}、{age} · {summary}",
     "blameUncommitted": "自分 · 未コミットの変更",
     "artifactReadOnly": "エージェントから · 読み取り専用",
-    "vimFailed": "Neovim が起動しなかったため、エディタは自身のキー操作を使います"
+    "vimFailed": "Neovim が起動しなかったため、エディタは自身のキー操作を使います",
+    "vimLspMissing": "{name} が見つかりません",
+    "vimConfigFailed": "Neovim の設定を開けませんでした"
   }
 }

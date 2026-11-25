@@ -46,7 +46,8 @@
     "tab6": "Ir para a aba 6",
     "tab7": "Ir para a aba 7",
     "tab8": "Ir para a aba 8",
-    "lastTab": "Ir para a última aba"
+    "lastTab": "Ir para a última aba",
+    "restartNeovim": "Reiniciar o Neovim"
   },
   "unassigned": "Sem atalho",
   "inTerminal": "{keys} no terminal",

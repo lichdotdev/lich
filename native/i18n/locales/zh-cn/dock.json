@@ -55,6 +55,8 @@
     "blame": "{author}，{age} · {summary}",
     "blameUncommitted": "你 · 未提交的更改",
     "artifactReadOnly": "来自智能体 · 只读",
-    "vimFailed": "Neovim 未能启动，编辑器改用自带的按键"
+    "vimFailed": "Neovim 未能启动，编辑器改用自带的按键",
+    "vimLspMissing": "未找到 {name}",
+    "vimConfigFailed": "无法打开 Neovim 配置"
   }
 }
