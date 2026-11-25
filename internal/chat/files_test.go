@@ -64,3 +64,31 @@ func TestConversationHearsACallEndOnce(t *testing.T) {
 		t.Errorf("a replayed call was heard ending: %v", heard)
 	}
 }
+
+// A call's reading waits for the call that ended before it: run off the
+// stream in goroutines, a later call's reading could otherwise take the files
+// an earlier one changed (TestAShellCommandCarriesTheFilesItChanged lost the
+// sed's files to the read after it on the macOS runners).
+func TestCallReadingsRunInTheOrderTheCallsEnded(t *testing.T) {
+	var w fileWatch
+	first, firstDone := w.queue()
+	if first != nil {
+		t.Fatal("the turn's first call waits on nothing")
+	}
+	second, secondDone := w.queue()
+	third, _ := w.queue()
+	select {
+	case <-second:
+		t.Fatal("the second call's reading ran before the first's ended")
+	default:
+	}
+	close(firstDone)
+	<-second
+	select {
+	case <-third:
+		t.Fatal("the third call's reading ran before the second's ended")
+	default:
+	}
+	close(secondDone)
+	<-third
+}

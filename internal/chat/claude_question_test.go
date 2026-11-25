@@ -98,7 +98,12 @@ func TestClaudeQuestionDeclined(t *testing.T) {
 	}
 
 	r.prompt("question")
-	r.eventually("the second question", func() bool { return len(r.svc.running("s1").questions) == 1 })
+	r.eventually("the second question", func() bool {
+		c := r.svc.running("s1")
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		return len(c.questions) == 1
+	})
 	if _, err := r.svc.Cancel(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
 		t.Fatalf("Cancel: %v", err)
 	}

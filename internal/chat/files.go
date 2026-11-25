@@ -18,6 +18,19 @@ import (
 type fileWatch struct {
 	mu   sync.Mutex
 	base *project.Lines
+	// queued closes once the last call queued has had its reading.
+	queued chan struct{}
+}
+
+// queue holds a call's place in line: its reading waits for the call that
+// ended before it, so a file goes to the call that changed it even when the
+// readings run off the stream in their own goroutines.
+func (w *fileWatch) queue() (wait <-chan struct{}, done chan struct{}) {
+	w.mu.Lock()
+	defer w.mu.Unlock()
+	done = make(chan struct{})
+	wait, w.queued = w.queued, done
+	return wait, done
 }
 
 // start sets the reading the turn's first call compares against.
@@ -74,7 +87,12 @@ func changedFiles(before, after *project.Lines) []string {
 // the reading runs off the provider's stream, which goes on meanwhile.
 func (c *chatSession) callEnded(it api.ChatItem) {
 	own := it.Tool != nil && it.Tool.Diff != ""
+	wait, done := c.files.queue()
 	go func() {
+		defer close(done)
+		if wait != nil {
+			<-wait
+		}
 		ctx, cancel := context.WithTimeout(context.Background(), linesTimeout)
 		defer cancel()
 		files := c.files.ended(ctx, c.cwd, own, c.readLines)
