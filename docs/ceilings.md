@@ -2319,7 +2319,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   could compile or run without a Mac. The BSDs read no scheme and draw dark.
 
 - **A session's browser is a second Chromium, one per card, drawn from frames** (`internal/browser`,
-  `docs/browser-tab.md`): a headless Chrome, Edge, Chromium, Brave, Vivaldi or Helium already installed,
+  `docs/browser-tab.md`), wherever lich-browser does not hold it (the bullet after this one): a headless Chrome, Edge, Chromium, Brave, Vivaldi or Helium already installed,
   whose page reaches the session's page pane as a JPEG screencast over `/events`, at the page's own frame
   rate; a window slower to decode skips to the newest frame. A HiDPI pane gets frames drawn at 1.5x at most
   (`frameScale`): 2x halved a busy page's frame rate. The browser draws at a scale forced at its launch, the one
@@ -2380,6 +2380,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
+- **A page in lich-browser has no pause for the agent to hear** (`internal/browser/webkit*.go`,
+  `docs/lich-browser.md`): on Linux with an X display and `lich-browser` beside `lich`, every page lives there,
+  and DevTools is WebKit's inspector in a window of its own. Nothing on the wire says the page stopped in its
+  debugger, so the agent's tools do not fail naming the pause as they do on a Chrome page: a read answers with the
+  document as it stood, and a click or a key waits on the paused page until the person resumes it or the call
+  times out.
 - **A layer the window floats over the content shows over a page it draws itself only where it says so**
   (`coverPages` in `native/cmd/lich-native/browser_native.go`): the page is a native child window over the pane,
   above anything the window draws, so a layer that floats over the content (a dock or sidebar sliding in, and later

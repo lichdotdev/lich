@@ -128,7 +128,7 @@ func (s *Service) navigate(ctx context.Context, sess *session, u string) (downlo
 func (s *Service) navigateOnce(ctx context.Context, sess *session, u string) (download bool, err error) {
 	before := time.Now()
 	err = sess.page.Navigate(ctx, u)
-	if errors.Is(err, errNavAborted) && s.downloadSince(sess, before) {
+	if errors.Is(err, errNavDownload) || errors.Is(err, errNavAborted) && s.downloadSince(sess, before) {
 		return true, nil
 	}
 	return false, err

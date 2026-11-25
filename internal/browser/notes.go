@@ -3,9 +3,7 @@ package browser
 import (
 	"context"
 
-	"github.com/chromedp/chromedp"
 	"github.com/lichdotdev/lich/api"
-	"github.com/lichdotdev/lich/pagescript"
 )
 
 // The pane's notes: the person points at an element of the page and leaves a
@@ -13,23 +11,11 @@ import (
 // draws the outline and the pins, so nothing is injected into its DOM.
 
 func (p *chromePage) ElementAt(ctx context.Context, x, y float64) (api.BrowserElement, error) {
-	var el *api.BrowserElement
-	if err := p.run(ctx, chromedp.Evaluate(pagescript.ElementAt(x, y), &el)); err != nil {
-		return api.BrowserElement{}, err
-	}
-	if el == nil {
-		return api.BrowserElement{}, nil
-	}
-	return *el, nil
+	return elementAt(ctx, p.evaluate, x, y)
 }
 
 func (p *chromePage) Locate(ctx context.Context, selectors []string, reveal string) ([]api.BrowserRect, error) {
-	script, err := pagescript.Locate(selectors, reveal)
-	if err != nil {
-		return nil, err
-	}
-	boxes := []api.BrowserRect{}
-	return boxes, p.run(ctx, chromedp.Evaluate(script, &boxes))
+	return locate(ctx, p.evaluate, selectors, reveal)
 }
 
 // ElementAtPoint is the element under a point of this session's page.

@@ -5,6 +5,16 @@
 wherever that terminal is shown. The agent drives the same page through
 `lich browser` and the `browser_*` MCP tools.
 
+On Linux with an X display and `lich-browser` beside `lich` (or pinned by
+`LICH_BROWSER`), the page is not Chrome's: it lives in lich-browser, whose X
+window the window embeds over the pane (`docs/lich-browser.md`,
+`internal/browser/webkit.go`). Everything below about frames, the screencast,
+the pane's input, relaunching at another scale and Chrome's DevTools is the
+Chrome page's, which Windows, macOS and Linux without either keep. With
+lich-browser a scale or zoom change reaches the page as its zoom, DevTools is
+WebKit's inspector in a window of its own, and Open in a window moves the
+same page out (`popOut`), nothing reloaded or lost.
+
 ## Why frames and not a webview
 
 lich's window is native (`docs/native-window.md`). On Linux it speaks Wayland
@@ -44,7 +54,8 @@ clicked.
   profile, with its cookies (session ones included); its pane goes. chromedp
   cannot show a headless process in place, so what lives only in the page, a
   half-filled form or sessionStorage, does not survive. Browser on the card
-  then brings that window forward.
+  then brings that window forward. A lich-browser page moves out as it is,
+  half-filled form included.
 
 `browser-state` tells the window when a browser starts, closes, moves to a
 window or loads another page, and each tab's `loading` from Chrome's

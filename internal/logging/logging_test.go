@@ -312,3 +312,20 @@ func TestOpenNativeKeepsItsOwnRotatedFile(t *testing.T) {
 		}
 	}
 }
+
+// TestOpenBrowserKeepsItsOwnFile proves lich-browser's log sits beside lich's
+// under its own dev and release names.
+func TestOpenBrowserKeepsItsOwnFile(t *testing.T) {
+	for dev, name := range map[string]string{"": "lich-browser.log", "1": "lich-browser-dev.log"} {
+		t.Setenv("LICH_DEV", dev)
+		dir := t.TempDir()
+		file, err := OpenBrowser(dir)
+		if err != nil {
+			t.Fatalf("LICH_DEV=%q OpenBrowser: %v", dev, err)
+		}
+		file.Close()
+		if want := filepath.Join(dir, name); file.Name() != want {
+			t.Errorf("LICH_DEV=%q: opened %q, want %q", dev, file.Name(), want)
+		}
+	}
+}
