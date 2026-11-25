@@ -161,7 +161,6 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 		// The picker stays, to go back to every commit.
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return v.filesToolbar(gtx, th, p, d) }),
-			layout.Rigid(th.Separator),
 			layout.Rigid(notice),
 		)
 	}
@@ -170,7 +169,6 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	files.takeTicks(gtx)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return v.filesToolbar(gtx, th, p, d) }),
-		layout.Rigid(th.Separator),
 		layout.Flexed(1, func(gtx C) D { return v.filesBody(gtx, th) }),
 	)
 }
@@ -439,7 +437,7 @@ func (v *pullView) inlinePending(gtx C, i int, c backend.ReviewComment) D {
 									editB := on.Button(clickableAt(s.edits, i), i18n.T("pulls.pullsConversation.edit"))
 									editB.Size, editB.Variant = ui.SizeXS, ui.VariantGhost
 									discardB := on.Button(clickableAt(s.discards, i), i18n.T("pulls.pullsConversation.discard"))
-									discardB.Size, discardB.Variant = ui.SizeXS, ui.VariantGhost
+									discardB.Size, discardB.Variant = ui.SizeXS, ui.VariantDestructive
 									return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(editB.Layout), ui.Gap(1), layout.Rigid(discardB.Layout))
 								}),
 							)

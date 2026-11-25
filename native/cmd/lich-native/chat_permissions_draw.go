@@ -73,7 +73,6 @@ func (t *chatTools) permissionsHead(gtx C, th *ui.Theme, l api.ChatPermissionLis
 			}
 			return d
 		}),
-		layout.Rigid(th.Separator),
 	)
 }
 
@@ -87,7 +86,7 @@ func (t *chatTools) ruleLines(th *ui.Theme, l api.ChatPermissionList) []layout.W
 	row := 0
 	if add {
 		lines = append(lines, func(gtx C) D {
-			return pickerRow(gtx, th, &t.rows[0], t.cursor == 0, func(gtx C, th *ui.Theme) D {
+			return toolsPick(gtx, th, &t.rows[0], t.cursor == 0, func(gtx C, th *ui.Theme) D {
 				return iconRow(gtx, th, func(gtx C) D { return icTabNew.Layout(gtx, toolsGlyph, th.MutedForeground) }, th.Text(ui.TextSM, i18n.T("chat.permissions.add")).Layout)
 			})
 		})
@@ -99,7 +98,7 @@ func (t *chatTools) ruleLines(th *ui.Theme, l api.ChatPermissionList) []layout.W
 	for i, r := range rules {
 		at := row + i
 		lines = append(lines, func(gtx C) D {
-			return pickerRow(gtx, th, &t.rows[at], t.cursor == at, func(gtx C, th *ui.Theme) D { return ruleRow(gtx, th, r) })
+			return toolsPick(gtx, th, &t.rows[at], t.cursor == at, func(gtx C, th *ui.Theme) D { return ruleRow(gtx, th, r) })
 		})
 	}
 	return lines
@@ -172,7 +171,6 @@ func (t *chatTools) addRuleView(gtx C, th *ui.Theme, l api.ChatPermissionList, r
 				in.Bare, in.Height = true, pickerRowH
 				return in.Layout(gtx)
 			}),
-			layout.Rigid(th.Separator),
 			layout.Rigid(func(gtx C) D {
 				return toolsGroupLine(th, i18n.T("chat.permissions.saveIn"), "")(gtx)
 			}),
@@ -185,7 +183,7 @@ func (t *chatTools) addRuleView(gtx C, th *ui.Theme, l api.ChatPermissionList, r
 			if running {
 				gtx = gtx.Disabled()
 			}
-			return pickerRow(gtx, th, &t.rows[i], t.cursor == i, func(gtx C, th *ui.Theme) D {
+			return toolsPick(gtx, th, &t.rows[i], t.cursor == i, func(gtx C, th *ui.Theme) D {
 				who, file := permDestination(d)
 				end := []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, file).Mono().Muted().Layout)}
 				return descRow(gtx, th, func(gtx C) D { return icFolder.Layout(gtx, toolsGlyph, th.MutedForeground) },
@@ -243,7 +241,7 @@ func (u *window) modesView(gtx C, th *ui.Theme, t *chatTools, sv sessionView) D 
 	lines := make([]layout.Widget, len(opt.Choices))
 	for i, c := range opt.Choices {
 		lines[i] = func(gtx C) D {
-			return pickerRow(gtx, th, &t.rows[i], t.cursor == i, func(gtx C, th *ui.Theme) D {
+			return toolsPick(gtx, th, &t.rows[i], t.cursor == i, func(gtx C, th *ui.Theme) D {
 				glyph := pickerCheck(th, c.ID == opt.Current)
 				if c.Danger && c.ID != opt.Current {
 					glyph = func(gtx C) D { return rainbowBolt(th)(gtx, toolsGlyph) }

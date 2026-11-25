@@ -34,8 +34,7 @@
       "extensions": "拡張機能",
       "chat": "チャット"
     },
-    "notYet": "まだありません",
-    "projectDesc": "このプロジェクトでグローバルから変更している項目です。変更のない行はグローバルに従います。"
+    "notYet": "まだありません"
   },
   "appearanceSettings": {
     "importPickTitle": "テーマをインポート",
@@ -325,7 +324,9 @@
     "effortDescription": "{provider} の新しいチャットはこのエフォートで始まります。ターミナルのセッションは {provider} 自体で設定したエフォートを使います。",
     "default": "{provider} の既定",
     "noChoices": "{provider} のチャットを一度開くと、選択肢がここに表示されます。",
-    "search": "検索"
+    "search": "検索",
+    "follow": "{name} に従う",
+    "profilesDetail": "新しいチャットはプロファイルのモデルとエフォートで始まります。ターミナルセッションは {provider} 自体の設定のままです。"
   },
   "sandboxSettings": {
     "rung": {
@@ -441,7 +442,9 @@
     "hideWhitespaceSearchWords": "空白 スペース インデント レビュー 無視",
     "interfaceGroup": "インターフェース",
     "vimTitle": "Vim モード",
-    "vimSearchWords": "vim neovim nvim モーダル キー キーバインド"
+    "vimSearchWords": "vim neovim nvim モーダル キー キーバインド",
+    "relativeNumbersTitle": "相対行番号",
+    "relativeNumbersSearchWords": "相対 番号 relativenumber vim 行番号 ガター"
   },
   "settingsNav": {
     "scopeLabel": "スコープ",
@@ -456,8 +459,13 @@
     "followsGlobal": "グローバルに従う",
     "globalValue": "グローバル: {value}",
     "useGlobal": "グローバルを使う",
-    "globalOnly": "グローバルのみ",
-    "projectOnly": "プロジェクトのみ"
+    "projectOnly": "プロジェクトのみ",
+    "followsFrom": "{name} に従う: {value}",
+    "fromValue": "{name}: {value}",
+    "useFrom": "{name} の値を使う",
+    "restGlobal": "このページのほかの設定はすべてのプロジェクトで共通です。",
+    "allGlobal": "このページの設定はすべてのプロジェクトで共通です。",
+    "openGlobal": "グローバルを開く"
   },
   "settingsGeneral": {
     "notifySearchWords": "デスクトップ 通知 アラート ベル",
@@ -494,7 +502,8 @@
     "hideWhitespaceDescription": "レビュータブで、空白だけに関わる変更を除外します。",
     "vimDescription": "Vim 本来のキーでファイルを編集します。あなたの Neovim とその設定で動きます。",
     "vimMissing": "PATH に Neovim 0.10 以降が必要です。",
-    "vimEditConfig": "設定を編集"
+    "vimEditConfig": "設定を編集",
+    "relativeNumbersDescription": "各行をカーソル行からの距離で番号付けし、カーソル行には実際の行番号を表示します。"
   },
   "settingsTheme": {
     "autoLightDark": "ライト/ダークを自動切り替え"
@@ -556,7 +565,6 @@
     "delete": "削除",
     "newProfile": "新しいプロファイル",
     "options": "{name} のオプション",
-    "advancedBinary": "詳細 · バイナリ",
     "binaryOverrides": "ここのセッションは {path} から起動します。独自のログインや設定ディレクトリを指定するスクリプトは {profile} より優先され、「別のプロファイルで続ける」で会話が失われることがあります。",
     "showBinary": "バイナリを表示",
     "useDefaultBinary": "デフォルトのバイナリを使う",
@@ -746,7 +754,7 @@
       "official": "公式",
       "notFor": "{os} 非対応",
       "installed": "インストール済み",
-      "installedVersion": "インストール済み · {version}",
+      "installedVersion": "{version}",
       "version": "バージョン",
       "released": "公開日",
       "license": "ライセンス",
@@ -820,5 +828,11 @@
     "otherGroup": "その他のテーマ",
     "imported": "ファイルから読み込み",
     "pairsWith": "{name} と対になるテーマ"
+  },
+  "providerGroups": {
+    "accounts": "アカウント",
+    "newChats": "新しいチャット",
+    "sessions": "セッション",
+    "advanced": "詳細"
   }
 }

@@ -22,7 +22,9 @@ var (
 func (u *window) layoutToasts(gtx C) {
 	toasts := u.theme.Toaster(&u.toaster, u.light)
 	toasts.Position = ui.ToastBottomRight
-	toasts.Bottom = u.toastFloor + gtx.Dp(gutter)
+	// the toast stands high enough that its shadow ends where the footer's
+	// balloons begin, never darkening them
+	toasts.Bottom = u.toastFloor + gtx.Dp(ui.ElevationMid.Reach())
 	toasts.Expand = *flagToastsExpanded
 	if u.toastRight > 0 {
 		gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, u.toastRight)

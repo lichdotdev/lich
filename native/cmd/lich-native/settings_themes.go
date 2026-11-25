@@ -94,7 +94,6 @@ func (s *settingsScreen) themesViews(th *ui.Theme, v appearanceView) layout.Widg
 		d := layout.Inset{Bottom: themesViewsBelow}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, line...) }),
-				layout.Rigid(th.Separator),
 			)
 		})
 		if p.view.Changed() {

@@ -38,9 +38,7 @@ func windowRank(w backend.QuotaWindow) int {
 // the limit resets and the reset credits when the account has them. use is the
 // panel's way to spend a reset, nil where nothing can be spent (a tooltip).
 func usageBlocks(th *ui.Theme, plan backend.QuotaPlan, now time.Time, use *resetUse) []layout.Widget {
-	plan.Windows = slices.SortedStableFunc(slices.Values(plan.Windows), func(a, b backend.QuotaWindow) int {
-		return cmp.Compare(windowRank(a), windowRank(b))
-	})
+	plan = rankedWindows(plan)
 	var blocks []layout.Widget
 	for _, g := range quotaGauges(plan, now) {
 		blocks = append(blocks, windowBlock(th, g))
@@ -58,6 +56,14 @@ func usageBlocks(th *ui.Theme, plan backend.QuotaPlan, now time.Time, use *reset
 		}))
 	}
 	return blocks
+}
+
+// rankedWindows is plan with its windows in windowRank's order.
+func rankedWindows(plan backend.QuotaPlan) backend.QuotaPlan {
+	plan.Windows = slices.SortedStableFunc(slices.Values(plan.Windows), func(a, b backend.QuotaWindow) int {
+		return cmp.Compare(windowRank(a), windowRank(b))
+	})
+	return plan
 }
 
 // usageStack lays the blocks out at the width of the context tooltip, whose

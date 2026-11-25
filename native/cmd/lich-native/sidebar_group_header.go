@@ -227,12 +227,7 @@ func headerWords(th *ui.Theme, b blockView, hovered bool, fg color.NRGBA, fade f
 	if dot, ok := markColor(th, b); ok {
 		words = append(words, ui.Gap(1.5), layout.Rigid(func(gtx C) D { return ui.MarkDot(gtx, fade(dot, 1)) }))
 	}
-	if b.kind == blockFolder {
-		words = append(words, layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }))
-	} else {
-		words = append(words, ui.Gap(1.5), layout.Flexed(1, th.Separator))
-	}
-	return words
+	return append(words, layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }))
 }
 
 // markColor is the folded block's dot: amber for a session waiting on the

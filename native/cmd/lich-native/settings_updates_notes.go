@@ -244,7 +244,7 @@ func (s *settingsScreen) layoutPatchNotesDialog(gtx C, th *ui.Theme) {
 	got := on.Button(&v.gotIt, i18n.T("shell.patchNotesDialog.gotIt"))
 	got.Size = ui.SizeSM
 	dlg := th.Dialog(&v.dialog, open, i18n.T("shell.patchNotesDialog.title", i18n.Args{"version": "v" + notes.Version}), "")
-	dlg.MaxWidth, dlg.HideClose = ui.DialogWidthXL, true
+	dlg.MaxWidth = ui.DialogWidthXL
 	dlg.Body = func(gtx C) D { return v.body(gtx, on, notes) }
 	dlg.Actions = []layout.Widget{func(gtx C) D {
 		gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -328,9 +328,7 @@ func notesLead(th *ui.Theme, h backend.PatchNotesHighlight) layout.Widget {
 	return func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...) }),
-			ui.VGap(4),
-			layout.Rigid(th.Separator),
-			ui.VGap(4),
+			ui.VGap(8),
 		)
 	}
 }
@@ -373,9 +371,6 @@ func notesCallout(th *ui.Theme, h backend.PatchNotesHighlight) layout.Widget {
 			bg := gtx
 			bg.Constraints = layout.Exact(d.Size)
 			ui.Fill(bg, fill, ui.RadiusMD)
-			if danger {
-				ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusMD), th.Over(ui.Alpha(th.Destructive, 0.3)))
-			}
 			call.Add(gtx.Ops)
 			return d
 		})

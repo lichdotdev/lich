@@ -68,10 +68,6 @@ func (u *window) openedPill(gtx C, th *ui.Theme, click *ui.Clickable, id, label 
 	}
 	sv, _ := u.model.sessionViewOf(id)
 	ink := th.Destructive
-	fill, edge := ui.Alpha(ink, 0.08), ui.Alpha(ink, 0.35)
-	if click.Hovered() {
-		fill, edge = ui.Alpha(ink, 0.18), ink
-	}
 	return click.Layout(gtx, func(gtx C) D {
 		m := op.Record(gtx.Ops)
 		gtx.Constraints.Min = image.Point{}
@@ -85,8 +81,10 @@ func (u *window) openedPill(gtx C, th *ui.Theme, click *ui.Clickable, id, label 
 			)
 		})
 		call := m.Stop()
-		paint.FillShape(gtx.Ops, th.Over(fill), clip.UniformRRect(image.Rectangle{Max: d.Size}, d.Size.Y/2).Op(gtx.Ops))
-		ui.InsetBorder(gtx, d.Size, d.Size.Y/2, th.Over(edge))
+		// a badge is text and glyph: a fill only under the pointer
+		if click.Hovered() {
+			paint.FillShape(gtx.Ops, th.Over(ui.Alpha(th.Accent, chatEditHover)), clip.UniformRRect(image.Rectangle{Max: d.Size}, d.Size.Y/2).Op(gtx.Ops))
+		}
 		call.Add(gtx.Ops)
 		return d
 	})

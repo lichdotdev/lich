@@ -8,23 +8,54 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"sync"
 )
 
 // ErrNoConversation is MoveConversation finding the conversation in no
 // profile: a session that has its id but has not written a transcript yet.
 var ErrNoConversation = errors.New("conversation not found in any profile")
 
+// located is where Owner last found each conversation, keyed by provider and
+// id. locate walks every project directory a profile holds (thousands on a
+// long-used machine), and the roster asks once per session on every call, so a
+// path found once is checked with one Lstat instead. A miss is never kept: a
+// session's transcript appears after its spawn, and resume asks exactly then.
+var located sync.Map
+
 // Owner is the profile holding a conversation, and the path of its transcript
 // there. locate finds the transcript under one state directory. A conversation
 // id is unique to its provider and lives in exactly one profile, so the first
 // match is the only one.
 func (s Spec) Owner(conversationID string, locate func(dir, conversationID string) (string, bool)) (Profile, string, bool) {
-	for _, p := range s.All() {
+	profiles := s.All()
+	key := s.Provider + "\x00" + conversationID
+	if v, ok := located.Load(key); ok {
+		if p, ok := holderOf(profiles, v.(string)); ok {
+			return p, v.(string), true
+		}
+	}
+	for _, p := range profiles {
 		if path, ok := locate(p.Dir, conversationID); ok {
+			located.Store(key, path)
 			return p, path, true
 		}
 	}
 	return Profile{}, "", false
+}
+
+// holderOf is the profile a remembered path still answers for: one of profiles
+// holds it and it is still there. A conversation moved to another profile, or
+// a profile removed, fails here and sends Owner back to locate.
+func holderOf(profiles []Profile, path string) (Profile, bool) {
+	if _, err := os.Lstat(path); err != nil {
+		return Profile{}, false
+	}
+	for _, p := range profiles {
+		if rel, err := filepath.Rel(p.Dir, path); err == nil && filepath.IsLocal(rel) {
+			return p, true
+		}
+	}
+	return Profile{}, false
 }
 
 // Pair is one entry of a conversation moving between profiles: where it is and

@@ -22,7 +22,7 @@ import (
 
 // The classes of shadcn's DialogOverlay and DialogContent.
 const (
-	dialogTransition  = 100 * time.Millisecond // duration-100
+	dialogExit        = 100 * time.Millisecond // duration-100
 	dialogRadius      = RadiusXL               // rounded-xl
 	dialogRingOpacity = 0.1                    // ring-foreground/10
 	dialogScrim       = 0.1                    // bg-black/10
@@ -104,7 +104,7 @@ func (d DialogStyle) Layout(gtx C) (dismissed bool) {
 	if s.shown.set(gtx, d.Open && !dismissed) && s.shown.open {
 		gtx.Execute(key.FocusCmd{Tag: &s.panel})
 	}
-	amount, ok := s.shown.progress(gtx, dialogTransition)
+	amount, ok := s.shown.progress(gtx, s.transition())
 	if !ok {
 		return dismissed
 	}
@@ -156,7 +156,7 @@ func (c *OverlayCount) count() {
 // caller that skips a shut dialog must keep laying it out while this is true,
 // or its close transition is cut. It is false for one that never opened.
 func (s *DialogState) Animating(gtx C) bool {
-	return s.shown.drawing(gtx, dialogTransition)
+	return s.shown.drawing(gtx, s.transition())
 }
 
 func (s *DialogState) dismissed(gtx C) bool {
@@ -203,7 +203,7 @@ func (d DialogStyle) overlay(gtx C, amount float32) {
 		origin.Y = int(d.Top * float32(window.Y))
 	}
 	center := f32.Pt(float32(origin.X+size.X/2), float32(origin.Y+size.Y/2))
-	zoom := zoomFrom + (1-zoomFrom)*amount
+	zoom := surfaceZoomFrom + (1-surfaceZoomFrom)*amount
 	if c := d.theme.Overlays; c != nil {
 		half := f32.Pt(float32(size.X), float32(size.Y)).Mul(zoom / 2)
 		box := image.Rectangle{Min: center.Sub(half).Round(), Max: center.Add(half).Round()}
@@ -226,6 +226,7 @@ func (d DialogStyle) panel(gtx C) D {
 	size := content.Size
 
 	radius := gtx.Dp(d.radius())
+	ElevationHigh.Paint(gtx, size, radius)
 	ringWidth := gtx.Dp(1)
 	outer := clip.UniformRRect(image.Rectangle{Min: image.Pt(-ringWidth, -ringWidth), Max: size.Add(image.Pt(ringWidth, ringWidth))}, radius+ringWidth)
 	paint.FillShape(gtx.Ops, ring, outer.Op(gtx.Ops))
@@ -239,6 +240,15 @@ func (d DialogStyle) panel(gtx C) D {
 	}
 	surface.Pop()
 	return content
+}
+
+// transition is how long the dialog's motion runs: surfaceEnter opening,
+// dialogExit shutting.
+func (s *DialogState) transition() time.Duration {
+	if s.shown.open {
+		return surfaceEnter
+	}
+	return dialogExit
 }
 
 func (d DialogStyle) radius() unit.Dp {
@@ -304,12 +314,13 @@ func (d DialogStyle) footer(gtx C) D {
 	return layout.Flex{Spacing: layout.SpaceStart}.Layout(gtx, children...)
 }
 
-// closeButton is the ghost icon-sm × at absolute top-4 right-4.
+// closeButton is the ghost icon-xs × at the top right, the × of every
+// floating surface, centred where shadcn's icon-sm stood.
 func (d DialogStyle) closeButton(gtx C, panelWidth int) {
 	b := d.theme.Button(&d.State.close, "")
-	b.Icon, b.Variant, b.Size = icons.Lucide("x"), VariantGhost, SizeIconSM
-	inset := gtx.Dp(Space(4))
-	defer op.Offset(image.Pt(panelWidth-inset-gtx.Dp(buttonSizes[SizeIconSM].height), inset)).Push(gtx.Ops).Pop()
+	b.Icon, b.Variant, b.Size = icons.Lucide("x"), VariantGhost, SizeIconXS
+	inset := gtx.Dp(Space(4)) + (gtx.Dp(buttonSizes[SizeIconSM].height)-gtx.Dp(buttonSizes[SizeIconXS].height))/2
+	defer op.Offset(image.Pt(panelWidth-inset-gtx.Dp(buttonSizes[SizeIconXS].height), inset)).Push(gtx.Ops).Pop()
 	gtx.Constraints.Min = image.Point{}
 	b.Layout(gtx)
 }

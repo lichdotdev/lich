@@ -205,7 +205,7 @@
       "other": "{count} commits"
     },
     "rangeNote": "Viendo {range} · sin comentarios ni Visto",
-    "rangeHint": "Mayús+clic elige un rango"
+    "rangeKey": "rango"
   },
   "reviewThread": {
     "replyFailed": "No se pudo responder: {error}",

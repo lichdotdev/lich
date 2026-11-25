@@ -3,6 +3,7 @@ package terminal
 import (
 	"bytes"
 	"encoding/json"
+	"os"
 	"strings"
 )
 
@@ -56,22 +57,52 @@ func (s *Service) AgentName(id string) string {
 	if !ok {
 		return ""
 	}
-	tail, ok := readTail(path, searchTailBytes)
-	if !ok {
+	return s.names.agentName(id, path)
+}
+
+// nameCursors is where each session's transcript was last read to for its
+// agent's name (see transcriptCursors). The roster asks for every session on
+// every call, and the tray calls it every few seconds: a 4MB tail re-read per
+// session per call costs a whole core with a few dozen sessions open.
+type nameCursors struct {
+	cursors transcriptCursors[string]
+}
+
+// agentName reads what the transcript at path has grown since this session was
+// last asked, and keeps the last name on record. The name already on record
+// stands when those new bytes hold none, which is every turn but the one a
+// /rename lands in.
+func (c *nameCursors) agentName(id, path string) string {
+	f, err := os.Open(path)
+	if err != nil {
 		return ""
 	}
-	return claudeAgentName(tail)
+	defer f.Close()
+	info, err := f.Stat()
+	if err != nil {
+		return ""
+	}
+	var name string
+	c.cursors.under(id, info, func(cur *transcriptCursor[string], _ bool) {
+		lines, end := readLines(f, cur.offset, info.Size())
+		cur.info, cur.offset = info, end
+		if found := claudeAgentName(lines); found != "" {
+			cur.value = found
+		}
+		name = cur.value
+	})
+	return name
 }
 
 // claudeAgentName reads the last name record out of a Claude transcript tail,
 // empty when it holds none. A tail cut mid-line fails to parse like any
 // malformed one, which is why nothing here distinguishes the two.
 //
-// Ceiling: the tail is bounded (searchTailBytes) for the reason every read of
-// these files is, and a turn that appends more than the bound after the last
-// record leaves this empty until the next turn writes another one. The caller
-// falls back to the derived name for that window, which is the name a session
-// that was never renamed answers to anyway.
+// Ceiling: a session's first read starts a bounded tail (searchTailBytes) from
+// the end, so a resumed session whose last record sits further back than that
+// reads empty until its next turn writes another one. The caller falls back to
+// the derived name for that window, which is the name a session that was never
+// renamed answers to anyway.
 func claudeAgentName(tail []byte) string {
 	name := ""
 	for line := range bytes.SplitSeq(tail, []byte("\n")) {

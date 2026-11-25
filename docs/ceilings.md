@@ -63,6 +63,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`internal/terminal/command.go`, `ultracodeArgs`): Claude Code drops ultracode on `--resume`, so lich passes it
   on every spawn (`docs/providers/claude.md`, Spawn), and nothing turns it off for one session while the
   provider-wide switch is on.
+- **A new chat's model and effort come from its project, else from the profile it is born in, never from another
+  profile** (`internal/store/settings.go`, `ProviderModel`): Personal's are the provider's global keys and a named
+  profile's are its own (`provider.<id>.model@<slug>`), so a profile with none set starts on the provider's default
+  even when Personal names Opus. That is the point: an account on a smaller plan must not inherit a larger one's
+  model. Antigravity has no profiles, so it has only the global value and a project's. The list to pick from is
+  one per provider, what its last chat offered under whichever profile, so a smaller account can list a model it
+  cannot run. Terminals read none of this.
 - **A model or effort is a birth value, and some providers forget it on resume** (`internal/terminal/command.go`,
   `modelArgs`, `effortArgs`): lich passes neither when it resumes or forks a conversation, because a `/model` or
   `/effort` typed inside the session is the user's decision and re-sending the birth value would undo it. A pick
@@ -249,6 +256,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   which start a new one, stops them, and a conversation read back has none. A shell that ends after the turn
   makes Claude Code answer on its own (measured): `background_tasks_changed` empties and a `system/init` opens a
   turn no message started, which the chat runs as a turn of its own (`claudeWake`), busy and done on the card.
+  A failed shell's exit code is read from the prose of its `task_notification` summary ("failed with exit code 3",
+  measured on 2.1.332), the one place Claude Code writes it: a summary worded otherwise leaves the failure with no
+  code, said as "failed".
   Codex lists its background terminals only on its experimental app-server API
   (`thread/backgroundTerminals/list`, 0.170.0's schema), with no event and no output, and lich opens Codex on the
   stable one; ACP has no such report, its `terminal/*` methods being the client running commands for the agent,
@@ -2309,7 +2319,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   could compile or run without a Mac. The BSDs read no scheme and draw dark.
 
 - **A session's browser is a second Chromium, one per card, drawn from frames** (`internal/browser`,
-  `docs/browser-tab.md`): a headless Chrome, Edge, Chromium, Brave, Vivaldi or Helium already installed,
+  `docs/browser-tab.md`), wherever lich-browser does not hold it (the bullet after this one): a headless Chrome, Edge, Chromium, Brave, Vivaldi or Helium already installed,
   whose page reaches the session's page pane as a JPEG screencast over `/events`, at the page's own frame
   rate; a window slower to decode skips to the newest frame. A HiDPI pane gets frames drawn at 1.5x at most
   (`frameScale`): 2x halved a busy page's frame rate. The browser draws at a scale forced at its launch, the one
@@ -2370,6 +2380,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Ubuntu 23.10 and later AppArmor refuses it the user namespace unless the browser ships an AppArmor profile,
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
+- **A page in lich-browser has no pause for the agent to hear** (`internal/browser/webkit*.go`,
+  `docs/lich-browser.md`): on Linux with an X display and `lich-browser` beside `lich`, every page lives there,
+  and DevTools is WebKit's inspector in a window of its own. Nothing on the wire says the page stopped in its
+  debugger, so the agent's tools do not fail naming the pause as they do on a Chrome page: a read answers with the
+  document as it stood, and a click or a key waits on the paused page until the person resumes it or the call
+  times out.
 - **A layer the window floats over the content shows over a page it draws itself only where it says so**
   (`coverPages` in `native/cmd/lich-native/browser_native.go`): the page is a native child window over the pane,
   above anything the window draws, so a layer that floats over the content (a dock or sidebar sliding in, and later
@@ -2626,7 +2642,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   the person's config lights yanks itself, a yank's flash are laid over the text on the visible lines only, and
   one broken over a wrapped row is not; a message of many lines (`:ls`, `:reg`, `:messages`) shows its last
   15 in the strip, with no pager; the completion menu is Neovim's popupmenu (Ctrl-N, Ctrl-X Ctrl-O, which an
-  attached LSP fills, and the built-in LSP completion), drawn by lich under the word; a plugin that draws its own
+  attached LSP fills, and the built-in LSP completion), drawn by lich under the word, each item's kind a badge
+  (LSP's kind names and Vim's letters, an unknown one a dot), its detail (the item's menu) at the right and the
+  chosen item's info beside the menu as plain text, Markdown fences dropped and cut at 14 lines; a plugin that draws its own
   floating windows (nvim-cmp, blink.cmp) shows no menu, and the command line's completion is not drawn; a file whose filetype has a server in vim.lua's
   short table (gopls, typescript-language-server, basedpyright or pyright, rust-analyzer, clangd,
   lua-language-server, jdtls) gets it started by lich, with completion as you type, when the person's config has

@@ -34,8 +34,7 @@
       "extensions": "Extensiones",
       "chat": "Chat"
     },
-    "notYet": "Aún no está aquí",
-    "projectDesc": "Lo que este proyecto cambia respecto a Global. Una fila sin cambios sigue a Global."
+    "notYet": "Aún no está aquí"
   },
   "appearanceSettings": {
     "importPickTitle": "Importar tema",
@@ -325,7 +324,9 @@
     "effortDescription": "Los chats nuevos de {provider} empiezan con este esfuerzo. Las sesiones de terminal usan el esfuerzo configurado en el propio {provider}.",
     "default": "Predeterminado de {provider}",
     "noChoices": "Abre un chat de {provider} una vez y sus opciones aparecerán aquí.",
-    "search": "Buscar"
+    "search": "Buscar",
+    "follow": "Seguir a {name}",
+    "profilesDetail": "Un chat nuevo empieza con el modelo y el esfuerzo de su perfil. Las sesiones de terminal conservan lo que tenga configurado {provider}."
   },
   "sandboxSettings": {
     "rung": {
@@ -441,7 +442,9 @@
     "hideWhitespaceSearchWords": "espacio sangría revisión ignorar",
     "interfaceGroup": "Interfaz",
     "vimTitle": "Modo Vim",
-    "vimSearchWords": "vim neovim nvim modal teclas atajos"
+    "vimSearchWords": "vim neovim nvim modal teclas atajos",
+    "relativeNumbersTitle": "Números de línea relativos",
+    "relativeNumbersSearchWords": "relativo número relativenumber vim margen líneas"
   },
   "settingsNav": {
     "scopeLabel": "Ámbito",
@@ -456,8 +459,13 @@
     "followsGlobal": "Sigue a Global",
     "globalValue": "Global: {value}",
     "useGlobal": "Usar Global",
-    "globalOnly": "Solo global",
-    "projectOnly": "Solo del proyecto"
+    "projectOnly": "Solo del proyecto",
+    "followsFrom": "Sigue a {name}: {value}",
+    "fromValue": "{name}: {value}",
+    "useFrom": "Usar el de {name}",
+    "restGlobal": "Los demás ajustes de esta página son iguales en todos los proyectos.",
+    "allGlobal": "Los ajustes de esta página son iguales en todos los proyectos.",
+    "openGlobal": "Abrir Global"
   },
   "settingsGeneral": {
     "notifySearchWords": "notificación escritorio alerta campana",
@@ -494,7 +502,8 @@
     "hideWhitespaceDescription": "Omite los cambios que solo afectan al espaciado en la pestaña Revisión.",
     "vimDescription": "Edita archivos con las teclas del propio Vim, ejecutadas por tu Neovim y su configuración.",
     "vimMissing": "Necesita Neovim 0.10 o posterior en el PATH.",
-    "vimEditConfig": "Editar configuración"
+    "vimEditConfig": "Editar configuración",
+    "relativeNumbersDescription": "Numera cada línea por su distancia a la del cursor; la del cursor muestra su propio número."
   },
   "settingsTheme": {
     "autoLightDark": "Claro/oscuro automático"
@@ -556,7 +565,6 @@
     "delete": "Eliminar",
     "newProfile": "Nuevo perfil",
     "options": "Opciones de {name}",
-    "advancedBinary": "Avanzado · Binario",
     "binaryOverrides": "Las sesiones de aquí arrancan a través de {path}. Un script que defina su propio inicio de sesión o directorio de configuración prevalece sobre {profile}, y Continuar en puede perder la conversación.",
     "showBinary": "Mostrar binario",
     "useDefaultBinary": "Usar el binario predeterminado",
@@ -746,7 +754,7 @@
       "official": "Oficial",
       "notFor": "No disponible en {os}",
       "installed": "Instalada",
-      "installedVersion": "Instalada · {version}",
+      "installedVersion": "{version}",
       "version": "Versión",
       "released": "Publicada",
       "license": "Licencia",
@@ -820,5 +828,11 @@
     "otherGroup": "Otros temas",
     "imported": "importado de un archivo",
     "pairsWith": "Se combina con {name}"
+  },
+  "providerGroups": {
+    "accounts": "Cuentas",
+    "newChats": "Chats nuevos",
+    "sessions": "Sesiones",
+    "advanced": "Avanzado"
   }
 }

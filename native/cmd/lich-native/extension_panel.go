@@ -133,7 +133,6 @@ func (p *extensionPanel) layout(gtx C, th *ui.Theme, surface placedSurface) {
 	defer ui.InsetBorder(gtx, size, gtx.Dp(ui.RadiusLG), on.Over(on.Border))
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return p.header(gtx, on, surface) }),
-		layout.Rigid(on.Separator),
 		layout.Flexed(1, func(gtx C) D {
 			p.act = p.extensions.placed(gtx, on, placePanel, p.key)
 			return D{Size: gtx.Constraints.Max}

@@ -414,9 +414,7 @@ func paletteFaceOf(on *ui.Theme, v *paletteView, r paletteRow, fg color.NRGBA, r
 			lead: paletteRingOf(on, ring, s.kind, s.status, s.unread, s.agent),
 			text: paletteLine(on, fg, s.label, shortPath(s.path)),
 		}
-		if s.status == statusWaiting {
-			face.trailing = on.TinyChip(i18n.T("session.filter.phase.waiting"), on.ToneWait).Layout
-		}
+		// the ring says it waits, in its tone; no chip repeats it
 		return face
 	case rowMessage:
 		m := r.message

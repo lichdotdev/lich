@@ -77,8 +77,7 @@ func serviceUp(v backend.Service) bool {
 // servicesTally is what the footer's closed row says of a project's services:
 // how many are up, how many there are, and whether one of them failed.
 type servicesTally struct {
-	up, total int
-	failed    bool
+	up, total, failed int
 }
 
 func tallyServices(list []backend.Service) servicesTally {
@@ -88,7 +87,7 @@ func tallyServices(list []backend.Service) servicesTally {
 			t.up++
 		}
 		if v.State == api.ServiceFailed {
-			t.failed = true
+			t.failed++
 		}
 	}
 	return t

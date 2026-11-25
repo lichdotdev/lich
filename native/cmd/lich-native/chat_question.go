@@ -31,6 +31,7 @@ type chatQuiz struct {
 	others  []widget.Editor
 	steps   []ui.Clickable
 	send    ui.Clickable
+	motion  panelMotion
 	decline ui.Clickable
 	// moved asks for the focus to follow the step.
 	moved bool

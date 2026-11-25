@@ -86,6 +86,9 @@ type Service struct {
 	// pickFile and pickFiles are SetPicker's.
 	pickFile  func(title string) (string, error)
 	pickFiles func(title string) ([]string, error)
+	// wk is the lich-browser every page lives in, nil while pages are
+	// Chrome's.
+	wk *lichBrowser
 }
 
 type session struct {
@@ -150,14 +153,38 @@ type session struct {
 	isNewTab func(raw string) bool
 }
 
-// New starts a service that launches the system Chromium (chromium.FindBrowser)
-// into an ephemeral profile, never the lich --app one, and tells the window
-// about each browser through emit.
-func New(emit func(name string, data any)) *Service {
+// New starts a service that holds its pages in lich-browser where it runs
+// (findLichBrowser), its log under logDir, else launches the system Chromium
+// (chromium.FindBrowser) into an ephemeral profile, never the lich --app one,
+// and tells the window about each browser through emit.
+func New(emit func(name string, data any), logDir string) *Service {
 	s := newService(chromeLaunch, os.MkdirTemp, time.Now, idleAfter)
+	if b := findLichBrowser(logDir); b != nil {
+		s.useLichBrowser(b)
+	}
 	s.emit = emit
 	s.startReaper()
 	return s
+}
+
+// useLichBrowser opens every page in b. Chrome's young-browser reload over a
+// download is not lich-browser's, so no action waits it out.
+func (s *Service) useLichBrowser(b *lichBrowser) {
+	s.launch, s.wk, s.startup = b.launch, b, 0
+	b.gone = s.buryDead
+}
+
+// buryDead closes the browsers whose page died under them, which the window
+// hears as closed: a page of lich-browser dies with its process or its web
+// process, with nobody calling it.
+func (s *Service) buryDead() {
+	s.mu.Lock()
+	for _, sess := range s.byID {
+		if !sess.alive() {
+			s.buryLocked(sess)
+		}
+	}
+	s.unlock()
 }
 
 func newService(launch Launcher, mkTmp func(string, string) (string, error), now func() time.Time, idle time.Duration) *Service {
@@ -216,6 +243,8 @@ func (s *Service) OpenVisible(owner string) (Handle, error) {
 	switch {
 	case sess == nil:
 		return s.launchFresh(owner, s.blankURL(owner), true, false)
+	case !sess.headed && s.wk != nil:
+		return s.popOut(sess)
 	case !sess.headed:
 		return s.promote(sess)
 	}
@@ -238,6 +267,20 @@ func (s *Service) promote(sess *session) (Handle, error) {
 	s.emitState(sess, false)
 	spec.headed = true
 	return s.start(spec)
+}
+
+// popOut moves a lich-browser page to a window of its own in place: unlike
+// Chrome's promote, the half-filled form and sessionStorage stay.
+func (s *Service) popOut(sess *session) (Handle, error) {
+	if err := runPage(sess.page.(*webkitPage).PopOut); err != nil {
+		return Handle{}, s.failed(sess, err)
+	}
+	s.mu.Lock()
+	sess.headed, sess.watching, sess.windowDraws, sess.asked = true, false, false, false
+	s.mu.Unlock()
+	s.emitState(sess, true)
+	s.touch(sess)
+	return s.handleOf(sess), nil
 }
 
 // handOver reads the cookies of sess's browser for the one that replaces it
@@ -320,6 +363,9 @@ func (s *Service) Cleanup() error {
 	var errs []error
 	for _, sess := range all {
 		errs = append(errs, sess.destroy())
+	}
+	if s.wk != nil {
+		s.wk.stop()
 	}
 	return errors.Join(errs...)
 }

@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"github.com/lichdotdev/lich/native/i18n"
 	"slices"
 	"strings"
 	"testing"
@@ -163,7 +164,9 @@ func TestUpTakesTheQueueBackToEdit(t *testing.T) {
 	u.model.chat.enqueue("s1", chatMessage{text: "first"})
 	u.model.chat.enqueue("s1", chatMessage{text: "second"})
 	r.frame()
-	if !r.shows("↑ edits the queue") {
+	// ↑'s cap stands in the queue's head with what it does (contract changed:
+	// it was a legend in the composer's foot)
+	if !r.showsAll("↑", i18n.T("chat.queue.edit")) {
 		t.Errorf("no hint for the queue:\n%s", r.drawn())
 	}
 	r.press(key.NameUpArrow)

@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Number the editor's lines from the cursor's, as Vim's relativenumber does.** Turn it on in Settings › Editor › Relative line numbers; the cursor's own line keeps its number.
 - **A Homebrew install follows the beta channel through the `lich@beta` cask.** Pick Beta in Settings › Updates › Channel, and the update command swaps the cask for you.
 - **See the diff of one commit, or of a run of commits, of a pull request.** In Pulls, the chip over Files picks them, Shift+click extends the pick, and View changes on a row of Commits opens that commit; comments and Viewed are off while a pick is shown. On GitLab, only commits your clone holds.
 - **Link a pull request to a session by hand, and unlink one that does not belong.** Pick Link pull request… in the session's menu and type #N or the pull request's URL; it shows with a link glyph wherever the session's pull request does, and Unlink pull request hides it, the branch's own included.
@@ -19,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **A workflow Claude Code leaves running in a chat stays in sight, with each of its agents.** A line over the message box says how many of its agents are done and which are running, even after the turn that started it has ended; click it to list them by phase and open one for its model, time and last call.
 - **A chat names its session once your first message is answered.** The card takes a short title from that message, unless you named it yourself. Not offered for Antigravity, Cursor CLI or Kiro CLI, and on opencode 1 only.
 - **The context tooltip shows how many tokens a session has read back from the prompt cache.** A long conversation is read again on every call, and the Cache reads line is what that adds up to, so a session that is spending your plan stands out even while its context bar is low. Claude Code only.
-- **Choose the model and effort every new chat of an agent starts on.** Set them on the agent's screen in Settings › Providers, from what its last chat offered; a session in its terminal keeps the agent's own setting, and a pick in one chat stays with that chat.
+- **Choose the model and effort every new chat of an agent starts on, for each profile and each project.** Each profile in Settings › Providers has its own, so an account on a smaller plan never starts on a larger one's model, and a project can change them from its own scope; a session in its terminal keeps the agent's own setting.
 - **An agent that edits a file another lich session edited minutes earlier is told which session it was, on every agent.** It hears the session's name and how to reach it right after its edit; on Kiro CLI, with your next message.
 - **Settings › Version Control installs, signs in and sets up git, the GitHub CLI and the GitLab CLI for you.** A missing tool's Install opens a terminal running your package manager's command, a CLI with no account offers Sign in, and git without a name or email for commits asks for them right in its row.
 - **When a turn you started ends, the chat's empty message box suggests what you might write next.** Tab puts it in the box to edit or send, and it comes back if you type and erase. Not offered for Antigravity, opencode, oh-my-pi, Cursor CLI or Kiro CLI.
@@ -43,7 +44,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Type /new (or /clear) in a chat to start an empty conversation in the same session.** It works for every agent the chat runs, keeps the model, effort and mode, and the conversation you leave stays in the palette's History.
 - **A chat shows a compaction while it runs and marks where it happened.** The live line says the conversation is being compacted, and a line left in the conversation then says how many tokens it went from and to, or why it could not compact; click it to read the summary. Antigravity, opencode, oh-my-pi and Cursor CLI show only a /compact you type.
 - **Type / in a chat to pick one of the agent's commands or skills.** The list opens over the message box and narrows as you type; arrows and Enter or Tab put the command in, and Escape closes it.
-- **See and stop the commands Claude Code left running in the background of a chat.** A pill over the message box counts them while they run ("2 shells", a Monitor's watch apart as "1 monitor"), and a click on it, or /tasks, lists each with its running time; open one to read the end of its output and Stop it.
+- **See and stop the commands Claude Code left running in the background of a chat.** A pill over the message box counts them while they run ("2 shells", a Monitor's watch apart as "1 monitor"), and a click on it, or /tasks, lists the running ones over the ended ones, with how long each ran and a failed one's exit code; open one to read the end of its output and Stop it.
 - **Claude Code's notes about its background work show in a chat as one folded line each, with its mark.** A finished subagent, a background command or a Monitor's event reads as its summary, red when it failed; click the line to read what a subagent reported. Claude Code only.
 - **Type /permissions or /hooks in a chat to see the agent's permission rules and hooks.** /permissions lists Claude Code's allow, ask and deny rules and adds or removes one in the settings file you pick, and lists Codex's modes; /hooks lists the hooks by event, and on Codex trusts one or turns it off.
 - **Press Ctrl+B in a Claude Code chat to move the command the agent is waiting on to the background.** The line that shows the agent at work says when you can; the agent carries on, and the command keeps running in the shells pill.
@@ -75,6 +76,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Menus, dialogs, tooltips and the panels over the message box float on a shadow and grow in from where you opened them.** Across the window, parts are set apart by space instead of lines, states are their glyphs, and the key that does something sits in its button. Toasts stand a little higher, so their shadow clears the footer.
+- **In a project's scope, Settings shows only what that project can change.** The settings every project shares give way to one line at the page's foot, whose Open Global takes you to them.
 - **A chat's message box keeps its files in a strip of their own over the text, and shows where a file you drag will land.** The strip ends with a square that opens the file picker, as does the "+" that now always starts the box's controls. Drag a file over the chat and a dashed card waits at the end of the strip until you drop it.
 - **Enter no longer answers a permission in a chat, so a message you meant to send can't allow a tool.** Press the number on a button to answer with it, or Esc to deny it once; the filled button is the suggestion and is never an Always.
 - **Project tabs show a one-pixel border when selected, hovered or dragged.** The selected tab uses the sidebar surface; close controls hide while dragging, tabs have a 5px gap, including 5px of space on either side of the divider between pinned and regular tabs.
@@ -139,6 +142,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Continue in moves a session drawn as a chat to another profile, as it does a terminal.** It refused with "switch this session to its terminal"; the chat now closes, its conversation moves and it opens again in the profile you picked, on the same model, effort and mode.
+- **lich no longer keeps a CPU core busy listing your sessions when dozens are open.** The tray, `lich sessions` and the agents' list of sessions read only what each transcript added since the last look, so opening a session or a worktree no longer waits behind them.
 - **Switching between stable and beta on Arch is an ordinary package upgrade, with no removal by hand.** The update keeps the name of the package you installed, `lich` from install.sh or `lich-bin` from the AUR.
 - **A site whose server leaves out part of its certificate chain opens in the built-in browser on Linux, as it does in Chrome.** It showed "Unacceptable TLS certificate"; lich now fetches the missing certificate the way Chrome does and still refuses one that fails any other check.
 - **New session here opens a session in the selected checkout.** The card menu now carries the launch action through to the window, including its worktree and folder.

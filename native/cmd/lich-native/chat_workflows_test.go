@@ -89,7 +89,8 @@ func TestFailedWorkflowStaysUntilThePersonWrites(t *testing.T) {
 	wf.State, wf.Ended = api.WorkflowFailed, r.now.UnixMilli()
 	u.model.chat.setWorkflows("s1", []backend.ChatWorkflow{wf})
 	r.frames(2)
-	if !r.showsAll("title-probe 3/5", "failed") {
+	// the failed glyph says it; the word left the line (contract changed)
+	if !r.showsAll("title-probe 3/5") || r.shows("failed") {
 		t.Fatalf("the failed workflow is not drawn:\n%s", r.drawn())
 	}
 	u.model.chat.history("s1", []backend.ChatItem{

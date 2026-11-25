@@ -45,9 +45,6 @@ const (
 	toastCancelDark  = 0.3
 )
 
-// toastShadow is sonner's box-shadow: 0 4px 12px rgba(0,0,0,.1).
-var toastShadow = BoxShadow{Y: 4, Blur: 12, Alpha: 0.1}
-
 // The description's color is sonner's own, not a token: #3f3f3f, and
 // hsl(0, 0%, 91%) dark.
 var (
@@ -180,15 +177,15 @@ func (s ToasterStyle) measure(gtx C, e *toastEntry, inner int) {
 	e.view.body, e.view.bodySize = macro.Stop(), d.Size
 }
 
-// drawBox paints the toast's box at the origin: shadow, popover fill,
-// border and the content.
+// drawBox paints the toast's box at the origin: the middle elevation,
+// popover fill, the floating surfaces' ring and the content.
 func (s ToasterStyle) drawBox(gtx C, v *toastView) {
 	th := s.theme
 	r := gtx.Dp(RadiusLG)
-	toastShadow.Paint(gtx, v.boxSize, r)
+	ElevationMid.Paint(gtx, v.boxSize, r)
 	rect := clip.UniformRRect(image.Rectangle{Max: v.boxSize}, r)
 	paint.FillShape(gtx.Ops, th.Popover, rect.Op(gtx.Ops))
-	border := th.On(th.Popover).Over(th.Border)
+	border := th.On(th.Popover).Over(Alpha(th.Foreground, menuRingOpacity))
 	paint.FillShape(gtx.Ops, border, clip.Stroke{Path: rect.Path(gtx.Ops), Width: float32(gtx.Dp(toastBorder))}.Op())
 	if v.inside <= 0 {
 		return

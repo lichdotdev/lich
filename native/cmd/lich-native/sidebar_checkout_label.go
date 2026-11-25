@@ -21,8 +21,6 @@ func checkoutLabelRow(gtx C, th *ui.Theme, r sessionRow) D {
 				l.MaxLines = 1
 				return l.Layout(gtx)
 			}),
-			ui.Gap(1.5),
-			layout.Flexed(1, th.Separator),
 		)
 	})
 }

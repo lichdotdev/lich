@@ -14,7 +14,7 @@
     "waiting": {
       "other": "{count} 个等待中"
     },
-    "ended": "{time}前完成"
+    "ended": "{time}前"
   },
   "view": {
     "failed": "聊天请求失败",
@@ -73,7 +73,8 @@
       }
     },
     "latest": "最新",
-    "newActivity": "新动态"
+    "newActivity": "新动态",
+    "edited": "已编辑"
   },
   "done": {
     "done": "完成",
@@ -85,7 +86,7 @@
     "placeholder": "向 {provider} 询问有关此项目的问题",
     "send": "发送",
     "stop": "停止",
-    "shell": "Shell 模式 · 按 Enter 运行命令"
+    "shell": "Shell 模式"
   },
   "option": {
     "model": "模型",
@@ -97,8 +98,7 @@
   "permit": {
     "allowOnce": "允许",
     "allowAlways": "始终允许",
-    "rejectOnce": "拒绝",
-    "escDenies": "拒绝"
+    "rejectOnce": "拒绝"
   },
   "choice": {
     "manual": "手动",
@@ -126,7 +126,6 @@
     "default": "默认"
   },
   "question": {
-    "freeHint": "Enter 发送 · Esc 拒绝",
     "marked": {
       "other": "已选 {count} 项"
     },
@@ -164,7 +163,7 @@
     "sendNow": "立即发送",
     "count": {"other": "{count} 条排队中"},
     "drop": "移出队列",
-    "edit": "↑ 编辑队列"
+    "edit": "编辑"
   },
   "search": {
     "label": "搜索已发送的消息",
@@ -178,14 +177,10 @@
   "tools": {
     "loading": "加载中…",
     "keys": {
-      "move": "移动",
-      "open": "打开",
-      "close": "关闭"
+      "close": "关闭",
+      "back": "返回"
     },
     "mcpTitle": "MCP 服务器",
-    "serverCount": {
-      "other": "{count} 个服务器"
-    },
     "toolCount": {
       "other": "{count} 个工具"
     },
@@ -194,7 +189,9 @@
       "project": "项目",
       "local": "本地",
       "claudeai": "claude.ai",
-      "misc": "其他"
+      "misc": "其他",
+      "running": "运行中",
+      "ended": "已结束"
     },
     "status": {
       "connected": "已连接",
@@ -246,10 +243,31 @@
       "policy": "已被策略锁定",
       "any": "已锁定"
     },
-    "pluginSkills": "插件的技能通过 /plugin 管理。"
+    "pluginSkills": "插件的技能通过 /plugin 管理。",
+    "running": {
+      "other": "{count} 个运行中"
+    },
+    "skillsOn": "已开启 {on} 个 · 共 {count} 个",
+    "statusCount": {
+      "connected": {
+        "other": "{count} 个已连接"
+      },
+      "pending": {
+        "other": "{count} 个连接中"
+      },
+      "failed": {
+        "other": "{count} 个失败"
+      },
+      "needsAuth": {
+        "other": "{count} 个需要登录"
+      },
+      "disabled": {
+        "other": "{count} 个已关闭"
+      }
+    }
   },
   "shells": {
-    "move": "Ctrl+B 转到后台运行",
+    "move": "转到后台",
     "count": {
       "other": "{count} 个 shell"
     },
@@ -263,15 +281,14 @@
     "noOutput": "暂无输出",
     "stop": "停止",
     "state": {
-      "completed": "已完成",
       "failed": "失败",
       "stopped": "已停止"
-    }
+    },
+    "exit": "退出码 {code}"
   },
   "workflow": {
     "count": "{name} {done}/{total}",
     "progress": "{done}/{total}",
-    "failed": "失败",
     "agents": {
       "other": "{count} 个智能体"
     },
@@ -327,7 +344,6 @@
     "none": "{provider} 不会告诉 lich 它的插件。切换到 TUI，使用它自己的 /plugin。",
     "noneFound": "没有匹配的插件。",
     "noneInstalled": "这里没有安装任何插件。",
-    "updateChip": "可更新",
     "scope": {
       "user": "用户",
       "project": "项目",
@@ -382,7 +398,11 @@
     "sourceHint": "owner/repo、URL 或路径",
     "restart": "已更新。重启聊天后运行新版本。",
     "current": "已经是最新版本。",
-    "fixed": "lich 会自己安装和更新这个插件。"
+    "fixed": "lich 会自己安装和更新这个插件。",
+    "updateCount": {
+      "other": "{count} 个可更新"
+    },
+    "versionTo": "{version} → {latest}"
   },
   "permissions": {
     "title": "权限",
@@ -465,6 +485,9 @@
       "off": "钩子已关闭（disableAllHooks），所以这些都不会运行。",
       "safeMode": "安全模式已开启，所以这些钩子不会运行。",
       "bareMode": "精简模式已开启，所以这些钩子不会运行。"
+    },
+    "needTrust": {
+      "other": "{count} 个待信任"
     }
   },
   "memory": {
@@ -499,7 +522,6 @@
   "notification": {
     "from": "来自 {label}",
     "finished": "{label} 已完成",
-    "answered": "已回复",
     "failed": "{label} 失败了",
     "stopped": "{label} 已被关闭",
     "stoppedBy": "由 {label} 关闭",

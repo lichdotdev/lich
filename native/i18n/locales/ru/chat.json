@@ -20,7 +20,7 @@
       "many": "{count} ждут",
       "other": "{count} ждут"
     },
-    "ended": "завершена {time} назад"
+    "ended": "{time} назад"
   },
   "view": {
     "failed": "Запрос к чату не выполнен",
@@ -112,7 +112,8 @@
       }
     },
     "latest": "К последнему",
-    "newActivity": "Новые события"
+    "newActivity": "Новые события",
+    "edited": "Изменено"
   },
   "done": {
     "done": "Готово",
@@ -124,7 +125,7 @@
     "placeholder": "Спросите {provider} об этом проекте",
     "send": "Отправить",
     "stop": "Остановить",
-    "shell": "Режим оболочки · Enter выполняет команду"
+    "shell": "Режим оболочки"
   },
   "option": {
     "model": "Модель",
@@ -136,8 +137,7 @@
   "permit": {
     "allowOnce": "Разрешить",
     "allowAlways": "Всегда разрешать",
-    "rejectOnce": "Запретить",
-    "escDenies": "запрещает"
+    "rejectOnce": "Запретить"
   },
   "choice": {
     "manual": "Ручной",
@@ -165,7 +165,6 @@
     "default": "По умолчанию"
   },
   "question": {
-    "freeHint": "Enter отправляет · Esc отказывает",
     "marked": {
       "one": "Отмечен {count}",
       "few": "Отмечено {count}",
@@ -206,7 +205,7 @@
     "sendNow": "Отправить сейчас",
     "count": {"one": "{count} в очереди", "few": "{count} в очереди", "many": "{count} в очереди", "other": "{count} в очереди"},
     "drop": "Убрать из очереди",
-    "edit": "↑ правка очереди"
+    "edit": "правка"
   },
   "search": {
     "label": "Поиск по вашим сообщениям",
@@ -220,17 +219,10 @@
   "tools": {
     "loading": "Загрузка…",
     "keys": {
-      "move": "перейти",
-      "open": "открыть",
-      "close": "закрыть"
+      "close": "закрыть",
+      "back": "назад"
     },
     "mcpTitle": "Серверы MCP",
-    "serverCount": {
-      "one": "{count} сервер",
-      "few": "{count} сервера",
-      "many": "{count} серверов",
-      "other": "{count} сервера"
-    },
     "toolCount": {
       "one": "{count} инструмент",
       "few": "{count} инструмента",
@@ -242,7 +234,9 @@
       "project": "Проекта",
       "local": "Локальные",
       "claudeai": "claude.ai",
-      "misc": "Другие"
+      "misc": "Другие",
+      "running": "Работают",
+      "ended": "Завершены"
     },
     "status": {
       "connected": "подключён",
@@ -300,10 +294,49 @@
       "policy": "заблокирован политикой",
       "any": "заблокирован"
     },
-    "pluginSkills": "Навыками плагинов управляют через /plugin."
+    "pluginSkills": "Навыками плагинов управляют через /plugin.",
+    "running": {
+      "one": "{count} работает",
+      "few": "{count} работают",
+      "many": "{count} работают",
+      "other": "{count} работают"
+    },
+    "skillsOn": "включено {on} из {count}",
+    "statusCount": {
+      "connected": {
+        "one": "{count} подключён",
+        "few": "{count} подключено",
+        "many": "{count} подключено",
+        "other": "{count} подключено"
+      },
+      "pending": {
+        "one": "{count} подключается",
+        "few": "{count} подключаются",
+        "many": "{count} подключаются",
+        "other": "{count} подключаются"
+      },
+      "failed": {
+        "one": "{count} с ошибкой",
+        "few": "{count} с ошибкой",
+        "many": "{count} с ошибкой",
+        "other": "{count} с ошибкой"
+      },
+      "needsAuth": {
+        "one": "{count} ждёт входа",
+        "few": "{count} ждут входа",
+        "many": "{count} ждут входа",
+        "other": "{count} ждут входа"
+      },
+      "disabled": {
+        "one": "{count} выключен",
+        "few": "{count} выключено",
+        "many": "{count} выключено",
+        "other": "{count} выключено"
+      }
+    }
   },
   "shells": {
-    "move": "Ctrl+B, чтобы перевести в фон",
+    "move": "в фон",
     "count": {
       "one": "{count} оболочка",
       "few": "{count} оболочки",
@@ -323,15 +356,14 @@
     "noOutput": "Вывода пока нет",
     "stop": "Остановить",
     "state": {
-      "completed": "завершена",
       "failed": "ошибка",
       "stopped": "остановлена"
-    }
+    },
+    "exit": "код {code}"
   },
   "workflow": {
     "count": "{name} {done}/{total}",
     "progress": "{done}/{total}",
-    "failed": "ошибка",
     "agents": {
       "one": "{count} агент",
       "few": "{count} агента",
@@ -399,7 +431,6 @@
     "none": "{provider} не сообщает lich свои плагины. Переключитесь в TUI и используйте его /plugin.",
     "noneFound": "Ни один плагин не подходит.",
     "noneInstalled": "Здесь не установлено ни одного плагина.",
-    "updateChip": "обновление",
     "scope": {
       "user": "пользователь",
       "project": "проект",
@@ -469,7 +500,14 @@
     "sourceHint": "владелец/репозиторий, URL или путь",
     "restart": "Обновлено. Чат запустит новую версию после перезапуска.",
     "current": "Это уже последняя версия.",
-    "fixed": "lich сам устанавливает и обновляет этот плагин."
+    "fixed": "lich сам устанавливает и обновляет этот плагин.",
+    "updateCount": {
+      "one": "{count} обновление",
+      "few": "{count} обновления",
+      "many": "{count} обновлений",
+      "other": "{count} обновлений"
+    },
+    "versionTo": "{version} → {latest}"
   },
   "permissions": {
     "title": "Доступ",
@@ -558,6 +596,12 @@
       "off": "Хуки выключены (disableAllHooks), поэтому ни один из них не запускается.",
       "safeMode": "Включён безопасный режим, поэтому эти хуки не запускаются.",
       "bareMode": "Включён режим bare, поэтому эти хуки не запускаются."
+    },
+    "needTrust": {
+      "one": "{count} ждёт доверия",
+      "few": "{count} ждут доверия",
+      "many": "{count} ждут доверия",
+      "other": "{count} ждут доверия"
     }
   },
   "memory": {
@@ -598,7 +642,6 @@
   "notification": {
     "from": "От {label}",
     "finished": "{label}: готово",
-    "answered": "ответ получен",
     "failed": "{label}: сбой",
     "stopped": "{label}: закрыта",
     "stoppedBy": "закрыла {label}",

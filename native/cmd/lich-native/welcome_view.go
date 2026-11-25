@@ -146,8 +146,9 @@ func (u *window) welcomeScreen(gtx C, th *ui.Theme, area image.Rectangle) bool {
 	return signing
 }
 
+// seam is the room between the intro and the books, or between two cells,
+// left empty: they stand apart by space, not a line.
 func seam(gtx C, th *ui.Theme, size image.Point) D {
-	paint.FillShape(gtx.Ops, th.Border, clip.Rect{Max: size}.Op())
 	return D{Size: size}
 }
 
@@ -168,12 +169,12 @@ func (u *window) welcomeIntro(gtx C, th *ui.Theme) D {
 	})
 }
 
-// welcomeFoot is the way out: Esc's hint, and Continue at the end of the line.
+// welcomeFoot is the way out: Continue at the end of the line, wearing
+// Enter's cap; Esc closes it too, as it closes every dialog.
 func (u *window) welcomeFoot(gtx C, th *ui.Theme) D {
 	cont := th.Button(&u.welcome.cont, i18n.T("shell.welcome.continue"))
-	cont.Size = ui.SizeSM
+	cont.Size, cont.Keys = ui.SizeSM, "↵"
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(th.Text(ui.TextXS, i18n.T("shell.welcome.escCloses")).Muted().Layout),
 		layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
 		layout.Rigid(cont.Layout),
 	)
@@ -215,7 +216,8 @@ func welcomeStatus(gtx C, th *ui.Theme, root *ui.Root, t *tome, s tomeState, f t
 	l := th.Text(welcomeStatusSize, welcomeStatusText(s)).Muted().Truncated()
 	switch s {
 	case tomeReady:
-		l = l.In(th.TonePass)
+		// the check says it is ready; its word is for screen readers
+		return labeledGlyph(gtx, welcomeStatusText(s), func(gtx C) D { return icCheck.Layout(gtx, ui.Space(3.5), th.TonePass) })
 	case tomeFailed:
 		l = th.Text(welcomeStatusSize, f.install.failure).In(th.Destructive).Truncated()
 		return th.Tooltip(root, &t.tip, f.install.failure).Layout(gtx, l.Layout)

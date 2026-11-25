@@ -4,6 +4,7 @@ import (
 	"image"
 	"image/color"
 	"strconv"
+	"strings"
 
 	"gioui.org/font"
 	"gioui.org/layout"
@@ -43,7 +44,7 @@ func (r *sidebarRail) footer(gtx C, th *ui.Theme, s *sidebar, m *model, act *sid
 	}
 	list, console := m.services.of(p.ID), m.consoleShown()
 	children := []layout.FlexChild{
-		layout.Rigid(func(gtx C) D { return th.RailHairline(gtx) }),
+		ui.VGap(2),
 		layout.Rigid(func(gtx C) D { return r.servicesButton(gtx, th, s, p.ID, list, console, act) }),
 	}
 	if a, ok := s.profile.account(m); ok {
@@ -102,7 +103,7 @@ func railServicesBadge(gtx C, th *ui.Theme, t servicesTally) D {
 	}
 	c := th.MutedForeground
 	switch {
-	case t.failed:
+	case t.failed > 0:
 		c = th.Destructive
 	case t.up > 0:
 		c = th.TonePass
@@ -191,9 +192,9 @@ func (f *servicesFooter) panelHeader(gtx C, th *ui.Theme, root *ui.Root, t servi
 	h := gtx.Dp(ui.Space(8))
 	gtx.Constraints.Min.Y, gtx.Constraints.Max.Y = h, h
 	children := []layout.FlexChild{
-		layout.Rigid(th.Text(ui.TextXS, i18n.T("sidebar.services.title")).Muted().Layout),
-		ui.Gap(2),
-		layout.Rigid(func(gtx C) D { return servicesCount(gtx, th, t) }),
+		layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(i18n.T("sidebar.services.title"))).Leading(text2XSLeading).Muted().Weight(font.SemiBold).Layout),
+		ui.Gap(1.5),
+		layout.Rigid(servicesTallyLine(th, t)),
 		layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
 	}
 	if t.total > 0 {

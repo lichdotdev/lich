@@ -425,8 +425,9 @@ func restartingStrip(gtx C, th *ui.Theme, text string) {
 	defer op.Offset(at).Push(gtx.Ops).Pop()
 	box := gtx
 	box.Constraints = layout.Exact(d.Size)
+	ui.ElevationLow.Paint(gtx, d.Size, gtx.Dp(ui.RadiusMD))
 	ui.Fill(box, th.Popover, ui.RadiusMD)
-	ui.InsetBorder(box, d.Size, gtx.Dp(ui.RadiusMD), th.Border)
+	ui.InsetBorder(box, d.Size, gtx.Dp(ui.RadiusMD), on.Over(ui.Alpha(on.Foreground, ui.FloatRingOpacity)))
 	call.Add(gtx.Ops)
 }
 

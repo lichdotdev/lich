@@ -16,7 +16,7 @@
       "one": "{count} waiting",
       "other": "{count} waiting"
     },
-    "ended": "done {time} ago"
+    "ended": "{time} ago"
   },
   "view": {
     "failed": "The chat request failed",
@@ -86,7 +86,8 @@
       }
     },
     "latest": "Latest",
-    "newActivity": "New activity"
+    "newActivity": "New activity",
+    "edited": "Edited"
   },
   "done": {
     "done": "Done",
@@ -98,7 +99,7 @@
     "placeholder": "Ask {provider} about this project",
     "send": "Send",
     "stop": "Stop",
-    "shell": "Shell mode · Enter runs the command"
+    "shell": "Shell mode"
   },
   "option": {
     "model": "Model",
@@ -110,8 +111,7 @@
   "permit": {
     "allowOnce": "Allow",
     "allowAlways": "Always allow",
-    "rejectOnce": "Deny",
-    "escDenies": "denies"
+    "rejectOnce": "Deny"
   },
   "choice": {
     "manual": "Manual",
@@ -139,7 +139,6 @@
     "default": "Default"
   },
   "question": {
-    "freeHint": "Enter sends · Esc declines",
     "marked": {
       "one": "{count} marked",
       "other": "{count} marked"
@@ -178,7 +177,7 @@
     "sendNow": "Send now",
     "count": {"one": "{count} queued", "other": "{count} queued"},
     "drop": "Remove from the queue",
-    "edit": "↑ edits the queue"
+    "edit": "edit"
   },
   "search": {
     "label": "Search your messages",
@@ -192,15 +191,10 @@
   "tools": {
     "loading": "Loading…",
     "keys": {
-      "move": "move",
-      "open": "open",
-      "close": "close"
+      "close": "close",
+      "back": "back"
     },
     "mcpTitle": "MCP servers",
-    "serverCount": {
-      "one": "{count} server",
-      "other": "{count} servers"
-    },
     "toolCount": {
       "one": "{count} tool",
       "other": "{count} tools"
@@ -210,7 +204,9 @@
       "project": "Project",
       "local": "Local",
       "claudeai": "claude.ai",
-      "misc": "Other"
+      "misc": "Other",
+      "running": "Running",
+      "ended": "Ended"
     },
     "status": {
       "connected": "connected",
@@ -264,10 +260,37 @@
       "policy": "locked by policy",
       "any": "locked"
     },
-    "pluginSkills": "Plugin skills are managed with /plugin."
+    "pluginSkills": "Plugin skills are managed with /plugin.",
+    "running": {
+      "one": "{count} running",
+      "other": "{count} running"
+    },
+    "skillsOn": "{on} on · {count}",
+    "statusCount": {
+      "connected": {
+        "one": "{count} connected",
+        "other": "{count} connected"
+      },
+      "pending": {
+        "one": "{count} connecting",
+        "other": "{count} connecting"
+      },
+      "failed": {
+        "one": "{count} failed",
+        "other": "{count} failed"
+      },
+      "needsAuth": {
+        "one": "{count} needs sign-in",
+        "other": "{count} need sign-in"
+      },
+      "disabled": {
+        "one": "{count} off",
+        "other": "{count} off"
+      }
+    }
   },
   "shells": {
-    "move": "Ctrl+B to run in background",
+    "move": "to the background",
     "count": {
       "one": "{count} shell",
       "other": "{count} shells"
@@ -283,15 +306,14 @@
     "noOutput": "No output yet",
     "stop": "Stop",
     "state": {
-      "completed": "done",
       "failed": "failed",
       "stopped": "stopped"
-    }
+    },
+    "exit": "exit {code}"
   },
   "workflow": {
     "count": "{name} {done}/{total}",
     "progress": "{done}/{total}",
-    "failed": "failed",
     "agents": {
       "one": "{count} agent",
       "other": "{count} agents"
@@ -351,7 +373,6 @@
     "none": "{provider} does not tell lich its plugins. Switch to TUI and use its own /plugin.",
     "noneFound": "No plugin matches.",
     "noneInstalled": "No plugin is installed here.",
-    "updateChip": "update",
     "scope": {
       "user": "user",
       "project": "project",
@@ -411,7 +432,12 @@
     "sourceHint": "owner/repo, URL or path",
     "restart": "Updated. The chat runs the new version once restarted.",
     "current": "This is already the latest version.",
-    "fixed": "lich installs and updates this plugin itself."
+    "fixed": "lich installs and updates this plugin itself.",
+    "updateCount": {
+      "one": "{count} update",
+      "other": "{count} updates"
+    },
+    "versionTo": "{version} → {latest}"
   },
   "permissions": {
     "title": "Permissions",
@@ -496,6 +522,10 @@
       "off": "Hooks are turned off (disableAllHooks), so none of these run.",
       "safeMode": "Safe mode is on, so these hooks do not run.",
       "bareMode": "Bare mode is on, so these hooks do not run."
+    },
+    "needTrust": {
+      "one": "{count} needs trust",
+      "other": "{count} need trust"
     }
   },
   "memory": {
@@ -532,7 +562,6 @@
   "notification": {
     "from": "From {label}",
     "finished": "{label} finished",
-    "answered": "answered",
     "failed": "{label} failed",
     "stopped": "{label} was stopped",
     "stoppedBy": "by {label}",

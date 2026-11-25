@@ -233,6 +233,15 @@
       "failedCode": "失敗 · 終了コード {code}",
       "never": "まだ開始していません",
       "stoppedAt": "停止 · {time}"
+    },
+    "runningCount": {
+      "other": "{count} 件実行中"
+    },
+    "failedCount": {
+      "other": "{count} 件失敗"
+    },
+    "stoppedCount": {
+      "other": "{count} 件停止"
     }
   },
   "checkoutRow": {

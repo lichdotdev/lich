@@ -2,9 +2,7 @@ package browser
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
-	"fmt"
 	"log/slog"
 	"time"
 
@@ -74,15 +72,14 @@ func (p *chromePage) AnnotatedScreenshot(ctx context.Context, dest string) (w, h
 	if err != nil {
 		return 0, 0, err
 	}
-	els, err := json.Marshal(info.Interactive)
+	script, err := annotation(info)
 	if err != nil {
 		return 0, 0, err
 	}
 	p.annotating.Add(1)
 	defer p.annotating.Add(-1)
 	defer p.unannotate()
-	script := annotateJS + "(" + string(els) + fmt.Sprintf(", %d, %d, %d)", shotMax, labelPx, annotateLinger.Milliseconds())
-	if err := p.run(ctx, chromedp.Evaluate(script, nil)); err != nil {
+	if err := p.evaluate(ctx, script, nil); err != nil {
 		return 0, 0, err
 	}
 	return p.Screenshot(ctx, dest)

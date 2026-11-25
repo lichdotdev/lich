@@ -77,20 +77,20 @@ func (s *Service) bornProfile(kind, projectID string) string {
 
 // ForgetClaudeProfile clears every setting that names a deleted profile, so a
 // project set to it falls back to the global value and the global one to
-// Personal. The sessions born in it keep their mark: what they ran in is a fact
+// Personal, and the profile's own chat model and effort go with it. The sessions born in it keep their mark: what they ran in is a fact
 // about them, and resuming one reports the profile gone (ErrProfileGone).
 func (s *Service) ForgetClaudeProfile(slug string) error {
-	return s.forgetProfile(claudeProfileKey, slug)
+	return s.forgetProfile(providers.Claude, claudeProfileKey, slug)
 }
 
 // ForgetCodexProfile is ForgetClaudeProfile for a Codex profile.
 func (s *Service) ForgetCodexProfile(slug string) error {
-	return s.forgetProfile(codexProfileKey, slug)
+	return s.forgetProfile(providers.Codex, codexProfileKey, slug)
 }
 
 // ForgetOMPProfile is ForgetClaudeProfile for an oh-my-pi profile.
 func (s *Service) ForgetOMPProfile(slug string) error {
-	return s.forgetProfile(ompProfileKey, slug)
+	return s.forgetProfile(providers.OMP, ompProfileKey, slug)
 }
 
 // ForgetXDGProfile is ForgetClaudeProfile for an opencode, Cursor CLI or Kiro
@@ -100,12 +100,13 @@ func (s *Service) ForgetXDGProfile(kind, slug string) error {
 	if !ok {
 		return fmt.Errorf("%s has no profiles", kind)
 	}
-	return s.forgetProfile(key, slug)
+	return s.forgetProfile(kind, key, slug)
 }
 
-func (s *Service) forgetProfile(key, slug string) error {
+func (s *Service) forgetProfile(kind, key, slug string) error {
 	if _, err := s.db.Exec(
-		`DELETE FROM settings WHERE key = ? AND value = ?`, key, slug,
+		`DELETE FROM settings WHERE (key = ? AND value = ?) OR key IN (?, ?)`,
+		key, slug, profilePrefKey(modelKey(kind), slug), profilePrefKey(effortKey(kind), slug),
 	); err != nil {
 		return fmt.Errorf("forget profile %q (%s): %w", slug, key, err)
 	}

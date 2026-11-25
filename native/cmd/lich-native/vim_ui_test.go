@@ -141,3 +141,33 @@ func TestVimUIKeepsOnlyTheLastCommandsMessages(t *testing.T) {
 		t.Fatalf("separate commands left %q; want the last message alone", u.msg)
 	}
 }
+
+func TestVimPumItemsCarryTheDetailAndTheDocumentation(t *testing.T) {
+	items := vimPumItems([]any{[]any{"Relaunch", "Function", "func(exe string) error", "```go\nfunc Relaunch(exe string) error\n```\nRelaunch replaces the process."}})
+	if len(items) != 1 || items[0].detail != "func(exe string) error" {
+		t.Fatalf("items = %+v", items)
+	}
+	if got := vimPumDocText(items[0]); got != "func Relaunch(exe string) error\nRelaunch replaces the process." {
+		t.Fatalf("doc = %q; want the fences left out", got)
+	}
+	long := vimPumItem{info: strings.Repeat("line\n", vimPumDocLines+5)}
+	if got := strings.Count(vimPumDocText(long), "\n") + 1; got != vimPumDocLines+1 {
+		t.Fatalf("a long doc kept %d lines, want %d and an ellipsis", got, vimPumDocLines+1)
+	}
+}
+
+func TestVimKindBadgesNameLSPAndVimKinds(t *testing.T) {
+	for kind, want := range map[string]string{"Function": "f", "Method": "m", "Variable": "v", "Constant": "c", "Struct": "S", "Interface": "I", "Keyword": "k", "f": "f", "v": "v"} {
+		if k, ok := vimKindOf(kind); !ok || k.letter != want {
+			t.Errorf("%q = %+v, %v; want %q", kind, k, ok, want)
+		}
+	}
+	if _, ok := vimKindOf(""); ok {
+		t.Error("a kind-less item got a badge")
+	}
+	fn, _ := vimKindOf("Function")
+	v, _ := vimKindOf("Variable")
+	if fn.lane == v.lane {
+		t.Error("functions and variables wear one color")
+	}
+}

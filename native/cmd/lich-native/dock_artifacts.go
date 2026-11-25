@@ -300,11 +300,6 @@ func artifactGroupLabel(gtx C, th *ui.Theme, text string) D {
 	return layout.Inset{Top: ui.Space(2.5), Bottom: ui.Space(1), Left: ui.Space(3.5), Right: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(heading.Layout),
-			ui.Gap(2),
-			layout.Flexed(1, func(gtx C) D {
-				gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, gtx.Dp(1)))
-				return ui.Fill(gtx, th.Over(th.Border), 0)
-			}),
 		)
 	})
 }

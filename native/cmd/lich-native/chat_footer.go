@@ -108,22 +108,18 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 		pad, gap, itemH := gtx.Dp(chatFootPad), gtx.Dp(balloonGap), gtx.Dp(balloonItemHeight)
 		width := gtx.Constraints.Max.X
 		gtx.Constraints.Min = image.Point{}
+		_, shell := p.shellLine(sv.Kind)
 		m := op.Record(gtx.Ops)
-		action := u.chatAction(gtx, th, p, working)
+		action := u.chatAction(gtx, th, p, working, shell)
 		actionCall := m.Stop()
 		// a file dragged over the session, or messages waiting in the queue,
 		// are named before the action
 		var hint D
 		var hintCall op.CallOp
-		_, shell := p.shellLine(sv.Kind)
 		switch {
 		case p.dragging:
 			m = op.Record(gtx.Ops)
 			hint = th.Text(ui.TextXS, i18n.T("chat.attach.drop")).Layout(gtx)
-			hintCall = m.Stop()
-		case !shell && len(u.model.chat.queued(sv.ID)) > 0:
-			m = op.Record(gtx.Ops)
-			hint = th.Text(ui.TextXS, i18n.T("chat.queue.edit")).Muted().Layout(gtx)
 			hintCall = m.Stop()
 		}
 		if hint.Size.X > 0 {
@@ -185,8 +181,9 @@ func (u *window) chatChips(th *ui.Theme, p *chatPane, sv sessionView, working bo
 }
 
 // chatAction is Send, or Stop while the agent works: an icon under a tooltip
-// that names it.
-func (u *window) chatAction(gtx C, th *ui.Theme, p *chatPane, working bool) D {
+// that names it. In shell mode Send wears Enter's cap, the key that runs the
+// command.
+func (u *window) chatAction(gtx C, th *ui.Theme, p *chatPane, working, shell bool) D {
 	if working {
 		b := th.Button(&p.stop, "")
 		b.Variant, b.Size, b.Icon = ui.VariantOutline, ui.SizeIconSM, icChatStop
@@ -194,6 +191,9 @@ func (u *window) chatAction(gtx C, th *ui.Theme, p *chatPane, working bool) D {
 	}
 	b := th.Button(&p.send, "")
 	b.Size, b.Icon = ui.SizeIconSM, icChatSend
+	if shell {
+		b.Icon, b.Keys = nil, "↵"
+	}
 	return th.Tooltip(&u.root, &p.sendTip, i18n.T("chat.composer.send")).Layout(gtx, b.Layout)
 }
 

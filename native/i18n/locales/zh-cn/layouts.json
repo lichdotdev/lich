@@ -9,8 +9,8 @@
     "hidden": {
       "other": "另外 {count} 个"
     },
-    "hiddenWaiting": {
-      "other": "另外 {count} 个 · {waiting} 个等待中"
+    "waiting": {
+      "other": "{count} 个等待中"
     }
   },
   "browser": {

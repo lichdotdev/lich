@@ -147,8 +147,9 @@ func (s *sidebar) inHand(gtx C, th *ui.Theme, sv *sessionView, p image.Point) {
 	at := image.Pt(x, p.Y-pill.Size.Y/2)
 	defer op.Offset(at).Push(gtx.Ops).Pop()
 	shape := clip.UniformRRect(image.Rectangle{Max: pill.Size}, pill.Size.Y/2)
+	ui.ElevationMid.Paint(gtx, pill.Size, pill.Size.Y/2)
 	paint.FillShape(gtx.Ops, th.Popover, shape.Op(gtx.Ops))
-	paint.FillShape(gtx.Ops, th.Ring, clip.Stroke{Path: shape.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
+	paint.FillShape(gtx.Ops, th.Over(ui.Alpha(th.Foreground, ui.FloatRingOpacity)), clip.Stroke{Path: shape.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
 	body.Add(gtx.Ops)
 }
 

@@ -44,8 +44,8 @@ func (v *pullView) actions(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDeta
 		items = append(items, ui.WrapItem(func(gtx C) D { return v.reviewButton(gtx, th, p, d, reviewBlocked) }))
 	}
 	items = append(items,
-		ui.WrapItem(func(gtx C) D { return v.mergeButton(gtx, th, p, d, busy, act) }),
 		ui.WrapItem(func(gtx C) D { return v.moreButton(gtx, th, p, d, busy, reviewBlocked, act) }),
+		ui.WrapItem(func(gtx C) D { return v.mergeButton(gtx, th, p, d, busy, act) }),
 	)
 	return ui.Wrap{GapX: ui.Space(2), GapY: ui.Space(2), Justify: ui.JustifyEnd}.Layout(gtx, items...)
 }
@@ -312,7 +312,6 @@ func (v *pullView) overview(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 			layout.Rigid(func(gtx C) D {
 				return layout.Inset{Top: ui.Space(1), Bottom: overviewHeadingBottom}.Layout(gtx, heading)
 			}),
-			layout.Rigid(th.Separator),
 			layout.Flexed(1, func(gtx C) D {
 				if v.edit.editing(d) && !v.edit.previewing {
 					return layout.Inset{Top: ui.Space(1), Bottom: pullsPadX}.Layout(gtx, func(gtx C) D {

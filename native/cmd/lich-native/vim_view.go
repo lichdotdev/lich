@@ -51,12 +51,17 @@ func vimCursorRect(ed *godemirror.Editor, s vimState, c vimCursor) (image.Rectan
 	if !ok {
 		return image.Rectangle{}, false
 	}
-	w := ed.Geometry().CellWidth
+	cell := ed.Geometry().CellWidth
+	w := cell
 	if line := st.LineAt(pos); pos < line.To {
-		_, size := utf8.DecodeRuneInString(st.Doc()[pos:])
-		next := pos + size
-		if n, ok := ed.CoordsAtPos(next, -1); ok && n.Min.Y == r.Min.Y && n.Min.X > r.Min.X {
+		ch, size := utf8.DecodeRuneInString(st.Doc()[pos:])
+		if n, ok := ed.CoordsAtPos(pos+size, -1); ok && n.Min.Y == r.Min.Y && n.Min.X > r.Min.X {
 			w = n.Min.X - r.Min.X
+		}
+		// Vim's cursor on a tab stands on the tab's last cell, but in Insert,
+		// where it is a bar at the tab's start.
+		if ch == '\t' && c.shape != "vertical" && w > cell {
+			r.Min.X, w = r.Min.X+w-cell, cell
 		}
 	}
 	r.Max.X = r.Min.X + w
@@ -172,7 +177,6 @@ func (f *fileEditor) vimStatus(gtx C, th *ui.Theme) D {
 		mode, lane = vimModeLabel(f.vim.state.mode)
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Separator),
 		layout.Rigid(func(gtx C) D {
 			return layout.Inset{Left: ui.Space(3), Right: ui.Space(3), Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 				gtx.Constraints.Min.X = gtx.Constraints.Max.X

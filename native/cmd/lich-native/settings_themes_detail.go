@@ -135,7 +135,6 @@ func (s *settingsScreen) themeDetailPanel(gtx C, th *ui.Theme, pack themePack, l
 	macro := op.Record(gtx.Ops)
 	head := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(s.themeDetailHeader(th, pack)),
-		layout.Rigid(th.Separator),
 	)
 	headCall := macro.Stop()
 	pad, side := gtx.Dp(themeDetailPad), gtx.Dp(themeDetailSideW)
@@ -158,7 +157,7 @@ func (s *settingsScreen) themeDetailHeader(th *ui.Theme, pack themePack) layout.
 	return func(gtx C) D {
 		d := &s.theme.grid.detail
 		closeB := th.Button(&d.close, "")
-		closeB.Icon, closeB.Variant, closeB.Size = icDetailClose, ui.VariantGhost, ui.SizeIconSM
+		closeB.Icon, closeB.Variant, closeB.Size = icDetailClose, ui.VariantGhost, ui.SizeIconXS
 		return themeDetailTopPad.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(th.Text(themeDetailNameSize, pack.def.Name).Weight(font.SemiBold).Layout),
@@ -243,11 +242,7 @@ func (s *settingsScreen) themeDetailActions(gtx C, th *ui.Theme, pack themePack,
 	d := &p.grid.detail
 	v := p.look.view()
 	if look.def.ID == v.selected {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return icCatalogCheck.Layout(gtx, ui.Space(3.5), th.MutedForeground) }),
-			ui.Gap(1.5),
-			layout.Rigid(th.Text(ui.TextSM, i18n.T("settings.themesPage.inUse")).Muted().Layout),
-		)
+		return labeledGlyph(gtx, i18n.T("settings.themesPage.inUse"), func(gtx C) D { return icCatalogCheck.Layout(gtx, ui.Space(3.5), th.MutedForeground) })
 	}
 	var main layout.Widget
 	if _, ok := themeByID(v.themes, look.def.ID); ok {

@@ -35,7 +35,8 @@ func TestServicesStoreReadsWhatTheEventSent(t *testing.T) {
 
 func TestTallyCountsUpAndFailed(t *testing.T) {
 	got := tallyServices([]backend.Service{svc("a", "p", api.ServiceRunning), svc("b", "p", api.ServiceFailed), svc("c", "p", api.ServiceStopped)})
-	if got != (servicesTally{up: 1, total: 3, failed: true}) {
+	// failed counts them, the head saying "1 failed" (contract changed: a bool)
+	if got != (servicesTally{up: 1, total: 3, failed: 1}) {
 		t.Errorf("tally = %+v", got)
 	}
 	if op := allServicesOp(servicesTally{up: 3, total: 3}); op != serviceStopAll {

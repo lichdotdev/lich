@@ -14,7 +14,7 @@
     "waiting": {
       "other": "{count}개 대기 중"
     },
-    "ended": "{time} 전 완료"
+    "ended": "{time} 전"
   },
   "view": {
     "failed": "채팅 요청이 실패했습니다",
@@ -73,7 +73,8 @@
       }
     },
     "latest": "최신으로",
-    "newActivity": "새 활동"
+    "newActivity": "새 활동",
+    "edited": "편집함"
   },
   "done": {
     "done": "완료",
@@ -85,7 +86,7 @@
     "placeholder": "이 프로젝트에 대해 {provider}에게 물어보세요",
     "send": "보내기",
     "stop": "중지",
-    "shell": "셸 모드 · Enter로 명령 실행"
+    "shell": "셸 모드"
   },
   "option": {
     "model": "모델",
@@ -97,8 +98,7 @@
   "permit": {
     "allowOnce": "허용",
     "allowAlways": "항상 허용",
-    "rejectOnce": "거부",
-    "escDenies": "거부"
+    "rejectOnce": "거부"
   },
   "choice": {
     "manual": "수동",
@@ -126,7 +126,6 @@
     "default": "기본값"
   },
   "question": {
-    "freeHint": "Enter 보내기 · Esc 거절",
     "marked": {
       "other": "{count}개 선택"
     },
@@ -164,7 +163,7 @@
     "sendNow": "지금 보내기",
     "count": {"other": "대기 중 {count}개"},
     "drop": "대기열에서 빼기",
-    "edit": "↑ 대기열 편집"
+    "edit": "편집"
   },
   "search": {
     "label": "보낸 메시지 검색",
@@ -178,14 +177,10 @@
   "tools": {
     "loading": "불러오는 중…",
     "keys": {
-      "move": "이동",
-      "open": "열기",
-      "close": "닫기"
+      "close": "닫기",
+      "back": "뒤로"
     },
     "mcpTitle": "MCP 서버",
-    "serverCount": {
-      "other": "서버 {count}개"
-    },
     "toolCount": {
       "other": "도구 {count}개"
     },
@@ -194,7 +189,9 @@
       "project": "프로젝트",
       "local": "로컬",
       "claudeai": "claude.ai",
-      "misc": "기타"
+      "misc": "기타",
+      "running": "실행 중",
+      "ended": "종료됨"
     },
     "status": {
       "connected": "연결됨",
@@ -246,10 +243,31 @@
       "policy": "정책으로 잠금",
       "any": "잠김"
     },
-    "pluginSkills": "플러그인 스킬은 /plugin에서 관리합니다."
+    "pluginSkills": "플러그인 스킬은 /plugin에서 관리합니다.",
+    "running": {
+      "other": "{count}개 실행 중"
+    },
+    "skillsOn": "{on}개 켜짐 · 전체 {count}개",
+    "statusCount": {
+      "connected": {
+        "other": "{count}개 연결됨"
+      },
+      "pending": {
+        "other": "{count}개 연결 중"
+      },
+      "failed": {
+        "other": "{count}개 실패"
+      },
+      "needsAuth": {
+        "other": "{count}개 로그인 필요"
+      },
+      "disabled": {
+        "other": "{count}개 꺼짐"
+      }
+    }
   },
   "shells": {
-    "move": "Ctrl+B로 백그라운드에서 실행",
+    "move": "백그라운드로",
     "count": {
       "other": "셸 {count}개"
     },
@@ -263,15 +281,14 @@
     "noOutput": "아직 출력이 없습니다",
     "stop": "중지",
     "state": {
-      "completed": "완료",
       "failed": "실패",
       "stopped": "중지됨"
-    }
+    },
+    "exit": "종료 코드 {code}"
   },
   "workflow": {
     "count": "{name} {done}/{total}",
     "progress": "{done}/{total}",
-    "failed": "실패",
     "agents": {
       "other": "에이전트 {count}개"
     },
@@ -327,7 +344,6 @@
     "none": "{provider}는 lich에 플러그인을 알려 주지 않습니다. TUI로 바꾸고 {provider}의 /plugin을 사용하세요.",
     "noneFound": "맞는 플러그인이 없습니다.",
     "noneInstalled": "여기에 설치된 플러그인이 없습니다.",
-    "updateChip": "업데이트",
     "scope": {
       "user": "사용자",
       "project": "프로젝트",
@@ -382,7 +398,11 @@
     "sourceHint": "owner/repo, URL 또는 경로",
     "restart": "업데이트했습니다. 채팅을 다시 시작하면 새 버전으로 실행됩니다.",
     "current": "이미 최신 버전입니다.",
-    "fixed": "이 플러그인은 lich가 직접 설치하고 업데이트합니다."
+    "fixed": "이 플러그인은 lich가 직접 설치하고 업데이트합니다.",
+    "updateCount": {
+      "other": "업데이트 {count}개"
+    },
+    "versionTo": "{version} → {latest}"
   },
   "permissions": {
     "title": "권한",
@@ -465,6 +485,9 @@
       "off": "훅이 꺼져 있어 (disableAllHooks) 이 중 어느 것도 실행되지 않습니다.",
       "safeMode": "안전 모드라서 이 훅들은 실행되지 않습니다.",
       "bareMode": "베어 모드라서 이 훅들은 실행되지 않습니다."
+    },
+    "needTrust": {
+      "other": "{count}개 신뢰 필요"
     }
   },
   "memory": {
@@ -499,7 +522,6 @@
   "notification": {
     "from": "{label}에서 보냄",
     "finished": "{label} 완료",
-    "answered": "답변함",
     "failed": "{label} 실패",
     "stopped": "{label} 닫힘",
     "stoppedBy": "{label}이(가) 닫음",

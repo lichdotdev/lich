@@ -99,7 +99,7 @@ func TestTheModelChipOpensOnePanelWithBothColumns(t *testing.T) {
 	_, r, _ := openPicker(t, manyModels())
 	isMac := runtime.GOOS == "darwin"
 	for _, label := range []string{
-		i18n.T("chat.model.search", i18n.Args{"provider": "claude"}), i18n.T("chat.option.effort"),
+		i18n.T("chat.model.search", i18n.Args{"provider": "claude"}), strings.ToUpper(i18n.T("chat.option.effort")),
 		"Model 1" + "", "Model 2", "Low", "High",
 		formatCombo(combo{Mod: true, Key: "1"}, isMac), formatCombo(combo{Mod: true, Key: "4"}, isMac),
 		i18n.T("chat.model.showMore"), i18n.T("chat.model.default"),
@@ -124,7 +124,7 @@ func TestChoosingAModelKeepsThePanelOpenForTheEffort(t *testing.T) {
 		t.Errorf("set %s", body)
 	}
 	r.settle(t)
-	if !r.shows(i18n.T("chat.option.effort")) {
+	if !r.shows(strings.ToUpper(i18n.T("chat.option.effort"))) {
 		t.Error("the panel closed on a model")
 	}
 }
@@ -137,7 +137,7 @@ func TestChoosingAnEffortSetsItAndClosesThePanel(t *testing.T) {
 		t.Errorf("set %s", body)
 	}
 	r.settle(t)
-	if r.shows(i18n.T("chat.option.effort")) {
+	if r.shows(strings.ToUpper(i18n.T("chat.option.effort"))) {
 		t.Error("the panel stayed open after an effort")
 	}
 }
@@ -185,7 +185,7 @@ func TestArrowsAndEnterWalkAndTakeAModelAndEscapeCloses(t *testing.T) {
 	r.settle(t)
 	r.press(key.NameEscape)
 	r.settle(t)
-	if r.shows(i18n.T("chat.option.effort")) {
+	if r.shows(strings.ToUpper(i18n.T("chat.option.effort"))) {
 		t.Error("Escape left the panel open")
 	}
 }
@@ -196,7 +196,7 @@ func TestAProviderWithNoEffortHasOneColumnAndNoEffortProviderNoSearch(t *testing
 	r.settle(t)
 	r.clickLabel(t, "Model 2")
 	r.settle(t)
-	if r.shows(i18n.T("chat.option.effort")) || !r.shows("Model 3") {
+	if r.shows(strings.ToUpper(i18n.T("chat.option.effort"))) || !r.shows("Model 3") {
 		t.Errorf("a model-only panel:\n%s", r.drawn())
 	}
 	u2, r2, _ := chatFrames(t, api.ViewChat)
@@ -268,7 +268,7 @@ func TestAPanelOfSixtyModelsIsCappedScrollsAndStandsAboveItsChip(t *testing.T) {
 	if !r.shows("Model 60") {
 		t.Errorf("the list did not scroll to its end:\n%s", r.drawn())
 	}
-	if labelTop(t, r, search) != searchAt || !r.shows(i18n.T("chat.option.effort")) {
+	if labelTop(t, r, search) != searchAt || !r.shows(strings.ToUpper(i18n.T("chat.option.effort"))) {
 		t.Error("the search or the effort moved with the list")
 	}
 	// The chip is not under the panel: a press on it reaches the backdrop and
@@ -276,7 +276,7 @@ func TestAPanelOfSixtyModelsIsCappedScrollsAndStandsAboveItsChip(t *testing.T) {
 	r.queueClick(f32.Pt(236, float32(chipTop(t, r, chip)+16))) // the editor takes the focus back a frame later
 	r.frame()
 	r.settle(t)
-	if r.shows(i18n.T("chat.option.effort")) {
+	if r.shows(strings.ToUpper(i18n.T("chat.option.effort"))) {
 		t.Error("a press on the chip did not close the panel: it was under it")
 	}
 }

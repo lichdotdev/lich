@@ -14,11 +14,13 @@ import (
 // mcpDetail is one server: its state, sign-in, version, where it runs and is
 // configured and its tools, then what can be done to it. Escape or Back
 // goes back to the list.
-func (u *window) mcpDetail(gtx C, th *ui.Theme, t *chatTools, s api.ChatMCPServer, offered []string) D {
-	acts := mcpActions(s, offered)
+func (u *window) mcpDetail(gtx C, th *ui.Theme, t *chatTools, s api.ChatMCPServer) D {
 	head := func(gtx C) D {
-		_, _, state := mcpStatus(th, s)
-		return toolsBackHead(gtx, th, &t.back, i18n.T("chat.tools.back"), th.Text(ui.TextSM, s.Name).Weight(font.SemiBold), state, nil)
+		_, ink, state := mcpStatus(th, s)
+		if s.Status == api.MCPConnected || s.Status == api.MCPDisabled {
+			ink = th.MutedForeground
+		}
+		return toolsBackHeadIn(gtx, th, &t.back, i18n.T("chat.tools.back"), th.Text(ui.TextSM, s.Name).Weight(font.SemiBold), state, ink, nil)
 	}
 	lines := mcpFacts(th, s)
 	if t.showTools {
@@ -26,7 +28,7 @@ func (u *window) mcpDetail(gtx C, th *ui.Theme, t *chatTools, s api.ChatMCPServe
 			lines = append(lines, mcpToolLine(th, tool))
 		}
 	}
-	return t.scrolled(gtx, th, head, lines, func(gtx C) D { return mcpButtons(gtx, th, t, s, acts) })
+	return t.scrolled(gtx, th, head, lines, nil)
 }
 
 // mcpActions is what the panel offers on s, of what its provider takes:
@@ -58,45 +60,77 @@ func mcpActLabel(a string) string {
 	return i18n.T("chat.tools.act.disable")
 }
 
-func mcpButtons(gtx C, th *ui.Theme, t *chatTools, s api.ChatMCPServer, acts []string) D {
-	var row []layout.FlexChild
-	button := func(c *ui.Clickable, label string) {
-		if len(row) > 0 {
-			row = append(row, ui.Gap(1.5))
-		}
+// mcpFoot is the actions of the server the detail shows, for the keys'
+// line: View tools and turning it off as ghosts, then the rest, the one that
+// mends its state filled at the end.
+func (t *chatTools) mcpFoot(th *ui.Theme, l api.ChatMCPList) layout.Widget {
+	i := slices.IndexFunc(l.Servers, func(s api.ChatMCPServer) bool { return s.Name == t.detail })
+	if t.detail == "" || i < 0 {
+		return nil
+	}
+	s := l.Servers[i]
+	var ghosts, rest []layout.FlexChild
+	button := func(c *ui.Clickable, label string, v ui.Variant) layout.FlexChild {
 		b := th.Button(c, label)
-		b.Variant, b.Size = ui.VariantSecondary, ui.SizeSM
-		row = append(row, layout.Rigid(b.Layout))
+		b.Variant, b.Size = v, ui.SizeSM
+		return layout.Rigid(b.Layout)
 	}
 	if len(s.Tools) > 0 {
 		label := i18n.T("chat.tools.act.viewTools")
 		if t.showTools {
 			label = i18n.T("chat.tools.act.hideTools")
 		}
-		button(&t.toolsBtn, label)
+		ghosts = append(ghosts, button(&t.toolsBtn, label, ui.VariantGhost))
 	}
-	for _, a := range acts {
-		button(t.act(a), mcpActLabel(a))
+	mends := mcpMends(s)
+	for _, a := range mcpActions(s, l.Actions) {
+		switch {
+		case a == api.MCPDisable:
+			ghosts = append(ghosts, button(t.act(a), mcpActLabel(a), ui.VariantGhost))
+		case a == mends:
+		default:
+			rest = append(rest, button(t.act(a), mcpActLabel(a), ui.VariantSecondary))
+		}
 	}
-	if len(row) == 0 {
-		return D{}
+	if slices.Contains(mcpActions(s, l.Actions), mends) {
+		rest = append(rest, button(t.act(mends), mcpActLabel(mends), ui.VariantDefault))
 	}
-	return layout.UniformInset(ui.Space(1.5)).Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
-	})
+	return footButtons(append(ghosts, rest...))
+}
+
+// mcpMends is the action that mends s's state: signing in where it needs
+// one, reconnecting a failure, turning on one that is off.
+func mcpMends(s api.ChatMCPServer) string {
+	switch {
+	case s.Status == api.MCPNeedsAuth || s.Auth == api.MCPNotSignedIn:
+		return api.MCPSignIn
+	case s.Status == api.MCPFailed:
+		return api.MCPReconnect
+	case s.Status == api.MCPDisabled:
+		return api.MCPEnable
+	}
+	return ""
+}
+
+// footButtons is a row of buttons for the keys' line, Space(1.5) apart.
+func footButtons(buttons []layout.FlexChild) layout.Widget {
+	if len(buttons) == 0 {
+		return nil
+	}
+	var row []layout.FlexChild
+	for i, b := range buttons {
+		if i > 0 {
+			row = append(row, ui.Gap(1.5))
+		}
+		row = append(row, b)
+	}
+	return func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...) }
 }
 
 // mcpFacts is a server's facts, a label and its value a line, the error
 // under them.
 func mcpFacts(th *ui.Theme, s api.ChatMCPServer) []layout.Widget {
-	ic, ink, state := mcpStatus(th, s)
-	lines := []layout.Widget{mcpFact(th, i18n.T("chat.tools.fact.status"), func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return ic.Layout(gtx, toolsGlyph, ink) }),
-			ui.Gap(1.5),
-			layout.Rigid(th.Text(ui.TextSM, state).Layout),
-		)
-	})}
+	var lines []layout.Widget
 	text := func(label, value string, mono bool) {
 		if value == "" {
 			return

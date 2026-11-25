@@ -285,10 +285,13 @@ func (c *commentComposer) box(th *ui.Theme) layout.Widget {
 			label, prompt = i18n.T("diff.reviewSlots.addToReview"), i18n.T("diff.reviewSlots.reviewPlaceholder")
 		}
 		add := th.Button(&c.add, label)
-		add.Size, add.Disabled = ui.SizeSM, strings.TrimSpace(c.editor.Text()) == ""
+		add.Size, add.Disabled, add.Keys = ui.SizeSM, strings.TrimSpace(c.editor.Text()) == "", "↵"
+		if c.review {
+			add.Keys = ctrlEnterCap()
+		}
 		cancel := th.Button(&c.cancel, i18n.T("common.action.cancel"))
 		cancel.Size, cancel.Variant = ui.SizeSM, ui.VariantGhost
-		buttons := []layout.FlexChild{layout.Rigid(add.Layout), ui.Gap(2), layout.Rigid(cancel.Layout)}
+		buttons := []layout.FlexChild{layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }), layout.Rigid(cancel.Layout), ui.Gap(2), layout.Rigid(add.Layout)}
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
 				gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(ui.Space(64)))
@@ -343,7 +346,6 @@ func (b *commentBatch) layout(gtx C, th *ui.Theme, store *commentStore, target s
 	}
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Separator),
 		layout.Rigid(func(gtx C) D {
 			gtx.Constraints.Max.Y = gtx.Dp(batchListMax)
 			return layout.UniformInset(ui.Space(1)).Layout(gtx, func(gtx C) D { return b.rows(gtx, th, comments) })

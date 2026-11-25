@@ -114,3 +114,30 @@ func TestOutputTailIsPlainText(t *testing.T) {
 		t.Errorf("a read from the start lost its first line: %q", got)
 	}
 }
+
+// Claude Code 2.1.332 names a failed shell's exit code only in its
+// task_notification's summary, in prose.
+func TestClaudeShellFailureKeepsItsExitCode(t *testing.T) {
+	var s claudeShells
+	cmd := func(string) api.ChatToolCall { return api.ChatToolCall{Name: "Bash", Title: "sleep 2; exit 3"} }
+	now := time.UnixMilli(1000)
+	s.task("task_started", []byte(`{"task_id":"bdw6ty3rq","tool_use_id":"toolu_011wRoDkNsDx8jKjJByjZuqw","description":"Run sleep 2 then exit 3 in background","is_backgrounded":true,"task_type":"local_bash"}`), cmd, now)
+	s.task("task_updated", []byte(`{"task_id":"bdw6ty3rq","patch":{"status":"failed","end_time":1795628217783}}`), cmd, now)
+	if !s.task("task_notification", []byte(`{"task_id":"bdw6ty3rq","tool_use_id":"toolu_011wRoDkNsDx8jKjJByjZuqw","status":"failed","output_file":"/tmp/x/bdw6ty3rq.output","summary":"Background command \"Run sleep 2 then exit 3 in background\" failed with exit code 3"}`), cmd, now) {
+		t.Error("the exit code was not shown")
+	}
+	got := s.shown()
+	if got[0].State != api.ShellFailed || got[0].ExitCode == nil || *got[0].ExitCode != 3 {
+		t.Errorf("shown = %+v", got[0])
+	}
+}
+
+func TestClaudeShellWithNoExitCodeInItsSummaryHasNone(t *testing.T) {
+	var s claudeShells
+	cmd := func(string) api.ChatToolCall { return api.ChatToolCall{Name: "Bash", Title: "make"} }
+	s.task("task_started", []byte(`{"task_id":"b1","task_type":"local_bash","is_backgrounded":true}`), cmd, time.Now())
+	s.task("task_notification", []byte(`{"task_id":"b1","status":"completed","summary":"Background command \"make\" completed"}`), cmd, time.Now())
+	if got := s.shown(); got[0].ExitCode != nil {
+		t.Errorf("exit code = %d, want none", *got[0].ExitCode)
+	}
+}

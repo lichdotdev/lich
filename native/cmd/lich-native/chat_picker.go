@@ -1,6 +1,7 @@
 package main
 
 import (
+	"gioui.org/font"
 	"image"
 	"runtime"
 	"strings"
@@ -185,8 +186,8 @@ func pickerColumns(gtx C, th *ui.Theme, columns []layout.Widget, hasModel bool) 
 	x := 0
 	for i, c := range cols {
 		if i > 0 {
-			paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Min: image.Pt(x, 0), Max: image.Pt(x+gtx.Dp(1), h)}.Op())
-			x += gtx.Dp(1)
+			// the columns are set apart by space, as a panel's parts are
+			x += gtx.Dp(ui.Space(1))
 		}
 		t := op.Offset(image.Pt(x, 0)).Push(gtx.Ops)
 		c.call.Add(gtx.Ops)
@@ -242,7 +243,7 @@ func (u *window) modelColumn(gtx C, th *ui.Theme, pk *modelPicker, sv sessionVie
 		click := &pk.rows[pos]
 		current := c.ID == model.Current
 		items = append(items, func(gtx C) D {
-			return pickerRow(gtx, th, click, pos == pk.cursor, func(gtx C, th *ui.Theme) D {
+			return toolsPick(gtx, th, click, pos == pk.cursor, func(gtx C, th *ui.Theme) D {
 				row := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, choiceLabel(c)).Layout)}
 				if pickerDefault(c) {
 					row = append(row, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, i18n.T("chat.model.default")).Muted().Layout))
@@ -284,7 +285,6 @@ func (u *window) modelColumn(gtx C, th *ui.Theme, pk *modelPicker, sv sessionVie
 			in.Bare, in.Height = true, pickerRowH
 			return in.Layout(gtx)
 		}),
-		layout.Rigid(th.Separator),
 		ui.VGap(1),
 		layout.Rigid(func(gtx C) D {
 			return th.ThinScrollArea(&pk.list).Layout(gtx, len(items), func(gtx C, i int) D { return items[i](gtx) })
@@ -308,14 +308,14 @@ func (u *window) effortColumn(gtx C, th *ui.Theme, pk *modelPicker, sv sessionVi
 	head := func(gtx C) D {
 		gtx.Constraints.Min.Y = gtx.Dp(pickerRowH)
 		return layout.Inset{Left: ui.Space(2), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-			row := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, optionTitle(effort)).Weight(500).Layout), layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} })}
+			row := []layout.FlexChild{layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(optionTitle(effort))).Muted().Weight(font.SemiBold).Leading(text2XSLeading).Layout), layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} })}
 			if model.Current != "" {
 				row = append(row, layout.Rigid(th.Text(ui.TextXS, choiceLabel(current)).Muted().Layout))
 			}
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 		})
 	}
-	children := []layout.FlexChild{layout.Rigid(head), layout.Rigid(th.Separator), ui.VGap(1)}
+	children := []layout.FlexChild{layout.Rigid(head), ui.VGap(1)}
 	for i, c := range effort.Choices {
 		click := &pk.efforts[i]
 		lit, now := pickerLit(i, len(effort.Choices)), c.ID == effort.Current

@@ -2,14 +2,11 @@ package main
 
 import (
 	"image"
-	"image/color"
 	"strings"
 
 	"gioui.org/font"
 	"gioui.org/layout"
 	"gioui.org/op"
-	"gioui.org/op/clip"
-	"gioui.org/op/paint"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/i18n"
@@ -17,9 +14,8 @@ import (
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
-// The row's opacities: a global-only row seen from a project dims whole, and
-// the search's flash is the wait tone at 14%. A row following Global keeps its
-// control at full strength: it can be changed, and "Follows Global" says why.
+// The row's opacities: a part of a row that cannot be used now dims to half,
+// and the search's flash is the wait tone at 14%.
 const (
 	rowOffOpacity = 0.5
 	rowLitFill    = 0.14
@@ -45,7 +41,10 @@ type settingRow struct {
 	overriddenIn       []string
 	globalValue        string        // rowChanged's "Global: <value>"
 	reset              *ui.Clickable // rowChanged's Use Global
-	lit                float32       // the search's flash, 0 to 1
+	// from names where an unchanged value comes from when it is not Global:
+	// the profile a project's chats are born in.
+	from string
+	lit  float32 // the search's flash, 0 to 1
 	// lead is drawn before the title when set: a provider's mark.
 	lead layout.Widget
 	// detail is a line under the description saying what the control's
@@ -90,9 +89,6 @@ func (r settingRow) frame(gtx C, th *ui.Theme, first bool, content func(gtx C, t
 	macro := op.Record(gtx.Ops)
 	d := content(gtx, th.On(bg))
 	call := macro.Stop()
-	if !first {
-		paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Rect{Max: image.Pt(d.Size.X, gtx.Dp(1))}.Op())
-	}
 	if r.lit > 0 {
 		lit := gtx
 		lit.Constraints = layout.Exact(d.Size)
@@ -105,15 +101,11 @@ func (r settingRow) frame(gtx C, th *ui.Theme, first bool, content func(gtx C, t
 // content puts the control beside the text, or under it when the control
 // would leave the text less than rowTextMinW, as layoutBlock does.
 func (r settingRow) content(gtx C, th *ui.Theme, control func(gtx C, th *ui.Theme) D) D {
-	text := th
-	if r.kind == rowGlobalOnly {
-		text = fadedTheme(th, rowOffOpacity)
-	}
 	return layout.Inset{Left: rowPadX, Right: rowPadX, Top: rowPadY, Bottom: rowPadY}.Layout(gtx, func(gtx C) D {
 		loose := gtx
 		loose.Constraints.Min = image.Point{}
-		drawn := record(loose, func(gtx C) D { return r.control(gtx, th, text, control) })
-		textW := func(gtx C) D { return r.text(gtx, text) }
+		drawn := record(loose, func(gtx C) D { return control(gtx, th) })
+		textW := func(gtx C) D { return r.text(gtx, th) }
 		if gtx.Constraints.Max.X-drawn.size.X-gtx.Dp(rowGap) < gtx.Dp(rowTextMinW) {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Rigid(textW), ui.VGap(3), layout.Rigid(drawn.layout))
 		}
@@ -123,14 +115,6 @@ func (r settingRow) content(gtx C, th *ui.Theme, control func(gtx C, th *ui.Them
 			layout.Rigid(drawn.layout),
 		)
 	})
-}
-
-// control is the row's control, or the Global only pill in its place.
-func (r settingRow) control(gtx C, th, text *ui.Theme, control func(gtx C, th *ui.Theme) D) D {
-	if r.kind == rowGlobalOnly {
-		return text.Pill(text.Text(ui.TextXS, i18n.T("settings.settingsRow.globalOnly")).Muted().Layout, ui.Space(2), ui.Space(2)).Layout(gtx)
-	}
-	return control(gtx, th)
 }
 
 // text is the title, the description and the scope line under them.
@@ -181,14 +165,22 @@ func (r settingRow) note(th *ui.Theme) layout.Widget {
 			layout.Rigid(th.Text(rowNoteSize, strings.Join(r.overriddenIn, ", ")).In(th.ToneWait).Weight(font.SemiBold).Layout),
 		)
 	case rowFollows:
+		if r.from != "" {
+			return th.Text(rowNoteSize, i18n.T("settings.settingsRow.followsFrom", i18n.Args{"name": r.from, "value": r.globalValue})).Muted().Layout
+		}
 		return th.Text(rowNoteSize, i18n.T("settings.settingsRow.followsGlobal")).Muted().Layout
 	case rowProjectOnly:
 		return th.Text(rowNoteSize, i18n.T("settings.settingsRow.projectOnly")).Muted().Layout
 	case rowChanged:
+		value, reset := i18n.T("settings.settingsRow.globalValue", i18n.Args{"value": r.globalValue}), i18n.T("settings.settingsRow.useGlobal")
+		if r.from != "" {
+			value = i18n.T("settings.settingsRow.fromValue", i18n.Args{"name": r.from, "value": r.globalValue})
+			reset = i18n.T("settings.settingsRow.useFrom", i18n.Args{"name": r.from})
+		}
 		return line(
-			layout.Rigid(th.Text(rowNoteSize, i18n.T("settings.settingsRow.globalValue", i18n.Args{"value": r.globalValue})).In(th.ToneWait).Layout),
+			layout.Rigid(th.Text(rowNoteSize, value).In(th.ToneWait).Layout),
 			ui.Gap(2.5),
-			layout.Rigid(func(gtx C) D { return resetButton(gtx, th, r.reset) }),
+			layout.Rigid(func(gtx C) D { return resetButton(gtx, th, r.reset, reset) }),
 		)
 	}
 	return nil
@@ -196,7 +188,7 @@ func (r settingRow) note(th *ui.Theme) layout.Widget {
 
 // resetButton is the mockup's Use Global: h-22 px-7 rounded, an inset
 // border, the foreground's text.
-func resetButton(gtx C, th *ui.Theme, click *ui.Clickable) D {
+func resetButton(gtx C, th *ui.Theme, click *ui.Clickable, label string) D {
 	return click.Layout(gtx, func(gtx C) D {
 		macro := op.Record(gtx.Ops)
 		gtx.Constraints.Min = image.Point{}
@@ -205,7 +197,7 @@ func resetButton(gtx C, th *ui.Theme, click *ui.Clickable) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return icRowReset.Layout(gtx, ui.Space(3), th.Foreground) }),
 				ui.Gap(1),
-				layout.Rigid(th.Text(rowNoteSize, i18n.T("settings.settingsRow.useGlobal")).Layout),
+				layout.Rigid(th.Text(rowNoteSize, label).Layout),
 			)
 		})
 		call := macro.Stop()
@@ -218,15 +210,4 @@ func resetButton(gtx C, th *ui.Theme, click *ui.Clickable) D {
 		call.Add(gtx.Ops)
 		return d
 	})
-}
-
-// fadedTheme is th with every ink token at opacity over its surface, the
-// opacity-* of a dimmed row composited the way a browser would.
-func fadedTheme(th *ui.Theme, opacity float32) *ui.Theme {
-	fade := func(c color.NRGBA) color.NRGBA { return ui.Over(th.Surface, ui.Alpha(ui.Over(th.Surface, c), opacity)) }
-	f := *th
-	f.Foreground, f.MutedForeground = fade(th.Foreground), fade(th.MutedForeground)
-	f.Primary, f.Palette.Input, f.Border = fade(th.Primary), fade(th.Palette.Input), fade(th.Border)
-	f.Accent, f.Background = fade(th.Accent), fade(th.Background)
-	return &f
 }

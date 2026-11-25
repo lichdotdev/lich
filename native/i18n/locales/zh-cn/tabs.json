@@ -1,7 +1,13 @@
 {
   "notificationsButton": {
     "title": "通知",
-    "caughtUp": "没有新通知"
+    "caughtUp": "没有新通知",
+    "waiting": {
+      "other": "{count} 个等待中"
+    },
+    "done": {
+      "other": "{count} 个已完成"
+    }
   },
   "openProjectMenu": {
     "open": "打开项目",

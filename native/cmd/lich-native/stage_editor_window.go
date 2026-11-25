@@ -281,7 +281,8 @@ func (u *window) editorIsland(gtx C, v stageView) error {
 	if id := u.model.referenceTarget(v.editor); id != "" {
 		inject = u.injector(id)
 	}
-	return f.layout(gtx, th, editorEnv{root: &u.root, code: code, inject: inject, comments: &u.comments, notify: func(t ui.Toast) { u.toaster.Show(t) }, vim: u.vimHost()})
+	return f.layout(gtx, th, editorEnv{root: &u.root, code: code, inject: inject, comments: &u.comments, notify: func(t ui.Toast) { u.toaster.Show(t) }, vim: u.vimHost(),
+		relative: u.settings.editor.prefs.relative})
 }
 
 // vimHost is the Neovim behind the editors, nil while Vim is off.

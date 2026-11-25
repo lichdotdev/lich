@@ -343,11 +343,7 @@ func catalogMeta(gtx C, th *ui.Theme, cat *backend.ExtensionCatalog, e extension
 	}
 	if installed {
 		add(func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Rigid(func(gtx C) D { return icCatalogCheck.Layout(gtx, ui.Space(3), th.TonePass) }),
-				ui.Gap(1),
-				layout.Rigid(th.Text(ui.TextXS, i18n.T("settings.extensionsSettings.catalog.installed")).Muted().Layout),
-			)
+			return labeledGlyph(gtx, i18n.T("settings.extensionsSettings.catalog.installed"), func(gtx C) D { return icCatalogCheck.Layout(gtx, ui.Space(3), th.TonePass) })
 		})
 	}
 	if _, ok := e.Builds[cat.Platform]; !ok {

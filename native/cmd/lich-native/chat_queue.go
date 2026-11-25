@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"runtime"
 	"slices"
 
 	"gioui.org/io/event"
@@ -26,7 +25,6 @@ import (
 var (
 	icQueued    = icons.Lucide("clock")
 	icQueueDrop = icons.Lucide("x")
-	icQueueSend = icons.Lucide("arrow-up")
 )
 
 // chatQueueJoin is what the queued messages are joined with into the one the
@@ -251,20 +249,20 @@ func (u *window) chatQueue(gtx C, th *ui.Theme, p *chatPane, id string) D {
 }
 
 // chatQueueHead is the queue's head line: the clock glyph and the count muted,
-// and at its end Send now with the chord that does the same.
+// ↑'s cap with what it does, and at its end Send now wearing its chord.
 func (u *window) chatQueueHead(gtx C, th *ui.Theme, p *chatPane, n int) D {
 	gtx.Constraints.Min.X = gtx.Constraints.Max.X
 	send := th.Button(&p.queueSend, i18n.T("chat.queue.sendNow"))
-	send.Icon, send.Variant, send.Size = icQueueSend, ui.VariantGhost, ui.SizeXS
-	chord := formatCombo(combo{Mod: true, Key: "Enter"}, runtime.GOOS == "darwin")
+	send.Variant, send.Size = ui.VariantGhost, ui.SizeXS
+	send.Keys = ctrlEnterCap()
 	return layout.Inset{Left: ui.Space(2), Right: ui.Space(1), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return icQueued.Layout(gtx, chatCrumbGlyph, th.MutedForeground) }),
 			ui.Gap(2),
 			layout.Flexed(1, th.Text(ui.TextXS, i18n.T("chat.queue.count", i18n.Args{"count": n})).Muted().Layout),
+			layout.Rigid(th.KeyHint("↑", i18n.T("chat.queue.edit")).Layout),
+			ui.Gap(3),
 			layout.Rigid(send.Layout),
-			ui.Gap(1),
-			layout.Rigid(th.KeyCap(chord).Layout),
 		)
 	})
 }

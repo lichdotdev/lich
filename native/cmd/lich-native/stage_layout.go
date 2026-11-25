@@ -315,16 +315,17 @@ func zoomChip(gtx C, th *ui.Theme, v stageView) D {
 			waiting++
 		}
 	}
-	text := i18n.T("layouts.pane.hidden", i18n.Args{"count": hidden})
+	row := []layout.FlexChild{
+		layout.Rigid(func(gtx C) D { return icPaneUnzoom.Layout(gtx, 12, th.MutedForeground) }),
+		ui.Gap(1.5),
+		layout.Rigid(th.Text(ui.TextXS, i18n.T("layouts.pane.hidden", i18n.Args{"count": hidden})).Muted().Layout),
+	}
 	if waiting > 0 {
-		text = i18n.T("layouts.pane.hiddenWaiting", i18n.Args{"count": hidden, "waiting": waiting})
+		row = append(row, layout.Rigid(th.Text(ui.TextXS, " · ").Muted().Layout),
+			layout.Rigid(th.Text(ui.TextXS, i18n.T("layouts.pane.waiting", i18n.Args{"count": waiting})).In(th.ToneWait).Layout))
 	}
 	return th.Pill(func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(func(gtx C) D { return icPaneUnzoom.Layout(gtx, 12, th.MutedForeground) }),
-			ui.Gap(1.5),
-			layout.Rigid(th.Text(ui.TextXS, text).Muted().Layout),
-		)
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 	}, ui.Space(2), ui.Space(2)).Layout(gtx)
 }
 

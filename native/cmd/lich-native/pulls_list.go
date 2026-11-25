@@ -64,7 +64,6 @@ func (p *pullsScreen) indexLayout(gtx C, th *ui.Theme, list pullsRead[[]backend.
 	counts := filterCounts(list.val, p.query.Text())
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return p.indexHeader(gtx, th, counts) }),
-		layout.Rigid(th.Separator),
 		layout.Flexed(1, func(gtx C) D {
 			// Read after the filter tabs took their click.
 			return p.tour.Anchor(gtx, tourPullsList, func(gtx C) D { return p.rowList(gtx, th, list, p.visible(list.val)) })
@@ -216,7 +215,6 @@ func (p *pullsScreen) row(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Ti
 						})
 					})
 			}),
-			layout.Rigid(th.Separator),
 		)
 	})
 }
@@ -274,11 +272,11 @@ func rowSide(gtx C, th *ui.Theme, pr backend.PRSummary, checkout string) D {
 func rowVerdict(gtx C, th *ui.Theme, pr backend.PRSummary) D {
 	switch {
 	case pr.ReviewDecision == "APPROVED":
-		return th.Text(ui.TextXS, i18n.T("pulls.pullsStats.approved")).In(th.TonePass).Layout(gtx)
+		return pullState(gtx, th, icPullCheck, i18n.T("pulls.pullsStats.approved"), th.TonePass)
 	case waitsOnReviewer(pr):
-		return th.MetaGlyph(icPullCheck2, i18n.T("pulls.pullsStats.changesRequested"), th.ToneWait).Layout(gtx)
+		return pullState(gtx, th, icPullCheck2, i18n.T("pulls.pullsStats.changesRequested"), th.ToneWait)
 	case pr.ReviewDecision == "CHANGES_REQUESTED":
-		return th.Text(ui.TextXS, i18n.T("pulls.pullsStats.changesRequested")).In(th.Destructive).Layout(gtx)
+		return pullState(gtx, th, icPullX, i18n.T("pulls.pullsStats.changesRequested"), th.Destructive)
 	}
 	return D{}
 }
@@ -308,7 +306,10 @@ func rowMeta(gtx C, th *ui.Theme, pr backend.PRSummary, now time.Time) D {
 		add(th.Text(ui.TextXS, pr.HeadRefName).Mono().Muted().Layout)
 	}
 	if pr.IsDraft {
-		add(th.OutlineBadge(i18n.T("pulls.pullsList.draft")).Layout)
+		// muted: amber on a row is the verdict waiting on its reviewer
+		add(func(gtx C) D {
+			return pullState(gtx, th, icPullDashed, i18n.T("pulls.pullsList.draft"), th.MutedForeground)
+		})
 	}
 	if pr.IsCrossRepository {
 		add(th.Text(ui.TextXS, i18n.T("pulls.pullsList.fork")).Muted().Layout)
@@ -367,7 +368,7 @@ func listSkeleton(gtx C, th *ui.Theme) D {
 	var rows []layout.FlexChild
 	for i := range count {
 		title := titles[i%len(titles)]
-		rows = append(rows, layout.Rigid(func(gtx C) D { return skeletonRow(gtx, th, title) }), layout.Rigid(th.Separator))
+		rows = append(rows, layout.Rigid(func(gtx C) D { return skeletonRow(gtx, th, title) }))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, rows...)
 }

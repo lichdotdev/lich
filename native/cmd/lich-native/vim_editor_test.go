@@ -11,11 +11,15 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/font/gofont"
 	"gioui.org/io/input"
 	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op"
+	"gioui.org/text"
 	"gioui.org/unit"
+
+	"github.com/lichdotdev/godemirror"
 	"github.com/neovim/go-client/nvim"
 
 	"github.com/lichdotdev/lich/native/ui"
@@ -471,4 +475,82 @@ func TestVimNamesTheLanguageServerThatFailedToStart(t *testing.T) {
 		f.vimFeed("lich_editor.focus(...)")
 		return f.vimLspText(true) == "gopls failed to start"
 	})
+}
+
+func TestVimClickMovesVimsCursor(t *testing.T) {
+	f, _ := vimEditor(t, "one\ntwo\nthree\n")
+	if err := f.ed.Dispatch(godemirror.TransactionSpec{Selection: godemirror.SingleSelection(9, 9), UserEvent: "select.pointer"}); err != nil {
+		t.Fatal(err)
+	}
+	layOut(t, f)
+	vimUntil(t, f, "the click move Vim's cursor", func() bool { return f.vim.state.row == 3 && f.vim.state.col == 1 })
+	if err := f.ed.Dispatch(godemirror.TransactionSpec{Selection: godemirror.SingleSelection(0, 3), UserEvent: "select.pointer"}); err != nil {
+		t.Fatal(err)
+	}
+	layOut(t, f)
+	vimUntil(t, f, "a drag start Visual", func() bool { return f.vim.state.mode == "v" && f.vim.state.col == 2 })
+}
+
+func TestVimWheelScrollsVimsWindow(t *testing.T) {
+	f, _ := vimEditor(t, strings.Repeat("line\n", 200))
+	vimResized(t, f)
+	top, _ := f.ed.LineBlockAt(f.ed.State().Line(51).From)
+	f.ed.SetScrollTop(top)
+	layOut(t, f)
+	vimUntil(t, f, "the wheel move Vim's top line", func() bool { return f.vim.state.top == 51 })
+	for range 20 {
+		f.syncVim()
+		layOut(t, f)
+		time.Sleep(5 * time.Millisecond)
+	}
+	if got := f.ed.LineBlockAtHeight(f.ed.ScrollTop()).Number; got != 51 {
+		t.Fatalf("the editor went back to line %d after Vim answered; want it left at 51", got)
+	}
+}
+
+// vimResized lays f out at a size, so Neovim's window takes the editor's rows.
+func vimResized(t *testing.T, f *fileEditor) {
+	t.Helper()
+	gtx := layout.Context{Ops: new(op.Ops), Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(image.Pt(400, 300))}
+	d, err := f.ed.Layout(gtx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	f.vimResize(d.Size)
+}
+
+func TestVimBlockCursorOnATabTakesItsLastCell(t *testing.T) {
+	srv, d := diskBackend(t)
+	f := loadedEditor(t, srv, d, "\treturn\n")
+	layOut(t, f)
+	cell := f.ed.Geometry().CellWidth
+	after, _ := f.ed.CoordsAtPos(1, -1)
+	r, ok := vimCursorRect(f.ed, vimState{row: 1, col: 0}, vimCursor{shape: "block", percent: 100})
+	if !ok || r.Dx() != cell || r.Max.X != after.Min.X {
+		t.Fatalf("block on a tab spans %v, want the one cell before %d", r, after.Min.X)
+	}
+	bar, _ := vimCursorRect(f.ed, vimState{row: 1, col: 0}, vimCursor{shape: "vertical", percent: 25})
+	if start, _ := f.ed.CoordsAtPos(0, 1); bar.Min.X != start.Min.X {
+		t.Fatalf("insert's bar on a tab at %d, want the tab's start %d", bar.Min.X, start.Min.X)
+	}
+}
+
+func TestVimCompletionMenuLaysOutItsWordsInLineWithTheWord(t *testing.T) {
+	f, _ := vimEditor(t, "    restart.Re\n")
+	f.th = &ui.Theme{Palette: ui.Dark, Shaper: text.NewShaper(text.WithCollection(gofont.Collection())), Surface: ui.Dark.Canvas}
+	vimCommand(f, `call cursor(1, 15) | startinsert!`)
+	vimType(f, "")
+	f.vimFeed("lich_editor.focus(...)")
+	f.env.vim.do(func(v *nvim.Nvim, _ int) error {
+		return v.Command(`call complete(13, [{'word': 'Relaunch', 'kind': 'Function', 'menu': 'func() error', 'info': 'Relaunch restarts.'}, {'word': 'Requested', 'kind': 'Function'}])`)
+	})
+	vimUntil(t, f, "the menu with its detail", func() bool {
+		buf, _, _ := f.vim.held()
+		u, _ := f.env.vim.status(buf)
+		return u.pum != nil && len(u.pum.items) == 2 && u.pum.items[0].detail == "func() error"
+	})
+	buf, _, _ := f.vim.held()
+	u, _ := f.env.vim.status(buf)
+	layOut(t, f)
+	f.paintVimPum(frameCtx(), u)
 }

@@ -241,6 +241,24 @@
       "failedCode": "Сбой · код {code}",
       "never": "Ещё не запускался",
       "stoppedAt": "Остановлен · {time}"
+    },
+    "runningCount": {
+      "one": "{count} работает",
+      "few": "{count} работают",
+      "many": "{count} работают",
+      "other": "{count} работают"
+    },
+    "failedCount": {
+      "one": "{count} с ошибкой",
+      "few": "{count} с ошибкой",
+      "many": "{count} с ошибкой",
+      "other": "{count} с ошибкой"
+    },
+    "stoppedCount": {
+      "one": "{count} остановлен",
+      "few": "{count} остановлены",
+      "many": "{count} остановлено",
+      "other": "{count} остановлено"
     }
   },
   "checkoutRow": {

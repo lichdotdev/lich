@@ -89,18 +89,6 @@ func (l *cellLevels) lightTrail(trail []int) {
 	}
 }
 
-// snakeLevels is the snake with its head on step k of spinnerPath.
-func snakeLevels(k int64) cellLevels {
-	var l cellLevels
-	n := int64(len(spinnerPath))
-	trail := make([]int, spinnerTrail)
-	for j := range trail {
-		trail[j] = spinnerPath[((k-int64(j))%n+n)%n]
-	}
-	l.lightTrail(trail)
-	return l
-}
-
 // spinnerGlideSteps is how many steps back a spinner read off the clock
 // starts its glide: older ones have faded out of it.
 const spinnerGlideSteps = 4
@@ -110,12 +98,12 @@ const spinnerGlideSteps = 4
 func spinnerAt(now time.Time) (cellAlphas, time.Time) {
 	k := floorDiv(now.UnixNano(), int64(spinnerStep))
 	start := time.Unix(0, k*int64(spinnerStep))
-	a := snakeLevels(k - spinnerGlideSteps).faded()
+	a := clockLevels(k - spinnerGlideSteps).faded()
 	for j := k - spinnerGlideSteps + 1; j < k; j++ {
-		a = glide(a, snakeLevels(j), spinnerStep)
+		a = glide(a, clockLevels(j), spinnerStep)
 	}
 	next := start.Add(spinnerStep)
-	return glide(a, snakeLevels(k), now.Sub(start)), earliest(next, now.Add(glideFrame))
+	return glide(a, clockLevels(k), now.Sub(start)), earliest(next, now.Add(glideFrame))
 }
 
 // floorDiv rounds toward minus infinity, so a time before the epoch (a

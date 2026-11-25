@@ -7,6 +7,7 @@ import (
 	"math"
 	"slices"
 	"strconv"
+	"strings"
 	"time"
 
 	"gioui.org/f32"
@@ -44,11 +45,7 @@ var (
 var (
 	notePopoverWidth = unit.Dp(280)
 	// noteFieldMin is the mockup's min-height: 80px, so the field reads as one.
-	noteFieldMin = ui.Space(20)
-	// noteShadows is the mockup's 0 12px 32px rgba(0,0,0,.45), 0 2px 6px
-	// rgba(0,0,0,.3): the popover floats over a website, where a hairline alone
-	// is lost on a light page.
-	noteShadows   = []ui.BoxShadow{{Y: 12, Blur: 32, Alpha: 0.45}, {Y: 2, Blur: 6, Alpha: 0.3}}
+	noteFieldMin  = ui.Space(20)
 	noteRowHeight = ui.Space(6.5)
 	noteTrayHead  = ui.Space(9)
 	noteTrayPad   = ui.Space(2)
@@ -288,9 +285,7 @@ func (u *window) notePopover(gtx C, p *browserPaneUI, scale float32) {
 	defer op.Offset(at).Push(gtx.Ops).Pop()
 	defer noteEnter(gtx, n.openedAt, el.Sub(at), d.Size)()
 	radius := gtx.Dp(ui.RadiusLG)
-	for _, s := range noteShadows {
-		s.Paint(gtx, d.Size, radius)
-	}
+	ui.ElevationMid.Paint(gtx, d.Size, radius)
 	shape := clip.UniformRRect(image.Rectangle{Max: d.Size}, radius)
 	paint.FillShape(gtx.Ops, th.Popover, shape.Op(gtx.Ops))
 	area := shape.Push(gtx.Ops)
@@ -303,17 +298,17 @@ func (u *window) notePopover(gtx C, p *browserPaneUI, scale float32) {
 	}
 	call.Add(gtx.Ops)
 	area.Pop()
-	paint.FillShape(gtx.Ops, th.On(th.Popover).Over(th.Border), clip.Stroke{Path: shape.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
+	paint.FillShape(gtx.Ops, th.Over(ui.Alpha(th.Foreground, ui.FloatRingOpacity)), clip.Stroke{Path: shape.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
 }
 
 // noteEnterDuration and noteZoomFrom are a lich menu's animate-in, slowed a
 // little: the popover appears away from the pointer, beside the element.
 const (
 	noteEnterDuration = 160 * time.Millisecond
-	noteZoomFrom      = 0.95
+	noteZoomFrom      = panelZoomFrom
 )
 
-var noteEase = ui.CubicBezier(0.25, 0.1, 0.25, 1)
+var noteEase = panelEaseOut
 
 // noteEnter fades and zooms a popover or the tray in from its edge nearest
 // el (local to it), sliding from that side, for noteEnterDuration after
@@ -413,13 +408,13 @@ func (u *window) notePopoverButtons(gtx C, th *ui.Theme, n *browserNotes) D {
 	if n.editing >= 0 {
 		add = th.Button(&n.add, i18n.T("layouts.browser.saveNote"))
 	}
-	add.Size, add.Disabled = ui.SizeSM, !n.written()
+	add.Size, add.Disabled, add.Keys = ui.SizeSM, !n.written(), "↵"
 	cancel := th.Button(&n.cancel, i18n.T("common.action.cancel"))
-	cancel.Size, cancel.Variant = ui.SizeSM, ui.VariantGhost
+	cancel.Size, cancel.Variant, cancel.Keys = ui.SizeSM, ui.VariantGhost, "Esc"
 	var buttons []layout.FlexChild
 	if n.editing >= 0 {
 		del := th.Button(&n.del, i18n.T("layouts.browser.deleteNote"))
-		del.Size, del.Variant = ui.SizeSM, ui.VariantGhost
+		del.Size, del.Variant = ui.SizeSM, ui.VariantDestructive
 		buttons = append(buttons, layout.Rigid(del.Layout))
 	}
 	buttons = append(buttons,
@@ -487,7 +482,8 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 	defer noteEnter(gtx, n.trayShown, image.Rect(size.X/2, size.Y, size.X/2, size.Y+1), size)()
 	gtx.Constraints = layout.Exact(size)
 	shape := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(paneRadius))
-	paint.FillShape(gtx.Ops, th.Background, shape.Op(gtx.Ops))
+	ui.ElevationMid.Paint(gtx, size, gtx.Dp(paneRadius))
+	paint.FillShape(gtx.Ops, th.Popover, shape.Op(gtx.Ops))
 	area := shape.Push(gtx.Ops)
 	// The tray takes the pointer from the page under it.
 	event.Op(gtx.Ops, &n.rows)
@@ -522,17 +518,17 @@ func (u *window) notesTray(gtx C, p *browserPaneUI, session string) {
 		)
 	})
 	area.Pop()
-	paint.FillShape(gtx.Ops, th.Over(th.Border), clip.Stroke{Path: shape.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
+	paint.FillShape(gtx.Ops, th.Over(ui.Alpha(th.Foreground, ui.FloatRingOpacity)), clip.Stroke{Path: shape.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
 }
 
 func (u *window) notesTrayHead(gtx C, n *browserNotes, session string) D {
-	th := u.theme
+	th := u.theme.On(u.theme.Popover)
 	gtx.Constraints.Min.Y = gtx.Dp(noteTrayHead)
 	gtx.Constraints.Max.Y = gtx.Constraints.Min.Y
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 		layout.Rigid(func(gtx C) D { return u.noteTools(gtx, n) }),
 		ui.Gap(2.5),
-		layout.Rigid(th.Text(ui.TextXS, waitingLabel(n)).Weight(font.SemiBold).Layout),
+		layout.Rigid(th.Text(ui.TextXS, strings.ToUpper(waitingLabel(n))).Weight(font.SemiBold).Muted().Layout),
 		ui.Gap(1.5),
 		layout.Flexed(1, func(gtx C) D {
 			if n.failure != "" {
@@ -543,13 +539,13 @@ func (u *window) notesTrayHead(gtx C, n *browserNotes, session string) D {
 		ui.Gap(2),
 		layout.Rigid(func(gtx C) D {
 			clear := th.Button(&n.clear, i18n.T("layouts.browser.clearNotes"))
-			clear.Variant, clear.Size = ui.VariantGhost, ui.SizeSM
+			clear.Variant, clear.Size = ui.VariantDestructive, ui.SizeSM
 			return clear.Layout(gtx)
 		}),
 		ui.Gap(1.5),
 		layout.Rigid(func(gtx C) D {
 			send := th.Button(&n.send, i18n.T("layouts.browser.sendNotes"))
-			send.Icon, send.Size = icBatchSend, ui.SizeSM
+			send.Icon, send.Size, send.Keys = icBatchSend, ui.SizeSM, "↵"
 			return send.Layout(gtx)
 		}),
 	)

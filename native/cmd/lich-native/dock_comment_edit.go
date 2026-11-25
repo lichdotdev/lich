@@ -48,7 +48,7 @@ func (d *commentEditDialog) layout(gtx C, th *ui.Theme, store *commentStore) {
 	cancel := on.Button(&d.cancel, i18n.T("common.action.cancel"))
 	cancel.Variant = ui.VariantOutline
 	save := on.Button(&d.save, i18n.T("diff.commentEdit.save"))
-	save.Disabled = text == ""
+	save.Disabled, save.Keys = text == "", ctrlEnterCap()
 	dlg := th.Dialog(&d.dialog, open, i18n.T("diff.commentEdit.title"), d.where)
 	dlg.MaxWidth = ui.DialogWidthXL
 	dlg.Body = func(gtx C) D {

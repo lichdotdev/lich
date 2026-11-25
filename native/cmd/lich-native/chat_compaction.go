@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image"
 	"math"
 	"slices"
 	"time"
@@ -121,7 +122,7 @@ func chatCompactTitle(cc *api.ChatCompaction) (title, detail string) {
 }
 
 // chatCompaction is a finished compaction's marker, set in the conversation
-// where it happened between two hairlines, as a turn's end is: the hook
+// where it happened, alone in the column's middle: the hook
 // output in its tooltip, and the summary opening under it on a click.
 func (u *window) chatCompaction(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
 	cc := it.Compaction
@@ -163,7 +164,8 @@ func (u *window) chatCompaction(gtx C, th *ui.Theme, p *chatPane, it backend.Cha
 		inner := mark
 		mark = func(gtx C) D { return th.Tooltip(&u.root, p.stamp("compact:"+it.ID), cc.Hooks).Layout(gtx, inner) }
 	}
-	rule := func(gtx C) D { return chatHairline(gtx, th) }
+	// the mark stands alone in the column's middle, set apart by the turn's space
+	rule := func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,

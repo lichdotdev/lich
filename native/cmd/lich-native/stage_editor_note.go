@@ -35,7 +35,6 @@ func (f *fileEditor) notes(gtx C, th *ui.Theme) D {
 			})
 		}),
 		ui.VGap(2),
-		layout.Rigid(th.Separator),
 	)
 }
 

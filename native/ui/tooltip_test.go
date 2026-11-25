@@ -101,11 +101,15 @@ func (r *tooltipRig) after(d time.Duration) *image.RGBA {
 }
 
 // tooltipInk is the bounding box of the opaque pixels of img.
+const tooltipInkAlpha = 230
+
 func tooltipInk(img *image.RGBA) image.Rectangle {
 	var ink image.Rectangle
 	for y := range img.Rect.Dy() {
 		for x := range img.Rect.Dx() {
-			if img.RGBAAt(x, y).A > 128 {
+			// the bubble is opaque, its shadow at most ~57% (contract changed:
+			// tooltips stand at ElevationLow)
+			if img.RGBAAt(x, y).A > tooltipInkAlpha {
 				ink = ink.Union(image.Rect(x, y, x+1, y+1))
 			}
 		}
@@ -160,10 +164,10 @@ func TestTooltipShiftsInsideTheWindowAndAimsTheArrow(t *testing.T) {
 	}
 	tipRow := r.triggerAt.Y - 2
 	center := tooltipTestTrigger.X / 2
-	if img.RGBAAt(center, tipRow).A == 0 {
+	if img.RGBAAt(center, tipRow).A <= tooltipInkAlpha {
 		t.Errorf("no arrow above the trigger's center at (%d,%d)", center, tipRow)
 	}
-	if far := ink.Max.X - 20; img.RGBAAt(far, tipRow).A != 0 {
+	if far := ink.Max.X - 20; img.RGBAAt(far, tipRow).A > tooltipInkAlpha {
 		t.Errorf("ink at (%d,%d), want the arrow only at the trigger's center", far, tipRow)
 	}
 }

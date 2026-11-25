@@ -284,7 +284,7 @@ func threadHeader(gtx C, th *ui.Theme, t backend.PRReviewThread, open bool, sent
 	}
 	if t.IsResolved {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D {
-			return th.MetaGlyph(icPullCheck, i18n.T("pulls.reviewThread.resolved"), th.TonePass).Layout(gtx)
+			return pullState(gtx, th, icPullCheck, i18n.T("pulls.reviewThread.resolved"), th.TonePass)
 		}))
 	}
 	children = append(children, ui.Gap(2), layout.Rigid(th.Text(ui.TextXS, fmt.Sprint(len(t.Comments))).Muted().Layout))
@@ -304,7 +304,7 @@ func (v *pullView) threadBody(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRD
 		editing = v.talk.isEditing(gtx, target) || editing
 		if i > 0 {
 			rows = append(rows, layout.Rigid(func(gtx C) D {
-				return layout.Inset{Top: ui.Space(2.5)}.Layout(gtx, th.Separator)
+				return layout.Spacer{Height: ui.Space(2.5)}.Layout(gtx)
 			}))
 		}
 		rows = append(rows, layout.Rigid(func(gtx C) D {
@@ -399,11 +399,16 @@ func (v *pullView) threadActions(gtx C, th *ui.Theme, p *pullsScreen, d backend.
 	replyB := th.Button(reply, i18n.T("pulls.reviewThread.reply"))
 	replyB.Variant, replyB.Size = ui.VariantOutline, ui.SizeSM
 	resolveB := th.Button(resolve, label)
-	resolveB.Variant, resolveB.Size, resolveB.Disabled = ui.VariantGhost, ui.SizeSM, busy == "resolve:"+t.ID
+	resolveB.Size, resolveB.Disabled = ui.SizeSM, busy == "resolve:"+t.ID
+	if t.IsResolved {
+		resolveB.Variant = ui.VariantOutline
+	}
+	// Resolve settles the thread: filled, at the line's end
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-		layout.Rigid(replyB.Layout), ui.Gap(2), layout.Rigid(resolveB.Layout),
 		layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
-		layout.Rigid(func(gtx C) D { return v.toSessionButton(gtx, th, p, d, t, act) }))
+		layout.Rigid(replyB.Layout), ui.Gap(2),
+		layout.Rigid(func(gtx C) D { return v.toSessionButton(gtx, th, p, d, t, act) }), ui.Gap(2),
+		layout.Rigid(resolveB.Layout))
 }
 
 // toSessionButton is Send to session, Open in session while the branch's
@@ -458,7 +463,7 @@ func (v *pullView) replyBox(gtx C, th *ui.Theme, d backend.PRDetail, t backend.P
 		label = i18n.T("pulls.commentBox.sending")
 	}
 	sendB := th.Button(send, label)
-	sendB.Size, sendB.Disabled = ui.SizeXS, body == "" || busy
+	sendB.Size, sendB.Disabled, sendB.Keys = ui.SizeXS, body == "" || busy, ctrlEnterCap()
 	cancelB := th.Button(cancel, i18n.T("common.action.cancel"))
 	cancelB.Size, cancelB.Variant = ui.SizeXS, ui.VariantGhost
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
@@ -469,7 +474,7 @@ func (v *pullView) replyBox(gtx C, th *ui.Theme, d backend.PRDetail, t backend.P
 		}),
 		ui.VGap(2),
 		layout.Rigid(func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(sendB.Layout), ui.Gap(2), layout.Rigid(cancelB.Layout))
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }), layout.Rigid(cancelB.Layout), ui.Gap(2), layout.Rigid(sendB.Layout))
 		}),
 	)
 }
@@ -505,7 +510,7 @@ func (v *pullView) commentBox(gtx C, th *ui.Theme, act *pullsAction) D {
 		label = i18n.T("pulls.commentBox.sending")
 	}
 	send := th.Button(&s.commentSend, label)
-	send.Size, send.Disabled = ui.SizeSM, body == "" || busy
+	send.Size, send.Disabled, send.Keys = ui.SizeSM, body == "" || busy, ctrlEnterCap()
 	return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(5), Bottom: ui.Space(5)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(th.SectionHeading(i18n.T("pulls.pullsConversation.commentOn")).Layout),
@@ -516,7 +521,10 @@ func (v *pullView) commentBox(gtx C, th *ui.Theme, act *pullsAction) D {
 				return ta.Layout(gtx)
 			}),
 			ui.VGap(2),
-			layout.Rigid(send.Layout),
+			layout.Rigid(func(gtx C) D {
+				gtx.Constraints.Min.X = gtx.Constraints.Max.X
+				return layout.Flex{}.Layout(gtx, layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }), layout.Rigid(send.Layout))
+			}),
 		)
 	})
 }
@@ -556,7 +564,7 @@ func (v *pullView) pendingRow(gtx C, th *ui.Theme, i int, c backend.ReviewCommen
 	editB := th.Button(edit, i18n.T("pulls.pullsConversation.edit"))
 	editB.Size, editB.Variant = ui.SizeXS, ui.VariantGhost
 	discardB := th.Button(discard, i18n.T("pulls.pullsConversation.discard"))
-	discardB.Size, discardB.Variant = ui.SizeXS, ui.VariantGhost
+	discardB.Size, discardB.Variant = ui.SizeXS, ui.VariantDestructive
 	anchor := lineAnchor(c.StartLine, c.Line)
 	return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,

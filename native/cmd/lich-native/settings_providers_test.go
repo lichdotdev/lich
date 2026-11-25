@@ -195,10 +195,11 @@ func TestListRowsKeepOnlyDefaultHereAndNoPrompts(t *testing.T) {
 }
 
 func TestInstallSummaryNamesAConfiguredPath(t *testing.T) {
-	if got := installSummary(providerInfo{source: "path"}); got != "Installed" {
+	// "Installed" left the row: the mark says it (contract changed)
+	if got := installSummary(providerInfo{source: "path"}); got != "" {
 		t.Errorf("on $PATH: %q", got)
 	}
-	if got := installSummary(providerInfo{source: "setting"}); got != "Installed · custom path" {
+	if got := installSummary(providerInfo{source: "setting"}); got != "custom path" {
 		t.Errorf("configured: %q", got)
 	}
 }

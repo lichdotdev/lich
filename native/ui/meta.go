@@ -15,7 +15,7 @@ import (
 
 const pillPadY unit.Dp = 3
 
-// PillStyle is a rounded-full box with an inset 1px border around Content.
+// PillStyle is Content in a pill's room, with no edge.
 type PillStyle struct {
 	Content           layout.Widget
 	PadLeft, PadRight unit.Dp
@@ -26,14 +26,11 @@ func (th *Theme) Pill(content layout.Widget, padLeft, padRight unit.Dp) PillStyl
 	return PillStyle{Content: content, PadLeft: padLeft, PadRight: padRight, theme: th}
 }
 
+// Layout draws the content in the pill's room with no edge: a badge is text
+// and glyph, never a box.
 func (p PillStyle) Layout(gtx C) D {
-	macro := op.Record(gtx.Ops)
 	gtx.Constraints.Min = image.Point{}
-	d := layout.Inset{Left: p.PadLeft, Right: p.PadRight, Top: pillPadY, Bottom: pillPadY}.Layout(gtx, p.Content)
-	call := macro.Stop()
-	InsetBorder(gtx, d.Size, d.Size.Y/2, p.theme.Over(p.theme.Border))
-	call.Add(gtx.Ops)
-	return d
+	return layout.Inset{Left: p.PadLeft, Right: p.PadRight, Top: pillPadY, Bottom: pillPadY}.Layout(gtx, p.Content)
 }
 
 const keyCapSize unit.Sp = 10 // text-[0.625rem]

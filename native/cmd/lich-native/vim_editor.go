@@ -46,6 +46,9 @@ type vimBuffer struct {
 	state   *vimState
 	// shown is the :s preview laid in the editor, nil for none.
 	shown *vimShown
+	// sent counts the clicks and wheels handed to Neovim; a state that has not
+	// seen the last is older than what the editor shows.
+	sent int
 	// yank is the last yank's text, lit until yankUntil.
 	yank      []godemirror.SelectionRange
 	yankUntil time.Time
@@ -143,7 +146,8 @@ func (f *fileEditor) vimOpen(old int, alive bool) {
 	if f.vim.opening {
 		return
 	}
-	f.vim.opening, f.vim.setting, f.vim.state = true, false, nil
+	// A new buffer may be in a new Neovim, which has seen none of the clicks.
+	f.vim.opening, f.vim.setting, f.vim.state, f.vim.sent = true, false, nil, 0
 	lines, _ := vimLinesOf(f.ed.State().Doc())
 	path, opens, wrap := filepath.Join(f.root(), filepath.FromSlash(f.rel)), f.opens, f.ed.Wrap
 	f.env.vim.do(func(v *nvim.Nvim, gen int) error {
@@ -202,6 +206,9 @@ func (f *fileEditor) vimApply(ev vimEvent) {
 			f.vimSelect(*f.vim.state)
 		}
 	case ev.state != nil:
+		if ev.state.seen < f.vim.sent {
+			return
+		}
 		f.vim.state = ev.state
 		f.vimPreview(ev.state.preview)
 		f.vimSelect(*ev.state)
@@ -275,12 +282,13 @@ func (f *fileEditor) vimPointer(u godemirror.Update) {
 	st := u.State
 	main := st.Selection().Main()
 	row, col := vimClickCol(st, main.Anchor(), main.Head())
+	f.vim.sent++
 	if main.Empty() {
-		f.vimFeed("lich_editor.click(...)", row, col)
+		f.vimFeed("lich_editor.click(...)", f.vim.sent, row, col)
 		return
 	}
 	arow, acol := vimRowCol(st, main.Anchor())
-	f.vimFeed("lich_editor.click(...)", row, col, arow, acol)
+	f.vimFeed("lich_editor.click(...)", f.vim.sent, row, col, arow, acol)
 }
 
 // vimScrolled tells Neovim the line the wheel brought to the editor's top.
@@ -290,7 +298,8 @@ func (f *fileEditor) vimScrolled() {
 		return
 	}
 	f.vim.top = top
-	f.vimFeed("lich_editor.scroll(...)", top)
+	f.vim.sent++
+	f.vimFeed("lich_editor.scroll(...)", f.vim.sent, top)
 }
 
 // vimResize fits Neovim's window to the editor's code area, size, so its

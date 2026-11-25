@@ -91,6 +91,8 @@ type chatView struct {
 	anchored chatAnchor
 	// jump is the pill that runs the list back to its end.
 	jump ui.Clickable
+	// jumpMotion grows the pill in from where it stands.
+	jumpMotion panelMotion
 	// stamps are the tooltips of the time under each message, by item id.
 	stamps map[string]*ui.Tooltip
 	// notes are the clicks on a notification's row, by item id and place.

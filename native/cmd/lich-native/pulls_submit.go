@@ -1,6 +1,7 @@
 package main
 
 import (
+	"runtime"
 	"strings"
 
 	"gioui.org/io/key"
@@ -123,7 +124,7 @@ func (u *window) layoutSubmitDialog(gtx C, th *ui.Theme) {
 		label = i18n.T("pulls.pullsSubmit.sending")
 	}
 	send := on.Button(&s.send, label)
-	send.Disabled = busy
+	send.Disabled, send.Keys = busy, ctrlEnterCap()
 	dlg := th.Dialog(&s.dialog, open, submitVerdictTitle(s.verdict), description)
 	summary := on.Textarea(&s.summary, i18n.T("pulls.submitReviewDialog.summaryPlaceholder"))
 	summary.Resize = &s.fit
@@ -137,6 +138,12 @@ func (u *window) layoutSubmitDialog(gtx C, th *ui.Theme) {
 
 // ctrlEnter reports whether Ctrl+Enter (Cmd+Enter on macOS) was pressed in
 // ed: CommentBox's send, Enter alone being a new line.
+// ctrlEnterCap is Ctrl+Enter (Cmd+Enter on macOS) as a key cap reads it, for
+// the button ctrlEnter presses.
+func ctrlEnterCap() string {
+	return formatCombo(combo{Mod: true, Key: "Enter"}, runtime.GOOS == "darwin")
+}
+
 func ctrlEnter(gtx C, ed *widget.Editor) bool {
 	_, ok := gtx.Event(key.Filter{Focus: ed, Name: key.NameReturn, Required: key.ModShortcut})
 	return ok

@@ -205,7 +205,7 @@
       "other": "{count} commits"
     },
     "rangeNote": "Viewing {range} · comments and Viewed are off",
-    "rangeHint": "Shift+click picks a range"
+    "rangeKey": "range"
   },
   "reviewThread": {
     "replyFailed": "Reply failed: {error}",

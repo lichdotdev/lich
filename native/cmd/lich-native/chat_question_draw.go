@@ -7,6 +7,7 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/op"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/api"
@@ -59,9 +60,16 @@ func (u *window) chatAsking(gtx C, th *ui.Theme, p *chatPane, sv sessionView) D 
 	}
 	q := p.quiz(it.ID, it.Question.Questions)
 	q.proposal = it.Question.Proposal != nil
-	return layout.Inset{Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+	// it grows out of the box's left corner, as the lists over it do
+	q.motion.track(gtx.Now, true, "")
+	m := op.Record(gtx.Ops)
+	d := layout.Inset{Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 		return chatQuestionCard(gtx, th, q, it.Question.Questions)
 	})
+	call := m.Stop()
+	defer q.motion.push(gtx, d.Size, 0)()
+	call.Add(gtx.Ops)
+	return d
 }
 
 // asksInComposer is whether it is a question the composer holds while it
@@ -100,7 +108,6 @@ func chatQuestionCard(gtx C, th *ui.Theme, q *chatQuiz, asks []api.ChatAsk) D {
 				)
 			})
 		})
-	ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusLG), th.Border)
 	return d
 }
 
@@ -169,7 +176,14 @@ func chatQuestionBody(gtx C, th *ui.Theme, q *chatQuiz, asks []api.ChatAsk) D {
 			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 				layout.Rigid(th.Textarea(&q.others[q.step], "").Layout),
 				ui.VGap(2),
-				layout.Rigid(th.Text(ui.TextXS, i18n.T("chat.question.freeHint")).Muted().Layout),
+				layout.Rigid(func(gtx C) D {
+					// Enter sends from the field; the × above declines, as Esc does
+					send := th.Button(&q.send, i18n.T("chat.composer.send"))
+					send.Size, send.Keys = ui.SizeSM, "↵"
+					return layout.Flex{}.Layout(gtx,
+						layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} }),
+						layout.Rigid(send.Layout))
+				}),
 			)
 		})
 	}

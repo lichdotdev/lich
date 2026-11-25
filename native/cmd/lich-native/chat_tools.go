@@ -70,6 +70,8 @@ type chatTools struct {
 	moved     bool
 	rows      []ui.Clickable
 	back      ui.Clickable
+	close     ui.Clickable
+	motion    panelMotion
 	toolsBtn  ui.Clickable
 	sortBtn   ui.Clickable
 	acts      map[string]*ui.Clickable
@@ -255,6 +257,11 @@ func (u *window) toolsActs(gtx C, p *chatPane, id string) {
 	t := &p.tools
 	u.outsideActs(gtx, p)
 	if !t.opened() {
+		return
+	}
+	if t.close.Clicked(gtx) {
+		t.shut()
+		gtx.Execute(key.FocusCmd{Tag: &p.editor})
 		return
 	}
 	t.mu.Lock()

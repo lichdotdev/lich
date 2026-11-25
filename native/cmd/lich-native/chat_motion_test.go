@@ -161,8 +161,12 @@ func TestTheLiveLineTurnsIntoDoneInItsSlot(t *testing.T) {
 	u, r := lifeFrames(t, items, true)
 	r.frames(3)
 	verb, done := chatVerb("", "s1", 1), i18n.T("chat.done.done")
+	// the verb is text, whose label runs on past its line: its centre is its
+	// line's; Done is a glyph whose label is its own box (contract changed:
+	// the closing line says how the turn ended with a glyph)
 	centre := func(label string) int { b := labelBox(t, r, label); return (b.Min.Y + b.Max.Y) / 2 }
-	top, verbAt := labelTop(t, r, "go"), centre(verb)
+	lineCentre := func(label string) int { return labelBox(t, r, label).Min.Y + int(chatRowLine)/2 }
+	top, verbAt := labelTop(t, r, "go"), lineCentre(verb)
 	u.model.chat.turn(api.ChatTurn{SessionID: "s1"})
 	last := top
 	var tops []int

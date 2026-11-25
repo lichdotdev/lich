@@ -140,7 +140,7 @@ func scopeLive(th *ui.Theme, p settingsProject) layout.Widget {
 func (s *settingsScreen) scopeMenu(gtx C, th *ui.Theme, values scopedValues) D {
 	children := []layout.FlexChild{
 		layout.Rigid(func(gtx C) D { return s.scopeRow(gtx, th, settingsProject{}, 0) }),
-		layout.Rigid(func(gtx C) D { return layout.Inset{Top: ui.Space(1), Bottom: ui.Space(1)}.Layout(gtx, th.Separator) }),
+		ui.VGap(2),
 	}
 	for _, p := range s.projects {
 		children = append(children, layout.Rigid(func(gtx C) D {

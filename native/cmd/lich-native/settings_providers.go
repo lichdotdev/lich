@@ -340,12 +340,12 @@ func binCheckDetail(c backend.BinaryCheck) string {
 
 // installSummary is what an installed provider's row says about where its
 // binary came from: a configured path is the one that answers when `which`
-// does not.
+// does not; one on PATH says nothing, the mark already says it is there.
 func installSummary(p providerInfo) string {
 	if p.source == "setting" {
-		return i18n.T("env.providerSummary.installedCustomPath")
+		return i18n.T("env.providerSummary.customPath")
 	}
-	return i18n.T("env.providerSummary.installed")
+	return ""
 }
 
 // planSummary is the plan reading in the width a list row has, "" for a
@@ -435,6 +435,7 @@ type providerSettings struct {
 	skip, restore  ui.Enum
 	ultra          ui.SwitchState
 	unfold, header ui.SwitchState
+	headerTip      ui.Tooltip
 
 	// change is the rung climb the dialog asks about while asking; it stays
 	// after an answer so the closing dialog keeps its text.

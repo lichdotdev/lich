@@ -26,7 +26,9 @@ func (v *chatView) jumpToLatest(gtx C, th *ui.Theme, h int, live bool) {
 	if v.jump.Clicked(gtx) {
 		v.toEnd(gtx.Now)
 	}
-	if !v.list.ScrollToEnd || !v.list.Position.BeforeEnd || !v.run.at.IsZero() {
+	shown := v.list.ScrollToEnd && v.list.Position.BeforeEnd && v.run.at.IsZero()
+	v.jumpMotion.track(gtx.Now, shown, "")
+	if !shown {
 		return
 	}
 	m := op.Record(gtx.Ops)
@@ -35,6 +37,7 @@ func (v *chatView) jumpToLatest(gtx C, th *ui.Theme, h int, live bool) {
 	call := m.Stop()
 	x, y := (gtx.Constraints.Max.X-d.Size.X)/2, h-d.Size.Y-gtx.Dp(chatJumpGap)
 	defer op.Offset(image.Pt(x, y)).Push(gtx.Ops).Pop()
+	defer v.jumpMotion.push(gtx, d.Size, d.Size.X/2)()
 	call.Add(gtx.Ops)
 }
 
@@ -66,8 +69,9 @@ func chatJumpPill(gtx C, th *ui.Theme, hovered, live bool) D {
 	})
 	content := m.Stop()
 	r := d.Size.Y / 2
+	ui.ElevationLow.Paint(gtx, d.Size, r)
 	paint.FillShape(gtx.Ops, th.Popover, clip.UniformRRect(image.Rectangle{Max: d.Size}, r).Op(gtx.Ops))
-	ui.InsetBorder(gtx, d.Size, r, th.Border)
+	ui.InsetBorder(gtx, d.Size, r, th.Over(ui.Alpha(th.Foreground, ui.FloatRingOpacity)))
 	content.Add(gtx.Ops)
 	return d
 }

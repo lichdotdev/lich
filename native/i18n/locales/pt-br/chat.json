@@ -16,7 +16,7 @@
       "one": "{count} esperando",
       "other": "{count} esperando"
     },
-    "ended": "terminou há {time}"
+    "ended": "há {time}"
   },
   "view": {
     "failed": "O pedido ao chat falhou",
@@ -86,7 +86,8 @@
       }
     },
     "latest": "Mais recente",
-    "newActivity": "Novidades"
+    "newActivity": "Novidades",
+    "edited": "Editados"
   },
   "done": {
     "done": "Concluído",
@@ -98,7 +99,7 @@
     "placeholder": "Pergunte ao {provider} sobre este projeto",
     "send": "Enviar",
     "stop": "Parar",
-    "shell": "Modo shell · Enter roda o comando"
+    "shell": "Modo shell"
   },
   "option": {
     "model": "Modelo",
@@ -110,8 +111,7 @@
   "permit": {
     "allowOnce": "Permitir",
     "allowAlways": "Sempre permitir",
-    "rejectOnce": "Negar",
-    "escDenies": "nega"
+    "rejectOnce": "Negar"
   },
   "choice": {
     "manual": "Manual",
@@ -139,7 +139,6 @@
     "default": "Padrão"
   },
   "question": {
-    "freeHint": "Enter envia · Esc recusa",
     "marked": {
       "one": "{count} marcada",
       "other": "{count} marcadas"
@@ -178,7 +177,7 @@
     "sendNow": "Enviar agora",
     "count": {"one": "{count} na fila", "other": "{count} na fila"},
     "drop": "Tirar da fila",
-    "edit": "↑ edita a fila"
+    "edit": "editar"
   },
   "search": {
     "label": "Busque nas suas mensagens",
@@ -192,15 +191,10 @@
   "tools": {
     "loading": "Carregando…",
     "keys": {
-      "move": "mover",
-      "open": "abrir",
-      "close": "fechar"
+      "close": "fechar",
+      "back": "voltar"
     },
     "mcpTitle": "Servidores MCP",
-    "serverCount": {
-      "one": "{count} servidor",
-      "other": "{count} servidores"
-    },
     "toolCount": {
       "one": "{count} ferramenta",
       "other": "{count} ferramentas"
@@ -210,7 +204,9 @@
       "project": "Do projeto",
       "local": "Locais",
       "claudeai": "claude.ai",
-      "misc": "Outros"
+      "misc": "Outros",
+      "running": "Rodando",
+      "ended": "Encerrados"
     },
     "status": {
       "connected": "conectado",
@@ -264,10 +260,37 @@
       "policy": "travada pela política",
       "any": "travada"
     },
-    "pluginSkills": "As skills de plugin se gerenciam pelo /plugin."
+    "pluginSkills": "As skills de plugin se gerenciam pelo /plugin.",
+    "running": {
+      "one": "{count} rodando",
+      "other": "{count} rodando"
+    },
+    "skillsOn": "{on} ligadas · {count}",
+    "statusCount": {
+      "connected": {
+        "one": "{count} conectado",
+        "other": "{count} conectados"
+      },
+      "pending": {
+        "one": "{count} conectando",
+        "other": "{count} conectando"
+      },
+      "failed": {
+        "one": "{count} falhou",
+        "other": "{count} falharam"
+      },
+      "needsAuth": {
+        "one": "{count} precisa de login",
+        "other": "{count} precisam de login"
+      },
+      "disabled": {
+        "one": "{count} desligado",
+        "other": "{count} desligados"
+      }
+    }
   },
   "shells": {
-    "move": "Ctrl+B para rodar em segundo plano",
+    "move": "para o segundo plano",
     "count": {
       "one": "{count} shell",
       "other": "{count} shells"
@@ -283,15 +306,14 @@
     "noOutput": "Ainda sem saída",
     "stop": "Parar",
     "state": {
-      "completed": "concluído",
       "failed": "falhou",
       "stopped": "parado"
-    }
+    },
+    "exit": "saída {code}"
   },
   "workflow": {
     "count": "{name} {done}/{total}",
     "progress": "{done}/{total}",
-    "failed": "falhou",
     "agents": {
       "one": "{count} agente",
       "other": "{count} agentes"
@@ -351,7 +373,6 @@
     "none": "O {provider} não informa ao lich os plugins. Mude para TUI e use o /plugin dele.",
     "noneFound": "Nenhum plugin bate com a busca.",
     "noneInstalled": "Nenhum plugin instalado aqui.",
-    "updateChip": "atualização",
     "scope": {
       "user": "usuário",
       "project": "projeto",
@@ -411,7 +432,12 @@
     "sourceHint": "dono/repo, URL ou caminho",
     "restart": "Atualizado. O chat roda a versão nova quando reiniciar.",
     "current": "Esta já é a versão mais nova.",
-    "fixed": "O lich instala e atualiza este plugin sozinho."
+    "fixed": "O lich instala e atualiza este plugin sozinho.",
+    "updateCount": {
+      "one": "{count} atualização",
+      "other": "{count} atualizações"
+    },
+    "versionTo": "{version} → {latest}"
   },
   "permissions": {
     "title": "Permissões",
@@ -496,6 +522,10 @@
       "off": "Os hooks estão desligados (disableAllHooks), então nenhum destes roda.",
       "safeMode": "O modo seguro está ligado, então estes hooks não rodam.",
       "bareMode": "O modo bare está ligado, então estes hooks não rodam."
+    },
+    "needTrust": {
+      "one": "{count} precisa de confiança",
+      "other": "{count} precisam de confiança"
     }
   },
   "memory": {
@@ -532,7 +562,6 @@
   "notification": {
     "from": "De {label}",
     "finished": "{label} terminou",
-    "answered": "respondeu",
     "failed": "{label} falhou",
     "stopped": "{label} foi encerrada",
     "stoppedBy": "por {label}",

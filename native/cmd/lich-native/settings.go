@@ -75,6 +75,8 @@ type settingsScreen struct {
 	pane   widget.List
 	close  ui.Clickable
 	resets map[string]*ui.Clickable
+	// openGlobal is the pane foot's way to the rows a project cannot change.
+	openGlobal ui.Clickable
 	// lit is the row the search sent the user to, lit until litUntil.
 	lit      string
 	litUntil time.Time
@@ -306,16 +308,6 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 	if s.onThemesPage() {
 		return append(rows, s.themesPaneRows(th)...)
 	}
-	if desc := s.paneDescription(sec); desc != "" {
-		rows = append(rows, func(gtx C) D {
-			return layout.Inset{Top: -ui.Space(2), Bottom: ui.Space(4)}.Layout(gtx, func(gtx C) D {
-				gtx.Constraints.Max.X = min(gtx.Constraints.Max.X, gtx.Sp(settingsDescSize)*settingsDescCh*6/10)
-				l := th.Text(settingsDescSize, desc).Muted().Leading(20)
-				l.MaxLines = 0
-				return l.Layout(gtx)
-			})
-		})
-	}
 	if sec.id == sectionHotkeys {
 		return append(rows, s.hotkeyPaneRows(th)...)
 	}
@@ -325,10 +317,14 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 	if len(sec.rows) == 0 {
 		return append(rows, th.Text(settingsDescSize, i18n.T("settings.settings.notYet")).Muted().Layout)
 	}
-	shown, group := 0, ""
+	headerRows := len(rows)
+	shown, group, elsewhere := 0, "", 0
 	for i, e := range sec.rows {
 		r := s.rowFor(e, values)
-		if r.kind == rowHidden || !s.rowApplies(e) {
+		if r.kind == rowGlobalOnly && s.rowApplies(e) {
+			elsewhere++
+		}
+		if r.kind == rowHidden || r.kind == rowGlobalOnly || !s.rowApplies(e) {
 			continue
 		}
 		if g := e.groupText(); g != group {
@@ -343,14 +339,44 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 		rows = append(rows, func(gtx C) D { return s.drawRow(gtx, th, e, r, first) })
 	}
 	s.scrollTo = -1
+	if elsewhere > 0 {
+		rows = append(rows, s.globalElsewhere(th, len(rows) == headerRows))
+	}
 	return rows
 }
 
-func (s *settingsScreen) paneDescription(sec settingsSection) string {
-	if s.scope != "" && sec.projectScoped() {
-		return i18n.T("settings.settings.projectDesc")
+// globalElsewhere is the foot of a project's page that leaves rows out: they
+// are the same in every project, and its button opens Global to change them.
+// all is a page that left out every row.
+func (s *settingsScreen) globalElsewhere(th *ui.Theme, all bool) layout.Widget {
+	note := i18n.T("settings.settingsRow.restGlobal")
+	if all {
+		note = i18n.T("settings.settingsRow.allGlobal")
 	}
-	return ""
+	return func(gtx C) D {
+		if s.openGlobal.Clicked(gtx) {
+			s.scope = ""
+			s.invalidate() // the rows above were laid out in the project's scope
+		}
+		return layout.Inset{Top: ui.Space(6)}.Layout(gtx, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				ui.VGap(3.5),
+				layout.Rigid(func(gtx C) D {
+					return layout.Inset{Left: rowPadX, Right: rowPadX}.Layout(gtx, func(gtx C) D {
+						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+							layout.Flexed(1, th.Text(ui.TextXS, note).Muted().Wrapped().Layout),
+							layout.Rigid(layout.Spacer{Width: rowGap}.Layout),
+							layout.Rigid(func(gtx C) D {
+								b := th.Button(&s.openGlobal, i18n.T("settings.settingsRow.openGlobal"))
+								b.Variant, b.Size = ui.VariantOutline, ui.SizeSM
+								return b.Layout(gtx)
+							}),
+						)
+					})
+				}),
+			)
+		})
+	}
 }
 
 // rowFor is e's SettingRow without its control.

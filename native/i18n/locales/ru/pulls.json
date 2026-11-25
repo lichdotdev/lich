@@ -219,7 +219,7 @@
       "other": "{count} коммита"
     },
     "rangeNote": "Показано {range} · комментарии и «Просмотрено» отключены",
-    "rangeHint": "Shift+клик выбирает диапазон"
+    "rangeKey": "диапазон"
   },
   "reviewThread": {
     "replyFailed": "Не удалось ответить: {error}",

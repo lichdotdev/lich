@@ -205,7 +205,7 @@
       "other": "{count} commits"
     },
     "rangeNote": "Vendo {range} · sem comentários nem Visto",
-    "rangeHint": "Shift+clique escolhe um intervalo"
+    "rangeKey": "intervalo"
   },
   "reviewThread": {
     "replyFailed": "Falha ao responder: {error}",

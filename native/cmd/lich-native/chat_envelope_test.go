@@ -146,7 +146,9 @@ func envelopeFrames(t *testing.T) (*window, *frameRig) {
 // person's box naming who sent it.
 func TestAnEnvelopeIsDrawnAsItsRows(t *testing.T) {
 	_, r := envelopeFrames(t)
-	if !r.showsAll("Fix #412 finished", "answered", "Fix #412 is waiting", "Permission to run: go test ./internal/relay/...",
+	// a finished worker's note says nothing more than its title: "answered"
+	// repeated what finished says (contract changed)
+	if !r.showsAll("Fix #412 finished", "Fix #412 is waiting", "Permission to run: go test ./internal/relay/...",
 		"The checks failed on pull request #1210 at commit 3f2a9c1.",
 		"Fix #412 failed", "Fix #412 was stopped", "by you", "Fix #412 did not answer in time") {
 		t.Fatalf("the envelopes are not drawn as rows:\n%s", r.drawn())
@@ -182,7 +184,7 @@ func TestATaskOpensTheWorkersChatAsTheSendersBox(t *testing.T) {
 // messages sent offers a task's prompt and skips the other notes.
 func TestCopyAndRecallReadTheRows(t *testing.T) {
 	envs, _ := parseEnvelopes(asker[2].Text)
-	if got, want := envelopesText(envs), "Fix #412 finished · answered\n\nThe handshake raced on reconnect; fixed in `internal/relay/conn.go`, test added.\n\n"+
+	if got, want := envelopesText(envs), "Fix #412 finished\n\nThe handshake raced on reconnect; fixed in `internal/relay/conn.go`, test added.\n\n"+
 		"Fix #412 is waiting\n\nPermission to run: go test ./internal/relay/..."; got != want {
 		t.Errorf("envelopesText = %q, want %q", got, want)
 	}

@@ -29,14 +29,30 @@ func TestTheSnakesHeadWalksItsPathWithAFadingTail(t *testing.T) {
 		"001/002/003", "000/001/032", "000/000/321", "000/300/210",
 		"000/230/100", "000/123/000", "003/012/000", "032/001/000",
 	}
+	lap := lapAfterAnEgg(t)
 	for k, w := range want {
-		if got := cellRows(snakeLevels(int64(k))); got != w {
+		if got := cellRows(clockLevels(lap + int64(k))); got != w {
 			t.Errorf("step %d is %s, want %s", k, got, w)
 		}
 	}
-	if snakeLevels(-1) != snakeLevels(int64(len(spinnerPath)-1)) {
+	if clockLevels(lap-1) != clockLevels(lap+int64(len(spinnerPath)-1)) {
 		t.Error("a step before the first is not the path's last")
 	}
+}
+
+// lapAfterAnEgg is the clock's step two laps after an egg starts: past its
+// end, and well before the next.
+func lapAfterAnEgg(t *testing.T) int64 {
+	t.Helper()
+	k := floorDiv(time.Date(2026, 11, 25, 0, 0, 0, 0, time.UTC).UnixNano(), int64(spinnerStep))
+	for range int(eggMaxGap / spinnerStep) {
+		if e, ok := clockEgg(k); ok && e == 0 {
+			return k + 2*int64(len(spinnerPath))
+		}
+		k++
+	}
+	t.Fatal("no egg within the longest gap")
+	return 0
 }
 
 func TestACellGlidesTowardItsLevelWithoutPassingIt(t *testing.T) {

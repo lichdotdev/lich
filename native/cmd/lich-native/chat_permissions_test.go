@@ -147,7 +147,8 @@ func TestCodexPermissionsAreItsModes(t *testing.T) {
 // trusts it with the hash it showed.
 func TestHooksListAndTrust(t *testing.T) {
 	_, r, f, _ := permFrames(t, chatHooksCommand)
-	if !r.showsAll("Hooks", "2 hooks", "PreToolUse", "echo pre", "Bash", "User", "Stop", "Stopping", "Project") {
+	// an event heads its hooks as a group's label, uppercase (contract changed)
+	if !r.showsAll("Hooks", "2 hooks", "PRETOOLUSE", "echo pre", "Bash", "User", "STOP", "Stopping", "Project") {
 		t.Fatalf("the hooks are not drawn:\n%s", r.drawn())
 	}
 	r.click(t, r.at(t, "echo pre"))

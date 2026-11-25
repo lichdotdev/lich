@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"image"
 	"strconv"
 	"strings"
@@ -412,13 +413,23 @@ func (u *window) dropHighlight(gtx C, r image.Rectangle, text string) {
 	lgtx.Constraints = layout.Constraints{Max: r.Size()}
 	on := th.On(th.Popover)
 	d := layout.Background{}.Layout(lgtx,
-		func(gtx C) D { return ui.Fill(gtx, th.Popover, ui.RadiusMD) },
+		func(gtx C) D {
+			ui.ElevationLow.Paint(gtx, gtx.Constraints.Min, gtx.Dp(ui.RadiusMD))
+			return ui.Fill(gtx, th.Popover, ui.RadiusMD)
+		},
 		func(gtx C) D {
 			return layout.UniformInset(dropLabel).Layout(gtx, on.Text(ui.TextXS, text).Weight(font.Medium).Layout)
 		},
 	)
 	call := m.Stop()
 	defer op.Offset(r.Min.Add(r.Size().Sub(d.Size).Div(2))).Push(gtx.Ops).Pop()
+	// a new zone's label grows in where it stands
+	if key := fmt.Sprint(r, text); key != u.dropKey {
+		u.dropKey = key
+		u.dropMotion.track(gtx.Now, false, "")
+	}
+	u.dropMotion.track(gtx.Now, true, "")
+	defer u.dropMotion.push(gtx, d.Size, d.Size.X/2)()
 	call.Add(gtx.Ops)
 }
 

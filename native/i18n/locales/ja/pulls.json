@@ -202,7 +202,7 @@
       "other": "{count} 件のコミット"
     },
     "rangeNote": "{range} を表示中 · コメントと確認済みは使えません",
-    "rangeHint": "Shift+クリックで範囲を選択"
+    "rangeKey": "範囲"
   },
   "reviewThread": {
     "replyFailed": "返信に失敗しました: {error}",

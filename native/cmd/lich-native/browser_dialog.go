@@ -51,6 +51,9 @@ var dialogActions = map[string]bool{"accept": true, "dismiss": true}
 type dialogCard struct {
 	shown      *api.BrowserDialog
 	ok, cancel ui.Clickable
+	// close is the card's ×, what Esc does
+	close      ui.Clickable
+	motion     panelMotion
 	field      widget.Editor
 	focusField bool
 	okAt, noAt image.Rectangle
@@ -159,6 +162,7 @@ func (u *window) dialogPageKey(p *browserPaneUI, session string, e key.Event) bo
 // in the pane.
 func (u *window) dialogCardAt(gtx C, p *browserPaneUI, session string, origin image.Point) {
 	d := &p.dialog
+	d.motion.track(gtx.Now, d.shown != nil, "")
 	if d.shown == nil {
 		return
 	}
@@ -187,7 +191,10 @@ func (u *window) dialogCardAt(gtx C, p *browserPaneUI, session string, origin im
 	}
 
 	defer op.Offset(at).Push(gtx.Ops).Pop()
+	defer d.motion.push(gtx, size, size.X/2)()
 	shape := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(dialogCardRadius))
+	// over a website, often a light one: the dialogs' elevation
+	ui.ElevationHigh.Paint(gtx, size, gtx.Dp(dialogCardRadius))
 	paint.FillShape(gtx.Ops, th.Popover, shape.Op(gtx.Ops))
 	area := shape.Push(gtx.Ops)
 	// The card takes the pointer from the page under it.
@@ -200,8 +207,22 @@ func (u *window) dialogCardAt(gtx C, p *browserPaneUI, session string, origin im
 	placed{at: image.Pt(pad, pad), call: bodyCall}.add(gtx)
 	ok.add(gtx)
 	no.add(gtx)
+	dialogClose(gtx, th, d, width, pad)
 	area.Pop()
 	paint.FillShape(gtx.Ops, ui.Alpha(th.Foreground, dialogCardRing), clip.Stroke{Path: shape.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
+}
+
+// dialogClose is the card's ghost × at its top right, pad in, as every
+// floating surface's.
+func dialogClose(gtx C, th *ui.Theme, d *dialogCard, width, pad int) {
+	b := th.Button(&d.close, "")
+	b.Icon, b.Variant, b.Size = icToolsClose, ui.VariantGhost, ui.SizeIconXS
+	m := op.Record(gtx.Ops)
+	gtx.Constraints.Min = image.Point{}
+	dims := b.Layout(gtx)
+	call := m.Stop()
+	defer op.Offset(image.Pt(width-pad/2-dims.Size.X, pad/2)).Push(gtx.Ops).Pop()
+	call.Add(gtx.Ops)
 }
 
 // placed is something laid out ahead, to draw at at.
@@ -227,6 +248,10 @@ func (u *window) dialogCardInput(gtx C, p *browserPaneUI, session string) {
 	}
 	if d.cancel.Clicked(gtx) {
 		u.answerDialog(p, session, false)
+	}
+	if d.close.Clicked(gtx) {
+		accept, _ := dialogKey(d.shown.Type, key.NameEscape)
+		u.answerDialog(p, session, accept)
 	}
 	for {
 		ev, ok := d.field.Update(gtx)
@@ -268,10 +293,12 @@ func dialogButtons(gtx C, th *ui.Theme, p *browserPaneUI) (ok, no placed) {
 		return placed{size: dims.Size, call: rec.Stop()}
 	}
 	okBtn := th.Button(&p.dialog.ok, okLabel)
+	okBtn.Keys = "↵"
 	okBtn.Variant, okBtn.Lit = okVariant, p.flashing(gtx, "accept") || kind == "alert" && p.flashing(gtx, "dismiss")
 	ok = record(okBtn)
 	if kind != "alert" {
 		noBtn := th.Button(&p.dialog.cancel, noLabel)
+		noBtn.Keys = "Esc"
 		noBtn.Variant, noBtn.Lit = ui.VariantOutline, p.flashing(gtx, "dismiss")
 		no = record(noBtn)
 	}

@@ -84,7 +84,7 @@ func (g *gitPanel) detailSplit(gtx C, th *ui.Theme, c backend.GitCommitDetail) D
 	}
 	layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		pane(filesHeight, func(gtx C) D { return g.detailFiles(gtx, th, c) }),
-		layout.Rigid(th.Separator),
+		layout.Rigid(func(gtx C) D { return D{Size: image.Pt(0, gtx.Dp(1))} }), // the resize handle's room, drawn as nothing
 		pane(messageHeight, func(gtx C) D {
 			list := gitScroll(th, &g.detail.message)
 			return list.Layout(gtx, 1, func(gtx C, _ int) D { return gitCommitHead(gtx, th, c) })
@@ -117,7 +117,7 @@ func (g *gitPanel) detailFiles(gtx C, th *ui.Theme, c backend.GitCommitDetail) D
 						// Two sizes on one line: under the row's Exact height they would not share a baseline.
 						gtx.Constraints.Min = image.Point{}
 						return layout.Flex{Alignment: layout.Baseline}.Layout(gtx,
-							layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(i18n.T("git.panel.files"))).Muted().Layout),
+							layout.Rigid(th.Text(ui.Text2XS, strings.ToUpper(i18n.T("git.panel.files"))).Muted().Weight(font.SemiBold).Layout),
 							ui.Gap(1.5),
 							layout.Rigid(th.Text(ui.TextXS, strconv.Itoa(len(c.Files))).Mono().Muted().Layout),
 						)
@@ -236,7 +236,6 @@ func (d *gitDetailPane) layoutDiff(gtx C, th *ui.Theme, g *gitPanel, in gitPanel
 				)
 			})
 		}),
-		layout.Rigid(th.Separator),
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
 			return d.diffBody(gtx, th, g, in, key)

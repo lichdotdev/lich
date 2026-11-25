@@ -12,11 +12,11 @@
       "many": "ещё {count}",
       "other": "ещё {count}"
     },
-    "hiddenWaiting": {
-      "one": "ещё {count} · ждут: {waiting}",
-      "few": "ещё {count} · ждут: {waiting}",
-      "many": "ещё {count} · ждут: {waiting}",
-      "other": "ещё {count} · ждут: {waiting}"
+    "waiting": {
+      "one": "{count} ждёт",
+      "few": "{count} ждут",
+      "many": "{count} ждут",
+      "other": "{count} ждут"
     }
   },
   "browser": {

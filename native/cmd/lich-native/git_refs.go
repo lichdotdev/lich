@@ -108,7 +108,7 @@ func (g *gitPanel) headRow(gtx C, th *ui.Theme, view gitLogView) D {
 func (g *gitPanel) treeRow(gtx C, th *ui.Theme, row gitTreeRow, in gitPanelInput) D {
 	if row.group {
 		return layout.Inset{Left: ui.Space(2.5), Top: ui.Space(2), Bottom: ui.Space(0.5)}.Layout(gtx,
-			th.Text(ui.Text2XS, strings.ToUpper(row.label)).Muted().Layout)
+			th.Text(ui.Text2XS, strings.ToUpper(row.label)).Muted().Weight(font.SemiBold).Layout)
 	}
 	var session *sessionView
 	if sv, ok := in.sessions[row.branch]; ok && row.branch != "" {

@@ -115,7 +115,6 @@ func (v *pullView) skeletonFiles(gtx C, th *ui.Theme) D {
 				)
 			})
 		}),
-		layout.Rigid(th.Separator),
 		layout.Flexed(1, func(gtx C) D {
 			gtx.Constraints.Min = gtx.Constraints.Max
 			return layout.Flex{}.Layout(gtx,
@@ -175,7 +174,7 @@ func skeletonCards(gtx C, th *ui.Theme) D {
 		return inset.Layout(gtx, func(gtx C) D {
 			children := []layout.FlexChild{}
 			if i > 0 {
-				children = append(children, layout.Rigid(func(gtx C) D { return layout.Inset{Bottom: ui.Space(2.5)}.Layout(gtx, th.Separator) }))
+				children = append(children, layout.Rigid(func(gtx C) D { return layout.Spacer{Height: ui.Space(2.5)}.Layout(gtx) }))
 			}
 			children = append(children, layout.Rigid(func(gtx C) D { return skeletonCardHeader(gtx, th, i) }))
 			full := gtx.Metric.PxToDp(gtx.Constraints.Max.X)

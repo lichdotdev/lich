@@ -61,7 +61,7 @@ func TestAnEditIsALineThatOpensItsDiff(t *testing.T) {
 			t.Errorf("the edit line lacks %q:\n%s", s, r.drawn())
 		}
 	}
-	if r.shows("Edit") || r.shows(chatEditsLabel(1)) {
+	if r.shows("Edit") || r.shows("EDITED") {
 		t.Fatalf("the edit shows its tool's name or a group's head:\n%s", r.drawn())
 	}
 	if name, folder := labelBox(t, r, "page.tsx").Min, labelBox(t, r, "app").Min; folder.X <= name.X || abs(folder.Y-name.Y) > 4 {
@@ -254,12 +254,12 @@ func TestAGroupOfEditsHeadsItsFilesAndOpensReview(t *testing.T) {
 	})
 	r.settle(t)
 	writeShot(t, r, "edit-group.png")
-	for _, s := range []string{chatEditsLabel(3), "+40", "-12", "downloads.go", "internal/browser", "+18", "ceilings.md", "docs"} {
+	for _, s := range []string{"EDITED", chatEditsCount(3), "+40", "-12", "downloads.go", "internal/browser", "+18", "ceilings.md", "docs"} {
 		if !r.shows(s) {
 			t.Errorf("the group lacks %q:\n%s", s, r.drawn())
 		}
 	}
-	r.clickLabel(t, chatEditsLabel(3))
+	r.clickLabel(t, chatEditsCount(3))
 	if u.dock.tab != dockReview {
 		t.Errorf("the group's head opened tab %v, want Review", u.dock.tab)
 	}

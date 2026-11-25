@@ -25,23 +25,29 @@ const (
 )
 
 var (
-	icToolsPending  = icons.Lucide("circle-dashed")
-	icToolsFailed   = icons.Lucide("x")
-	icToolsAuth     = icons.Lucide("circle-alert")
-	icToolsOff      = icons.Lucide("circle")
-	icToolsBack     = icons.Lucide("chevron-left")
-	toolsMaxH       = unit.Dp(460)
-	toolsLabelW     = ui.Space(32)
-	toolsGlyph      = ui.Space(4)
-	toolsHeadH      = ui.Space(10)
+	icToolsPending = icons.Lucide("circle-dashed")
+	icToolsFailed  = icons.Lucide("x")
+	icToolsAuth    = icons.Lucide("circle-alert")
+	icToolsOff     = icons.Lucide("circle")
+	icToolsBack    = icons.Lucide("chevron-left")
+	icToolsClose   = icons.Lucide("x")
+	toolsMaxH      = unit.Dp(460)
+	toolsLabelW    = ui.Space(32)
+	toolsGlyph     = ui.Space(4)
+	toolsHeadH     = ui.Space(10)
+	// toolsCloseRoom is the head's end the close stands in: its SizeIconXS
+	// square between two Space(1).
+	toolsCloseRoom  = ui.Space(8)
 	toolsGroupOrder = []string{"user", "project", "local", "claudeai", "other"}
 )
 
 // chatToolsPanel draws the open panel over the composer's box, as wide as it
 // and a gap above it, deferred so it stands over the conversation, no
-// taller than room: the slash list's place.
+// taller than room: the slash list's place. It grows out of the box's right
+// corner, where the chips that open it stand.
 func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView, working bool, room int) {
 	t := &p.tools
+	t.motion.track(gtx.Now, t.opened(), t.kind+"|"+t.detail)
 	if !t.opened() {
 		return
 	}
@@ -51,16 +57,39 @@ func (u *window) chatToolsPanel(gtx C, th *ui.Theme, p *chatPane, sv sessionView
 	g.Constraints = layout.Constraints{Max: image.Pt(gtx.Constraints.Max.X, max(min(gtx.Dp(toolsMaxH), room-lift), 0))}
 	macro := op.Record(gtx.Ops)
 	d := th.PopoverPanel(g, func(gtx C, th *ui.Theme) D {
-		return withKeys(gtx, th, t.kind, func(gtx C) D {
+		defer t.motion.fade(gtx)()
+		return withKeys(gtx, th, t, u.toolsFootAct(th, p, sv), func(gtx C) D {
 			return u.toolsView(gtx, th, p, sv, working)
 		})
 	})
 	call := macro.Stop()
 	m := op.Record(gtx.Ops)
 	op.Offset(image.Pt(0, -d.Size.Y-gtx.Dp(ui.Space(2))-lift)).Add(gtx.Ops)
+	pop := t.motion.push(gtx, d.Size, d.Size.X)
 	call.Add(gtx.Ops)
+	pop()
 	t.watchOutside(gtx, d.Size)
 	op.Defer(gtx.Ops, m.Stop())
+}
+
+// toolsFootAct is what the open view puts at the end of the keys' line: a
+// detail's actions, a running shell's Stop, the skills' note.
+func (u *window) toolsFootAct(th *ui.Theme, p *chatPane, sv sessionView) layout.Widget {
+	t := &p.tools
+	t.mu.Lock()
+	mcp, skills, plugins := t.mcp, t.skills, t.plugins
+	t.mu.Unlock()
+	switch t.kind {
+	case chatShellsPanel:
+		return u.shellStopAct(th, p, sv.ID)
+	case chatPluginCommand:
+		return t.pluginFoot(th, plugins)
+	case chatMCPCommand:
+		return t.mcpFoot(th, mcp)
+	case chatSkillsCommand:
+		return skillsFoot(th, skills)
+	}
+	return nil
 }
 
 // toolsView is the open panel's screen.
@@ -109,10 +138,37 @@ func toolsNote(gtx C, th *ui.Theme, s string) D {
 // toolsHead is the panel's title, its count muted beside it and an optional
 // control at the end.
 func toolsHead(gtx C, th *ui.Theme, title, count string, end layout.Widget) D {
+	return toolsHeadTones(gtx, th, title, []toned{{text: count}}, end)
+}
+
+// toned is a part of a head's count, in a state's tone, or muted with none.
+type toned struct {
+	text string
+	ink  color.NRGBA
+}
+
+// toolsHeadTones is toolsHead with a count told in parts, " · " between
+// them, each in its tone: the state of what the panel lists.
+func toolsHeadTones(gtx C, th *ui.Theme, title string, count []toned, end layout.Widget) D {
+	var parts []layout.FlexChild
+	for _, c := range count {
+		if c.text == "" {
+			continue
+		}
+		text := c.text
+		if len(parts) > 0 {
+			text = " · " + text
+		}
+		l := th.Text(ui.TextXS, text).Muted()
+		if c.ink.A != 0 {
+			l = th.Text(ui.TextXS, text).In(c.ink)
+		}
+		parts = append(parts, layout.Rigid(l.Layout))
+	}
 	return toolsHeadRow(gtx, ui.Space(2), []layout.FlexChild{
 		layout.Rigid(th.Text(ui.TextSM, title).Weight(font.SemiBold).Layout),
 		ui.Gap(2),
-		layout.Flexed(1, th.Text(ui.TextXS, count).Muted().Truncated().Layout),
+		layout.Flexed(1, func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, parts...) }),
 	}, end)
 }
 
@@ -120,6 +176,11 @@ func toolsHead(gtx C, th *ui.Theme, title, count string, end layout.Widget) D {
 // with a chevron, in the title's place, then the title, sub muted beside it
 // and an optional control at the end.
 func toolsBackHead(gtx C, th *ui.Theme, back *ui.Clickable, label string, title ui.LabelStyle, sub string, end layout.Widget) D {
+	return toolsBackHeadIn(gtx, th, back, label, title, sub, th.MutedForeground, end)
+}
+
+// toolsBackHeadIn is toolsBackHead with sub in ink: a state's tone.
+func toolsBackHeadIn(gtx C, th *ui.Theme, back *ui.Clickable, label string, title ui.LabelStyle, sub string, ink color.NRGBA, end layout.Widget) D {
 	b := th.Button(back, label)
 	b.Icon, b.Variant, b.Size = icToolsBack, ui.VariantGhost, ui.SizeXS
 	return toolsHeadRow(gtx, ui.Space(1), []layout.FlexChild{
@@ -127,7 +188,7 @@ func toolsBackHead(gtx C, th *ui.Theme, back *ui.Clickable, label string, title 
 		ui.Gap(2),
 		layout.Rigid(title.Truncated().Layout),
 		ui.Gap(2),
-		layout.Flexed(1, th.Text(ui.TextXS, sub).Muted().Truncated().Layout),
+		layout.Flexed(1, th.Text(ui.TextXS, sub).In(ink).Truncated().Layout),
 	}, end)
 }
 
@@ -146,7 +207,7 @@ func toolsHeadRow(gtx C, left unit.Dp, row []layout.FlexChild, end layout.Widget
 	if end != nil {
 		row = append(row, layout.Rigid(end))
 	}
-	return layout.Inset{Left: left, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Left: left, Right: toolsCloseRoom}.Layout(gtx, func(gtx C) D {
 		gtx.Constraints.Min.Y = gtx.Dp(toolsHeadH)
 		return layout.W.Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
@@ -169,36 +230,71 @@ func toolsGroupLine(th *ui.Theme, label, file string) layout.Widget {
 	}
 }
 
-// toolsKeysLine is the panel's foot: the keys it takes, since it never holds
-// the focus that would show them.
-func toolsKeysLine(gtx C, th *ui.Theme, hints [][2]string) D {
-	row := make([]layout.FlexChild, len(hints))
-	for i, h := range hints {
-		row[i] = layout.Rigid(func(gtx C) D {
-			return layout.Inset{Right: ui.Space(4)}.Layout(gtx, th.KeyHint(h[0], h[1]).Layout)
-		})
+// toolsKeysLine is the panel's foot: Escape's hint, since the panel never
+// holds the focus that would show it, at the right, or at the left with act
+// at the right.
+func toolsKeysLine(gtx C, hint, act layout.Widget) D {
+	fill := layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} })
+	row := []layout.FlexChild{fill, layout.Rigid(hint)}
+	if act != nil {
+		row = []layout.FlexChild{layout.Rigid(hint), fill, layout.Rigid(act)}
 	}
-	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(1.5), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+	return layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(3), Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
 	})
 }
 
-// withKeys is view over the keys' line, a hairline between them, the view
-// given the room the line leaves.
-func withKeys(gtx C, th *ui.Theme, kind string, view layout.Widget) D {
+// withKeys is view over the keys' line, set apart by space alone: Escape's
+// hint, and act at the line's end where the view has one. The panel's close
+// stands at the head's end, over the view, so every head keeps its room.
+func withKeys(gtx C, th *ui.Theme, t *chatTools, act layout.Widget, view layout.Widget) D {
 	m := op.Record(gtx.Ops)
-	keys := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(th.Separator),
-		layout.Rigid(func(gtx C) D { return toolsKeysLine(gtx, th, toolsHints(kind)) }),
-	)
+	keys := toolsKeysLine(gtx, th.KeyHint("Esc", toolsEscHint(t)).Layout, act)
 	keysCall := m.Stop()
 	g := gtx
 	g.Constraints.Max.Y = max(gtx.Constraints.Max.Y-keys.Size.Y, 0)
 	g.Constraints.Min.Y = 0
 	d := view(g)
+	toolsClose(gtx, th, t, max(d.Size.X, keys.Size.X))
 	defer op.Offset(image.Pt(0, d.Size.Y)).Push(gtx.Ops).Pop()
 	keysCall.Add(gtx.Ops)
 	return D{Size: image.Pt(max(d.Size.X, keys.Size.X), d.Size.Y+keys.Size.Y)}
+}
+
+// toolsClose is the panel's ghost ×, centred on the head's line at its end.
+func toolsClose(gtx C, th *ui.Theme, t *chatTools, width int) {
+	b := th.Button(&t.close, "")
+	b.Icon, b.Variant, b.Size = icToolsClose, ui.VariantGhost, ui.SizeIconXS
+	m := op.Record(gtx.Ops)
+	d := b.Layout(gtx)
+	call := m.Stop()
+	at := image.Pt(width-d.Size.X-gtx.Dp(ui.Space(1)), (gtx.Dp(toolsHeadH)-d.Size.Y)/2)
+	defer op.Offset(at).Push(gtx.Ops).Pop()
+	call.Add(gtx.Ops)
+}
+
+// toolsEscHint is what Escape does: back from a detail, else shut the panel.
+func toolsEscHint(t *chatTools) string {
+	if t.detail != "" {
+		return i18n.T("chat.tools.keys.back")
+	}
+	return i18n.T("chat.tools.keys.close")
+}
+
+// toolsPick is a panel's row, its Enter key cap at the end while the cursor
+// is on it: the key stands where it acts.
+func toolsPick(gtx C, th *ui.Theme, click *ui.Clickable, cursor bool, content func(gtx C, th *ui.Theme) D) D {
+	return pickerRow(gtx, th, click, cursor, func(gtx C, th *ui.Theme) D {
+		if !cursor {
+			return content(gtx, th)
+		}
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Flexed(1, func(gtx C) D { return content(gtx, th) }),
+			ui.Gap(2),
+			layout.Rigid(th.KeyCap("↵").Layout),
+		)
+	})
 }
 
 // toolsGroup is where a server's scope files it in the list.
@@ -259,7 +355,7 @@ func (u *window) mcpView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l api
 	}
 	servers := mcpOrdered(l.Servers)
 	if i := slices.IndexFunc(servers, func(s api.ChatMCPServer) bool { return s.Name == t.detail }); i >= 0 {
-		return u.mcpDetail(gtx, th, t, servers[i], l.Actions)
+		return u.mcpDetail(gtx, th, t, servers[i])
 	}
 	t.ensureRows(len(servers))
 	var lines []layout.Widget
@@ -270,18 +366,58 @@ func (u *window) mcpView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l api
 			lines = append(lines, toolsGroupLine(th, toolsGroupLabel(g), s.Config))
 		}
 		lines = append(lines, func(gtx C) D {
-			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return mcpRow(gtx, th, s) })
+			return toolsPick(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return mcpRow(gtx, th, s) })
 		})
 	}
+	count := mcpCounts(th, servers)
 	head := func(gtx C) D {
-		return toolsHead(gtx, th, i18n.T("chat.tools.mcpTitle"), i18n.T("chat.tools.serverCount", i18n.Args{"count": len(servers)}), nil)
+		return toolsHeadTones(gtx, th, i18n.T("chat.tools.mcpTitle"), count, nil)
 	}
 	return t.scrolled(gtx, th, head, lines, nil)
 }
 
+// mcpCounts is the servers counted by state, in the state's tone, the
+// states none is in left out.
+func mcpCounts(th *ui.Theme, servers []api.ChatMCPServer) []toned {
+	n := map[string]int{}
+	for _, s := range servers {
+		n[s.Status]++
+	}
+	var out []toned
+	for _, st := range []string{api.MCPConnected, api.MCPPending, api.MCPFailed, api.MCPNeedsAuth, api.MCPDisabled} {
+		if n[st] == 0 {
+			continue
+		}
+		_, ink, _ := mcpStatus(th, api.ChatMCPServer{Status: st})
+		if st != api.MCPFailed && st != api.MCPNeedsAuth {
+			ink = color.NRGBA{}
+		}
+		out = append(out, toned{text: mcpStatusCount(st, n[st]), ink: ink})
+	}
+	return out
+}
+
+func mcpStatusCount(status string, n int) string {
+	args := i18n.Args{"count": n}
+	switch status {
+	case api.MCPConnected:
+		return i18n.T("chat.tools.statusCount.connected", args)
+	case api.MCPPending:
+		return i18n.T("chat.tools.statusCount.pending", args)
+	case api.MCPFailed:
+		return i18n.T("chat.tools.statusCount.failed", args)
+	case api.MCPNeedsAuth:
+		return i18n.T("chat.tools.statusCount.needsAuth", args)
+	}
+	return i18n.T("chat.tools.statusCount.disabled", args)
+}
+
+// mcpRow is a server's line: the glyph says its state, and only what the
+// glyph cannot say is written, its tools once connected and the error of a
+// failure.
 func mcpRow(gtx C, th *ui.Theme, s api.ChatMCPServer) D {
-	ic, ink, state := mcpStatus(th, s)
-	meta := state
+	ic, ink, _ := mcpStatus(th, s)
+	meta := ""
 	if s.Status == api.MCPConnected {
 		meta = i18n.T("chat.tools.toolCount", i18n.Args{"count": len(s.Tools)})
 	}
@@ -332,7 +468,7 @@ func (t *chatTools) scrolled(gtx C, th *ui.Theme, head layout.Widget, lines []la
 		}),
 	}
 	if foot != nil {
-		children = append(children, layout.Rigid(th.Separator), layout.Rigid(foot))
+		children = append(children, layout.Rigid(foot))
 	}
 	// the panel is as tall as its lines, up to its room
 	gtx.Constraints.Min.Y = 0
@@ -408,27 +544,38 @@ func (u *window) skillsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l 
 	lines := make([]layout.Widget, len(shown))
 	for i, s := range shown {
 		lines[i] = func(gtx C) D {
-			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return skillRow(gtx, th, s) })
+			return toolsPick(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return skillRow(gtx, th, s) })
 		}
 	}
-	var foot layout.Widget
-	if slices.ContainsFunc(l.Skills, func(s api.ChatSkill) bool { return s.Locked == "plugin" }) {
-		foot = toolsFootNote(th, i18n.T("chat.tools.pluginSkills"))
+	on := 0
+	for _, s := range l.Skills {
+		if s.State != api.SkillOff {
+			on++
+		}
 	}
+	count := i18n.T("chat.tools.skillsOn", i18n.Args{"on": on, "count": len(l.Skills)})
 	head := func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {
-				return toolsHead(gtx, th, i18n.T("chat.tools.skillsTitle"), i18n.T("chat.tools.skillCount", i18n.Args{"count": len(l.Skills)}), sort)
+				return toolsHead(gtx, th, i18n.T("chat.tools.skillsTitle"), count, sort)
 			}),
 			layout.Rigid(func(gtx C) D {
 				in := th.Input(&t.query, i18n.T("chat.tools.search"))
 				in.Bare, in.Height = true, pickerRowH
 				return in.Layout(gtx)
 			}),
-			layout.Rigid(th.Separator),
 		)
 	}
-	return t.scrolled(gtx, th, head, lines, foot)
+	return t.scrolled(gtx, th, head, lines, nil)
+}
+
+// skillsFoot is the note on the keys' line when a plugin brings a skill:
+// the panel takes no action of its own.
+func skillsFoot(th *ui.Theme, l api.ChatSkillList) layout.Widget {
+	if !slices.ContainsFunc(l.Skills, func(s api.ChatSkill) bool { return s.Locked == "plugin" }) {
+		return nil
+	}
+	return th.Text(ui.TextXS, i18n.T("chat.tools.pluginSkills")).Muted().Truncated().Layout
 }
 
 func skillRow(gtx C, th *ui.Theme, s api.ChatSkill) D {

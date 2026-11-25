@@ -289,6 +289,9 @@ type Service struct {
 	// leave the older count on the card (see emitTodo).
 	todos    todoCursors
 	todoEmit sync.Mutex
+	// names is the same reading for the name each session's agent answers to
+	// in the roster (agentname.go).
+	names nameCursors
 	// lastCols/lastRows is the last terminal size the window reported, and the
 	// size a session spawned with none of its own is started at. See
 	// sizeFor. Guarded by mu.
@@ -897,6 +900,7 @@ func (s *Service) endProcess(id, closerID string) error {
 
 	s.recap.cursors.forget(id)
 	s.todos.cursors.forget(id)
+	s.names.cursors.forget(id)
 	// Synchronously, and before the row that the window is about to delete goes:
 	// a write that loses that race is dropped silently (store.AddHandsOn), and
 	// this is the last chance a closed card gets to keep what it was worked.

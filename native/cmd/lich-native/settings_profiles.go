@@ -8,6 +8,7 @@ import (
 	"gioui.org/gesture"
 	"gioui.org/widget"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -117,15 +118,18 @@ type profileSettings struct {
 	// of the way; the window wires it.
 	openTerminal func(command string) bool
 	// asked is whether the book was read again on this visit.
-	asked    bool
-	advanced bool
-	fold     ui.Clickable
-	binary   profileBinaryLinks
-	picker   ui.DropdownPanelState
-	options  map[string]*ui.Clickable
-	rows     map[string]*profileRowState
-	add      ui.Clickable
-	flow     profileFlow
+	asked   bool
+	binary  profileBinaryLinks
+	picker  ui.DropdownPanelState
+	options map[string]*ui.Clickable
+	rows    map[string]*profileRowState
+	add     ui.Clickable
+	flow    profileFlow
+	// prefs are the chat model and effort of each named profile, by
+	// profilePrefKey; Personal's are the machine's global values.
+	prefsMu sync.Mutex
+	prefs   map[string]string
+	pickers map[string]*chatPrefPicker
 }
 
 type profileRowState struct {
@@ -134,6 +138,18 @@ type profileRowState struct {
 	login ui.Clickable
 	more  ui.Clickable
 	menu  ui.MenuState
+}
+
+// prefPicker is the profile slug's picker for category.
+func (c *profileSettings) prefPicker(slug, category string) *chatPrefPicker {
+	if c.pickers == nil {
+		c.pickers = map[string]*chatPrefPicker{}
+	}
+	key := slug + "\x00" + category
+	if c.pickers[key] == nil {
+		c.pickers[key] = new(chatPrefPicker)
+	}
+	return c.pickers[key]
 }
 
 // bind connects the screen's profiles to the window's book of them.
@@ -167,7 +183,73 @@ func (s *settingsScreen) reloadProfiles(c *profileSettings) {
 	if err := c.book.reload(s.ctx); err != nil {
 		log.Printf("settings: %s profiles: %v", c.provider.kind, err)
 	}
+	if hasChatPrefs(c.provider.kind) {
+		s.readProfilePrefs(c)
+	}
 	s.invalidate()
+}
+
+// readProfilePrefs reads each named profile's chat model and effort.
+func (s *settingsScreen) readProfilePrefs(c *profileSettings) {
+	list, _ := c.book.snapshot()
+	prefs := map[string]string{}
+	for _, p := range list {
+		if p.Personal {
+			continue
+		}
+		for _, category := range []string{api.OptionModel, api.OptionEffort} {
+			key := profilePrefKey(providerPrefKey(c.provider.kind, category), p.Slug)
+			v, err := s.client.GetSetting(s.ctx, key, "")
+			if err != nil {
+				log.Printf("settings: read %s: %v", key, err)
+				continue
+			}
+			prefs[key] = v
+		}
+	}
+	c.prefsMu.Lock()
+	c.prefs = prefs
+	c.prefsMu.Unlock()
+}
+
+// profilePrefKey is store.profilePrefKey: key for a named profile, the bare
+// key for Personal.
+func profilePrefKey(key, slug string) string {
+	if slug == "" || slug == personalProfile {
+		return key
+	}
+	return key + "@" + slug
+}
+
+// pref is the value a new chat born in the profile slug starts on for key.
+func (c *profileSettings) pref(key, slug string, m providersMachine) string {
+	k := profilePrefKey(key, slug)
+	if k == key {
+		return m.globals[key]
+	}
+	c.prefsMu.Lock()
+	defer c.prefsMu.Unlock()
+	return c.prefs[k]
+}
+
+// setProfilePref stores a profile's chat model or effort for every project.
+func (s *settingsScreen) setProfilePref(c *profileSettings, key, slug, value string) {
+	k := profilePrefKey(key, slug)
+	if k == key {
+		s.writeProviderKey(key, "", value, nil)
+		return
+	}
+	c.prefsMu.Lock()
+	if c.prefs == nil {
+		c.prefs = map[string]string{}
+	}
+	c.prefs[k] = value
+	c.prefsMu.Unlock()
+	s.providers.enqueue(k+"\x00", func() {
+		if err := s.client.SetSetting(s.ctx, k, "", value); err != nil {
+			log.Printf("settings: save %s: %v", k, err)
+		}
+	})
 }
 
 // setProfile stores the profile the open scope's new sessions are born in.

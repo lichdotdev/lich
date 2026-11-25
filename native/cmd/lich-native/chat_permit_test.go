@@ -81,12 +81,13 @@ func TestDigitsAnswerTheirOption(t *testing.T) {
 	}
 }
 
-// Esc answers with the first one-time reject and says so beside the buttons.
+// Esc answers with the first one-time reject and says so in its button
+// (contract changed: Esc's cap stands in the reject, no "denies" legend).
 func TestEscAnswersTheFirstOneTimeReject(t *testing.T) {
 	for name, s := range permitShapes {
 		t.Run(name, func(t *testing.T) {
 			_, r, f := permitFrames(t, backend.ChatPermission{Options: s.options})
-			if !r.shows("denies") {
+			if !r.shows("Esc") || r.shows("denies") {
 				t.Errorf("no Esc hint:\n%s", r.drawn())
 			}
 			writeShot(t, r, "chat-permit-"+name+".png")

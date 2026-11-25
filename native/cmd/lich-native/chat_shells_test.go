@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/lichdotdev/lich/native/i18n"
 	"slices"
 	"strings"
 	"testing"
@@ -37,7 +38,7 @@ func TestShellsChipOpensTheShellsAndStopStopsOne(t *testing.T) {
 	writeShot(t, r, "shells-chip.png")
 	r.click(t, r.at(t, "2 shells"))
 	writeShot(t, r, "shells-list.png")
-	if !r.showsAll("Background shells", "npm run dev", "tail -f log.txt", "go test ./...", "failed · 4s") || !strings.Contains(r.drawn(), `"1m `) {
+	if !r.showsAll("Background shells", "npm run dev", "tail -f log.txt", "go test ./...", "failed", " · 4s") || !strings.Contains(r.drawn(), `"1m `) {
 		t.Fatalf("the shells are not drawn:\n%s", r.drawn())
 	}
 	r.click(t, r.at(t, "npm run dev"))
@@ -60,6 +61,28 @@ func TestShellsChipOpensTheShellsAndStopStopsOne(t *testing.T) {
 	r.press(key.NameEscape)
 	if p.tools.opened() {
 		t.Errorf("a second Escape left the panel open:\n%s", r.drawn())
+	}
+}
+
+// The list groups the shells that run apart from those that ended, a failure
+// names its exit code where the provider gave one, and the × shuts the panel.
+func TestShellsGroupNameAnExitCodeAndClose(t *testing.T) {
+	u, r, _, p := shellsFrames(t)
+	code := 3
+	shells := u.model.chat.shellsOf("s1")
+	shells[1].ExitCode = &code
+	u.model.chat.setShells("s1", shells)
+	r.frames(2)
+	r.click(t, r.at(t, "2 shells"))
+	if !r.showsAll("RUNNING", "ENDED", "2 running", "exit 3", "close") || r.shows("failed") {
+		t.Fatalf("the groups or the exit code are not drawn:\n%s", r.drawn())
+	}
+	// the panel grows in before its × takes a click (contract changed: it opens
+	// with a motion)
+	r.frames(1)
+	r.click(t, r.controlOf(t, "2 running"))
+	if p.tools.opened() {
+		t.Errorf("the × left the panel open:\n%s", r.drawn())
 	}
 }
 
@@ -166,7 +189,8 @@ func TestCtrlBMovesTheCommandTheTurnWaitsOn(t *testing.T) {
 	u.model.chat.turn(api.ChatTurn{SessionID: "s1", Running: true})
 	r.frames(3)
 	writeShot(t, r, "chat-background-hint.png")
-	if !r.shows("· Ctrl+B to run in background") {
+	// Ctrl+B in a cap beside what it does (contract changed: it was a sentence)
+	if !r.showsAll("Ctrl+B", i18n.T("chat.shells.move")) {
 		t.Fatalf("no hint while the turn waits on a command:\n%s", r.drawn())
 	}
 	r.pressWith("B", key.ModCtrl)

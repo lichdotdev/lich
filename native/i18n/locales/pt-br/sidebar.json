@@ -233,6 +233,18 @@
       "failedCode": "Falhou · saída {code}",
       "never": "Ainda não iniciado",
       "stoppedAt": "Parado · {time}"
+    },
+    "runningCount": {
+      "one": "{count} rodando",
+      "other": "{count} rodando"
+    },
+    "failedCount": {
+      "one": "{count} falhou",
+      "other": "{count} falharam"
+    },
+    "stoppedCount": {
+      "one": "{count} parado",
+      "other": "{count} parados"
     }
   },
   "checkoutRow": {

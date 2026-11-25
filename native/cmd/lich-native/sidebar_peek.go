@@ -83,6 +83,8 @@ func (s *sidebar) peekLayout(gtx C, th *ui.Theme, m *model, active string, at im
 	}
 	p.box = image.Rectangle{Min: at, Max: at.Add(size)}
 	defer op.Offset(at).Push(gtx.Ops).Pop()
+	// floating over the stage, the island stands at the menus' elevation
+	ui.ElevationMid.Paint(gtx, size, gtx.Dp(ui.RadiusLG))
 	// The panel's own area takes the pointer from the stage under it, and
 	// reads it over every row it draws.
 	area := clip.UniformRRect(image.Rectangle{Max: size}, gtx.Dp(ui.RadiusLG)).Push(gtx.Ops)

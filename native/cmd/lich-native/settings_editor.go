@@ -17,6 +17,7 @@ const (
 	hideWhitespaceKey = "editor.hideWhitespace"
 	diffLayoutKey     = "editor.diffLayout"
 	vimKey            = "editor.vim"
+	relativeKey       = "editor.relativeNumbers"
 	diffUnified       = "unified"
 	diffSplit         = "split"
 )
@@ -26,6 +27,7 @@ type editorPrefs struct {
 	hideWhitespace bool
 	diffLayout     string
 	vim            bool
+	relative       bool
 }
 
 func (p editorPrefs) split() bool { return p.diffLayout == diffSplit }
@@ -48,15 +50,20 @@ func loadEditorPrefs(ctx context.Context, c *backend.Client) (editorPrefs, error
 		return editorPrefs{}, err
 	}
 	vim, err := c.GetSetting(ctx, vimKey, "")
-	return editorPrefs{hideWhitespace: hide, diffLayout: parseDiffLayout(layout), vim: vim == "true"}, err
+	if err != nil {
+		return editorPrefs{}, err
+	}
+	relative, err := c.GetSetting(ctx, relativeKey, "")
+	return editorPrefs{hideWhitespace: hide, diffLayout: parseDiffLayout(layout), vim: vim == "true", relative: relative == "true"}, err
 }
 
 // editorSettings is the Editor section's controls over prefs.
 type editorSettings struct {
-	prefs  editorPrefs
-	hide   ui.SwitchState
-	layout ui.Enum
-	vim    ui.SwitchState
+	prefs    editorPrefs
+	hide     ui.SwitchState
+	relative ui.SwitchState
+	layout   ui.Enum
+	vim      ui.SwitchState
 	// nvim is the config file of a Neovim the editor runs, asked the first
 	// time the row shows; an error when there is none on the PATH.
 	nvim   remote[string]
@@ -70,6 +77,8 @@ func (e *editorSettings) row(gtx C, key string, s *settingsScreen) (string, func
 		return i18n.T("settings.settingsEditor.hideWhitespaceDescription"), func(gtx C, th *ui.Theme) D { return e.hideControl(gtx, th, s) }
 	case diffLayoutKey:
 		return i18n.T("settings.diffLayoutSetting.description"), func(gtx C, th *ui.Theme) D { return e.layoutControl(gtx, th, s) }
+	case relativeKey:
+		return i18n.T("settings.settingsEditor.relativeNumbersDescription"), func(gtx C, th *ui.Theme) D { return e.relativeControl(gtx, th, s) }
 	case vimKey:
 		return e.vimDescription(s), func(gtx C, th *ui.Theme) D { return e.vimControl(gtx, th, s) }
 	}
@@ -83,6 +92,15 @@ func (e *editorSettings) hideControl(gtx C, th *ui.Theme, s *settingsScreen) D {
 	}
 	e.hide.Value = e.prefs.hideWhitespace
 	return th.Switch(&e.hide).Layout(gtx)
+}
+
+func (e *editorSettings) relativeControl(gtx C, th *ui.Theme, s *settingsScreen) D {
+	if e.relative.Update(gtx) {
+		e.prefs.relative = e.relative.Value
+		e.commit(s, relativeKey, strconv.FormatBool(e.relative.Value))
+	}
+	e.relative.Value = e.prefs.relative
+	return th.Switch(&e.relative).Layout(gtx)
 }
 
 func (e *editorSettings) layoutControl(gtx C, th *ui.Theme, s *settingsScreen) D {

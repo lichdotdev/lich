@@ -43,8 +43,8 @@ github.com/josephspurrier/goversioninfo v1.4.1 h1:5LvrkP+n0tg91J9yTkoVnt/QgNnrI1
 github.com/josephspurrier/goversioninfo v1.4.1/go.mod h1:JWzv5rKQr+MmW+LvM412ToT/IkYDZjaclF2pKDss8IY=
 github.com/ledongthuc/pdf v0.0.0-20220302134840-0c2507a12d80 h1:6Yzfa6GP0rIo/kULo2bwGEkFvCePZ3qHDDTC3/J9Swo=
 github.com/ledongthuc/pdf v0.0.0-20220302134840-0c2507a12d80/go.mod h1:imJHygn/1yfhB7XSJJKlFZKl/J+dCPAknuiaGOshXAs=
-github.com/lichdotdev/godemirror v0.11.1-0.20261124210901-d0c2c5495384 h1:Fv/PyvnmNJiEslYR/0m3taTntNiIDOuP9DgeTGocKts=
-github.com/lichdotdev/godemirror v0.11.1-0.20261124210901-d0c2c5495384/go.mod h1:Bpzw5JlSRuXiEVRcX2gD+nsP0ix8cDpy9TTH5Q3n3XY=
+github.com/lichdotdev/godemirror v0.11.1-0.20261125175513-d64f3ef2d3ef h1:mFw1rXZ1SDM/5qK4VxZGB8+gRmUypxrw4pmlXiV4/gs=
+github.com/lichdotdev/godemirror v0.11.1-0.20261125175513-d64f3ef2d3ef/go.mod h1:Bpzw5JlSRuXiEVRcX2gD+nsP0ix8cDpy9TTH5Q3n3XY=
 github.com/mattn/go-isatty v0.0.20 h1:xfD0iDuEKnDkl03q4limB+vH+GxLEtL/jb4xVJSWWEY=
 github.com/mattn/go-isatty v0.0.20/go.mod h1:W+V8PltTTMOvKvAeJH7IuucS94S2C6jfK/D7dTCTo3Y=
 github.com/ncruces/go-strftime v1.0.0 h1:HMFp8mLCTPp341M/ZnA4qaf7ZlsbTc+miZjCLOFAw7w=

@@ -153,6 +153,8 @@ func (u *window) dockPeek(gtx C, v stageView) error {
 	p.box = image.Rectangle{Min: image.Pt(x, 0), Max: image.Pt(max(min(x+w, size.X), x), size.Y)}.Add(u.islandAt)
 	defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
 	defer op.Offset(image.Pt(x, 0)).Push(gtx.Ops).Pop()
+	// floating over the stage, the island stands at the menus' elevation
+	ui.ElevationMid.Paint(gtx, image.Pt(w, size.Y), gtx.Dp(ui.RadiusLG))
 	// The panel's own area takes the pointer from the terminal under it, and
 	// reads it over everything the dock draws.
 	area := clip.UniformRRect(image.Rectangle{Max: image.Pt(w, size.Y)}, gtx.Dp(ui.RadiusLG)).Push(gtx.Ops)

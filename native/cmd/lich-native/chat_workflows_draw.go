@@ -34,8 +34,9 @@ func (u *window) chatWorkflow(gtx C, th *ui.Theme, p *chatPane, id string) D {
 	ic, ink := icWorkflow, fg
 	end := th.Text(ui.TextSM, workflowRunning(wf)).Truncated().Shimmer()
 	if wf.State == api.WorkflowFailed {
+		// the glyph says it failed; the line's end says nothing more
 		ic, ink = icToolsFailed, th.Destructive
-		end = th.Text(ui.TextSM, i18n.T("chat.workflow.failed")).In(th.Destructive)
+		end = th.Text(ui.TextSM, "")
 	}
 	count := i18n.T("chat.workflow.count", i18n.Args{"name": wf.Name, "done": workflowDone(wf), "total": len(wf.Agents)})
 	line := func(gtx C) D {
@@ -105,11 +106,18 @@ func (u *window) workflowsView(gtx C, th *ui.Theme, p *chatPane, sv sessionView)
 			lines = append(lines, toolsGroupLine(th, a.Phase, ""))
 		}
 		lines = append(lines, func(gtx C) D {
-			return pickerRow(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return workflowAgentRow(gtx, th, a) })
+			return toolsPick(gtx, th, &t.rows[i], i == t.cursor, func(gtx C, th *ui.Theme) D { return workflowAgentRow(gtx, th, a) })
 		})
 	}
+	progress := toned{text: i18n.T("chat.workflow.progress", i18n.Args{"done": workflowDone(wf), "total": len(wf.Agents)})}
+	switch {
+	case wf.State == api.WorkflowFailed:
+		progress.ink = th.Destructive
+	case workflowDone(wf) == len(wf.Agents):
+		progress.ink = th.TonePass
+	}
 	head := func(gtx C) D {
-		return toolsHead(gtx, th, wf.Name, i18n.T("chat.workflow.progress", i18n.Args{"done": workflowDone(wf), "total": len(wf.Agents)}), nil)
+		return toolsHeadTones(gtx, th, wf.Name, []toned{progress}, nil)
 	}
 	return t.scrolled(gtx, th, head, lines, nil)
 }

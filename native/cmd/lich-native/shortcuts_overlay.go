@@ -12,8 +12,6 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-const shortcutsEsc = "esc"
-
 const (
 	shortcutsWidth unit.Dp = 544
 	// shortcutsScrim is the scrim's opacity, the palette's and not a dialog's.
@@ -61,9 +59,8 @@ func (o *shortcutsOverlay) layout(gtx C, th *ui.Theme, bound hotkeyBindings) {
 	}
 	on := th.On(th.Popover)
 	dlg := th.Dialog(&o.dialog, o.open, i18n.T("shell.shortcutsOverlay.title"), i18n.T("shell.shortcutsOverlay.rebind"))
-	dlg.MaxWidth, dlg.HideClose, dlg.Scrim = shortcutsWidth, true, shortcutsScrim
+	dlg.MaxWidth, dlg.Scrim = shortcutsWidth, shortcutsScrim
 	dlg.Body = func(gtx C) D { return o.body(gtx, on, shortcutGroupsOf(bound, runtime.GOOS)) }
-	dlg.Actions = []layout.Widget{on.KeyHint(shortcutsEsc, i18n.T("shell.shortcutsOverlay.close")).Layout}
 	if dlg.Layout(gtx) {
 		o.open = false
 	}

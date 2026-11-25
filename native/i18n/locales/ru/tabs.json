@@ -1,7 +1,19 @@
 {
   "notificationsButton": {
     "title": "Уведомления",
-    "caughtUp": "Всё прочитано"
+    "caughtUp": "Всё прочитано",
+    "waiting": {
+      "one": "{count} ждёт",
+      "few": "{count} ждут",
+      "many": "{count} ждут",
+      "other": "{count} ждут"
+    },
+    "done": {
+      "one": "{count} готова",
+      "few": "{count} готовы",
+      "many": "{count} готовы",
+      "other": "{count} готовы"
+    }
   },
   "openProjectMenu": {
     "open": "Открыть проект",

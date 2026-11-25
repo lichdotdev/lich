@@ -89,7 +89,8 @@ func (a *Buttons) Revert(chunk godemirror.Chunk, onClick func()) layout.Widget {
 		if c.Hovered() {
 			bg = th.Over(th.Accent)
 		}
-		return a.button(gtx, c, bg, th.Over(th.Border), func(gtx C) D {
+		// the fill sets it apart; no edge
+		return a.button(gtx, c, bg, color.NRGBA{}, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return icRevertBlock.Layout(gtx, affordanceIcon, th.Foreground) }),
 				layout.Rigid(layout.Spacer{Width: affordanceGap}.Layout),
