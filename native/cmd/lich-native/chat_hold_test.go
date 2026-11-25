@@ -35,7 +35,7 @@ func TestASentMessageIsDrawnSentWhileItWaits(t *testing.T) {
 	if n := f.callsOf(api.ChatPrompt.Name); n != 0 {
 		t.Errorf("the message went at once (%d prompts)", n)
 	}
-	if !r.showsAll("rename the flag", chatVerb("s1", 1)) {
+	if !r.showsAll("rename the flag", chatVerb("", "s1", 1)) {
 		t.Errorf("the waiting message and its turn are not drawn:\n%s", r.drawn())
 	}
 	if !u.model.chat.isRunning("s1") {
@@ -52,7 +52,7 @@ func TestEscTakesAWaitingMessageBack(t *testing.T) {
 	}
 	r.now = r.now.Add(time.Second)
 	r.frames(3)
-	if r.shows(chatVerb("s1", 1)) || u.model.chat.isRunning("s1") {
+	if r.shows(chatVerb("", "s1", 1)) || u.model.chat.isRunning("s1") {
 		t.Errorf("the turn still runs once the message was taken back:\n%s", r.drawn())
 	}
 	time.Sleep(chatSendHold + 100*time.Millisecond)

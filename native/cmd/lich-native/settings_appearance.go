@@ -1,12 +1,14 @@
 package main
 
 import (
+	"cmp"
 	"fmt"
 	"log"
 	"math"
 	"strconv"
 	"strings"
 
+	"gioui.org/layout"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/native/i18n"
@@ -64,6 +66,9 @@ type appearanceControls struct {
 	copy       ui.SwitchState
 	buttons    ui.Enum
 	chatWidth  ui.Enum
+	verbs      widget.Editor
+	verbsTyped bool // the working words field holds the user's text
+	verbsReset ui.Clickable
 }
 
 // commit applies p at once and stores the setting that changed.
@@ -124,6 +129,9 @@ func (s *settingsScreen) appearanceRow(gtx C, th *ui.Theme, e settingEntry, r se
 	case chatWidthKey:
 		r.description = i18n.T("settings.chatWidthSetting.description")
 		control = s.chatWidthControl
+	case chatVerbsKey:
+		r.description = i18n.T("settings.chatVerbsSetting.description")
+		return r.layoutBlock(gtx, th, first, s.chatVerbsControl), true
 	case copyOnSelectKey:
 		r.description = i18n.T("settings.appearanceSettings.copyOnSelectDescription")
 		control = s.copyOnSelectControl
@@ -301,4 +309,53 @@ func (s *settingsScreen) rowApplies(e settingEntry) bool {
 		return s.sandbox.canConfine()
 	}
 	return true
+}
+
+// chatVerbsControl is the working words field, one per line, filled with the
+// language's own until the user writes theirs. A list equal to the language's
+// is stored as none, so it keeps following the interface language.
+func (s *settingsScreen) chatVerbsControl(gtx C, th *ui.Theme) D {
+	ed := &s.look.verbs
+	defaults := strings.Join(chatDefaultVerbs(), "\n")
+	if s.look.verbsReset.Clicked(gtx) {
+		s.commitChatVerbs("")
+		s.look.verbsTyped = false
+	}
+	if !s.look.verbsTyped {
+		ed.SetText(cmp.Or(s.look.prefs.chatVerbs, defaults))
+		s.look.verbsTyped = true
+	}
+	for {
+		ev, ok := ed.Update(gtx)
+		if !ok {
+			break
+		}
+		if _, changed := ev.(widget.ChangeEvent); changed {
+			verbs := strings.Join(chatVerbsOf(ed.Text()), "\n")
+			if verbs == defaults {
+				verbs = ""
+			}
+			s.commitChatVerbs(verbs)
+		}
+	}
+	field := func(gtx C) D { return th.InputGroupTextarea(ed, "").Layout(gtx) }
+	if s.look.prefs.chatVerbs == "" {
+		return field(gtx)
+	}
+	reset := th.Button(&s.look.verbsReset, i18n.T("settings.chatVerbsSetting.reset"))
+	reset.Variant, reset.Size = ui.VariantOutline, ui.SizeSM
+	return layout.Flex{Axis: layout.Vertical, Alignment: layout.Start}.Layout(gtx,
+		layout.Rigid(field),
+		ui.VGap(2),
+		layout.Rigid(reset.Layout),
+	)
+}
+
+func (s *settingsScreen) commitChatVerbs(verbs string) {
+	if verbs == s.look.prefs.chatVerbs {
+		return
+	}
+	p := s.look.prefs
+	p.chatVerbs = verbs
+	s.commitAppearance(p, chatVerbsKey, verbs)
 }

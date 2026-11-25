@@ -39,8 +39,8 @@ func TestTheSpinnerCentersOnTheVerbAndTheLineIsNoTaller(t *testing.T) {
 	var line, label D
 	r := newFrameRig(image.Pt(400, 200), func(gtx C, th *ui.Theme) {
 		gtx.Constraints.Min = image.Point{}
-		label = chatLiveLabel(gtx, th, chatVerb("s1", 1), th.MutedForeground, time.Time{})
-		line = chatLive(gtx, th, "s1", chatRow{turn: 1})
+		label = chatLiveLabel(gtx, th, chatVerb("", "s1", 1), th.MutedForeground, time.Time{})
+		line = chatLive(gtx, th, "", "s1", chatRow{turn: 1})
 	})
 	r.frame()
 	const foot = 22 // chatSpinnerSize at 1x
@@ -51,7 +51,7 @@ func TestTheSpinnerCentersOnTheVerbAndTheLineIsNoTaller(t *testing.T) {
 	// line's, which the spinner pushes down by half of what it is taller.
 	var tops []int
 	for _, n := range r.nodes() {
-		if n.Desc.Label == chatVerb("s1", 1) {
+		if n.Desc.Label == chatVerb("", "s1", 1) {
 			tops = append(tops, n.Desc.Bounds.Min.Y)
 		}
 	}

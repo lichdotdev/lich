@@ -30,7 +30,8 @@
       "updates": "업데이트",
       "help": "도움말",
       "services": "서비스",
-      "extensions": "확장 프로그램"
+      "extensions": "확장 프로그램",
+      "chat": "채팅"
     },
     "notYet": "아직 여기에 없습니다",
     "projectDesc": "이 프로젝트가 전역 설정에서 바꾼 항목입니다. 바꾸지 않은 항목은 전역 설정을 따릅니다."
@@ -246,6 +247,12 @@
     "comfortable": "기본",
     "wide": "넓게",
     "full": "전체"
+  },
+  "chatVerbsSetting": {
+    "title": "작업 중 문구",
+    "searchWords": "작업 중 문구 동사 생각 중 턴 스피너",
+    "description": "한 줄에 하나씩 적습니다. 에이전트가 작업하는 동안 턴마다 이 중 하나를 보여 줍니다.",
+    "reset": "기본값으로 되돌리기"
   },
   "windowButtonsSetting": {
     "title": "버튼",

@@ -66,7 +66,7 @@ func (u *window) chatSwapLine(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 	rule := chatPhase(gtx, s.at, chatSwapOut, chatSwapRule, paneEaseOut)
 	height := chatPhase(gtx, s.at, 0, chatSwapHeight, paneEaseOut)
 	return chatCrossfade(gtx, layout.W, height, out, 1,
-		func(gtx C) D { return chatLive(gtx, th, sv.ID, s.live) },
+		func(gtx C) D { return chatLive(gtx, th, u.chatVerbs, sv.ID, s.live) },
 		func(gtx C) D { return u.chatDone(gtx, th, p, sv, r, in, rule) })
 }
 

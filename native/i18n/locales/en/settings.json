@@ -31,7 +31,8 @@
       "updates": "Updates",
       "help": "Help",
       "services": "Services",
-      "extensions": "Extensions"
+      "extensions": "Extensions",
+      "chat": "Chat"
     },
     "notYet": "Not here yet",
     "projectDesc": "What this project changes from Global. A row without a change follows Global."
@@ -250,6 +251,12 @@
     "comfortable": "Comfortable",
     "wide": "Wide",
     "full": "Full"
+  },
+  "chatVerbsSetting": {
+    "title": "Working words",
+    "searchWords": "working words verbs thinking spinner turn live",
+    "description": "One per line. While the agent works, each turn shows one of them.",
+    "reset": "Reset to defaults"
   },
   "windowButtonsSetting": {
     "title": "Buttons",
