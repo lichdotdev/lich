@@ -859,11 +859,17 @@ func startsTurn(r, prev chatRow) bool {
 	return false
 }
 
-// isEnvelope is whether row r is a notification lich handed the agent: not a
-// task or a request, which stand as a message of the person's and start a
-// turn.
+// isEnvelope is whether row r is a notification lich or the harness handed the
+// agent: not a task or a request, which stand as a message of the person's and
+// start a turn.
 func isEnvelope(r chatRow) bool {
-	if r.kind != chatRowItem || r.item.Kind != api.ItemUser || !strings.HasPrefix(r.item.Text, envelopeOpen) {
+	if r.kind != chatRowItem || r.item.Kind != api.ItemUser {
+		return false
+	}
+	if _, ok := parseTaskNotes(r.item.Text); ok {
+		return true
+	}
+	if !strings.HasPrefix(r.item.Text, envelopeOpen) {
 		return false
 	}
 	head, _, _ := strings.Cut(r.item.Text, "\n")
