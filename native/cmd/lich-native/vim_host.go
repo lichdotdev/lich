@@ -10,7 +10,10 @@ import (
 	"errors"
 	"fmt"
 	"log"
+	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"sync"
 
 	"github.com/neovim/go-client/nvim"
@@ -51,6 +54,8 @@ type vimHost struct {
 	ui     vimUI
 	rows   int
 	cols   int
+	// configDir is the running Neovim's stdpath('config'), "" before one runs.
+	configDir string
 }
 
 // vimEvent is what Neovim reported of one buffer: its lines from first to
@@ -85,6 +90,10 @@ type vimState struct {
 	preview *vimPreview
 	// parens is the bracket pair matchparen lights, as matches are spelled.
 	parens [][3]int
+	// lsp are the language servers attached to the buffer, and missing the
+	// one lich knows for its filetype but found no command for.
+	lsp     []string
+	missing string
 }
 
 // vimPreview is the buffer lines first..last, 0-based and last excluded, as
@@ -193,6 +202,14 @@ func (h *vimHost) start() (*nvim.Nvim, error) {
 		_ = v.Close()
 		return nil, err
 	}
+	var dir string
+	if err := v.ExecLua("return vim.fn.stdpath('config')", &dir); err != nil {
+		_ = v.Close()
+		return nil, err
+	}
+	h.mu.Lock()
+	h.configDir = dir
+	h.mu.Unlock()
 	return v, nil
 }
 
@@ -211,10 +228,14 @@ func (h *vimHost) drop(v *nvim.Nvim) {
 func (h *vimHost) close() {
 	h.mu.Lock()
 	v := h.nv
+	h.nv, h.events, h.ui = nil, map[int][]vimEvent{}, vimUI{}
 	h.failed, h.told = nil, false
 	h.mu.Unlock()
 	if v != nil {
-		h.drop(v)
+		// Close waits for the process, up to its kill timer: never on the
+		// window's goroutine.
+		go func() { _ = v.Close() }()
+		h.invalidate()
 	}
 }
 
@@ -229,8 +250,9 @@ func (h *vimHost) onLines(buf int, tick, first, last int, lines []string) {
 	h.push(buf, vimEvent{lines: &vimLines{tick: tick, first: first, last: last, lines: lines}})
 }
 
-func (h *vimHost) onState(buf int, mode string, row, col, top int, regions, matches [][]int, preview []any, parens [][]int) {
+func (h *vimHost) onState(buf int, mode string, row, col, top int, regions, matches [][]int, preview []any, parens [][]int, lsp []any) {
 	st := &vimState{mode: mode, row: row, col: col, top: top, preview: vimPreviewOf(preview), parens: vimTriples(parens)}
+	st.lsp, st.missing = vimLspOf(lsp)
 	for _, r := range regions {
 		if len(r) == 4 {
 			st.regions = append(st.regions, [4]int{r[0], r[1], r[2], r[3]})
@@ -330,4 +352,52 @@ func (h *vimHost) onYank(buf int, kind string, regions [][]int) {
 		st.row, st.col = st.regions[0][0], st.regions[0][1]-1
 		h.push(buf, vimEvent{yank: st})
 	}
+}
+
+// vimLspOf reads vim.lua's {names, missing}.
+func vimLspOf(raw []any) (names []string, missing string) {
+	if len(raw) != 2 {
+		return nil, ""
+	}
+	list, _ := raw[0].([]any)
+	for _, n := range list {
+		if s, ok := n.(string); ok {
+			names = append(names, s)
+		}
+	}
+	missing, _ = raw[1].(string)
+	return names, missing
+}
+
+// restart ends the running Neovim and starts another at once, which reads
+// the person's config afresh; the editors open their buffers in it again.
+func (h *vimHost) restart() {
+	h.close()
+	h.do(func(*nvim.Nvim, int) error { return nil })
+}
+
+// inConfig is whether path is a file of the person's Neovim config, whose
+// save restarts Neovim so the change takes.
+func (h *vimHost) inConfig(path string) bool {
+	h.mu.Lock()
+	dir := h.configDir
+	h.mu.Unlock()
+	return dir != "" && strings.HasPrefix(path, dir+string(filepath.Separator))
+}
+
+// vimConfigFile is the person's Neovim config to edit: init.lua or
+// init.vim in Neovim's config folder, the one that exists, init.lua when
+// neither does.
+func vimConfigFile() (string, error) {
+	out, err := exec.Command(nvim.BinaryName, "--headless", "--clean", "-c", "echo stdpath('config')", "-c", "qa!").CombinedOutput()
+	if err != nil {
+		return "", err
+	}
+	dir := strings.TrimSpace(string(out))
+	for _, name := range []string{"init.lua", "init.vim"} {
+		if _, err := os.Stat(filepath.Join(dir, name)); err == nil {
+			return filepath.Join(dir, name), nil
+		}
+	}
+	return filepath.Join(dir, "init.lua"), nil
 }

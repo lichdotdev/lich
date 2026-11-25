@@ -2578,7 +2578,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   one broken over a wrapped row is not; a message of many lines (`:ls`, `:reg`, `:messages`) shows its last
   15 in the strip, with no pager; the completion menu is Neovim's popupmenu (Ctrl-N, Ctrl-X Ctrl-O, which an
   attached LSP fills, and the built-in LSP completion), drawn by lich under the word; a plugin that draws its own
-  floating windows (nvim-cmp, blink.cmp) shows no menu, and the command line's completion is not drawn;
+  floating windows (nvim-cmp, blink.cmp) shows no menu, and the command line's completion is not drawn; a file whose filetype has a server in vim.lua's
+  short table (gopls, typescript-language-server, basedpyright or pyright, rust-analyzer, clangd,
+  lua-language-server, jdtls) gets it started by lich, with completion as you type, when the person's config has
+  attached none 1.5 s after the file opens, and the strip names the servers attached or the one not on the PATH;
+  a command on the PATH that exits at once (a version manager's shim with no version for the folder) leaves the
+  strip silent, its error only in Neovim's lsp.log; Settings › Editor › Vim mode › Edit config opens init.lua or
+  init.vim of the config folder Neovim reports (NVIM_APPNAME and XDG_CONFIG_HOME followed), writing an empty
+  init.lua where there is none, and saving any file under that folder restarts Neovim, as Restart Neovim in the
+  palette does;
   a click moves Vim's cursor and a drag starts a characterwise Visual selection, but
   the wheel only sets the top line, and with wrap off a long line never scrolls sideways to the cursor. A key
   typed while Neovim is still starting is lost.

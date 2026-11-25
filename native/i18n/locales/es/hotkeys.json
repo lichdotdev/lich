@@ -46,7 +46,8 @@
     "tab6": "Ir a la pestaña 6",
     "tab7": "Ir a la pestaña 7",
     "tab8": "Ir a la pestaña 8",
-    "lastTab": "Ir a la última pestaña"
+    "lastTab": "Ir a la última pestaña",
+    "restartNeovim": "Reiniciar Neovim"
   },
   "unassigned": "Sin asignar",
   "inTerminal": "{keys} en una terminal",

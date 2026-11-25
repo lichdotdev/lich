@@ -3,7 +3,9 @@ package main
 import (
 	"image"
 	"image/color"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -23,11 +25,20 @@ import (
 // person's config.
 func vimEditor(t *testing.T, text string) (*fileEditor, *fakeDisk) {
 	t.Helper()
+	return vimEditorOf(t, "", "", text)
+}
+
+// vimEditorOf is vimEditor holding rel of checkout dir, when given.
+func vimEditorOf(t *testing.T, dir, rel, text string) (*fileEditor, *fakeDisk) {
+	t.Helper()
 	if _, err := exec.LookPath("nvim"); err != nil {
 		t.Skip("no nvim on the PATH")
 	}
 	srv, d := diskBackend(t)
 	f := loadedEditor(t, srv, d, text)
+	if dir != "" {
+		f.checkout, f.rel = dir, rel
+	}
 	h := newVimHost(func() {})
 	h.args = []string{"--embed", "--clean"}
 	t.Cleanup(h.close)
@@ -341,4 +352,94 @@ func TestVimCompletionMenuShowsAndPicks(t *testing.T) {
 	vimUntil(t, f, "a pick put the word in", func() bool { return f.ed.State().Doc() == "alphabet alpine\nalpine\n" })
 	vimPress(f, key.NameEscape, 0)
 	vimUntil(t, f, "the menu close", func() bool { return pum() == nil })
+}
+
+func TestVimStartsTheLanguageServerTheConfigLeftOut(t *testing.T) {
+	dir := t.TempDir()
+	version := exec.Command("gopls", "version")
+	version.Dir = dir
+	if err := version.Run(); err != nil {
+		t.Skipf("no gopls that runs here on the PATH: %v", err)
+	}
+	src := "package main\n\nfunc main() {}\n"
+	for name, text := range map[string]string{"go.mod": "module example.com/m\n\ngo 1.22\n", "main.go": src} {
+		if err := os.WriteFile(filepath.Join(dir, name), []byte(text), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	f, _ := vimEditorOf(t, dir, "main.go", src)
+	for deadline := time.Now().Add(20 * time.Second); time.Now().Before(deadline); time.Sleep(20 * time.Millisecond) {
+		f.syncVim()
+		if s := f.vim.state; s != nil && slices.Contains(s.lsp, "gopls") {
+			return
+		}
+		f.vimFeed("lich_editor.focus(...)")
+	}
+	t.Fatalf("gopls never attached; Neovim reports %+v", f.vim.state)
+}
+
+func TestVimNamesTheLanguageServerItCouldNotFind(t *testing.T) {
+	if _, err := exec.LookPath("lua-language-server"); err == nil {
+		t.Skip("lua-language-server is on the PATH")
+	}
+	f, _ := vimEditorOf(t, t.TempDir(), "init.lua", "print(1)\n")
+	vimUntil(t, f, "the missing server named", func() bool {
+		f.vimFeed("lich_editor.focus(...)")
+		return f.vim.state.missing == "lua-language-server"
+	})
+	if got := f.vimLspText(true); got != "lua-language-server not found" {
+		t.Fatalf("the strip says %q", got)
+	}
+}
+
+func TestVimRestartRebuildsTheBuffersFromTheEditors(t *testing.T) {
+	f, _ := vimEditor(t, "one\n")
+	_, before, _ := f.vim.held()
+	f.env.vim.restart()
+	vimUntil(t, f, "the buffer open in the new Neovim", func() bool {
+		_, gen, _ := f.vim.held()
+		return gen != before && f.vim.state != nil
+	})
+	vimType(f, "x")
+	vimUntil(t, f, "the new Neovim run the keys", func() bool { return f.ed.State().Doc() == "ne\n" })
+}
+
+func TestVimKnowsTheFilesOfTheConfig(t *testing.T) {
+	h := newVimHost(func() {})
+	if h.inConfig("/home/p/.config/nvim/init.lua") {
+		t.Fatal("a file counted as config before Neovim said where its config is")
+	}
+	h.configDir = "/home/p/.config/nvim"
+	for path, want := range map[string]bool{
+		"/home/p/.config/nvim/init.lua":        true,
+		"/home/p/.config/nvim/lua/plugins.lua": true,
+		"/home/p/.config/nvim-old/init.lua":    false,
+		"/home/p/code/lich/native/main.go":     false,
+	} {
+		if got := h.inConfig(path); got != want {
+			t.Errorf("%s in config = %v", path, got)
+		}
+	}
+}
+
+func TestVimConfigFileIsTheOneThatExists(t *testing.T) {
+	if _, err := exec.LookPath("nvim"); err != nil {
+		t.Skip("no nvim on the PATH")
+	}
+	home := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", home)
+	t.Setenv("NVIM_APPNAME", "")
+	dir := filepath.Join(home, "nvim")
+	if got, err := vimConfigFile(); err != nil || got != filepath.Join(dir, "init.lua") {
+		t.Fatalf("with no config: %q, %v; want init.lua to be made", got, err)
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "init.vim"), nil, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if got, _ := vimConfigFile(); got != filepath.Join(dir, "init.vim") {
+		t.Fatalf("with init.vim: %q", got)
+	}
 }

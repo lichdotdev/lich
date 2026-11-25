@@ -472,7 +472,8 @@
   "settingsEditor": {
     "hideWhitespaceDescription": "Не показывать на вкладке «Ревью» изменения, которые затрагивают только пробелы.",
     "vimDescription": "Правьте файлы клавишами самого Vim: их исполняет ваш Neovim с вашим конфигом.",
-    "vimMissing": "Нужен Neovim 0.10 или новее в PATH."
+    "vimMissing": "Нужен Neovim 0.10 или новее в PATH.",
+    "vimEditConfig": "Изменить конфиг"
   },
   "settingsTheme": {
     "autoLightDark": "Авто светлая/тёмная"

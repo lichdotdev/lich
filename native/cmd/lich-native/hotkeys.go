@@ -56,6 +56,7 @@ const (
 	hotkeyTextSmaller        hotkeyID = "textSmaller"
 	hotkeyTextReset          hotkeyID = "textReset"
 	hotkeyLastTab            hotkeyID = "lastTab"
+	hotkeyRestartNeovim      hotkeyID = "restartNeovim"
 )
 
 // stripTabKeys is how many strip tabs a digit reaches, Ctrl+1 to Ctrl+8;
@@ -170,6 +171,7 @@ var hotkeyActions = labelActions(slices.Concat([]hotkeyAction{
 	// Claude Code, and Codex's side conversation.
 	{id: hotkeyShortcuts, labelKey: "hotkeys.action.shortcuts", group: hotkeyGroupApp, combo: combo{Key: "F1"}},
 	{id: hotkeyStartServices, labelKey: "hotkeys.action.startServices", group: hotkeyGroupApp, combo: comboUnassigned},
+	{id: hotkeyRestartNeovim, labelKey: "hotkeys.action.restartNeovim", group: hotkeyGroupApp, combo: comboUnassigned},
 	{id: hotkeyQuit, labelKey: "hotkeys.action.quit", group: hotkeyGroupApp, combo: comboUnassigned},
 }))
 

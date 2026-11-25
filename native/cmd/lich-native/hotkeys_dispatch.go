@@ -56,6 +56,7 @@ var hotkeyHandlers = map[hotkeyID]hotkeyHandler{
 	hotkeyShortcuts:          {nil, (*window).hotkeyShortcuts},
 	hotkeyTour:               {nil, func(u *window, _ C) { u.startGuide(basicsID) }},
 	hotkeyCommandPalette:     {nil, (*window).hotkeyPalette},
+	hotkeyRestartNeovim:      {(*window).vimRunning, func(u *window, _ C) { u.vim.restart() }},
 	hotkeyQuit:               {nil, func(u *window, _ C) { go u.askOrQuit(closeAsk) }},
 	hotkeyTextLarger:         {nil, func(u *window, gtx C) { u.stepTextSize(gtx, 1) }},
 	hotkeyTextSmaller:        {nil, func(u *window, gtx C) { u.stepTextSize(gtx, -1) }},

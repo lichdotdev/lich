@@ -46,7 +46,8 @@
     "tab6": "6번 탭으로 이동",
     "tab7": "7번 탭으로 이동",
     "tab8": "8번 탭으로 이동",
-    "lastTab": "마지막 탭으로 이동"
+    "lastTab": "마지막 탭으로 이동",
+    "restartNeovim": "Neovim 다시 시작"
   },
   "unassigned": "지정 안 됨",
   "inTerminal": "터미널에서는 {keys}",

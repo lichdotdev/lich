@@ -464,7 +464,8 @@
   "settingsEditor": {
     "hideWhitespaceDescription": "Leave out changes that only touch spacing in the Review tab.",
     "vimDescription": "Edit files with Vim's own keys, run by your Neovim and its config.",
-    "vimMissing": "Needs Neovim 0.10 or newer on your PATH."
+    "vimMissing": "Needs Neovim 0.10 or newer on your PATH.",
+    "vimEditConfig": "Edit config"
   },
   "settingsTheme": {
     "autoLightDark": "Auto light/dark"

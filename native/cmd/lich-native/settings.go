@@ -57,6 +57,8 @@ type settingsScreen struct {
 	// applyEditor hands the review panel the Editor preference at key that
 	// just changed.
 	applyEditor func(key string, prefs editorPrefs)
+	// editVimConfig opens the person's Neovim config, at path, in the editor.
+	editVimConfig func(path string)
 	// promptUpdate is the update gate's prompt, for the manual check.
 	promptUpdate func(backend.AppUpdateStatus)
 

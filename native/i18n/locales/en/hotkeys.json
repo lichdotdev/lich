@@ -46,7 +46,8 @@
     "tab6": "Go to tab 6",
     "tab7": "Go to tab 7",
     "tab8": "Go to tab 8",
-    "lastTab": "Go to the last tab"
+    "lastTab": "Go to the last tab",
+    "restartNeovim": "Restart Neovim"
   },
   "unassigned": "Unassigned",
   "inTerminal": "{keys} in a terminal",

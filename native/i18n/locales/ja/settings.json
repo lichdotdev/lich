@@ -464,7 +464,8 @@
   "settingsEditor": {
     "hideWhitespaceDescription": "レビュータブで、空白だけに関わる変更を除外します。",
     "vimDescription": "Vim 本来のキーでファイルを編集します。あなたの Neovim とその設定で動きます。",
-    "vimMissing": "PATH に Neovim 0.10 以降が必要です。"
+    "vimMissing": "PATH に Neovim 0.10 以降が必要です。",
+    "vimEditConfig": "設定を編集"
   },
   "settingsTheme": {
     "autoLightDark": "ライト/ダークを自動切り替え"

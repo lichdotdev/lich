@@ -8,6 +8,7 @@ package main
 // asks before its text is left.
 
 import (
+	"os"
 	"path"
 	"path/filepath"
 	"slices"
@@ -303,4 +304,44 @@ func (u *window) editorWouldAsk(t codeTarget) bool {
 	}
 	f, ok := u.editors.byCheckout[view.path]
 	return ok && f.mustAsk() && f.rel != t.rel
+}
+
+// vimRunning is whether a Neovim runs behind the editors, which Restart
+// Neovim restarts.
+func (u *window) vimRunning() bool { return u.settings.editor.prefs.vim && u.vim != nil }
+
+// editVimConfig opens the person's Neovim config in the editor of the
+// active session's checkout, or of the shown project with none, writing an
+// empty one first where there is none; saving it restarts Neovim.
+func (u *window) editVimConfig(path string) {
+	checkout := u.editorCheckout()
+	if checkout == "" {
+		return
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("dock.editor.vimConfigFailed"), Description: err.Error()})
+		return
+	}
+	if f, err := os.OpenFile(path, os.O_CREATE|os.O_EXCL|os.O_WRONLY, 0o644); err == nil {
+		_ = f.Close()
+	} else if !os.IsExist(err) {
+		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: i18n.T("dock.editor.vimConfigFailed"), Description: err.Error()})
+		return
+	}
+	dir, name := filepath.Dir(path), filepath.Base(path)
+	u.stageFile(checkout, dir, name, func(e *fileEditor) { e.openOutside(dir, name) })
+}
+
+// editorCheckout is the checkout whose editor a file from outside opens in:
+// the active session's, else the shown project's.
+func (u *window) editorCheckout() string {
+	if sv, ok := u.model.activeSession(); ok {
+		return sv.path
+	}
+	u.model.mu.Lock()
+	defer u.model.mu.Unlock()
+	if p := u.model.shownProject(); p != nil {
+		return p.Path
+	}
+	return ""
 }

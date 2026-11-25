@@ -464,7 +464,8 @@
   "settingsEditor": {
     "hideWhitespaceDescription": "在审查标签页中忽略仅改动空白的变更。",
     "vimDescription": "用 Vim 原生的按键编辑文件，由你的 Neovim 及其配置运行。",
-    "vimMissing": "需要 PATH 中有 Neovim 0.10 或更高版本。"
+    "vimMissing": "需要 PATH 中有 Neovim 0.10 或更高版本。",
+    "vimEditConfig": "编辑配置"
   },
   "settingsTheme": {
     "autoLightDark": "自动浅色/深色"

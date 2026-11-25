@@ -7,6 +7,7 @@ package main
 import (
 	"image"
 	"image/color"
+	"strings"
 	"time"
 	"unicode/utf8"
 
@@ -18,6 +19,7 @@ import (
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/godemirror"
+	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -179,6 +181,8 @@ func (f *fileEditor) vimStatus(gtx C, th *ui.Theme) D {
 					ui.Gap(3),
 					layout.Flexed(1, left),
 					layout.Rigid(th.Text(ui.TextSM, u.showcmd).Mono().Muted().Layout),
+					ui.Gap(3),
+					layout.Rigid(th.Text(ui.TextSM, f.vimLspText(current)).Mono().Muted().Layout),
 				)
 			})
 		}),
@@ -263,4 +267,19 @@ func (f *fileEditor) paintVimRanges(gtx C, ranges []godemirror.SelectionRange, c
 			}
 		}
 	}
+}
+
+// vimLspText is what the strip says of the file's language servers: their
+// names, or the one lich knows for it and could not find.
+func (f *fileEditor) vimLspText(current bool) string {
+	s := f.vim.state
+	switch {
+	case !current || s == nil:
+		return ""
+	case len(s.lsp) > 0:
+		return strings.Join(s.lsp, ", ")
+	case s.missing != "":
+		return i18n.T("dock.editor.vimLspMissing", i18n.Args{"name": s.missing})
+	}
+	return ""
 }

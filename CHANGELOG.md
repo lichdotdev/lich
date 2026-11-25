@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- **Edit files with Vim's own keys, run by your Neovim and its config.** Turn it on in Settings › Editor › Vim mode; it needs Neovim 0.10 or newer, and `:w` saves the file as Ctrl+S does.
+- **Edit files with Vim's own keys, run by your Neovim and its config.** Turn it on in Settings › Editor › Vim mode, which needs Neovim 0.10 or newer and opens your config with Edit config. A file whose language server is on your PATH gets it, with completion as you type, even when your config starts none.
 - **Type /resume in a chat to pick one of its project's conversations to resume.** It opens the palette's History narrowed to that project, with the sessions you closed and the conversations started outside lich; click the project's name over the list to see every project.
 - **A message you write while the agent works reaches it in the same turn, as soon as it starts its next tool.** It waits over the message box, still yours to edit or drop, until then. Antigravity, opencode, oh-my-pi, Cursor CLI and Kiro CLI still get it when the turn ends.
 - **A file the agent edits or writes shows in the chat as its own line, with its path and how many lines it added and removed.** Click the line to read the diff under it, or Ctrl+click it to open the file. A file changed by a shell command the agent ran shows the same way, right after the command, on every agent.

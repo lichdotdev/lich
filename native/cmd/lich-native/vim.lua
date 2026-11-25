@@ -173,6 +173,84 @@ local function parens()
   return out
 end
 
+-- servers are the language servers lich starts for a file the person's
+-- config attached none to, by filetype: the first whose command is on the
+-- PATH, rooted at the nearest of its markers.
+local servers = {
+  { name = 'gopls', fts = { 'go', 'gomod', 'gowork' }, cmd = { 'gopls' }, root = { 'go.work', 'go.mod', '.git' } },
+  {
+    name = 'typescript-language-server',
+    fts = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
+    cmd = { 'typescript-language-server', '--stdio' },
+    root = { 'tsconfig.json', 'jsconfig.json', 'package.json', '.git' },
+  },
+  { name = 'basedpyright', fts = { 'python' }, cmd = { 'basedpyright-langserver', '--stdio' }, root = { 'pyproject.toml', 'setup.py', '.git' } },
+  { name = 'pyright', fts = { 'python' }, cmd = { 'pyright-langserver', '--stdio' }, root = { 'pyproject.toml', 'setup.py', '.git' } },
+  { name = 'rust-analyzer', fts = { 'rust' }, cmd = { 'rust-analyzer' }, root = { 'Cargo.toml', '.git' } },
+  { name = 'clangd', fts = { 'c', 'cpp', 'objc', 'objcpp' }, cmd = { 'clangd' }, root = { 'compile_commands.json', '.clangd', '.git' } },
+  { name = 'lua-language-server', fts = { 'lua' }, cmd = { 'lua-language-server' }, root = { '.luarc.json', '.git' } },
+  { name = 'jdtls', fts = { 'java' }, cmd = { 'jdtls' }, root = { 'pom.xml', 'build.gradle', 'build.gradle.kts', '.git' } },
+}
+
+-- serverFor is the server lich would start for filetype ft and whether its
+-- command is on the PATH; nil for a filetype it knows none for.
+local function serverFor(ft)
+  local first
+  for _, s in ipairs(servers) do
+    if vim.tbl_contains(s.fts, ft) then
+      if vim.fn.executable(s.cmd[1]) == 1 then
+        return s, true
+      end
+      first = first or s
+    end
+  end
+  return first, false
+end
+
+-- started are the clients lich started, which it turns completion on for.
+local started = {}
+
+-- How long a file waits for the person's config to attach a server before
+-- lich starts its own: lspconfig and vim.lsp.enable attach on FileType.
+local attachWait = 1500
+
+local function autoLsp(buf)
+  vim.defer_fn(function()
+    if not api.nvim_buf_is_valid(buf) or #vim.lsp.get_clients({ bufnr = buf }) > 0 then
+      return
+    end
+    local s, found = serverFor(vim.bo[buf].filetype)
+    if not s or not found then
+      return
+    end
+    local id = vim.lsp.start({
+      name = s.name,
+      cmd = s.cmd,
+      root_dir = vim.fs.root(buf, s.root) or vim.fs.dirname(api.nvim_buf_get_name(buf)),
+    }, { bufnr = buf })
+    if id then
+      started[id] = true
+    end
+  end, attachWait)
+end
+
+-- lsp is what the strip says of the buffer's servers: the names attached, or
+-- the server lich knows for its filetype and could not find.
+local function lsp(buf)
+  local names = {}
+  for _, c in ipairs(vim.lsp.get_clients({ bufnr = buf })) do
+    names[#names + 1] = c.name
+  end
+  local missing = ''
+  if #names == 0 then
+    local s, found = serverFor(vim.bo[buf].filetype)
+    if s and not found then
+      missing = s.cmd[1]
+    end
+  end
+  return { names, missing }
+end
+
 local function state()
   local buf = api.nvim_get_current_buf()
   if not owned[buf] then
@@ -183,7 +261,7 @@ local function state()
   local sub = substitution(buf) or {}
   local preview = sub.lines and { sub.first, sub.last, sub.lines } or {}
   vim.rpcnotify(chan, 'lich_state', buf, mode, cur[1], cur[2], vim.fn.line('w0'), regions(mode),
-    sub.matches or matches(buf), preview, parens())
+    sub.matches or matches(buf), preview, parens(), lsp(buf))
 end
 
 local group = api.nvim_create_augroup('lich_editor', { clear = true })
@@ -213,6 +291,17 @@ api.nvim_create_autocmd('TextYankPost', {
     vim.rpcnotify(chan, 'lich_yank', buf, kind, out)
   end,
 })
+
+api.nvim_create_autocmd('LspAttach', {
+  group = group,
+  callback = function(ev)
+    if started[ev.data.client_id] and vim.lsp.completion then
+      vim.lsp.completion.enable(true, ev.data.client_id, ev.buf, { autotrigger = true })
+    end
+    vim.schedule(state)
+  end,
+})
+api.nvim_create_autocmd('LspDetach', { group = group, callback = function() vim.schedule(state) end })
 
 -- The commands that leave a file, and whether each writes it first.
 local quits = { quit = false, qall = false, wq = true, wqall = true, xit = true, xall = true, exit = true }
@@ -296,6 +385,7 @@ function M.open(path, lines, wrap)
   api.nvim_set_current_buf(buf)
   vim.cmd('filetype detect')
   vim.wo.wrap = wrap
+  autoLsp(buf)
   return buf
 end
 
