@@ -87,7 +87,8 @@ func (s *Service) stale(owner string) (*session, bool) {
 	s.mu.Lock()
 	defer s.unlock()
 	sess := s.liveByOwner(owner)
-	if sess == nil || sess.headed || sess.windowDraws || sess.window == s.window {
+	// A lich-browser page draws at the window's scale by its zoom (Resize).
+	if sess == nil || sess.headed || sess.windowDraws || s.wk != nil || sess.window == s.window {
 		return nil, false
 	}
 	if sess.scale == launchScale(s.defaultView.Scale) {

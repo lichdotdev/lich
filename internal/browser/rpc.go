@@ -357,6 +357,17 @@ func (s *Service) NativeLoad(_ context.Context, opts api.BrowserNativeLoadOption
 	return api.None{}, s.loadURL(sess, opts.URL)
 }
 
+// Window takes the window's X window, which lich-browser's pages sit in; with
+// Chrome's pages there is nothing to tell.
+func (s *Service) Window(ctx context.Context, opts api.BrowserWindowOptions) (api.None, error) {
+	if s.wk == nil {
+		return api.None{}, nil
+	}
+	ctx, cancel := context.WithTimeout(ctx, inputWait)
+	defer cancel()
+	return api.None{}, s.wk.setWindow(ctx, opts.XID)
+}
+
 // Icon is the PNG a tab's Icon names.
 func (s *Service) Icon(_ context.Context, opts api.BrowserIconOptions) ([]byte, error) {
 	if b, ok := icons.png(opts.Key); ok {

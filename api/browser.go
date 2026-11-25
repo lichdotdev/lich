@@ -59,6 +59,9 @@ var (
 	// BrowserNativeLoad is a main-frame load event of the page the window
 	// draws itself in place of the screencast, for the session's front tab.
 	BrowserNativeLoad = define[BrowserNativeLoadOptions, None]("browser.NativeLoad")
+	// BrowserWindow is the window's X window, which lich-browser's pages sit
+	// in, and zero before the window closes it.
+	BrowserWindow = define[BrowserWindowOptions, None]("browser.Window")
 	// BrowserIcon is the PNG a BrowserTab's Icon names.
 	BrowserIcon = define[BrowserIconOptions, []byte]("browser.Icon")
 	// BrowserDevTools is the person opening Chrome's DevTools for the front
@@ -176,6 +179,15 @@ type BrowserTab struct {
 	// changes when the icon does; "" for a page whose icon is unknown or
 	// does not load. browser-state carries the name, never the image.
 	Icon string `json:"icon,omitempty"`
+	// XID is the tab's X window in lich-browser, which the window reparents
+	// into its own and places over the pane (docs/lich-browser.md); zero for
+	// a page the window shows by screencast.
+	XID uint64 `json:"xid,omitempty"`
+}
+
+// BrowserWindowOptions is the window's X window, zero for none.
+type BrowserWindowOptions struct {
+	XID uint64 `json:"xid"`
 }
 
 // BrowserIconOptions names an icon by a BrowserTab's Icon.
