@@ -675,3 +675,38 @@ func TestOMPProfilesHaveNoPlanAndNameTheirAccounts(t *testing.T) {
 		t.Errorf("readings followed for a provider with no plan: %v", book.quoted)
 	}
 }
+
+// TestAProfilesChatPrefIsItsOwn: Personal's model is the global value, a named
+// profile's is its own key, and a profile with none never reads Personal's.
+func TestAProfilesChatPrefIsItsOwn(t *testing.T) {
+	key := providerPrefKey(claudeKind, api.OptionModel)
+	for slug, want := range map[string]string{"": key, personalProfile: key, "work": key + "@work"} {
+		if got := profilePrefKey(key, slug); got != want {
+			t.Errorf("profilePrefKey(%q) = %q, want %q", slug, got, want)
+		}
+	}
+	c := &profileSettings{prefs: map[string]string{key + "@work": "sonnet"}}
+	m := providersMachine{globals: map[string]string{key: "opus"}}
+	for slug, want := range map[string]string{personalProfile: "opus", "work": "sonnet", "small": ""} {
+		if got := c.pref(key, slug, m); got != want {
+			t.Errorf("pref(%q) = %q, want %q", slug, got, want)
+		}
+	}
+}
+
+// TestChatPrefsAreReadPerProjectAndCounted: every chat provider's model and
+// effort are scoped keys, so a project's own one shows on its badge.
+func TestChatPrefsAreReadPerProjectAndCounted(t *testing.T) {
+	keys := scopedKeys()
+	for _, kind := range chatPrefKinds {
+		for _, category := range []string{api.OptionModel, api.OptionEffort} {
+			if !slices.Contains(keys, providerPrefKey(kind, category)) {
+				t.Errorf("%s's %s is not read per project", kind, category)
+			}
+		}
+	}
+	values := scopedValues{providerPrefKey(claudeKind, api.OptionModel): {"pg": "haiku"}}
+	if got := sectionBadge(sectionByID(sectionProviders), "pg", openTabs, values); got != 1 {
+		t.Errorf("Providers badge = %d, want the project's model", got)
+	}
+}

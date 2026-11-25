@@ -34,8 +34,7 @@
       "extensions": "Extensions",
       "chat": "Chat"
     },
-    "notYet": "Not here yet",
-    "projectDesc": "What this project changes from Global. A row without a change follows Global."
+    "notYet": "Not here yet"
   },
   "appearanceSettings": {
     "importPickTitle": "Import Theme",
@@ -325,7 +324,9 @@
     "effortDescription": "New {provider} chats start at this effort. Terminal sessions keep the effort set in {provider} itself.",
     "default": "{provider}'s default",
     "noChoices": "Open a {provider} chat once and its options show up here.",
-    "search": "Search"
+    "search": "Search",
+    "follow": "Follow {name}",
+    "profilesDetail": "New chats start on their profile's model and effort. Terminal sessions keep what {provider} itself is set to."
   },
   "sandboxSettings": {
     "rung": {
@@ -458,8 +459,13 @@
     "followsGlobal": "Follows Global",
     "globalValue": "Global: {value}",
     "useGlobal": "Use Global",
-    "globalOnly": "Global only",
-    "projectOnly": "Project only"
+    "projectOnly": "Project only",
+    "followsFrom": "Follows {name}: {value}",
+    "fromValue": "{name}: {value}",
+    "useFrom": "Use {name}'s",
+    "restGlobal": "The other settings on this page are the same in every project.",
+    "allGlobal": "The settings on this page are the same in every project.",
+    "openGlobal": "Open Global"
   },
   "settingsGeneral": {
     "notifySearchWords": "desktop notification alert bell",
@@ -559,7 +565,6 @@
     "delete": "Delete",
     "newProfile": "New profile",
     "options": "Options for {name}",
-    "advancedBinary": "Advanced · Binary",
     "binaryOverrides": "Sessions here start through {path}. A script that sets its own login or config directory overrides {profile}, and Continue in can lose the conversation.",
     "showBinary": "Show binary",
     "useDefaultBinary": "Use the default binary",
@@ -823,5 +828,11 @@
     "otherGroup": "Other themes",
     "imported": "imported from a file",
     "pairsWith": "Pairs with {name}"
+  },
+  "providerGroups": {
+    "accounts": "Accounts",
+    "newChats": "New chats",
+    "sessions": "Sessions",
+    "advanced": "Advanced"
   }
 }

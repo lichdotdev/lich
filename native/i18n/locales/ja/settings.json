@@ -34,8 +34,7 @@
       "extensions": "拡張機能",
       "chat": "チャット"
     },
-    "notYet": "まだありません",
-    "projectDesc": "このプロジェクトでグローバルから変更している項目です。変更のない行はグローバルに従います。"
+    "notYet": "まだありません"
   },
   "appearanceSettings": {
     "importPickTitle": "テーマをインポート",
@@ -325,7 +324,9 @@
     "effortDescription": "{provider} の新しいチャットはこのエフォートで始まります。ターミナルのセッションは {provider} 自体で設定したエフォートを使います。",
     "default": "{provider} の既定",
     "noChoices": "{provider} のチャットを一度開くと、選択肢がここに表示されます。",
-    "search": "検索"
+    "search": "検索",
+    "follow": "{name} に従う",
+    "profilesDetail": "新しいチャットはプロファイルのモデルとエフォートで始まります。ターミナルセッションは {provider} 自体の設定のままです。"
   },
   "sandboxSettings": {
     "rung": {
@@ -458,8 +459,13 @@
     "followsGlobal": "グローバルに従う",
     "globalValue": "グローバル: {value}",
     "useGlobal": "グローバルを使う",
-    "globalOnly": "グローバルのみ",
-    "projectOnly": "プロジェクトのみ"
+    "projectOnly": "プロジェクトのみ",
+    "followsFrom": "{name} に従う: {value}",
+    "fromValue": "{name}: {value}",
+    "useFrom": "{name} の値を使う",
+    "restGlobal": "このページのほかの設定はすべてのプロジェクトで共通です。",
+    "allGlobal": "このページの設定はすべてのプロジェクトで共通です。",
+    "openGlobal": "グローバルを開く"
   },
   "settingsGeneral": {
     "notifySearchWords": "デスクトップ 通知 アラート ベル",
@@ -559,7 +565,6 @@
     "delete": "削除",
     "newProfile": "新しいプロファイル",
     "options": "{name} のオプション",
-    "advancedBinary": "詳細 · バイナリ",
     "binaryOverrides": "ここのセッションは {path} から起動します。独自のログインや設定ディレクトリを指定するスクリプトは {profile} より優先され、「別のプロファイルで続ける」で会話が失われることがあります。",
     "showBinary": "バイナリを表示",
     "useDefaultBinary": "デフォルトのバイナリを使う",
@@ -823,5 +828,11 @@
     "otherGroup": "その他のテーマ",
     "imported": "ファイルから読み込み",
     "pairsWith": "{name} と対になるテーマ"
+  },
+  "providerGroups": {
+    "accounts": "アカウント",
+    "newChats": "新しいチャット",
+    "sessions": "セッション",
+    "advanced": "詳細"
   }
 }

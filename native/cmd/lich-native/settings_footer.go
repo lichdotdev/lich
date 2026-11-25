@@ -10,13 +10,9 @@ import (
 
 // footerRow is Settings › Appearance › Footer: the editor and preview always
 // open, as FooterSettings keeps them, under the page's title, which holds the
-// description and Restore default. A project's scope shows the row dimmed
-// with no control: the layout is global.
+// description and Restore default. The layout is global, so a project's
+// scope leaves the row out.
 func (s *settingsScreen) footerRow(gtx C, th *ui.Theme, r settingRow, first bool) D {
-	if r.kind == rowGlobalOnly {
-		r.description, _ = s.footer.editorState()
-		return r.layout(gtx, th, first, nil)
-	}
 	return layout.Inset{Bottom: rowPadY}.Layout(gtx, func(gtx C) D { return s.footer.editorPanel(gtx, th) })
 }
 

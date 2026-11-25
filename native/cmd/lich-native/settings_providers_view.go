@@ -125,11 +125,13 @@ func (s *settingsScreen) providerListRows(th *ui.Theme, values scopedValues, m p
 	if len(enabled) > 0 {
 		s.scrollToBlock(i18n.T("settings.providersPane.defaultTitle"), base+len(rows))
 		rows = append(rows, func(gtx C) D { return s.providerDefaultRow(gtx, th, values, m, true) })
-		s.scrollToBlock(sessionViewEntry.titleText(), base+len(rows))
-		rows = append(rows, func(gtx C) D { return s.sessionViewRow(gtx, th, values, false) },
-			func(gtx C) D {
-				return layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Rigid(th.Separator), ui.VGap(4))
-			})
+		if s.scope == "" {
+			s.scrollToBlock(sessionViewEntry.titleText(), base+len(rows))
+			rows = append(rows, func(gtx C) D { return s.sessionViewRow(gtx, th, values, false) })
+		}
+		rows = append(rows, func(gtx C) D {
+			return layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Rigid(th.Separator), ui.VGap(4))
+		})
 	}
 	for _, p := range enabled {
 		rows = append(rows, func(gtx C) D { return s.providerListRow(gtx, th, values, m, p) })
@@ -139,6 +141,9 @@ func (s *settingsScreen) providerListRows(th *ui.Theme, values scopedValues, m p
 		if pr.adding {
 			rows = append(rows, func(gtx C) D { return s.providerAddList(gtx, th, off) })
 		}
+	}
+	if s.scope != "" && len(enabled) > 0 {
+		rows = append(rows, s.globalElsewhere(th, false))
 	}
 	return rows
 }
@@ -471,74 +476,139 @@ func providerTitleRow(gtx C, name recorded, docs *recorded, toggle recorded) D {
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, layout.Rigid(row), layout.Rigid(docs.layout))
 }
 
-// providerScreenRows are one provider's blocks, each present only where the
-// provider has the setting.
+// The groups a provider's screen sorts its blocks under.
+const (
+	groupAccounts = "settings.providerGroups.accounts"
+	groupNewChats = "settings.providerGroups.newChats"
+	groupSessions = "settings.providerGroups.sessions"
+	groupAdvanced = "settings.providerGroups.advanced"
+)
+
+// providerScreenRows are one provider's blocks under their groups, each
+// present only where the provider has the setting. A project's scope leaves
+// out what only Global sets, and says so at the foot.
 func (s *settingsScreen) providerScreenRows(th *ui.Theme, values scopedValues, m providersMachine, p providerInfo, base int) []layout.Widget {
-	var rows []layout.Widget
-	first := true
-	add := func(title string, draw func(gtx C, first bool) D) {
-		s.scrollToBlock(title, base+len(rows))
-		isFirst := first
-		first = false
-		rows = append(rows, func(gtx C) D { return draw(gtx, isFirst) })
-	}
+	b := providerBlocks{s: s, base: base}
+	global := s.scope == ""
 	profiles := s.providers.profiles(p.id)
 	if profiles != nil {
 		s.ensureProfiles(profiles)
-		add(i18n.T("settings.settingsProfiles.title"), func(gtx C, first bool) D { return s.profilePickerRow(gtx, th, profiles, values, m, p, first) })
-		add(i18n.T("settings.settingsProfiles.profilesTitle"), func(gtx C, first bool) D { return s.profilesBlock(gtx, th, profiles, values, first) })
+		b.heading(th, groupAccounts)
+		b.add(i18n.T("settings.settingsProfiles.title"), func(gtx C, first bool) D { return s.profilePickerRow(gtx, th, profiles, values, m, p, first) })
+		b.only(global, i18n.T("settings.settingsProfiles.profilesTitle"), func(gtx C, first bool) D { return s.profilesBlock(gtx, th, profiles, values, m, first) })
 		slug := s.scopeProfile(profiles, values, m)
 		if plan, ok := s.profilePlan(profiles, slug); ok {
-			add(i18n.T("settings.planUsageSetting.title"), func(gtx C, first bool) D { return s.profilePlanBlock(gtx, th, profiles, values, slug, plan, first) })
+			b.add(i18n.T("settings.planUsageSetting.title"), func(gtx C, first bool) D { return s.profilePlanBlock(gtx, th, profiles, values, slug, plan, first) })
 		}
-	} else {
-		if plan, ok := s.planOf(p.id); ok {
-			add(i18n.T("settings.planUsageSetting.title"), func(gtx C, first bool) D { return s.planBlock(gtx, th, values, plan, first, "") })
-		}
-		add(i18n.T("settings.providerBinary.title"), func(gtx C, first bool) D { return s.binBlock(gtx, th, values, m, p, first) })
+	} else if plan, ok := s.planOf(p.id); ok {
+		b.heading(th, groupAccounts)
+		b.add(i18n.T("settings.planUsageSetting.title"), func(gtx C, first bool) D { return s.planBlock(gtx, th, values, plan, first, "") })
 	}
-	if hasChatPrefs(p.id) {
-		for _, pref := range []struct {
-			category, titleKey string
-			picker             *chatPrefPicker
-		}{
-			{api.OptionModel, "settings.chatPrefSetting.modelTitle", &s.providers.model},
-			{api.OptionEffort, "settings.chatPrefSetting.effortTitle", &s.providers.effort},
-		} {
-			if chatPrefShown(pref.category, chatPrefChoices(m.globals[providerChoicesKey(p.id, pref.category)]), m.globals[providerPrefKey(p.id, pref.category)]) {
-				add(i18n.T(pref.titleKey), func(gtx C, first bool) D {
-					return s.chatPrefRow(gtx, th, values, m, p, pref.category, pref.picker, first)
-				})
-			}
-		}
+	if hasChatPrefs(p.id) && !(global && profiles != nil) {
+		s.chatPrefRows(th, &b, values, m, p)
 	}
-	if hasSkipFlag(p.id) {
-		add(i18n.T("settings.providerBinSettings.skipTitle"), func(gtx C, first bool) D { return s.skipBlock(gtx, th, values, m, p, first) })
+	s.sessionBlocks(th, &b, values, m, p)
+	b.heading(th, groupAdvanced)
+	b.add(i18n.T("settings.providerBinary.title"), func(gtx C, first bool) D { return s.binBlock(gtx, th, values, m, p, first) })
+	if b.elsewhere {
+		b.rows = append(b.rows, s.globalElsewhere(th, false))
 	}
-	if supportsUltracode(p.id) {
-		add(i18n.T("settings.ultracodeSetting.title"), func(gtx C, first bool) D { return s.ultracodeRow(gtx, th, values, p, first) })
-	}
-	if hasPasteUnfold(p.id) {
-		add(i18n.T("settings.pasteUnfoldSetting.title"), func(gtx C, first bool) D { return s.pasteRow(gtx, th, values, p, first) })
-	}
-	if canResume(p.id) {
-		add(i18n.T("settings.restoreSetting.title"), func(gtx C, first bool) D { return s.restoreBlock(gtx, th, values, p, first) })
-	}
-	if profiles != nil {
-		add(i18n.T("settings.providerBinary.title"), func(gtx C, first bool) D { return s.advancedBinaryFold(gtx, th, profiles, values, m, p, first) })
-	}
-	return rows
+	return b.rows
 }
 
-// switchRow is a global-only switch under a provider's screen: seen from a
-// project it is dimmed with no control, as every global row is. on reads the
+// providerBlocks gathers a provider's screen: each heading opens a group
+// whose first block draws no divider above it.
+type providerBlocks struct {
+	s         *settingsScreen
+	base      int
+	rows      []layout.Widget
+	first     bool
+	elsewhere bool
+}
+
+func (b *providerBlocks) heading(th *ui.Theme, key string) {
+	b.rows = append(b.rows, groupHeading(th, i18n.T(key), len(b.rows) == 0))
+	b.first = true
+}
+
+func (b *providerBlocks) add(title string, draw func(gtx C, first bool) D) {
+	b.s.scrollToBlock(title, b.base+len(b.rows))
+	first := b.first
+	b.first = false
+	b.rows = append(b.rows, func(gtx C) D { return draw(gtx, first) })
+}
+
+// only adds a block only Global sets: in a project's scope it is left out
+// and the foot says so.
+func (b *providerBlocks) only(global bool, title string, draw func(gtx C, first bool) D) {
+	if !global {
+		b.elsewhere = true
+		return
+	}
+	b.add(title, draw)
+}
+
+// chatPrefRows are New chats: the model and the effort a new chat starts on,
+// as rows a project can change.
+func (s *settingsScreen) chatPrefRows(th *ui.Theme, b *providerBlocks, values scopedValues, m providersMachine, p providerInfo) {
+	headed := false
+	for _, pref := range []struct {
+		category, titleKey string
+		picker             *chatPrefPicker
+	}{
+		{api.OptionModel, "settings.chatPrefSetting.modelTitle", &s.providers.model},
+		{api.OptionEffort, "settings.chatPrefSetting.effortTitle", &s.providers.effort},
+	} {
+		if !chatPrefShown(pref.category, chatPrefChoices(m.globals[providerChoicesKey(p.id, pref.category)]), m.globals[providerPrefKey(p.id, pref.category)]) {
+			continue
+		}
+		if !headed {
+			b.heading(th, groupNewChats)
+			headed = true
+		}
+		b.add(i18n.T(pref.titleKey), func(gtx C, first bool) D {
+			return s.chatPrefRow(gtx, th, values, m, p, pref.category, pref.picker, first)
+		})
+	}
+}
+
+// sessionBlocks are Sessions: how a session runs, set for every project.
+func (s *settingsScreen) sessionBlocks(th *ui.Theme, b *providerBlocks, values scopedValues, m providersMachine, p providerInfo) {
+	var blocks []func()
+	global := s.scope == ""
+	if hasSkipFlag(p.id) {
+		blocks = append(blocks, func() {
+			b.only(global, i18n.T("settings.providerBinSettings.skipTitle"), func(gtx C, first bool) D { return s.skipBlock(gtx, th, values, m, p, first) })
+		})
+	}
+	if canResume(p.id) {
+		blocks = append(blocks, func() {
+			b.only(global, i18n.T("settings.restoreSetting.title"), func(gtx C, first bool) D { return s.restoreBlock(gtx, th, values, p, first) })
+		})
+	}
+	if supportsUltracode(p.id) {
+		blocks = append(blocks, func() {
+			b.only(global, i18n.T("settings.ultracodeSetting.title"), func(gtx C, first bool) D { return s.ultracodeRow(gtx, th, values, p, first) })
+		})
+	}
+	if hasPasteUnfold(p.id) {
+		blocks = append(blocks, func() {
+			b.only(global, i18n.T("settings.pasteUnfoldSetting.title"), func(gtx C, first bool) D { return s.pasteRow(gtx, th, values, p, first) })
+		})
+	}
+	if len(blocks) > 0 && global {
+		b.heading(th, groupSessions)
+	}
+	for _, add := range blocks {
+		add()
+	}
+}
+
+// switchRow is a global-only switch under a provider's screen. on reads the
 // switch's value after its click is written, so it draws where it went.
 func (s *settingsScreen) switchRow(gtx C, th *ui.Theme, values scopedValues, first bool, titleKey, key, desc string, sw *ui.SwitchState, on func(providersMachine) bool) D {
 	r := s.providerRow(gtx, settingEntry{titleKey: titleKey, key: key}, values)
 	r.description = desc
-	if r.kind == rowGlobalOnly {
-		return r.layout(gtx, th, first, nil)
-	}
 	if sw.Update(gtx) {
 		s.writeProviderKey(key, "", strconv.FormatBool(sw.Value), nil)
 	}
@@ -587,9 +657,6 @@ func (s *settingsScreen) restoreBlock(gtx C, th *ui.Theme, values scopedValues, 
 // click is chosen, so a rung written straight through draws where it went.
 func (s *settingsScreen) ladderBlock(gtx C, th *ui.Theme, r settingRow, first bool, enum *ui.Enum,
 	rungs []ladderRung, read func(providersMachine) string, choose func(next string)) D {
-	if r.kind == rowGlobalOnly {
-		return r.layout(gtx, th, first, nil)
-	}
 	if enum.Update(gtx) {
 		choose(enum.Value)
 	}

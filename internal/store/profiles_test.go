@@ -212,3 +212,24 @@ func TestXDGProfilesAreEachProvidersOwnSetting(t *testing.T) {
 		t.Error("forgot a profile of a provider with none")
 	}
 }
+
+// TestForgetProfileClearsItsChatPreferences: a deleted profile's model and
+// effort go with it, so a new profile reusing the slug starts on the
+// provider's default.
+func TestForgetProfileClearsItsChatPreferences(t *testing.T) {
+	svc := newTestStore(t)
+	for _, key := range []string{"provider.claude.model@work", "provider.claude.effort@work", "provider.claude.model@client", "provider.codex.model@work"} {
+		_, _ = svc.SetSetting(t.Context(), api.SetSettingOptions{Key: key, Value: "x"})
+	}
+	if err := svc.ForgetClaudeProfile("work"); err != nil {
+		t.Fatal(err)
+	}
+	for key, want := range map[string]string{
+		"provider.claude.model@work": "", "provider.claude.effort@work": "",
+		"provider.claude.model@client": "x", "provider.codex.model@work": "x",
+	} {
+		if got, _ := svc.GetSetting(t.Context(), api.GetSettingOptions{Key: key}); got != want {
+			t.Errorf("%s = %q, want %q", key, got, want)
+		}
+	}
+}

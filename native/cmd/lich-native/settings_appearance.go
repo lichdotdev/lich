@@ -243,9 +243,6 @@ func budgetText(budget float64) string {
 // answer does under them, and the three answers at the row's right.
 func (s *settingsScreen) closeBlock(gtx C, th *ui.Theme, r settingRow, first bool) D {
 	r.description = i18n.T("settings.closeSetting.description")
-	if r.kind == rowGlobalOnly {
-		return r.layout(gtx, th, first, nil)
-	}
 	g := &s.look.closeTo
 	if g.Update(gtx) {
 		p := s.look.prefs
@@ -270,9 +267,6 @@ func (s *settingsScreen) closeBlock(gtx C, th *ui.Theme, r settingRow, first boo
 // at the row's right.
 func (s *settingsScreen) windowButtonsBlock(gtx C, th *ui.Theme, r settingRow, first bool) D {
 	r.description = i18n.T("settings.windowButtonsSetting.description")
-	if r.kind == rowGlobalOnly {
-		return r.layout(gtx, th, first, nil)
-	}
 	g := &s.look.buttons
 	if g.Update(gtx) {
 		p := s.look.prefs

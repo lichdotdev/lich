@@ -1757,3 +1757,65 @@ func TestUnreadSessionsListsOnlyTheMarked(t *testing.T) {
 		t.Errorf("UnreadSessions = %v, want only s2", unread)
 	}
 }
+
+// TestChatPreferenceByProfileThenProject pins the order a new chat's model and
+// effort resolve in: the project's own value, then the value of the profile
+// the session is born in, and never another profile's. A provider with no
+// profiles reads the project's value, then the global one.
+func TestChatPreferenceByProfileThenProject(t *testing.T) {
+	for _, tc := range []struct{ kind, profileKey string }{
+		{providers.Claude, claudeProfileKey},
+		{providers.Codex, codexProfileKey},
+		{providers.OMP, ompProfileKey},
+		{providers.OpenCode, xdgProfileKeys[providers.OpenCode]},
+		{providers.Antigravity, ""},
+	} {
+		t.Run(tc.kind, func(t *testing.T) {
+			svc := newTestStore(t)
+			svc.SetChatKinds(func(string) bool { return true })
+			for _, p := range []string{"p1", "p2"} {
+				_, _ = svc.AddProject(t.Context(), api.AddProjectOptions{ID: p, Name: p, Path: "/tmp/" + p})
+			}
+			set := func(key, project, value string) {
+				t.Helper()
+				if _, err := svc.SetSetting(t.Context(), api.SetSettingOptions{Key: key, ProjectID: project, Value: value}); err != nil {
+					t.Fatalf("SetSetting(%s): %v", key, err)
+				}
+			}
+			seq := 1
+			born := func(project, wantModel, wantEffort string) {
+				t.Helper()
+				seq++
+				id := "s" + strconv.Itoa(seq)
+				if _, err := svc.AddSession(t.Context(), api.AddSessionOptions{ProjectID: project, SessionID: id, Label: id, Kind: tc.kind, NextSeq: seq}); err != nil {
+					t.Fatalf("AddSession: %v", err)
+				}
+				if got := svc.SessionModel(id); got != wantModel {
+					t.Errorf("%s model = %q, want %q", project, got, wantModel)
+				}
+				if got := svc.SessionEffort(id); got != wantEffort {
+					t.Errorf("%s effort = %q, want %q", project, got, wantEffort)
+				}
+			}
+			model, effort := "provider."+tc.kind+".model", "provider."+tc.kind+".effort"
+			set(model, "", "opus")
+			set(effort, "", "high")
+			born("p1", "opus", "high")
+
+			set(model, "p1", "haiku")
+			born("p1", "haiku", "high")
+			born("p2", "opus", "high")
+			if tc.profileKey == "" {
+				return
+			}
+
+			set(tc.profileKey, "p2", "small")
+			born("p2", "", "")
+			set(model+"@small", "", "sonnet")
+			set(effort+"@small", "", "medium")
+			born("p2", "sonnet", "medium")
+			set(tc.profileKey, "p1", "small")
+			born("p1", "haiku", "medium")
+		})
+	}
+}

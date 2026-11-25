@@ -183,9 +183,6 @@ func (s *settingsScreen) vcsRow(gtx C, th *ui.Theme, e settingEntry, r settingRo
 // way to any one that does not.
 func (s *settingsScreen) vcsToolsBlock(gtx C, th *ui.Theme, r settingRow, first bool) D {
 	r.description = i18n.T("settings.vcsToolsSetting.description")
-	if r.kind == rowGlobalOnly {
-		return r.layout(gtx, th, first, nil)
-	}
 	v := &s.vcs
 	if v.recheck.Clicked(gtx) {
 		v.recheckTools(s)

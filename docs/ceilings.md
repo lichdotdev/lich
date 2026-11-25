@@ -63,6 +63,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`internal/terminal/command.go`, `ultracodeArgs`): Claude Code drops ultracode on `--resume`, so lich passes it
   on every spawn (`docs/providers/claude.md`, Spawn), and nothing turns it off for one session while the
   provider-wide switch is on.
+- **A new chat's model and effort come from its project, else from the profile it is born in, never from another
+  profile** (`internal/store/settings.go`, `ProviderModel`): Personal's are the provider's global keys and a named
+  profile's are its own (`provider.<id>.model@<slug>`), so a profile with none set starts on the provider's default
+  even when Personal names Opus. That is the point: an account on a smaller plan must not inherit a larger one's
+  model. Antigravity has no profiles, so it has only the global value and a project's. The list to pick from is
+  one per provider, what its last chat offered under whichever profile, so a smaller account can list a model it
+  cannot run. Terminals read none of this.
 - **A model or effort is a birth value, and some providers forget it on resume** (`internal/terminal/command.go`,
   `modelArgs`, `effortArgs`): lich passes neither when it resumes or forks a conversation, because a `/model` or
   `/effort` typed inside the session is the user's decision and re-sending the birth value would undo it. A pick

@@ -2,12 +2,15 @@ package main
 
 import (
 	"image"
+	"strings"
 
 	"gioui.org/font"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
-	"gioui.org/op"
 	"gioui.org/op/clip"
+	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -27,6 +30,10 @@ var (
 	icProfileNew     = icons.Lucide("plus")
 	icFoldOpen       = icons.Lucide("chevron-down")
 	icFoldShut       = icons.Lucide("chevron-right")
+	// profileModelW and profileEffortW are a profile row's pickers: a model's
+	// name and an effort's word, the row's name keeping the rest.
+	profileModelW  = ui.Space(44)
+	profileEffortW = ui.Space(28)
 )
 
 // effectiveScopeProfile is the profile the open scope's new sessions are born
@@ -134,24 +141,61 @@ func (s *settingsScreen) profileOption(gtx C, th *ui.Theme, c *profileSettings, 
 }
 
 // profilesBlock is Profiles: the logins this machine keeps for the provider, a
-// row each, and the way to add one. It is global; from a project it is dimmed.
-func (s *settingsScreen) profilesBlock(gtx C, th *ui.Theme, c *profileSettings, values scopedValues, first bool) D {
+// row each with the model and effort its new chats start on, and the way to
+// add one. It is global; a project's scope leaves it out.
+func (s *settingsScreen) profilesBlock(gtx C, th *ui.Theme, c *profileSettings, values scopedValues, m providersMachine, first bool) D {
 	r := s.providerRow(gtx, settingEntry{titleKey: "settings.settingsProfiles.profilesTitle"}, values)
 	r.description = profileSentence(c.provider, c.provider.words.profilesDescKey)
-	if r.kind == rowGlobalOnly {
-		return r.layout(gtx, th, first, nil)
+	cols := s.profilePrefColumns(c, m)
+	if len(cols) > 0 {
+		r.detail = i18n.T("settings.chatPrefSetting.profilesDetail", i18n.Args{"provider": c.provider.label})
+		for _, col := range cols {
+			if names := overriders(settingEntry{key: col.key, scope: scopeOverridable}, s.projects, values); len(names) > 0 {
+				r.kind, r.overriddenIn = rowOverridden, names
+			}
+		}
 	}
-	return r.layoutBlock(gtx, th, first, func(gtx C, th *ui.Theme) D { return s.profileRows(gtx, th, c) })
+	return r.layoutBlock(gtx, th, first, func(gtx C, th *ui.Theme) D { return s.profileRows(gtx, th, c, m, cols) })
 }
 
-func (s *settingsScreen) profileRows(gtx C, th *ui.Theme, c *profileSettings) D {
+// profilePrefColumn is a chat preference the profile rows carry a picker for.
+type profilePrefColumn struct {
+	category, key, titleKey string
+	choices                 []api.ChatChoice
+}
+
+// profilePrefColumns are the model and, once a chat offered one, the effort,
+// for a provider whose chats have them.
+func (s *settingsScreen) profilePrefColumns(c *profileSettings, m providersMachine) []profilePrefColumn {
+	kind := c.provider.kind
+	if !hasChatPrefs(kind) {
+		return nil
+	}
+	var cols []profilePrefColumn
+	for _, col := range []profilePrefColumn{
+		{category: api.OptionModel, titleKey: "settings.chatPrefSetting.modelTitle"},
+		{category: api.OptionEffort, titleKey: "settings.chatPrefSetting.effortTitle"},
+	} {
+		col.key = providerPrefKey(kind, col.category)
+		col.choices = chatPrefChoices(m.globals[providerChoicesKey(kind, col.category)])
+		if chatPrefShown(col.category, col.choices, m.globals[col.key]) {
+			cols = append(cols, col)
+		}
+	}
+	return cols
+}
+
+func (s *settingsScreen) profileRows(gtx C, th *ui.Theme, c *profileSettings, m providersMachine, cols []profilePrefColumn) D {
 	list, loaded := c.book.snapshot()
 	if !loaded {
 		return th.Text(ui.TextXS, i18n.T("settings.settingsProfilesView.loading")).Muted().Layout(gtx)
 	}
 	var children []layout.FlexChild
+	if len(cols) > 0 {
+		children = append(children, layout.Rigid(func(gtx C) D { return profilePrefHeader(gtx, th, cols) }))
+	}
 	for i, p := range list {
-		children = append(children, layout.Rigid(func(gtx C) D { return s.profileListRow(gtx, th, c, p, i == 0) }))
+		children = append(children, layout.Rigid(func(gtx C) D { return s.profileListRow(gtx, th, c, m, cols, p, i == 0) }))
 	}
 	if c.add.Clicked(gtx) {
 		s.startNewProfile(c)
@@ -162,9 +206,45 @@ func (s *settingsScreen) profileRows(gtx C, th *ui.Theme, c *profileSettings) D 
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
 }
 
+// profilePrefHeader names the picker columns over the rows, each over its
+// column and the menu's room kept at the right.
+func profilePrefHeader(gtx C, th *ui.Theme, cols []profilePrefColumn) D {
+	children := []layout.FlexChild{layout.Flexed(1, func(gtx C) D { return D{Size: image.Pt(gtx.Constraints.Min.X, 0)} })}
+	for _, col := range cols {
+		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D {
+			gtx.Constraints.Min.X, gtx.Constraints.Max.X = gtx.Dp(profilePrefW(col.category)), gtx.Dp(profilePrefW(col.category))
+			return th.Text(ui.Text2XS, strings.ToUpper(i18n.T(col.titleKey))).Muted().Weight(font.SemiBold).Layout(gtx)
+		}))
+	}
+	children = append(children, ui.Gap(2), layout.Rigid(layout.Spacer{Width: ui.Space(8)}.Layout))
+	return layout.Inset{Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...) })
+}
+
+func profilePrefW(category string) unit.Dp {
+	if category == api.OptionEffort {
+		return profileEffortW
+	}
+	return profileModelW
+}
+
+// profilePrefPickers are a profile row's pickers, one per column.
+func (s *settingsScreen) profilePrefPickers(th *ui.Theme, c *profileSettings, m providersMachine, cols []profilePrefColumn, p backend.Profile) []layout.FlexChild {
+	var children []layout.FlexChild
+	for _, col := range cols {
+		pk := c.prefPicker(p.Slug, col.category)
+		current := c.pref(col.key, p.Slug, m)
+		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D {
+			label := chatPrefLabel(col.choices, current, c.provider.label)
+			return s.chatPrefSelect(gtx, th, pk, col.choices, current, label, chatPrefLabel(col.choices, "", c.provider.label), profilePrefW(col.category),
+				func(id string) { s.setProfilePref(c, col.key, p.Slug, id) })
+		}))
+	}
+	return children
+}
+
 // profileListRow is one profile: its mark and name, the account it is logged
 // in to or the amber word that it is not, and its menu's ⋯ under the pointer.
-func (s *settingsScreen) profileListRow(gtx C, th *ui.Theme, c *profileSettings, p backend.Profile, first bool) D {
+func (s *settingsScreen) profileListRow(gtx C, th *ui.Theme, c *profileSettings, m providersMachine, cols []profilePrefColumn, p backend.Profile, first bool) D {
 	st := c.row(p.Slug)
 	if st.login.Clicked(gtx) {
 		s.startLogin(c, p, nil)
@@ -181,23 +261,25 @@ func (s *settingsScreen) profileListRow(gtx C, th *ui.Theme, c *profileSettings,
 		if !p.LoggedIn {
 			in := th.Button(&st.login, i18n.T("settings.settingsProfilesView.logIn"))
 			in.Variant, in.Size = ui.VariantOutline, ui.SizeSM
-			children = append(children, layout.Rigid(in.Layout), ui.Gap(1))
+			children = append(children, layout.Rigid(in.Layout))
 		}
-		children = append(children, layout.Rigid(func(gtx C) D {
+		children = append(children, s.profilePrefPickers(th, c, m, cols, p)...)
+		children = append(children, ui.Gap(1), layout.Rigid(func(gtx C) D {
 			if !hovered && !st.menu.Opened() {
 				side := gtx.Dp(ui.Space(8))
 				return D{Size: image.Pt(side, side)}
 			}
 			return s.profileMenu(gtx, th, c, p, st)
 		}))
-		macro := op.Record(gtx.Ops)
 		d := layout.Inset{Top: profileRowPadY, Bottom: profileRowPadY}.Layout(gtx,
 			func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...) })
-		call := macro.Stop()
+		// Over the row, passing the pointer on: under it, the ⋯ would take the
+		// hover away from the row that draws it, every frame.
 		area := clip.Rect{Max: d.Size}.Push(gtx.Ops)
+		pass := pointer.PassOp{}.Push(gtx.Ops)
 		st.hover.Add(gtx.Ops)
+		pass.Pop()
 		area.Pop()
-		call.Add(gtx.Ops)
 		return d
 	}
 	if first {
@@ -270,42 +352,4 @@ func (s *settingsScreen) profilePlan(c *profileSettings, slug string) (backend.Q
 		return backend.QuotaPlan{}, false
 	}
 	return planFor(s.footer.quota.plans(profileQuotaKey(c.provider, slug)), c.provider.kind)
-}
-
-// advancedBinaryFold is the Binary block under a fold: a provider's binary is
-// rarely changed once the profiles are what the screen is about.
-func (s *settingsScreen) advancedBinaryFold(gtx C, th *ui.Theme, c *profileSettings, values scopedValues, m providersMachine, p providerInfo, first bool) D {
-	if c.fold.Clicked(gtx) {
-		c.advanced = !c.advanced
-	}
-	if s.lit == i18n.T("settings.providerBinary.title") && gtx.Now.Before(s.litUntil) {
-		c.advanced = true
-	}
-	lead := icFoldShut
-	if c.advanced {
-		lead = icFoldOpen
-	}
-	head := func(gtx C) D {
-		return c.fold.Layout(gtx, func(gtx C) D {
-			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			ink := th.MutedForeground
-			if c.fold.Hovered() {
-				ink = th.Foreground
-			}
-			return layout.Inset{Left: providerRowPadX, Right: providerRowPadX, Top: providerRowPadY, Bottom: providerRowPadY}.Layout(gtx, func(gtx C) D {
-				return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-					layout.Rigid(func(gtx C) D { return lead.Layout(gtx, ui.Space(4), ink) }),
-					ui.Gap(2),
-					layout.Rigid(th.Text(ui.TextSM, i18n.T("settings.settingsProfilesView.advancedBinary")).In(ink).Layout),
-				)
-			})
-		})
-	}
-	if !c.advanced {
-		return head(gtx)
-	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(head),
-		layout.Rigid(func(gtx C) D { return s.binBlock(gtx, th, values, m, p, false) }),
-	)
 }

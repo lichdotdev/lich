@@ -70,9 +70,11 @@ func (s *Service) DeleteGlobalSetting(key string) error {
 }
 
 // modelKey and effortKey are the settings keys holding the model and effort a
-// new chat of this provider starts on, as Settings › Providers names them:
-// global because the choice is about the provider rather than one project.
-// Picking another one in a chat moves only that session.
+// new chat of this provider starts on, as Settings › Providers names them.
+// Their global value is Personal's; a named profile's lives under
+// profilePrefKey, since an account on a smaller plan cannot run what a larger
+// one does. A project's value of the bare key wins over both. Picking another
+// one in a chat moves only that session.
 func modelKey(providerID string) string {
 	return "provider." + providerID + ".model"
 }
@@ -81,16 +83,35 @@ func effortKey(providerID string) string {
 	return "provider." + providerID + ".effort"
 }
 
-// ProviderModel is the model a new chat of providerID starts on, "" for none
-// or on a read failure. An empty answer leaves the provider on its own
+// profilePrefKey is key for the profile slug, "" for Personal. The "@" keeps
+// a slug off the ".choices" keys that share key's prefix.
+func profilePrefKey(key, profile string) string {
+	if profile == "" {
+		return key
+	}
+	return key + "@" + profile
+}
+
+// ProviderModel is the model a new chat of providerID in projectID, born in
+// profile, starts on: the project's value, then the profile's, never another
+// profile's. "" for none or on a read failure leaves the provider on its own
 // default, as SessionModel's does.
-func (s *Service) ProviderModel(providerID string) string {
-	return s.globalSetting(modelKey(providerID))
+func (s *Service) ProviderModel(providerID, projectID, profile string) string {
+	return s.chatPref(modelKey(providerID), projectID, profile)
 }
 
 // ProviderEffort is ProviderModel for the reasoning effort.
-func (s *Service) ProviderEffort(providerID string) string {
-	return s.globalSetting(effortKey(providerID))
+func (s *Service) ProviderEffort(providerID, projectID, profile string) string {
+	return s.chatPref(effortKey(providerID), projectID, profile)
+}
+
+func (s *Service) chatPref(key, projectID, profile string) string {
+	if projectID != globalScope {
+		if value, err := s.GetSetting(context.Background(), api.GetSettingOptions{Key: key, ProjectID: projectID}); err == nil && value != "" {
+			return value
+		}
+	}
+	return s.globalSetting(profilePrefKey(key, profile))
 }
 
 func (s *Service) globalSetting(key string) string {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"cmp"
 	"encoding/json"
 	"image"
 	"log"
@@ -8,6 +9,7 @@ import (
 	"strings"
 
 	"gioui.org/layout"
+	"gioui.org/unit"
 	"gioui.org/widget"
 
 	"github.com/lichdotdev/lich/api"
@@ -32,6 +34,19 @@ func providerPrefKey(kind, category string) string {
 		return "provider." + kind + ".effort"
 	}
 	return "provider." + kind + ".model"
+}
+
+// providerChatPrefEntries are every chat provider's model and effort as a
+// project may change them, read per project and drawn on the provider's
+// screen.
+func providerChatPrefEntries() []settingEntry {
+	var entries []settingEntry
+	for _, kind := range chatPrefKinds {
+		for _, category := range []string{api.OptionModel, api.OptionEffort} {
+			entries = append(entries, settingEntry{key: providerPrefKey(kind, category), scope: scopeOverridable})
+		}
+	}
+	return entries
 }
 
 // providerChoicesKey is what the last chat of kind offered for category
@@ -112,39 +127,61 @@ func chatPrefShown(category string, choices []api.ChatChoice, current string) bo
 	return category == api.OptionModel || len(choices) > 0 || current != ""
 }
 
-// chatPrefRow is the model or the effort a new chat of p starts on, global.
+// chatPrefRow is the model or the effort a new chat of p starts on. In a
+// project's scope it is that project's, and an unchanged one follows the
+// profile its chats are born in.
 func (s *settingsScreen) chatPrefRow(gtx C, th *ui.Theme, values scopedValues, m providersMachine, p providerInfo, category string, pk *chatPrefPicker, first bool) D {
 	key := providerPrefKey(p.id, category)
 	titleKey, descKey := "settings.chatPrefSetting.modelTitle", "settings.chatPrefSetting.modelDescription"
 	if category == api.OptionEffort {
 		titleKey, descKey = "settings.chatPrefSetting.effortTitle", "settings.chatPrefSetting.effortDescription"
 	}
-	r := s.providerRow(gtx, settingEntry{titleKey: titleKey, key: key}, values)
+	r := s.providerRow(gtx, settingEntry{titleKey: titleKey, key: key, scope: scopeOverridable}, values)
 	r.description = i18n.T(descKey, i18n.Args{"provider": p.name})
 	choices := chatPrefChoices(m.globals[providerChoicesKey(p.id, category)])
 	if len(choices) == 0 {
 		r.detail = i18n.T("settings.chatPrefSetting.noChoices", i18n.Args{"provider": p.name})
 	}
-	if r.kind == rowGlobalOnly {
-		return r.layout(gtx, th, first, nil)
+	inherited, from := m.globals[key], ""
+	if c := s.providers.profiles(p.id); c != nil {
+		slug := s.scopeProfile(c, values, m)
+		inherited = c.pref(key, slug, m)
+		if s.scope != "" {
+			from = c.book.nameOf(slug)
+		}
 	}
-	current := m.globals[key]
+	r.globalValue, r.from = chatPrefLabel(choices, inherited, p.name), from
+	current, shown, defaultLabel := inherited, inherited, chatPrefLabel(choices, "", p.name)
+	if s.scope != "" {
+		current, _ = values.set(key, s.scope)
+		if current != "" {
+			shown = current
+		}
+		defaultLabel = i18n.T("settings.chatPrefSetting.follow", i18n.Args{"name": cmp.Or(from, i18n.T("settings.settingsNav.scopeGlobal"))})
+	}
+	pick := func(id string) { s.writeProviderKey(key, s.scope, id, nil) }
 	return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D {
-		pop := th.DropdownPanel(s.root, &pk.panel, providerTriggerW, func(gtx C, th *ui.Theme) D {
-			return s.chatPrefPanel(gtx, th, pk, choices, current, p.name, key)
-		})
-		return pop.Layout(gtx, th.SelectTrigger(chatPrefLabel(choices, current, p.name), providerTriggerW).Layout)
+		return s.chatPrefSelect(gtx, th, pk, choices, current, chatPrefLabel(choices, shown, p.name), defaultLabel, providerTriggerW, pick)
 	})
 }
 
+// chatPrefSelect is the trigger reading label and its list, the first item
+// defaultLabel, which picks no value.
+func (s *settingsScreen) chatPrefSelect(gtx C, th *ui.Theme, pk *chatPrefPicker, choices []api.ChatChoice, current, label, defaultLabel string, w unit.Dp, pick func(id string)) D {
+	pop := th.DropdownPanel(s.root, &pk.panel, w, func(gtx C, th *ui.Theme) D {
+		return s.chatPrefPanel(gtx, th, pk, choices, current, defaultLabel, pick)
+	})
+	return pop.Layout(gtx, th.SelectTrigger(label, w).Layout)
+}
+
 // chatPrefPanel is the list, with a search field over a long one.
-func (s *settingsScreen) chatPrefPanel(gtx C, th *ui.Theme, pk *chatPrefPicker, choices []api.ChatChoice, current, provider, key string) D {
+func (s *settingsScreen) chatPrefPanel(gtx C, th *ui.Theme, pk *chatPrefPicker, choices []api.ChatChoice, current, defaultLabel string, pick func(id string)) D {
 	options := chatPrefOptions(choices, current, pk.search.Text())
 	list := func(gtx C) D {
 		gtx.Constraints.Max.Y = min(gtx.Constraints.Max.Y, gtx.Dp(fontListHeight))
 		pk.list.Axis = layout.Vertical
 		return th.ScrollArea(&pk.list).Layout(gtx, len(options), func(gtx C, i int) D {
-			return s.chatPrefOption(gtx, th, pk, options[i], options[i].ID == current, provider, key)
+			return s.chatPrefOption(gtx, th, pk, options[i], options[i].ID == current, defaultLabel, pick)
 		})
 	}
 	if len(choices) < chatPrefSearchFrom {
@@ -157,19 +194,19 @@ func (s *settingsScreen) chatPrefPanel(gtx C, th *ui.Theme, pk *chatPrefPicker, 
 
 // chatPrefOption is one item, checked when chosen; picking it stores it, the
 // default as no value, and closes the list.
-func (s *settingsScreen) chatPrefOption(gtx C, th *ui.Theme, pk *chatPrefPicker, c api.ChatChoice, chosen bool, provider, key string) D {
+func (s *settingsScreen) chatPrefOption(gtx C, th *ui.Theme, pk *chatPrefPicker, c api.ChatChoice, chosen bool, defaultLabel string, pick func(id string)) D {
 	if pk.rows == nil {
 		pk.rows = map[string]*ui.Clickable{}
 	}
 	click := clickableOf(pk.rows, c.ID)
 	if click.Clicked(gtx) {
-		s.writeProviderKey(key, "", c.ID, nil)
+		pick(c.ID)
 		pk.panel.Close()
 		pk.search.SetText("")
 	}
 	label := chatChoiceLabel(c)
 	if c.ID == "" {
-		label = i18n.T("settings.chatPrefSetting.default", i18n.Args{"provider": provider})
+		label = defaultLabel
 	}
 	return click.Layout(gtx, func(gtx C) D {
 		gtx.Constraints = layout.Exact(image.Pt(gtx.Constraints.Max.X, gtx.Dp(fontRowHeight)))

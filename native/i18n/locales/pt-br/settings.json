@@ -34,8 +34,7 @@
       "extensions": "Extensões",
       "chat": "Chat"
     },
-    "notYet": "Ainda não está aqui",
-    "projectDesc": "O que este projeto muda em relação ao Global. Uma linha sem mudança segue o Global."
+    "notYet": "Ainda não está aqui"
   },
   "appearanceSettings": {
     "importPickTitle": "Importar tema",
@@ -325,7 +324,9 @@
     "effortDescription": "Chats novos do {provider} começam neste esforço. Sessões de terminal seguem o esforço configurado no próprio {provider}.",
     "default": "Padrão do {provider}",
     "noChoices": "Abra um chat do {provider} uma vez e as opções dele aparecem aqui.",
-    "search": "Buscar"
+    "search": "Buscar",
+    "follow": "Seguir {name}",
+    "profilesDetail": "Um chat novo começa no modelo e no esforço do seu perfil. Sessões de terminal mantêm o que está configurado no próprio {provider}."
   },
   "sandboxSettings": {
     "rung": {
@@ -458,8 +459,13 @@
     "followsGlobal": "Segue o Global",
     "globalValue": "Global: {value}",
     "useGlobal": "Usar o Global",
-    "globalOnly": "Só global",
-    "projectOnly": "Só do projeto"
+    "projectOnly": "Só do projeto",
+    "followsFrom": "Segue {name}: {value}",
+    "fromValue": "{name}: {value}",
+    "useFrom": "Usar o de {name}",
+    "restGlobal": "Os outros ajustes desta página valem para todos os projetos.",
+    "allGlobal": "Os ajustes desta página valem para todos os projetos.",
+    "openGlobal": "Abrir o Global"
   },
   "settingsGeneral": {
     "notifySearchWords": "notificação desktop alerta sino",
@@ -559,7 +565,6 @@
     "delete": "Excluir",
     "newProfile": "Novo perfil",
     "options": "Opções de {name}",
-    "advancedBinary": "Avançado · Binário",
     "binaryOverrides": "As sessões daqui iniciam por {path}. Um script que define o próprio login ou diretório de configuração passa por cima de {profile}, e o Continuar em pode perder a conversa.",
     "showBinary": "Mostrar binário",
     "useDefaultBinary": "Usar o binário padrão",
@@ -823,5 +828,11 @@
     "otherGroup": "Outros temas",
     "imported": "importado de um arquivo",
     "pairsWith": "Faz par com {name}"
+  },
+  "providerGroups": {
+    "accounts": "Contas",
+    "newChats": "Novos chats",
+    "sessions": "Sessões",
+    "advanced": "Avançado"
   }
 }

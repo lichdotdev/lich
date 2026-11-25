@@ -34,8 +34,7 @@
       "extensions": "扩展",
       "chat": "聊天"
     },
-    "notYet": "这里还没有",
-    "projectDesc": "此项目与全局设置不同的地方。未更改的项沿用全局设置。"
+    "notYet": "这里还没有"
   },
   "appearanceSettings": {
     "importPickTitle": "导入主题",
@@ -325,7 +324,9 @@
     "effortDescription": "新的 {provider} 聊天以此思考强度启动。终端会话沿用 {provider} 自身设置的思考强度。",
     "default": "{provider} 默认",
     "noChoices": "打开一次 {provider} 聊天，它的选项就会显示在这里。",
-    "search": "搜索"
+    "search": "搜索",
+    "follow": "沿用 {name}",
+    "profilesDetail": "新聊天使用其配置文件的模型和思考强度。终端会话保留 {provider} 自身的设置。"
   },
   "sandboxSettings": {
     "rung": {
@@ -458,8 +459,13 @@
     "followsGlobal": "沿用全局",
     "globalValue": "全局：{value}",
     "useGlobal": "使用全局",
-    "globalOnly": "仅全局",
-    "projectOnly": "仅项目"
+    "projectOnly": "仅项目",
+    "followsFrom": "沿用 {name}：{value}",
+    "fromValue": "{name}：{value}",
+    "useFrom": "使用 {name} 的值",
+    "restGlobal": "本页其余设置在所有项目中相同。",
+    "allGlobal": "本页设置在所有项目中相同。",
+    "openGlobal": "打开全局"
   },
   "settingsGeneral": {
     "notifySearchWords": "桌面 通知 提醒 铃",
@@ -559,7 +565,6 @@
     "delete": "删除",
     "newProfile": "新建配置文件",
     "options": "{name} 的选项",
-    "advancedBinary": "高级 · 可执行文件",
     "binaryOverrides": "这里的会话通过 {path} 启动。自行设置登录或配置目录的脚本会覆盖 {profile}，“转到”可能找不到对话。",
     "showBinary": "显示可执行文件",
     "useDefaultBinary": "使用默认可执行文件",
@@ -822,5 +827,11 @@
     "otherGroup": "其他主题",
     "imported": "从文件导入",
     "pairsWith": "与 {name} 配对"
+  },
+  "providerGroups": {
+    "accounts": "账号",
+    "newChats": "新聊天",
+    "sessions": "会话",
+    "advanced": "高级"
   }
 }

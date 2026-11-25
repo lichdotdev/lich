@@ -144,7 +144,7 @@ var settingsSections = []settingsSection{
 		{titleKey: "settings.settingsIndex.vimTitle", alsoKey: "settings.settingsIndex.vimSearchWords", key: vimKey},
 	}},
 	{id: sectionProviders, labelKey: "settings.settings.section.providers", icon: icons.Lucide("blocks"), navGroupKey: navGroupAgents,
-		rows: providerEntries(), unported: providerBinEntries()},
+		rows: providerEntries(), unported: append(providerBinEntries(), providerChatPrefEntries()...)},
 	{id: sectionSandbox, labelKey: "settings.settings.section.sandbox", icon: icons.Lucide("shield-check"), navGroupKey: navGroupAgents, rows: []settingEntry{
 		{titleKey: "settings.sandboxSettings.confinedTitle", alsoKey: "settings.sandboxSettings.confinedSearchWords", key: sandboxLadderKey},
 		{titleKey: "settings.sandboxSettings.sshTitle", alsoKey: "settings.sandboxSettings.sshSearchWords", key: sshAgentKey, scope: scopeOverridable, groupKey: "settings.sandboxSettings.carryTitle"},

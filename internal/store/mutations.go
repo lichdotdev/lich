@@ -168,11 +168,11 @@ func (s *Service) addSession(
 	// With the row for the sandbox's reason: the first spawn reads it, a chat's
 	// or a terminal's.
 	view := s.bornView(kind)
-	// A chat is born on the provider's preferred model and effort; a terminal
-	// is left to the provider's own configuration, which the user set there.
+	// A chat is born on the model and effort preferred for its project and
+	// profile; a terminal is left to the provider's own configuration, which the user set there.
 	model, effort := "", ""
 	if view == api.ViewChat && providers.Known(kind) {
-		model, effort = s.ProviderModel(kind), s.ProviderEffort(kind)
+		model, effort = s.ProviderModel(kind, projectID, profile), s.ProviderEffort(kind, projectID, profile)
 	}
 	return s.tx(func(tx *sql.Tx) error {
 		if _, err := tx.Exec(
