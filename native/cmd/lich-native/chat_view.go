@@ -147,6 +147,12 @@ type chatView struct {
 	attached  []backend.Attachment
 	cardList  layout.List
 	fileCards map[string]*chatFileCard
+	// quotes are the texts quoted from the conversation the next message
+	// opens with, in the order they were taken, drawn under the cards with
+	// quoteRows' ×; quoteSel is Quote over a selection.
+	quotes    []string
+	quoteRows []chatQuoteRow
+	quoteSel  ui.Clickable
 	// unsent is a message the backend refused, handed back to the composer,
 	// ahead of what was typed since, on the next frame.
 	mu     sync.Mutex
@@ -473,6 +479,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 	}
 	p.attached = addFiles(p.attached, u.chats.takeAttached(sv.ID))
 	p.cardActs(gtx)
+	p.quoteActs(gtx)
 	p.dropQuizzes(asking)
 	if asking != nil {
 		u.questionActs(gtx, p, sv, asking)
@@ -507,7 +514,7 @@ func (u *window) chatActs(gtx C, p *chatPane, sv sessionView, keys, working bool
 		gtx.Execute(key.FocusCmd{Tag: &p.editor})
 	}
 	u.escapeChat(gtx, p, sv.ID, waiting, asking)
-	if p.editor.Len() > 0 || len(p.attached) > 0 {
+	if p.editor.Len() > 0 || len(p.attached) > 0 || len(p.quotes) > 0 {
 		waiting = nil
 	}
 	u.queueActs(gtx, p, sv.ID)
@@ -576,7 +583,7 @@ func (u *window) escapeChat(gtx C, p *chatPane, id string, waiting, asking *back
 		}
 		switch {
 		case waiting != nil:
-			if p.editor.Len() == 0 && len(p.attached) == 0 {
+			if p.editor.Len() == 0 && len(p.attached) == 0 && len(p.quotes) == 0 {
 				u.answerChat(id, waiting.ID, permitOption(waiting.Permission, api.PermitRejectOnce))
 			}
 		case asking == nil && u.model.chat.isRunning(id):
@@ -685,12 +692,19 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 			ta := tinted.Textarea(&p.editor, hint)
 			ta.MaxHeight, ta.MinHeight, ta.Radius, ta.Steady, ta.History = chatComposerMax, chatComposerMin, ui.RadiusLG, true, &p.undo
 			ta.Size, ta.Leading, ta.PadX, ta.PadY = markdown.BodySize, markdown.BodySize*markdown.LineHeightScale, chatComposerPadX, chatComposerPadY
-			// the cards stand over the text, adding to the box's ceiling
-			// rather than taking from the text's room
-			if len(p.attached) > 0 {
-				ta.MaxHeight += chatCardSize + chatComposerPadY
+			// the cards and the quotes stand over the text, adding to the
+			// box's ceiling rather than taking from the text's room
+			m := op.Record(gtx.Ops)
+			head := layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+				layout.Rigid(func(gtx C) D { return u.composerCards(gtx, th, p, tinted.Palette.Input) }),
+				layout.Rigid(func(gtx C) D { return u.composerQuotes(gtx, th, p) }),
+			)
+			headCall := m.Stop()
+			ta.MaxHeight += gtx.Metric.PxToDp(head.Size.Y)
+			ta.Head = func(gtx C) D {
+				headCall.Add(gtx.Ops)
+				return head
 			}
-			ta.Head = func(gtx C) D { return u.composerCards(gtx, th, p, tinted.Palette.Input) }
 			ta.Foot = u.chatChips(th, p, sv, working, ft)
 			d := ta.Layout(gtx)
 			ui.InsetBorder(gtx, d.Size, gtx.Dp(ui.RadiusLG), th.Over(ui.MixOKLab(th.Palette.Input, lean, chatComposerTint)))
@@ -760,9 +774,10 @@ func (u *window) chatUserFrom(gtx C, th *ui.Theme, p *chatPane, key, from, text 
 // renderer sets prose at markdown.BodySize, so the sp are scaled to match.
 // Every line they broke stays broken, as they typed it.
 func (u *window) userMarkdown(gtx C, th *ui.Theme, p *chatPane, key, text string) D {
+	quote := u.quoteButton(p, u.theme, gtx.Metric)
 	gtx.Metric.PxPerSp *= float32(ui.TextSM) / float32(markdown.BodySize)
 	notify := func(t ui.Toast) { u.toaster.Show(t) }
-	links := markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths}
+	links := markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths, Quote: quote}
 	dims := p.md.LayoutLinksWindow(gtx, th, "user:"+key, hardBreaks(text), links, p.window)
 	// the message as typed, for whoever reads the window without seeing it
 	defer clip.Rect{Max: dims.Size}.Push(gtx.Ops).Pop()

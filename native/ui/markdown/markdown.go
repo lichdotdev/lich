@@ -156,6 +156,10 @@ func (m Cache) layout(gtx C, th *ui.Theme, key, src string, l Links, window Wind
 func (m Cache) layoutAs(gtx C, th *ui.Theme, key, src string, l Links, window Window, lk look) D {
 	t := m.text(th, key, src, l.Paths, lk)
 	t.selectKeys(gtx)
+	t.group.kept = false
+	if l.quoteAt = t.quoteAt(l); l.quoteAt >= 0 {
+		l.quoteText = t.selection()
+	}
 	estimate := t.estimate(gtx)
 	y, width, left := 0, gtx.Constraints.Min.X, 0
 	if column := gtx.Dp(lk.column); column > 0 && gtx.Constraints.Max.X > column {
@@ -255,6 +259,9 @@ func (b markdownBlock) layout(gtx C, th *ui.Theme, l Links) D {
 
 func (c *markdownCell) layout(gtx C, th *ui.Theme, l Links) D {
 	c.selectEvents(gtx, th)
+	if c.sel != nil {
+		c.sel.keep = image.Rectangle{}
+	}
 	for {
 		span, ev, ok := c.state.Update(gtx)
 		if !ok {
@@ -271,6 +278,7 @@ func (c *markdownCell) layout(gtx C, th *ui.Theme, l Links) D {
 	c.paintSelection(gtx, th)
 	dims := style.Layout(gtx)
 	c.selectArea(gtx, dims.Size, m.Stop())
+	c.quote(gtx, th, l, dims.Size.X)
 	return dims
 }
 

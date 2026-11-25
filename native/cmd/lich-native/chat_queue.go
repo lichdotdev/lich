@@ -171,13 +171,13 @@ func (u *window) sendQueueNow(p *chatPane, id string) bool {
 		return false
 	}
 	q := u.model.chat.takeQueue(id)
-	if !u.model.chat.isRunning(id) {
-		p.restore(joinMessages(q))
-		return u.sendChat(p, id)
-	}
 	if m := p.composed(); !m.empty() && !u.inShellMode(p, id) {
 		q = append(q, m)
 		p.clearComposer()
+	}
+	if !u.model.chat.isRunning(id) {
+		p.restore(joinMessages(q))
+		return u.sendChat(p, id)
 	}
 	u.steerChat(id, joinMessages(q))
 	return true
@@ -329,7 +329,7 @@ func (u *window) composerKeys(gtx C, p *chatPane, id string, sent []string, keys
 	if u.shownSuggestion(p, id) != "" {
 		filters = append(filters, key.Filter{Focus: &p.editor, Name: key.NameTab})
 	}
-	queue := p.editor.Len() == 0 && len(p.attached) == 0 && len(u.model.chat.queued(id)) > 0
+	queue := p.editor.Len() == 0 && len(p.attached) == 0 && len(p.quotes) == 0 && len(u.model.chat.queued(id)) > 0
 	filters = append(filters, p.history.filters(&p.editor, sent, queue)...)
 	for {
 		ev, ok := gtx.Event(filters...)

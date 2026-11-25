@@ -320,6 +320,10 @@
     "remove": "Remover",
     "pasteNeedsTool": "Para colar uma imagem, instale o wl-paste (wl-clipboard) ou o xclip"
   },
+  "quote": {
+    "add": "Citar",
+    "remove": "Remover"
+  },
   "plugins": {
     "title": "Plugins",
     "installedCount": {

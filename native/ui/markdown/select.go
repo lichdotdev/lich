@@ -13,6 +13,7 @@ import (
 	"gioui.org/io/event"
 	"gioui.org/io/key"
 	"gioui.org/io/pointer"
+	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
@@ -31,6 +32,8 @@ const (
 	// selectionSlack is the room past the text a press still lands in, so a
 	// glyph overhanging its advance is not clipped.
 	selectionSlack = unit.Dp(2)
+	// quoteLift is the room between Links.Quote and the line it stands over.
+	quoteLift = unit.Dp(4)
 )
 
 // textSelection is the selected runes of one cell, from anchor to caret, and
@@ -50,6 +53,9 @@ type textSelection struct {
 	// selection unless it lands in bounds, the cell's area.
 	elsewhere struct{ _ byte }
 	bounds    image.Rectangle
+	// keep is where Links.Quote stands, in this cell's pixels: a press on it
+	// keeps the selection it quotes.
+	keep image.Rectangle
 	// index is the cell's place among the body's cells, and group what the
 	// cells of the body share while a drag runs across them.
 	index int
@@ -75,6 +81,9 @@ type selectGroup struct {
 	pos     f32.Point
 	version int
 	active  bool
+	// kept is a press of this frame on Links.Quote, which no cell lets its
+	// selection go for.
+	kept bool
 }
 
 func (s *textSelection) empty() bool { return s == nil || s.anchor == s.caret }
@@ -134,7 +143,10 @@ func (c *markdownCell) selectEvents(gtx C, th *ui.Theme) {
 			continue
 		}
 		s.press, s.pressStamp = e.Position, e.Time
-		if !e.Position.Round().In(s.bounds) {
+		switch at := e.Position.Round(); {
+		case at.In(s.keep):
+			s.group.kept = true
+		case !at.In(s.bounds) && !s.group.kept:
 			s.clear()
 			s.seen = s.group.version
 		}
@@ -193,6 +205,12 @@ func (c *markdownCell) selectPointer(gtx C, th *ui.Theme, e pointer.Event) {
 		s.group.version++
 		gtx.Execute(op.InvalidateCmd{})
 	case pointer.Release, pointer.Cancel:
+		// Links.Quote waits for the press to end, and this frame was laid
+		// out from where the press was still on. A cell's first frame hears a
+		// Cancel with no press behind it, which must ask for nothing.
+		if s.pressed && !s.empty() {
+			gtx.Execute(op.InvalidateCmd{})
+		}
 		s.pressed = false
 	}
 }
@@ -276,20 +294,78 @@ func (t *markdownText) selectKeys(gtx C) {
 			continue
 		}
 		if e.Name == key.NameEscape {
-			for _, c := range t.cells {
-				c.sel.clear()
-			}
+			t.dropSelection()
 			return
 		}
-		var parts []string
-		for _, c := range t.cells {
-			if !c.sel.empty() {
-				from, to := c.sel.span()
-				parts = append(parts, c.visibleText(from, to))
-			}
-		}
-		gtx.Execute(clipboard.WriteCmd{Type: "application/text", Data: io.NopCloser(strings.NewReader(strings.Join(parts, "\n")))})
+		gtx.Execute(clipboard.WriteCmd{Type: "application/text", Data: io.NopCloser(strings.NewReader(t.selection()))})
 	}
+}
+
+// selection is the selected text of every cell of t as read, a line each.
+func (t *markdownText) selection() string {
+	var parts []string
+	for _, c := range t.cells {
+		if !c.sel.empty() {
+			from, to := c.sel.span()
+			parts = append(parts, c.visibleText(from, to))
+		}
+	}
+	return strings.Join(parts, "\n")
+}
+
+func (t *markdownText) dropSelection() {
+	for _, c := range t.cells {
+		c.sel.clear()
+	}
+}
+
+// DropSelection lets go of the selection in every body of m.
+func (m Cache) DropSelection() {
+	for _, t := range m {
+		t.dropSelection()
+	}
+}
+
+// quoteAt is the first cell of t's selection, where l.Quote stands: -1
+// without a Quote or a selection, or while a press is still making it.
+func (t *markdownText) quoteAt(l Links) int {
+	at := -1
+	if l.Quote == nil {
+		return at
+	}
+	for i, c := range t.cells {
+		if c.sel.pressed {
+			return -1
+		}
+		if at < 0 && !c.sel.empty() {
+			at = i
+		}
+	}
+	return at
+}
+
+// quote draws l.Quote over the selection's first line when the cell, width
+// wide, holds its start, kept inside the cell's width.
+func (c *markdownCell) quote(gtx C, th *ui.Theme, l Links, width int) {
+	s := c.sel
+	if s == nil || l.Quote == nil || s.index != l.quoteAt || s.empty() {
+		return
+	}
+	from, _ := s.span()
+	g := c.geometry(gtx, th.Shaper)
+	if from >= len(g.boxes) {
+		return
+	}
+	b := g.boxes[from]
+	inner := gtx
+	inner.Constraints = layout.Constraints{Max: gtx.Constraints.Max}
+	m := op.Record(gtx.Ops)
+	d := l.Quote(inner, l.quoteText)
+	call := m.Stop()
+	at := image.Pt(max(min(b.x0, width-d.Size.X), 0), b.top-d.Size.Y-gtx.Dp(quoteLift))
+	s.keep = image.Rectangle{Max: d.Size}.Add(at)
+	defer op.Offset(at).Push(gtx.Ops).Pop()
+	call.Add(gtx.Ops)
 }
 
 func (t *markdownText) selected() bool {

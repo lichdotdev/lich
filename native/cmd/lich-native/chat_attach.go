@@ -106,16 +106,19 @@ type chatFileCard struct {
 	removeTip    ui.Tooltip
 }
 
-// composed is what the composer holds as a message.
+// composed is what the composer holds as a message, its quotes written into
+// the text.
 func (p *chatPane) composed() chatMessage {
-	return chatMessage{text: strings.TrimSpace(p.editor.Text()), files: p.attached}
+	return chatMessage{text: quotedText(p.quotes, strings.TrimSpace(p.editor.Text())), files: p.attached}
 }
 
-// clearComposer empties the text and the cards of a message that went.
+// clearComposer empties the text, the cards and the quotes of a message that
+// went.
 func (p *chatPane) clearComposer() {
 	p.editor.SetText("")
 	p.undo.Reset()
 	p.attached = nil
+	p.quotes = nil
 }
 
 // restore puts m back in the composer, ahead of what was written since.
