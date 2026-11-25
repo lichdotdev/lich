@@ -88,16 +88,16 @@ func TestLoadAppearancePrefs(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := appearancePrefs{zoom: 1, browserZoom: 1, fontSize: defaultTerminalSize, editorFontSize: defaultEditorSize, closeAction: closeAsk, copyOnSelect: true, windowButtons: windowButtonsSystem, chatWidth: chatWidthComfortable}
+	want := appearancePrefs{zoom: 1, browserZoom: 1, fontSize: defaultTerminalSize, editorFontSize: defaultEditorSize, closeAction: closeAsk, copyOnSelect: true, windowButtons: windowButtonsSystem, chatWidth: chatWidthComfortable, backdrop: backdropGrain}
 	if p != want {
 		t.Errorf("defaults %+v, want %+v", p, want)
 	}
 	f.settings[zoomKey+"@"], f.settings[terminalFontSizeKey+"@"] = "3", "x"
 	f.settings[costBudgetKey+"@"], f.settings[closeActionKey+"@"] = "25.5", "quit"
 	f.settings[terminalFontKey+"@"], f.settings[copyOnSelectKey+"@"], f.settings[browserZoomKey+"@"] = "Iosevka", "false", "0.8"
-	f.settings[windowButtonsKey+"@"], f.settings[chatWidthKey+"@"] = "hide", "full"
+	f.settings[windowButtonsKey+"@"], f.settings[chatWidthKey+"@"], f.settings[backdropKey+"@"] = "hide", "full", "none"
 	p, _ = loadAppearancePrefs(context.Background(), client)
-	want = appearancePrefs{zoom: zoomMax, browserZoom: 0.8, fontSize: defaultTerminalSize, font: "Iosevka", editorFontSize: defaultEditorSize, budget: 25.5, closeAction: closeQuit, windowButtons: windowButtonsHide, chatWidth: chatWidthFull}
+	want = appearancePrefs{zoom: zoomMax, browserZoom: 0.8, fontSize: defaultTerminalSize, font: "Iosevka", editorFontSize: defaultEditorSize, budget: 25.5, closeAction: closeQuit, windowButtons: windowButtonsHide, chatWidth: chatWidthFull, backdrop: backdropNone}
 	if p != want {
 		t.Errorf("stored %+v, want %+v", p, want)
 	}

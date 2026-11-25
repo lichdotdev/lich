@@ -252,6 +252,12 @@
     "wide": "Wide",
     "full": "Full"
   },
+  "backdropSetting": {
+    "title": "Backdrop",
+    "searchWords": "backdrop background field dots grain texture none pane",
+    "none": "None",
+    "grain": "Grain"
+  },
   "chatVerbsSetting": {
     "title": "Working words",
     "searchWords": "working words verbs thinking spinner turn live",

@@ -206,8 +206,10 @@ type window struct {
 	chatWidth string
 	// chatVerbs is the working words setting, "" for the language's own.
 	chatVerbs string
-	win       *app.Window
-	closer    closePrompt
+	// backdropStyle is the backdrop setting, "" before it is read.
+	backdropStyle string
+	win           *app.Window
+	closer        closePrompt
 	// notifier is the desktop channel; optIn its one-time question.
 	notifier    *notifier
 	optIn       notifyOptIn
@@ -957,6 +959,7 @@ func (u *window) island(gtx C, v stageView, termWidth, termHeight int) error {
 	on := u.theme.On(fill)
 	defer ui.IslandBorder(gtx, size, r, on.Over(on.Border))
 	switch {
+	case u.backdropStyle == backdropNone:
 	case v.hasEditor:
 		// the editor's backdrop holds still and stays faint: code is read,
 		// not watched

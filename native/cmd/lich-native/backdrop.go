@@ -372,6 +372,9 @@ func (b *backdrops) stirOf(id string) *backdropStir {
 // mark in its dots, and its band otherwise. It is the one place a pane's
 // backdrop is chosen.
 func (u *window) backdrop(gtx C, id string, size image.Point, ground color.NRGBA, top int) {
+	if u.backdropStyle == backdropNone {
+		return
+	}
 	cover := u.backdropCover(gtx, id)
 	// the band behind a session's text is faint; a chat's start screen, its
 	// mark drawn in the field's dots, keeps the field whole

@@ -252,6 +252,12 @@
     "wide": "宽",
     "full": "全宽"
   },
+  "backdropSetting": {
+    "title": "背景",
+    "searchWords": "背景 底纹 点阵 颗粒 纹理 无",
+    "none": "无",
+    "grain": "颗粒"
+  },
   "chatVerbsSetting": {
     "title": "工作中提示词",
     "searchWords": "工作中 提示词 动词 思考 轮次 转圈",
