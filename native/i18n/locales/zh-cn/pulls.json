@@ -191,7 +191,11 @@
     "loadFailed": "无法加载差异：{error}",
     "hideTree": "隐藏文件树",
     "showTree": "显示文件树",
-    "viewed": "已查看 {viewed}/{total}"
+    "viewed": "已查看 {viewed}/{total}",
+    "changedSinceReview": "查看后有改动",
+    "filesChangedSinceReview": {
+      "other": "自 {date} 查看以来，{count} 个文件有改动"
+    }
   },
   "reviewThread": {
     "replyFailed": "回复失败：{error}",

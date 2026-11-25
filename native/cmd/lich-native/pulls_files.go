@@ -105,8 +105,10 @@ func (p *reviewPanel) takeTicks(gtx C) {
 		}
 		if tick.Value {
 			p.markViewed(c)
+			p.saveViewed(c)
 		} else {
-			delete(f.viewed, c.git.path)
+			delete(f.viewed.files, c.git.path)
+			p.saveUnviewed(c)
 		}
 	}
 }
@@ -120,8 +122,9 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	}
 	viewed, ok := v.viewed[d.URL]
 	if !ok {
-		viewed = map[string]string{}
+		viewed = &viewedTicks{}
 		v.viewed[d.URL] = viewed
+		v.loadViewed(d.URL, viewed)
 	}
 	files.pr.viewed, files.pr.url, files.pr.number, files.pr.forge = viewed, d.URL, d.Number, v.forge
 	review := v.pendingOf(d.URL)
@@ -144,7 +147,8 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	files.inject, files.submit = in.injector(session), in.submitter(session)
 	read := p.store.diff(p.project.Path, d.Number)
 	switch {
-	case !read.loaded:
+	// The cards fold by their ticks when first read, so they wait for them.
+	case !read.loaded, !viewed.loaded:
 		return v.skeletonFiles(gtx, th)
 	case read.err != "":
 		return th.PanelNotice(i18n.T("pulls.pullsFiles.loadFailed", i18n.Args{"error": read.err}), pullsPadX).Layout(gtx)
@@ -245,8 +249,9 @@ func (v *pullView) treeLayout(gtx C, th *ui.Theme) D {
 	return t.rows.Layout(gtx, th, rows, t.active)
 }
 
-// filesToolbar is the tree's toggle, "N of M viewed", and the dock's split
-// and collapse-all toggles; the diff's size sits on the tab strip.
+// filesToolbar is the tree's toggle, the files changed since the review,
+// "N of M viewed", and the dock's split and collapse-all toggles; the diff's
+// size sits on the tab strip.
 func (v *pullView) filesToolbar(gtx C, th *ui.Theme) D {
 	files := v.files
 	viewed := 0
@@ -266,11 +271,24 @@ func (v *pullView) filesToolbar(gtx C, th *ui.Theme) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return th.IconAction(v.root, &v.tree.toggle, treeIcon, treeLabel, false).Layout(gtx) }),
 			ui.Gap(2),
+			layout.Rigid(func(gtx C) D { return v.changedSinceReview(gtx, th) }),
 			layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.pullsFiles.viewed", i18n.Args{"viewed": viewed, "total": len(files.order)})).Muted().Layout),
 			layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
 			layout.Rigid(func(gtx C) D { return files.layoutActions(gtx, th) }),
 		)
 	})
+}
+
+// changedSinceReview is how many files moved since they were ticked and the
+// day of the last tick, nothing while none did.
+func (v *pullView) changedSinceReview(gtx C, th *ui.Theme) D {
+	files := v.files
+	n, at := files.pr.viewed.changedSince(files.order, func(path string) string { return files.cards[path].gitHash })
+	if n == 0 {
+		return D{}
+	}
+	text := i18n.T("pulls.pullsFiles.filesChangedSinceReview", i18n.Args{"count": n, "date": reviewDay(at, gtx.Now)})
+	return layout.Inset{Right: ui.Space(3)}.Layout(gtx, th.Text(ui.TextXS, text).Muted().Layout)
 }
 
 // inlineFrame is what the threads hung in the diff are drawn with this

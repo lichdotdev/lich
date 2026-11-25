@@ -397,7 +397,11 @@ func open(path string) (*Service, error) {
 		_ = db.Close()
 		return nil, err
 	}
-	return &Service{db: db, stopped: make(chan struct{})}, nil
+	s := &Service{db: db, stopped: make(chan struct{})}
+	if err := s.pruneViewedFiles(time.Now()); err != nil {
+		slog.Warn("could not prune old Viewed ticks", "err", err)
+	}
+	return s, nil
 }
 
 // databasePath resolves the on-disk location of the database file. LICH_DEV

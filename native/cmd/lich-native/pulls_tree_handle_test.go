@@ -11,6 +11,7 @@ import (
 	"gioui.org/op"
 	"gioui.org/unit"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -46,7 +47,7 @@ func TestTreeFileClickBringsItsCardToTheTop(t *testing.T) {
 }
 
 func TestViewedOnACardScrolledIntoBringsTheNextFileUnderIt(t *testing.T) {
-	p := &reviewPanel{order: []string{"a.go", "b.go", "c.go"}, pr: &prFiles{viewed: map[string]string{}}}
+	p := &reviewPanel{order: []string{"a.go", "b.go", "c.go"}, pr: &prFiles{viewed: &viewedTicks{files: map[string]backend.ViewedFile{}}}}
 	b := &fileCard{open: true}
 	b.git.path = "b.go"
 	p.list.Position.First, p.list.Position.Offset = 1, 900
@@ -77,11 +78,11 @@ func TestFoldingACardScrolledIntoBringsTheNextFileUnderIt(t *testing.T) {
 
 func TestAFileTickedViewedComesBackFolded(t *testing.T) {
 	f := onlyFile(t, twoHunks)
-	p := &reviewPanel{pr: &prFiles{viewed: map[string]string{f.path: f.text()}}}
+	p := &reviewPanel{pr: &prFiles{viewed: &viewedTicks{files: map[string]backend.ViewedFile{f.path: {Hash: diffHash(f.text())}}}}}
 	if newFileCard(p, f, false, 0).open {
 		t.Error("a file ticked viewed opened again when the Files tab was read anew")
 	}
-	p.pr.viewed[f.path] = "an older version of the file"
+	p.pr.viewed.files[f.path] = backend.ViewedFile{Hash: diffHash("an older version of the file")}
 	if !newFileCard(p, f, false, 0).open {
 		t.Error("a file changed since it was ticked stayed folded")
 	}

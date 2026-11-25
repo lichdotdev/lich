@@ -317,7 +317,7 @@ func TestPullsViewedTickCountsInTheFrameThatTookTheClick(t *testing.T) {
 		}
 	}
 	r.click(t, r.smallestClickIn(t, image.Rect(label.X-40, label.Y-12, label.X+8, label.Y+30)))
-	if len(u.pulls.view.files.pr.viewed) != 1 {
+	if len(u.pulls.view.files.pr.viewed.files) != 1 {
 		t.Fatal("the click missed the tick")
 	}
 }

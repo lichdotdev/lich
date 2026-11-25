@@ -36,6 +36,7 @@ var migrations = []func(*sql.Tx) error{
 	markThreadFixCommits,
 	addSessionView,
 	addSessionChatMode,
+	addViewedFiles,
 }
 
 // addSessionEffort is version 2: the reasoning effort a session was opened at,
@@ -294,6 +295,21 @@ func addSessionView(tx *sql.Tx) error {
 // chat (SetSessionChatMode), "" for the provider's own.
 func addSessionChatMode(tx *sql.Tx) error {
 	_, err := tx.Exec(`ALTER TABLE sessions ADD COLUMN chat_mode TEXT NOT NULL DEFAULT ''`)
+	return err
+}
+
+// addViewedFiles is version 20: the files of a pull request ticked as viewed
+// on the Pulls screen (MarkViewed), kept past a restart so a review picks up
+// where it stopped. The hash is of the file's diff at the tick, never the diff.
+func addViewedFiles(tx *sql.Tx) error {
+	_, err := tx.Exec(`
+CREATE TABLE viewed_files (
+    pr_url    TEXT    NOT NULL,
+    path      TEXT    NOT NULL,
+    hash      TEXT    NOT NULL,
+    viewed_at INTEGER NOT NULL,
+    PRIMARY KEY (pr_url, path)
+) WITHOUT ROWID`)
 	return err
 }
 

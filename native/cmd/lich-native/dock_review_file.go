@@ -32,6 +32,7 @@ var (
 type fileCard struct {
 	git, shown patchFile // as git printed it, and as drawn (whitespace hidden)
 	gitText    string    // what tells a new version of the file from a refetch
+	gitHash    string    // gitText's diffHash, what a pull request's Viewed tick keeps
 	shownText  string
 	hiding     bool
 	patch      godemirror.FilePatch
@@ -82,6 +83,9 @@ func (c *fileCard) sync(f patchFile, hiding bool) {
 		return
 	}
 	c.git, c.gitText, c.hiding = f, text, hiding
+	if changed && c.panel.pr != nil {
+		c.gitHash = diffHash(text)
+	}
 	shown := f
 	if hiding {
 		shown = hideWhitespace(f)
@@ -174,7 +178,9 @@ func (c *fileCard) header(gtx C, p *reviewPanel) D {
 
 func (c *fileCard) headerRow(gtx C, th *ui.Theme, p *reviewPanel) D {
 	children := []layout.FlexChild{
-		layout.Flexed(1, func(gtx C) D { return c.toggle.Layout(gtx, func(gtx C) D { return c.title(gtx, th, p.light) }) }),
+		layout.Flexed(1, func(gtx C) D {
+			return c.toggle.Layout(gtx, func(gtx C) D { return c.title(gtx, th, p.light, p.pr != nil && p.pr.changedSinceReview(c)) })
+		}),
 	}
 	conflicted := p.conflicted(c.git.path)
 	if !c.git.binary && !conflicted {
@@ -207,8 +213,9 @@ func (c *fileCard) headerRow(gtx C, th *ui.Theme, p *reviewPanel) D {
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }
 
-// title is the toggle's face: chevron, language badge, name, directory.
-func (c *fileCard) title(gtx C, th *ui.Theme, light bool) D {
+// title is the toggle's face: chevron, language badge, name, directory, and
+// in a pull request whether the file changed since the review.
+func (c *fileCard) title(gtx C, th *ui.Theme, light, changed bool) D {
 	chevron := icChevronRight
 	if c.open {
 		chevron = icChevronDown
@@ -229,7 +236,18 @@ func (c *fileCard) title(gtx C, th *ui.Theme, light bool) D {
 			ui.Gap(2),
 			layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, base).Weight(font.Medium).Truncated().Layout(gtx) }),
 			ui.Gap(2),
-			layout.Flexed(1, func(gtx C) D { return th.Text(ui.TextXS, dir).Muted().Truncated().Layout(gtx) }),
+			// Its own width, not the slot's, so the label sits right after the path.
+			layout.Flexed(1, func(gtx C) D {
+				gtx.Constraints.Min.X = 0
+				return th.Text(ui.TextXS, dir).Muted().Truncated().Layout(gtx)
+			}),
+			layout.Rigid(func(gtx C) D {
+				if !changed {
+					return D{}
+				}
+				return layout.Inset{Left: ui.Space(2)}.Layout(gtx,
+					th.Text(ui.TextXS, i18n.T("pulls.pullsFiles.changedSinceReview")).In(th.ToneWait).Layout)
+			}),
 		)
 	})
 }

@@ -192,7 +192,12 @@
     "loadFailed": "No se pudo cargar el diff: {error}",
     "hideTree": "Ocultar el árbol de archivos",
     "showTree": "Mostrar el árbol de archivos",
-    "viewed": "{viewed} de {total} vistos"
+    "viewed": "{viewed} de {total} vistos",
+    "changedSinceReview": "cambió desde tu revisión",
+    "filesChangedSinceReview": {
+      "one": "{count} archivo cambió desde tu revisión del {date}",
+      "other": "{count} archivos cambiaron desde tu revisión del {date}"
+    }
   },
   "reviewThread": {
     "replyFailed": "No se pudo responder: {error}",

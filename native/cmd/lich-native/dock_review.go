@@ -142,9 +142,9 @@ type prFiles struct {
 	mergeBase mergeBaseMemo
 	url       string // the pull request's page
 	forge     string
-	// viewed is each ticked file's diff text when it was ticked: a commit
+	// viewed is each ticked file's diff hash when it was ticked: a commit
 	// that changes the file unticks it, one that does not leaves it.
-	viewed map[string]string
+	viewed *viewedTicks
 	ticks  map[string]*ui.Bool
 	// toReview files a line comment into the PR's pending review; nil on a
 	// merge request, which lich does not review.
@@ -156,7 +156,13 @@ type prFiles struct {
 	blocks func(path string) []diffview.Block
 }
 
-func (f *prFiles) isViewed(c *fileCard) bool { return f.viewed[c.git.path] == c.gitText }
+func (f *prFiles) isViewed(c *fileCard) bool {
+	return f.viewed.state(c.git.path, c.gitHash) == viewedAsIs
+}
+
+func (f *prFiles) changedSinceReview(c *fileCard) bool {
+	return f.viewed.state(c.git.path, c.gitHash) == changedSinceReview
+}
 
 type gapAnswer struct {
 	path  string
@@ -352,12 +358,6 @@ func (p *reviewPanel) itemOf(path string) (int, bool) {
 		}
 	}
 	return 0, false
-}
-
-// markViewed ticks c and folds it.
-func (p *reviewPanel) markViewed(c *fileCard) {
-	p.pr.viewed[c.git.path] = c.gitText
-	p.fold(c)
 }
 
 // fold closes c. When its top had already scrolled away, the list moves back

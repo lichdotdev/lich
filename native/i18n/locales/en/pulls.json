@@ -192,7 +192,12 @@
     "loadFailed": "Couldn't load the diff: {error}",
     "hideTree": "Hide the file tree",
     "showTree": "Show the file tree",
-    "viewed": "{viewed} of {total} viewed"
+    "viewed": "{viewed} of {total} viewed",
+    "changedSinceReview": "changed since your review",
+    "filesChangedSinceReview": {
+      "one": "{count} file changed since your review on {date}",
+      "other": "{count} files changed since your review on {date}"
+    }
   },
   "reviewThread": {
     "replyFailed": "Reply failed: {error}",
