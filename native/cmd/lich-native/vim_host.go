@@ -97,6 +97,8 @@ type vimState struct {
 	// failed is the server lich started for the buffer that exited before
 	// attaching.
 	failed string
+	// seen is the last click or wheel of lich's Neovim had carried out.
+	seen int
 }
 
 // vimPreview is the buffer lines first..last, 0-based and last excluded, as
@@ -253,9 +255,10 @@ func (h *vimHost) onLines(buf int, tick, first, last int, lines []string) {
 	h.push(buf, vimEvent{lines: &vimLines{tick: tick, first: first, last: last, lines: lines}})
 }
 
-func (h *vimHost) onState(buf int, mode string, row, col, top int, regions, matches [][]int, preview []any, parens [][]int, lsp []any) {
+func (h *vimHost) onState(buf int, mode string, row, col, top int, regions, matches [][]int, preview []any, parens [][]int, lsp []any, seen int) {
 	st := &vimState{mode: mode, row: row, col: col, top: top, preview: vimPreviewOf(preview), parens: vimTriples(parens)}
 	st.lsp, st.missing, st.failed = vimLspOf(lsp)
+	st.seen = seen
 	for _, r := range regions {
 		if len(r) == 4 {
 			st.regions = append(st.regions, [4]int{r[0], r[1], r[2], r[3]})
