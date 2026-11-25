@@ -85,7 +85,9 @@ func newRig(t *testing.T, kind string) *rig {
 		r.events = append(r.events, event{name, data})
 		r.mu.Unlock()
 	})
-	env := []string{fakeEnv + "=1", fakeLogEnv + "=" + r.log, "PATH=" + os.Getenv("PATH"), "HOME=" + home}
+	// The fake is this test binary: built with -coverprofile it warns on stderr
+	// without GOCOVERDIR, and a CLI's stderr becomes the error the chat reports.
+	env := []string{fakeEnv + "=1", fakeLogEnv + "=" + r.log, "PATH=" + os.Getenv("PATH"), "HOME=" + home, "GOCOVERDIR=" + t.TempDir()}
 	for _, key := range []string{"LICH_CHAT_FAKE_NOLOAD", fakeLegacyEnv, fakeKiroCommandsEnv, fakeNoSkillsEnv, fakeNoMemoryEnv, claudeChildEnv} {
 		if v := os.Getenv(key); v != "" {
 			env = append(env, key+"="+v)
