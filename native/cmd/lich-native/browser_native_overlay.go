@@ -1,16 +1,12 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"fmt"
-	"image"
 	"image/color"
-	"time"
 
 	"gioui.org/f32"
 
-	"github.com/lichdotdev/lich/native/internal/webview"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -283,21 +279,4 @@ func overlayScript(o pageOverlay) string {
 	alpha := func(c color.NRGBA) float32 { return float32(c.A) / 0xff }
 	return fmt.Sprintf("%s(%s, [%q, %g], [%q, %g, %q, %g])", pageOverlayScript, encoded,
 		cssColor(rubTrailColor), alpha(rubTrailColor), cssColor(rubRingFill), alpha(rubRingFill), cssColor(rubRingEdge), alpha(rubRingEdge))
-}
-
-// overlayVisibility shows or hides the layer, which a shot of the page under
-// it leaves out: the sketch's picture draws the strokes itself.
-const overlayVisibility = `(h => h && (h.style.visibility = %q))(document.getElementById('lich-note-rings'))`
-
-// pageShotWait bounds a shot of the page for the sketch's picture.
-const pageShotWait = 5 * time.Second
-
-// shootUnder is the page as it shows, without the layer the notes draw over
-// it. The page takes the hide, the shot and the show in that order.
-func shootUnder(ctx context.Context, page *webview.Page) (*image.RGBA, error) {
-	ctx, cancel := context.WithTimeout(ctx, pageShotWait)
-	defer cancel()
-	page.Run(fmt.Sprintf(overlayVisibility, "hidden"))
-	defer page.Run(fmt.Sprintf(overlayVisibility, ""))
-	return page.Snapshot(ctx)
 }

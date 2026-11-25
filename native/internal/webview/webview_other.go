@@ -3,19 +3,20 @@
 package webview
 
 import (
-	"context"
-	"errors"
 	"image"
 	"image/color"
 
 	"gioui.org/app"
 )
 
-// PrepareWindow leaves the window as it opens: nothing holds a page here yet.
+// PrepareWindow leaves the window as it opens: no page sits in it here.
 func PrepareWindow() {}
 
-// SetParent records the window pages go in; nothing holds a page here yet.
-func SetParent(app.ViewEvent) {}
+// SetParent records nothing: no page sits in the window here.
+func SetParent(app.ViewEvent) uint64 { return 0 }
+
+// ReleaseAll does nothing: no page sits in the window here.
+func ReleaseAll() {}
 
 // SetGround does nothing: no page sits in the window here.
 func SetGround(color.NRGBA) {}
@@ -23,25 +24,15 @@ func SetGround(color.NRGBA) {}
 // KeyboardToWindow does nothing: no page takes the keyboard here.
 func KeyboardToWindow() {}
 
-// Page is one web page; none opens on this system yet.
-type Page struct{}
+// Page is a page of lich-browser's; none has a window here, the backend
+// telling every tab's XID as zero, so the pane draws the screencast.
+type Page struct{ xid uint64 }
 
-// Open says this system shows no page of its own yet, so the window draws
-// the screencast instead.
-func Open(string, func(Load)) (*Page, error) { return nil, errors.ErrUnsupported }
-
+func Embed(xid uint64) *Page                                { return &Page{xid: xid} }
+func (p *Page) XID() uint64                                 { return p.xid }
 func (*Page) Place(image.Rectangle, []image.Rectangle) bool { return false }
 func (*Page) Placed() image.Rectangle                       { return image.Rectangle{} }
 func (*Page) PointerToWindow()                              {}
 func (*Page) PointerToPage()                                {}
-func (*Page) URL() string                                   { return "" }
-func (*Page) Eval(context.Context, string) (string, error)  { return "", errors.ErrUnsupported }
-func (*Page) Run(string)                                    {}
-func (*Page) Draw(string)                                   {}
-func (*Page) Snapshot(context.Context) (*image.RGBA, error) { return nil, errors.ErrUnsupported }
-func (*Page) SetZoom(float64)                               {}
 func (*Page) Hide()                                         {}
-func (*Page) Navigate(string)                               {}
-func (*Page) Reload()                                       {}
-func (*Page) Inspect()                                      {}
-func (*Page) Close()                                        {}
+func (*Page) Release()                                      {}

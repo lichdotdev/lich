@@ -89,12 +89,9 @@ type browserPaneUI struct {
 	notes  browserNotes
 	dialog dialogCard
 	tabs   browserTabsUI
-	// native is the page the window holds itself, nil where it holds none
-	// and the pane draws the screencast; nativeURL is what it was last sent.
-	native    *webview.Page
-	nativeURL string
-	// nativeReloads is the BrowserState.Reloads the page last loaded at.
-	nativeReloads int
+	// native is the front tab's lich-browser window the pane shows, nil
+	// where the pane draws the screencast.
+	native *webview.Page
 	// nativeSize is the page area's size in the last layout; overlaySent is
 	// what the page was last told to draw over itself (overlayScript).
 	nativeSize  image.Point
@@ -200,8 +197,8 @@ func (u *window) browserPaneAt(gtx C, v stageView, session string, r image.Recta
 	// DevTools in the page's place: the notes and the agent's cursor are the
 	// page's.
 	_, inspecting := devtoolsOf(st.Tabs)
-	if shown := shownState(st, p.nativeShown()); notesOnPage(shown) {
-		u.notesOverlay(page, p, session, shown.URL)
+	if notesOnPage(st) {
+		u.notesOverlay(page, p, session, st.URL)
 		u.notesDock(page, p, session)
 	}
 	u.dialogCardAt(page, p, session, card.Min)
@@ -274,12 +271,12 @@ func (u *window) browserToolbar(gtx C, p *browserPaneUI, session string, st api.
 		nav("reload")
 	}
 	devtools, _ := devtoolsOf(st.Tabs)
-	if !notesOnPage(shownState(st, p.nativeShown())) && (p.notes.picking || p.notes.drawing) {
+	if !notesOnPage(st) && (p.notes.picking || p.notes.drawing) {
 		p.notes.setPicking(false)
 		p.notes.setDrawing(false)
 	}
 	if p.devtools.Click.Clicked(gtx) {
-		u.openDevTools(p, session)
+		u.openDevTools(session)
 	}
 	for {
 		ev, ok := p.url.Update(gtx)
@@ -371,7 +368,7 @@ func (u *window) browserPage(gtx C, p *browserPaneUI, session string, st api.Bro
 	scale := u.pageScale(gtx)
 	p.notes.cuts, p.notes.rings = p.notes.cuts[:0], p.notes.rings[:0]
 	paint.FillShape(gtx.Ops, u.theme.Background, clip.Rect{Max: size}.Op())
-	native := u.placeNativePage(gtx, p, session, st.URL, st.Reloads)
+	native := u.placeNativePage(gtx, p, st)
 	want := api.BrowserViewOptions{ID: session, W: int(float32(size.X) / scale), H: int(float32(size.Y) / scale), Scale: float64(scale), Drawn: native}
 	if want.W > 0 && want.H > 0 && want != p.view {
 		attach := p.view.ID == ""
@@ -735,12 +732,4 @@ func (p *browserPaneUI) typed(gtx C) (string, bool) {
 	}
 	gtx.Execute(op.InvalidateCmd{})
 	return string(runes[:n]), true
-}
-
-// nativeShown is where the page the window draws itself is, empty without one.
-func (p *browserPaneUI) nativeShown() string {
-	if p.native == nil {
-		return ""
-	}
-	return p.native.URL()
 }

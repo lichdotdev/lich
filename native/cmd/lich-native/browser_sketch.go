@@ -19,7 +19,6 @@ import (
 	xdraw "golang.org/x/image/draw"
 	"golang.org/x/image/vector"
 
-	"github.com/lichdotdev/lich/native/internal/webview"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
 
@@ -298,12 +297,12 @@ func inkStroke(dst *image.RGBA, points []f32.Point, css float32, c color.Color) 
 }
 
 // sentSketch is the sketch a send took: the strokes, and the frame and page
-// width they were drawn over; page is the page the window draws itself,
-// which has no frame and is shot instead.
+// width they were drawn over; native is a page lich-browser shows in the
+// window, which has no frame and is shot instead.
 type sentSketch struct {
 	strokes []sketchStroke
 	frame   *image.RGBA
-	page    *webview.Page
+	native  bool
 	viewW   int
 	url     string
 }
@@ -311,8 +310,8 @@ type sentSketch struct {
 // uploadSketch stores the sketch's picture among the session's dropped
 // files, which a confined session reads too, and answers with its path.
 func (u *window) uploadSketch(session string, s sentSketch) (string, error) {
-	if s.frame == nil && s.page != nil {
-		shot, err := shootUnder(u.ctx, s.page)
+	if s.frame == nil && s.native {
+		shot, err := shootPage(u.ctx, session)
 		if err != nil {
 			return "", fmt.Errorf("shoot the page: %w", err)
 		}

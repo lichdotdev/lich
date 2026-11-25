@@ -296,9 +296,8 @@ func (u *window) probeElement(p *browserPaneUI, session string, x, y float64, op
 	if open {
 		merge = ""
 	}
-	page := p.native
 	p.queue.push(browserCall{merge: merge, send: func(ctx context.Context) error {
-		el, err := u.elementAt(ctx, page, session, x, y)
+		el, err := u.client.BrowserElementAt(ctx, session, x, y)
 		if err != nil {
 			return fmt.Errorf("element at: %w", err)
 		}
@@ -326,9 +325,8 @@ func (u *window) relocateNotes(p *browserPaneUI, session string) {
 		// The lookups queued behind a reveal must not merge it away.
 		merge = ""
 	}
-	page := p.native
 	p.queue.push(browserCall{merge: merge, send: func(ctx context.Context) error {
-		boxes, err := u.locateIn(ctx, page, session, selectors, reveal)
+		boxes, err := u.client.BrowserLocate(ctx, session, selectors, reveal)
 		if err != nil {
 			return fmt.Errorf("locate notes: %w", err)
 		}
@@ -463,8 +461,8 @@ func (u *window) sendNotes(p *browserPaneUI, session string) {
 	_, frame, _ := u.model.browserView(session)
 	sketch := sentSketch{strokes: slices.Clone(n.strokes), frame: frame.src, viewW: p.view.W, url: n.sketchURL}
 	if p.native != nil {
-		// The pane shows the page the window draws, not the backend's frame.
-		sketch.frame, sketch.page = nil, p.native
+		// The pane shows lich-browser's window, not the backend's frame.
+		sketch.frame, sketch.native = nil, true
 	}
 	n.setPicking(false)
 	n.setDrawing(false)
