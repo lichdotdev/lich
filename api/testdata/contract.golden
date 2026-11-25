@@ -43,6 +43,7 @@ browser.TabNav(BrowserTabOptions) None
 browser.Tabs(SessionIDOptions) []BrowserTab
 browser.Text(BrowserTextOptions) None
 browser.Type(BrowserTypeOptions) None
+browser.Window(BrowserWindowOptions) None
 chat.Agents(SessionIDOptions) ChatAgentList
 chat.Answer(ChatAnswerOptions) None
 chat.Background(SessionIDOptions) None
@@ -660,6 +661,7 @@ BrowserTab {
 	paused,omitempty bool
 	loading,omitempty bool
 	icon,omitempty string
+	xid,omitempty uint64
 }
 
 BrowserTextOptions {
@@ -672,6 +674,10 @@ BrowserTypeOptions {
 	text string
 	clear bool
 	...BrowserTarget
+}
+
+BrowserWindowOptions {
+	xid uint64
 }
 
 ChatAgentList {
