@@ -1,3 +1,25 @@
+## [0.93.0] - 2026-11-25
+
+### Added
+
+- **Dibuja rectángulos, elipses y flechas en una página del navegador.** Activa Dibujar, elige una forma en el botón de herramienta con contorno y arrastra para colocarla.
+- **Un canal beta entrega las versiones candidatas antes de la versión estable.** Elígelo en Ajustes › Actualizaciones › Canal; las instalaciones con Homebrew y Scoop en beta reciben la página de la versión en lugar de un comando.
+- **Haz clic en una extensión instalada para ver su página del catálogo.** En Ajustes › Extensiones › Instaladas, una fila que figura en el catálogo abre el mismo detalle que su tarjeta, con Actualizar cuando hay una versión más reciente.
+
+### Changed
+
+- **El detalle de una extensión crece con la ventana.** En una pantalla alta o ultrapanorámica, el diálogo y sus capturas ocupan más espacio.
+- **Un artefacto Markdown se abre renderizado, en la pestaña Artefactos.** Al hacer clic en un archivo `.md` en la pestaña Artefactos del dock se muestra con formato, como hace la vista previa de Markdown de la pestaña Código, en lugar de su fuente en el navegador.
+- **Los hilos de revisión enviados a una sesión solo se resuelven cuando el agente los ha corregido.** Una pregunta o un punto para el equipo vuelve a ti en la sesión en lugar de recibir "Fixing this" en GitHub. Un hilo que el agente corrigió se resuelve, con una respuesta que nombra su commit, una vez que ese commit se envía con push.
+
+### Fixed
+
+- **Los clics en el navegador de la sesión siguen esperando sus solicitudes cuando cambia el reloj del sistema.**
+- **El error de arranque de la ventana ahora remite al registro de la ventana nativa.** Ese registro contiene el error del proceso de la ventana cuando termina antes de abrirla.
+- **Un mensaje a una sesión de Claude Code recién abierta ya no se queda sin enviar en su prompt.**
+- **Cambiar el modelo asesor, el modo rápido, el razonamiento o ultracode en una cuenta de Claude Code ya no lo cambia en tus otras cuentas.** Cada perfil ahora los guarda junto a su propio modelo y esfuerzo predeterminados, además de si se cambia de modelo cuando las salvaguardas marcan un mensaje.
+- **Escribir en la paleta de comandos abierta sobre una página del navegador ya no amontona cada letra al principio.** La página recuperaba el teclado en cada fotograma; ahora la paleta, y cualquier campo sobre la página, lo conserva hasta que se cierra.
+
 ## [0.92.0] - 2026-11-16
 
 ### Added
