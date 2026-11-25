@@ -28,6 +28,7 @@ void lich_webview_pointer_to_window(LichPage *page);
 void lich_webview_pointer_to_page(LichPage *page);
 void lich_webview_navigate(LichPage *page, const char *url);
 void lich_webview_reload(LichPage *page);
+void lich_webview_allow(LichPage *page, const char *leaf, const char *host, const char *uri);
 void lich_webview_inspect(LichPage *page);
 void lich_webview_close(LichPage *page);
 void lich_webview_keyboard_to_window(void);

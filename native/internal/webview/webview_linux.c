@@ -10,6 +10,7 @@
 
 extern void lichWebviewRun(uintptr_t handle);
 extern void lichWebviewLoad(uintptr_t owner, int step, char *uri);
+extern void lichWebviewTLS(uintptr_t owner, char *uri, char *chain);
 extern void lichWebviewDrawn(uintptr_t handle);
 extern void lichWebviewEvaluated(uintptr_t handle, char *json, char *error);
 extern void lichWebviewSnapshot(uintptr_t handle, unsigned char *data, int width, int height, int stride, char *error);
@@ -122,6 +123,28 @@ static void load_changed(WebKitWebView *view, WebKitLoadEvent step, gpointer pag
 	lichWebviewLoad(((LichPage *)page)->owner, step, (char *)webkit_web_view_get_uri(view));
 }
 
+// tls_failed hands Go the chain of a server whose root WebKit cannot find,
+// mostly a server that left out its intermediate (see completeChain); WebKit
+// shows its error page meanwhile.
+static gboolean tls_failed(WebKitWebView *view, char *uri, GTlsCertificate *cert, GTlsCertificateFlags errors,
+                           gpointer page) {
+	if (errors != G_TLS_CERTIFICATE_UNKNOWN_CA) {
+		return FALSE;
+	}
+	GString *chain = g_string_new(NULL);
+	for (GTlsCertificate *c = cert; c; c = g_tls_certificate_get_issuer(c)) {
+		char *pem = NULL;
+		g_object_get(c, "certificate-pem", &pem, NULL);
+		if (pem) {
+			g_string_append(chain, pem);
+			g_free(pem);
+		}
+	}
+	lichWebviewTLS(((LichPage *)page)->owner, uri, chain->str);
+	g_string_free(chain, TRUE);
+	return FALSE;
+}
+
 // keep_detached refuses the inspector a place inside the page's own window,
 // which the pane sizes and cuts to the page alone.
 static gboolean keep_detached(WebKitWebInspector *inspector, gpointer data) { return TRUE; }
@@ -152,6 +175,7 @@ LichPage *lich_webview_open(unsigned long parent, const char *url, uintptr_t own
 	LichPage *page = calloc(1, sizeof(LichPage));
 	page->owner = owner;
 	g_signal_connect(view, "load-changed", G_CALLBACK(load_changed), page);
+	g_signal_connect(view, "load-failed-with-tls-errors", G_CALLBACK(tls_failed), page);
 	webkit_web_view_load_uri(WEBKIT_WEB_VIEW(view), url);
 	page->x = x;
 	page->child = child;
@@ -289,6 +313,22 @@ void lich_webview_hide(LichPage *page) {
 }
 
 void lich_webview_navigate(LichPage *page, const char *url) { webkit_web_view_load_uri(WEBKIT_WEB_VIEW(page->view), url); }
+
+// lich_webview_allow trusts leaf, a PEM certificate Go verified, for host in
+// the page's context, and loads uri again.
+void lich_webview_allow(LichPage *page, const char *leaf, const char *host, const char *uri) {
+	GError *error = NULL;
+	GTlsCertificate *cert = g_tls_certificate_new_from_pem(leaf, -1, &error);
+	if (!cert) {
+		fprintf(stderr, "webview: allow %s: %s\n", host, error->message);
+		g_error_free(error);
+		return;
+	}
+	WebKitWebView *view = WEBKIT_WEB_VIEW(page->view);
+	webkit_web_context_allow_tls_certificate_for_host(webkit_web_view_get_context(view), cert, host);
+	g_object_unref(cert);
+	webkit_web_view_load_uri(view, uri);
+}
 
 void lich_webview_reload(LichPage *page) { webkit_web_view_reload_bypass_cache(WEBKIT_WEB_VIEW(page->view)); }
 

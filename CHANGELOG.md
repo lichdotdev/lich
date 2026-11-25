@@ -137,6 +137,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **A site whose server leaves out part of its certificate chain opens in the built-in browser on Linux, as it does in Chrome.** It showed "Unacceptable TLS certificate"; lich now fetches the missing certificate the way Chrome does and still refuses one that fails any other check.
 - **New session here opens a session in the selected checkout.** The card menu now carries the launch action through to the window, including its worktree and folder.
 
 - **A long chat stays smooth.** A conversation of hundreds of turns, or one answer many screens tall, draws only what is in view and a screen around it, instead of slowing every frame as it grows.

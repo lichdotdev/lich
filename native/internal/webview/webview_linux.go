@@ -16,6 +16,9 @@ import (
 	"errors"
 	"image"
 	"image/color"
+	"log"
+	"net/http"
+	"net/url"
 	"runtime"
 	"runtime/cgo"
 	"slices"
@@ -115,6 +118,9 @@ type Page struct {
 	self   cgo.Handle
 	// drawing is touched only on the GTK thread.
 	drawing latest
+	// repaired is the hosts whose chain the page completed, touched only on
+	// the GTK thread: a host failing again after it is not fetched for again.
+	repaired map[string]bool
 }
 
 // Open makes a page showing url, out of sight until it is placed. onLoad
@@ -145,6 +151,41 @@ func lichWebviewLoad(owner C.uintptr_t, step C.int, uri *C.char) {
 	if l, ok := p.loads.step(int(step), C.GoString(uri)); ok {
 		p.onLoad(l)
 	}
+}
+
+//export lichWebviewTLS
+func lichWebviewTLS(owner C.uintptr_t, uri, chain *C.char) {
+	p := cgo.Handle(owner).Value().(*Page)
+	u, err := url.Parse(C.GoString(uri))
+	if err != nil || p.repaired[u.Hostname()] {
+		return
+	}
+	go p.completeChain(u, []byte(C.GoString(chain)))
+}
+
+// completeChain fetches the issuers a server left out and, once its chain
+// verifies, trusts its leaf for the host and loads the page again.
+func (p *Page) completeChain(u *url.URL, chain []byte) {
+	host := u.Hostname()
+	leaf, err := completeChain(context.Background(), http.DefaultClient, nil, host, chain)
+	if err != nil {
+		log.Printf("webview: %s: certificate chain: %v", host, err)
+		return
+	}
+	onGTK(func() {
+		if p.closed || p.repaired[host] {
+			return
+		}
+		if p.repaired == nil {
+			p.repaired = map[string]bool{}
+		}
+		p.repaired[host] = true
+		l, h, uri := C.CString(string(leaf)), C.CString(host), C.CString(u.String())
+		defer C.free(unsafe.Pointer(l))
+		defer C.free(unsafe.Pointer(h))
+		defer C.free(unsafe.Pointer(uri))
+		C.lich_webview_allow(p.page, l, h, uri)
+	})
 }
 
 // URL is where the page is: the last URL the window asked for, or where a
