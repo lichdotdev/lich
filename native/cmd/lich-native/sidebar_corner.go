@@ -45,6 +45,9 @@ type corner struct {
 	mode cornerMode
 	// i is the head's step on spinnerPath, or on ringPath while waiting.
 	i int
+	// egg is the head's step on eggSteps while the snake writes lich, -1
+	// otherwise.
+	egg int
 	// trail is the head and the cells behind it, newest first; -1 is none.
 	trail [spinnerTrail]int
 	// keep is the cells lit apart from the trail while filling or draining.
@@ -60,7 +63,7 @@ type corner struct {
 // newCorner is a corner first drawn at now: the status as it is, with no
 // motion into it.
 func newCorner(mode cornerMode, now time.Time) *corner {
-	c := &corner{mode: mode, i: -1, trail: [spinnerTrail]int{-1, -1, -1}, at: now, tone: mode, toneFrom: mode}
+	c := &corner{mode: mode, i: -1, egg: -1, trail: [spinnerTrail]int{-1, -1, -1}, at: now, tone: mode, toneFrom: mode}
 	c.from = c.levels().faded()
 	return c
 }
@@ -105,8 +108,7 @@ func (c *corner) step(want cornerMode, at time.Time) {
 		c.i = (c.i + 1) % len(ringPath)
 		c.push(ringPath[c.i])
 	} else {
-		c.i = (c.i + 1) % len(spinnerPath)
-		c.push(spinnerPath[c.i])
+		c.walk(at)
 	}
 	switch c.mode {
 	case cornerFill:
@@ -120,6 +122,25 @@ func (c *corner) step(want cornerMode, at time.Time) {
 			c.mode = cornerWork
 		}
 	}
+}
+
+// walk moves the head a step along the snake's lap, or along the egg's path
+// while it runs; an egg starts only where a lap would.
+func (c *corner) walk(at time.Time) {
+	switch {
+	case c.egg >= 0 && c.egg+1 < len(eggSteps):
+		c.egg++
+		c.push(eggSteps[c.egg].head)
+		return
+	case c.egg >= 0:
+		c.egg, c.i = -1, pathIndex(c.trail[0])
+	case c.mode == cornerWork && c.i == len(spinnerPath)-1 && eggStarts(at):
+		c.egg = 0
+		c.push(eggSteps[0].head)
+		return
+	}
+	c.i = (c.i + 1) % len(spinnerPath)
+	c.push(spinnerPath[c.i])
 }
 
 func (c *corner) push(cell int) {
@@ -139,7 +160,7 @@ func (c *corner) turn(want cornerMode, at time.Time) {
 	case c.mode == cornerWait && want == cornerWork && head == spinnerPath[0]:
 		c.mode, c.i = cornerWork, 0
 	case (c.mode == cornerWork || c.mode == cornerWait) && want == cornerDone:
-		if c.mode == cornerWait {
+		if c.mode == cornerWait || c.egg >= 0 {
 			c.i = pathIndex(head)
 		}
 		c.mode, c.keep = cornerFill, c.trailCells()
@@ -151,6 +172,7 @@ func (c *corner) turn(want cornerMode, at time.Time) {
 	default:
 		return
 	}
+	c.egg = -1
 	if t := cornerTone(c.mode); t != c.tone {
 		c.toneFrom, c.tone, c.toneAt = c.tone, t, at
 	}
@@ -213,6 +235,9 @@ func (c *corner) levels() cellLevels {
 		if c.keep&(1<<cell) != 0 {
 			l[cell] = kept
 		}
+	}
+	if c.egg >= 0 {
+		l.lightGhost(eggSteps[c.egg].ghost)
 	}
 	l.lightTrail(c.trail[:])
 	return l
