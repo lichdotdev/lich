@@ -95,7 +95,8 @@ import; this table is what each one does.
 | `mouse` | `page`, `kind` (`move`, `down`, `up`, `wheel`), `x`, `y`, `button`, `clicks`, `mods`, `dx`, `dy` | | a native pointer event: the page sees `isTrusted`. `button` is the DOM's, 0 left, 1 middle, 2 right |
 | `key` | `page`, `kind` (`down`, `up`), `key`, `code`, `mods` | | a native key event |
 | `text` | `page`, `text` | | commits `text` as an input method does |
-| `snapshot` | `page` | `png`, `w`, `h` | what the front tab shows, at `scale` image pixels per CSS pixel; `w`, `h` its viewport |
+| `snapshot` | `page`, `bare` | `png`, `w`, `h` | what the front tab shows, at `scale` image pixels per CSS pixel; `w`, `h` its viewport. `bare` leaves the window's layer out (the element `LayerID`, which `draw` draws in) |
+| `draw` | `page`, `script` | | runs `script` in the front tab's world to draw the window's layer over the page (notes, sketch, the agent's cursor), answered at once: while one runs, the next waits and a newer one takes its place |
 | `zoom` | `page`, `scale` | | device pixels per CSS pixel |
 | `size` | `page`, `w`, `h` | | the layout size while no window shows it |
 | `dialog` | `page`, `accept`, `text` | | answers the open JavaScript dialog |

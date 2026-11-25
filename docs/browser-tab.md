@@ -64,16 +64,10 @@ which also ends a load that failed, never committed (a 204) or only moved
 within the page. A tab the page opens can start loading before lich attaches
 to it, so once attached its `document.readyState` seeds `loading` unless a
 load event came first; `browser.Running` is what a window reads when
-it attaches. Where the window draws the page itself (a WebKitGTK view on X11,
-`native/internal/webview`), Chrome never sees the person's loads in it, so the
-window sends `browser.NativeLoad` from WebKit's `load-changed` of the main
-frame: `loading` from its start until it finished, failed or was cancelled,
-shown on the front tab beside Chrome's own, and, for a load the page started
-itself, the URL it committed to, which the backend loads in the agent's page
-too, so URL and title arrive on `browser-state` as for any load. That pane
-attaches with `drawn` (`browser.Attach`): Chrome lays the agent's page out at
-the pane's size and sends no frames, which the window would decode and redraw
-for nothing, and is never relaunched to draw at the window's scale.
+it attaches. On X11 the page is lich-browser's (`docs/lich-browser.md`), one
+page the agent drives and the person sees: its loads reach `browser-state`
+from lich-browser's own `load` and `tabs` events, and the window only places
+the front tab's X window (`xid`) over the pane (`native/internal/webview`).
 
 Each tab's `icon` names its page's icon, never the image: the window reads
 the PNG once per name with `browser.Icon`. Once Chrome's renderer fires the
@@ -88,8 +82,8 @@ an icon address, an icon or none, is kept for a minute for every browser
 down shows on a later load. An icon on another origin that sends no CORS
 header taints the canvas and leaves the square. An SVG that colors itself by
 `prefers-color-scheme` draws in the window's scheme, which the backend reads
-from the background of the new-tab page's colors (`browser.NewTabPage`). A page the window draws itself is loaded in the agent's page too
-(`NativeLoad` above), so its icon comes the same way.
+from the background of the new-tab page's colors (`browser.NewTabPage`). A page
+lich-browser holds hands its icon over itself, as a PNG on its tab.
 
 A browser no pane shows and no one used for five minutes is
 never closed on its own: its state turns `idle`, the window asks with a toast,
@@ -204,18 +198,17 @@ page only answers what is where (`browser.ElementAt`, `browser.Locate`); the
 outline, the pins, the strokes and the note are the window's, so nothing is
 injected into the page.
 
-On a page the window draws itself (a WebKitGTK view on X11), the same scripts
-(`pagescript`) run in that page instead of in Chrome, since that is the page the
-person scrolls and points at, and WebKit draws it at the pane's scale, so the
-pointer and the boxes divide by one. The window's drawing over the page (the
-bar or tray, the tag, the pins and the note) is cut out of the page's X
-window, rounded corners and all, so it shows there; the outlines, the sketch's
-strokes and the eraser are drawn by the page itself, in a layer of its own that
-takes no pointer, since a cut would show the pane's background under them
-instead of the page. While Select or Draw is on the page lets the pointer
+On a page lich-browser shows in the window (X11), WebKit draws it at the
+pane's scale, so the pointer and the boxes divide by one. The window's drawing
+over the page (the bar or tray, the tag, the pins and the note) is cut out of
+the page's X window, rounded corners and all, so it shows there; the outlines,
+the sketch's strokes, the eraser and the agent's cursor are drawn by the page
+itself (`browser.Draw`), in a layer of its own that takes no pointer, since a
+cut would show the pane's background under them instead of the page. While Select or Draw is on the page lets the pointer
 through to the window, and the wheel scrolls it from there unless strokes stand
 on it. A sketch's picture there is a shot of the page as WebKit draws it, taken
-with that layer hidden, since the picture draws the strokes itself.
+with that layer hidden (`browser.Snapshot`), since the picture draws the
+strokes itself.
 
 ## Console errors
 

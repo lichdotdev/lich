@@ -29,7 +29,6 @@ func Browser(d *rpc.Handler, s *browser.Service) {
 	rpc.Handle(d, api.BrowserRunning, s.RunningStates)
 	rpc.Handle(d, api.BrowserAttach, s.AttachView)
 	rpc.Handle(d, api.BrowserDetach, s.DetachView)
-	rpc.Handle(d, api.BrowserNativeLoad, s.NativeLoad)
 	rpc.Handle(d, api.BrowserWindow, s.Window)
 	rpc.Handle(d, api.BrowserIcon, s.Icon)
 	rpc.Handle(d, api.BrowserResize, s.ResizeView)
@@ -48,4 +47,6 @@ func Browser(d *rpc.Handler, s *browser.Service) {
 	rpc.Handle(d, api.BrowserSelection, s.SelectedText)
 	rpc.Handle(d, api.BrowserElementAt, s.ElementAtPoint)
 	rpc.Handle(d, api.BrowserLocate, s.LocateElements)
+	rpc.Handle(d, api.BrowserDraw, s.Draw)
+	rpc.Handle(d, api.BrowserSnapshot, s.Snapshot)
 }

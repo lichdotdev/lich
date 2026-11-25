@@ -1,4 +1,4 @@
-package webview
+package main
 
 // latest is a drawing sent to a page one at a time: a drawing asked for
 // while one is still running in the page waits, and a newer one takes its

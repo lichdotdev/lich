@@ -501,6 +501,56 @@ func TestWebkitPaneCalls(t *testing.T) {
 	if n := len(f.called(browserwire.Mouse)) + len(f.called(browserwire.Key)) + len(f.called(browserwire.Text)); n != 0 {
 		t.Fatalf("%d pane inputs reached lich-browser, which takes them from the X server", n)
 	}
+	if _, err := s.MouseInput(t.Context(), api.BrowserMouseOptions{ID: "s", Type: "wheel", X: 5, Y: 6, DY: 120}); err != nil {
+		t.Fatal(err)
+	}
+	wheel := f.called(browserwire.Mouse)
+	if len(wheel) != 1 {
+		t.Fatalf("%d wheels reached lich-browser, want the one Select sends, which X gives the page none of", len(wheel))
+	}
+	if m := decodeParams[browserwire.MouseParams](t, wheel[0]); m.Kind != browserwire.MouseWheel || m.X != 5 || m.Y != 6 || m.DY != 120 {
+		t.Fatalf("wheel %+v, want the pane's at 5,6 by 120", m)
+	}
+}
+
+func TestWebkitWindowLayerIsNeverTheAgents(t *testing.T) {
+	f := newFakeLichBrowser(t)
+	s, out := wkService(t, f)
+	if _, err := s.Attach("s", Viewport{W: 900, H: 700, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	acts, evals := len(out.named(api.BrowserAgentEvent.Name)), len(f.called(browserwire.Eval))
+	if _, err := s.Draw(t.Context(), api.BrowserDrawOptions{ID: "s", Script: "draw()"}); err != nil {
+		t.Fatal(err)
+	}
+	draws := f.called(browserwire.Draw)
+	if len(draws) != 1 || decodeParams[browserwire.DrawParams](t, draws[0]).Script != "draw()" {
+		t.Fatalf("draws %s, want the window's script passed on", draws)
+	}
+	png, err := s.Snapshot(t.Context(), api.SessionIDOptions{ID: "s"})
+	if err != nil || len(png) == 0 {
+		t.Fatalf("Snapshot = %d bytes, %v", len(png), err)
+	}
+	shots := f.called(browserwire.Snapshot)
+	if len(shots) != 1 || !decodeParams[browserwire.SnapshotParams](t, shots[0]).Bare {
+		t.Fatalf("snapshots %s, want one with the window's layer left out", shots)
+	}
+	if n := len(out.named(api.BrowserAgentEvent.Name)); n != acts {
+		t.Fatalf("the window's layer made %d agent acts: the pane would show the agent acting", n-acts)
+	}
+	if n := len(f.called(browserwire.Eval)); n != evals {
+		t.Fatalf("%d evals: the layer went through the agent's eval", n-evals)
+	}
+}
+
+func TestChromePageHasNoWindowLayer(t *testing.T) {
+	s, _, _ := viewService(t)
+	if _, err := s.Open("s", "https://example.com/"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Draw(t.Context(), api.BrowserDrawOptions{ID: "s", Script: "x"}); !errors.Is(err, errNoLayer) {
+		t.Fatalf("Draw on Chrome's page = %v, want errNoLayer", err)
+	}
 }
 
 func mustNil(_ api.None, err error) error { return err }

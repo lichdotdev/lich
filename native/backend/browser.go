@@ -26,6 +26,25 @@ func (c *Client) KeepBrowser(ctx context.Context, id string) error {
 	return err
 }
 
+// SetBrowserWindow tells the backend the window's X window, which
+// lich-browser's pages sit in, zero once it is gone.
+func (c *Client) SetBrowserWindow(ctx context.Context, xid uint64) error {
+	_, err := callMethod(ctx, c, api.BrowserWindow, api.BrowserWindowOptions{XID: xid})
+	return err
+}
+
+// BrowserDraw hands session id's page the window's layer to draw over itself.
+func (c *Client) BrowserDraw(ctx context.Context, id, script string) error {
+	_, err := callMethod(ctx, c, api.BrowserDraw, api.BrowserDrawOptions{ID: id, Script: script})
+	return err
+}
+
+// BrowserSnapshot is the PNG of session id's page, the window's layer left
+// out.
+func (c *Client) BrowserSnapshot(ctx context.Context, id string) ([]byte, error) {
+	return callMethod(ctx, c, api.BrowserSnapshot, api.SessionIDOptions{ID: id})
+}
+
 // RunningBrowsers is every session browser the backend runs.
 func (c *Client) RunningBrowsers(ctx context.Context) ([]api.BrowserState, error) {
 	return callMethod(ctx, c, api.BrowserRunning, api.None{})
@@ -39,13 +58,6 @@ func (c *Client) AttachBrowser(ctx context.Context, v api.BrowserViewOptions) er
 }
 
 // DetachBrowser stops the frames of session id's page.
-// NativeLoadBrowser hands the backend a load event of the page the window
-// draws itself for session id's front tab.
-func (c *Client) NativeLoadBrowser(ctx context.Context, id string, loading bool, url string) error {
-	_, err := callMethod(ctx, c, api.BrowserNativeLoad, api.BrowserNativeLoadOptions{ID: id, Loading: loading, URL: url})
-	return err
-}
-
 func (c *Client) DetachBrowser(ctx context.Context, id string) error {
 	_, err := callMethod(ctx, c, api.BrowserDetach, api.SessionIDOptions{ID: id})
 	return err

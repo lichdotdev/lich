@@ -331,32 +331,6 @@ func (s *Service) NewTabPage(_ context.Context, opts api.BrowserNewTabPageOption
 	return api.None{}, s.newTab.Look(opts)
 }
 
-// NativeLoad takes a load event of the page the window draws itself: its
-// Loading shows on the front tab, and a page it went to by itself is loaded
-// in the agent's page too, so the agent reads the page the person sees, its
-// URL and title coming back on browser-state as any load's do.
-func (s *Service) NativeLoad(_ context.Context, opts api.BrowserNativeLoadOptions) (api.None, error) {
-	sess, err := s.live(opts.ID)
-	if err != nil {
-		return api.None{}, err
-	}
-	s.mu.Lock()
-	changed := sess.nativeLoading != opts.Loading
-	sess.nativeLoading = opts.Loading
-	follow := opts.URL != "" && opts.URL != sess.url
-	s.mu.Unlock()
-	if changed {
-		s.emitState(sess, true)
-	}
-	if !follow {
-		return api.None{}, nil
-	}
-	if err := s.checkURL(opts.URL); err != nil {
-		return api.None{}, err
-	}
-	return api.None{}, s.loadURL(sess, opts.URL)
-}
-
 // Window takes the window's X window, which lich-browser's pages sit in; with
 // Chrome's pages there is nothing to tell.
 func (s *Service) Window(ctx context.Context, opts api.BrowserWindowOptions) (api.None, error) {

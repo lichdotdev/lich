@@ -471,9 +471,6 @@ func (s *session) stateLocked(open bool) api.BrowserState {
 		Owner: s.owner, Open: open, Headed: s.headed, ByAgent: s.byAgent, URL: s.url, Title: s.title,
 		Dialog: s.dialog, Tabs: slices.Clone(s.paneTabs), Idle: s.asked, Reloads: s.reloadsAsked,
 	}
-	for i := range state.Tabs {
-		state.Tabs[i].Loading = state.Tabs[i].Loading || s.nativeLoading && state.Tabs[i].Front && !state.Tabs[i].DevTools
-	}
 	if s.isNewTab == nil {
 		return state
 	}

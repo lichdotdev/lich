@@ -142,9 +142,6 @@ type session struct {
 	// tabs are the page's as the agent lists them; paneTabs as the pane does,
 	// with its DevTools tabs.
 	tabs, paneTabs []api.BrowserTab
-	// nativeLoading is the front tab loading in the page the window draws
-	// itself (browser.NativeLoad), which Chrome's own events never see.
-	nativeLoading bool
 	// reloadsAsked is BrowserState.Reloads.
 	reloadsAsked int
 	page         Page

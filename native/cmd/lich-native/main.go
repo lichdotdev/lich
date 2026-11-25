@@ -114,6 +114,8 @@ type window struct {
 	// covers are where the window's floating layers draw over everything in
 	// the frame being laid out, in the window's pixels (coverPages).
 	covers []image.Rectangle
+	// browserWindow is the X window the backend was last told of.
+	browserWindow uint64
 	// uiFonts is what the interface's shaper was last built from.
 	uiFonts *interfaceFonts
 	model   *model
@@ -465,7 +467,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 				invalidate()
 			}
 		case app.ViewEvent:
-			webview.SetParent(e)
+			u.setBrowserWindow(webview.SetParent(e))
 		case *app.ClosingEvent:
 			u.onClosing(e)
 		case app.DropEvent:

@@ -27,13 +27,8 @@ func devtoolsOf(tabs []api.BrowserTab) (open, shown bool) {
 	return false, false
 }
 
-// openDevTools opens the inspector of the page the person sees: WebKit's for
-// the page the window draws itself, Chrome's DevTools of session's front tab
-// otherwise, which inspects the backend's page.
-func (u *window) openDevTools(p *browserPaneUI, session string) {
-	if p.native != nil {
-		p.native.Inspect()
-		return
-	}
+// openDevTools opens the inspector of session's front tab: the backend opens
+// WebKit's for a page lich-browser holds, Chrome's DevTools otherwise.
+func (u *window) openDevTools(session string) {
 	u.sendBrowser(session, "devtools", func(ctx context.Context) error { return u.client.BrowserDevTools(ctx, session) })
 }

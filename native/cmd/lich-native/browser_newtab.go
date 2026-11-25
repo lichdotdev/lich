@@ -27,17 +27,6 @@ func pageTitle(st api.BrowserState) string {
 	return st.Title
 }
 
-// shownState is st as the pane shows it: a page the window draws itself
-// (nativeURL, empty for none) that left lich's new-tab page is on its own page
-// at once, while the backend's still waits for the agent's to load there,
-// seconds in which the Select and Draw bar stayed away.
-func shownState(st api.BrowserState, nativeURL string) api.BrowserState {
-	if st.NewTab && nativeURL != "" && nativeURL != st.URL {
-		st.NewTab, st.URL = false, nativeURL
-	}
-	return st
-}
-
 // notesOnPage is whether the Select and Draw bar is over st's page: not over
 // DevTools, whose page is Chrome's own, nor over lich's new-tab page, which
 // has nothing to note.

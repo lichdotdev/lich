@@ -88,6 +88,7 @@ jobs:
           ./libjpeg-turbo.sh "$HOME/libjpeg-turbo"
           PKG_CONFIG_PATH="$HOME/libjpeg-turbo/lib/pkgconfig:$HOME/libghostty-vt/share/pkgconfig" CGO_ENABLED=1 \
             go build -trimpath -ldflags "-s -w" -o "$RUNNER_TEMP/out/lich-native" ./cmd/lich-native
+          CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" -o "$RUNNER_TEMP/out/lich-browser" ./cmd/lich-browser
           LIBGHOSTTY_VT_WINDOWS="$HOME/libghostty-vt-windows" LIBJPEG_TURBO_WINDOWS="$HOME/libjpeg-turbo-windows" \
             ./build-windows.sh "$RUNNER_TEMP/out/lich-native.exe"
 
@@ -95,23 +96,27 @@ jobs:
       # glibc newer than the 2.34 the packages require
       # (build/linux/nfpm/nfpm.yaml, README): the runner's own 2.35 is not the
       # promise.
-      - name: Check what lich-native asks of a machine
+      - name: Check what lich-native and lich-browser ask of a machine
         run: |
           bin="$RUNNER_TEMP/out/lich-native"
           if objdump -p "$bin" | grep NEEDED | grep -qiE 'ghostty|turbojpeg'; then
             echo "::error::lich-native links libghostty-vt or libjpeg-turbo dynamically"; objdump -p "$bin" | grep NEEDED; exit 1
           fi
-          floor="$(objdump -T "$bin" | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1)"
-          echo "lich-native asks for $floor"
-          [ "$(printf '%s\nGLIBC_2.34\n' "$floor" | sort -V | tail -1)" = GLIBC_2.34 ] || {
-            echo "::error::lich-native asks for $floor, newer than the 2.34 the packages promise"; exit 1
-          }
+          for bin in "$RUNNER_TEMP/out/lich-native" "$RUNNER_TEMP/out/lich-browser"; do
+            floor="$(objdump -T "$bin" | grep -o 'GLIBC_[0-9.]*' | sort -uV | tail -1)"
+            echo "$(basename "$bin") asks for $floor"
+            [ "$(printf '%s\nGLIBC_2.34\n' "$floor" | sort -V | tail -1)" = GLIBC_2.34 ] || {
+              echo "::error::$(basename "$bin") asks for $floor, newer than the 2.34 the packages promise"; exit 1
+            }
+          done
 
       - name: Upload lich-native
         uses: actions/upload-artifact@v7
         with:
           name: lich-native
-          path: ${{ runner.temp }}/out/lich-native*
+          path: |
+            ${{ runner.temp }}/out/lich-native*
+            ${{ runner.temp }}/out/lich-browser
 
   # linux and windows build in parallel once the native window is built;
   # release fans in and publishes.
@@ -163,7 +168,7 @@ jobs:
 
       - name: Build Linux packages
         run: |
-          chmod +x bin/lich-native
+          chmod +x bin/lich-native bin/lich-browser
           rm bin/lich-native.exe
           task package
 
@@ -180,7 +185,7 @@ jobs:
           # beside it; the AUR PKGBUILD installs from it too. The env is how
           # tar's zstd takes a level. Threads spelled out: unlike -T0,
           # ZSTD_NBTHREADS=0 is one thread.
-          ZSTD_CLEVEL=19 ZSTD_NBTHREADS="$(nproc)" tar --zstd -cf "lich-${tag}-linux-amd64.tar.zst" lich lich-native
+          ZSTD_CLEVEL=19 ZSTD_NBTHREADS="$(nproc)" tar --zstd -cf "lich-${tag}-linux-amd64.tar.zst" lich lich-native lich-browser
           ls -la lich-${tag}-*
 
       - name: Upload Linux assets
@@ -223,7 +228,7 @@ jobs:
 
       - name: Build Windows binary + installer
         run: |
-          rm bin/lich-native
+          rm bin/lich-native bin/lich-browser
           task package:windows
 
       - name: Backend tests (windows)

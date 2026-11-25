@@ -37,6 +37,14 @@ tasks:
     cmds:
       - cmd: CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" -o ../{{.BIN_DIR}}/lich-native ./cmd/lich-native
 
+  build:browser:
+    desc: Build lich-browser, which holds every page, into bin/lich-browser (cgo; WebKitGTK, Linux)
+    # Built in native/ beside the window, shipped beside lich, which starts
+    # it (docs/lich-browser.md).
+    dir: native
+    cmds:
+      - cmd: CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" -o ../{{.BIN_DIR}}/lich-browser ./cmd/lich-browser
+
   build:native:windows:
     desc: Cross-build bin/lich-native.exe from Linux with Zig (native/build-windows.sh)
     cmds:
@@ -92,17 +100,17 @@ tasks:
 
   dev:
     desc: Dev mode — the native window on a backend with its own DB and port
-    deps: [build:native]
+    deps: [build:native, build:browser]
     cmds:
       # Dev isolation: separate DB (LICH_DEV, store.databasePath) and listener
       # port, so a daily-driver lich keeps running untouched; LICH_DEV also
       # gives the window its own class, lichdev. go run leaves the binary in a
-      # temp dir, where nothing sits beside it; the pin names the window
-      # build:native made. The build reports "dev" unless VERSION is set:
+      # temp dir, where nothing sits beside it; the pins name the window and
+      # lich-browser build:native and build:browser made. The build reports "dev" unless VERSION is set:
       # `VERSION=Unreleased task dev` is how the What's new dialog is smoked
       # against the [Unreleased] changelog section, `VERSION=v0.44.0` against
       # a release.
-      - cmd: LICH_DEV=1 LICH_LISTEN_PORT=47822 LICH_NATIVE="{{.ROOT_DIR}}/{{.BIN_DIR}}/lich-native" go run {{if env "VERSION"}}-ldflags "-X main.version={{.VERSION}}" {{end}}.
+      - cmd: LICH_DEV=1 LICH_LISTEN_PORT=47822 LICH_NATIVE="{{.ROOT_DIR}}/{{.BIN_DIR}}/lich-native" LICH_BROWSER="{{.ROOT_DIR}}/{{.BIN_DIR}}/lich-browser" go run {{if env "VERSION"}}-ldflags "-X main.version={{.VERSION}}" {{end}}.
 
   gallery:
     desc: Build the UI kit gallery into bin/lich-gallery and open it (cgo, no libghostty-vt)
@@ -165,6 +173,8 @@ tasks:
     preconditions:
       - sh: test -x {{.BIN_DIR}}/lich-native
         msg: "bin/lich-native is missing: task build:native puts it there"
+      - sh: test -x {{.BIN_DIR}}/lich-browser
+        msg: "bin/lich-browser is missing: task build:browser puts it there"
     cmds:
       - task: package:nfpm
         vars: { FORMAT: deb, TARGET: '{{.APP_NAME}}.deb' }

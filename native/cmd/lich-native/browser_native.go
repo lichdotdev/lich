@@ -1,10 +1,11 @@
 package main
 
 import (
+	"bytes"
 	"context"
-	"encoding/json"
-	"fmt"
 	"image"
+	"image/draw"
+	"image/png"
 	"log"
 	"slices"
 	"time"
@@ -19,36 +20,35 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/internal/webview"
 	"github.com/lichdotdev/lich/native/ui"
-	"github.com/lichdotdev/lich/pagescript"
 )
 
-// placeNativePage shows the session's page in a web view the window holds
-// itself, over the pane's page area, and says whether it does: where the
-// system gives the window none, the pane draws the screencast.
-func (u *window) placeNativePage(gtx C, p *browserPaneUI, session, url string, reloads int) bool {
-	if url == "" {
-		url = "about:blank"
+// frontXID is the X window of st's front tab in lich-browser, zero where the
+// window shows it by screencast.
+func frontXID(tabs []api.BrowserTab) uint64 {
+	for _, t := range tabs {
+		if t.Front {
+			return t.XID
+		}
+	}
+	return 0
+}
+
+// placeNativePage shows the session's front tab, lich-browser's X window,
+// over the pane's page area, and says whether it does: a tab with no window
+// is drawn by screencast. A tab no longer in front goes back to lich-browser.
+func (u *window) placeNativePage(gtx C, p *browserPaneUI, st api.BrowserState) bool {
+	xid := frontXID(st.Tabs)
+	if p.native != nil && p.native.XID() != xid {
+		p.native.Release()
+		p.native = nil
+	}
+	if xid == 0 {
+		return false
 	}
 	if p.native == nil {
-		page, err := webview.Open(url, func(l webview.Load) { go u.nativeLoaded(session, l) })
-		if err != nil {
-			return false
-		}
-		p.native, p.nativeURL, p.nativeReloads = page, url, reloads
+		p.native = webview.Embed(xid)
 	}
-	// A page the person took elsewhere is followed by the backend, whose
-	// URL then arrives where the page already is.
-	if url != p.nativeURL {
-		p.nativeURL = url
-		if url != p.native.URL() {
-			p.native.Navigate(url)
-		}
-	} else if reloads != p.nativeReloads {
-		p.native.Reload()
-	}
-	p.nativeReloads = reloads
 	p.nativeSize = gtx.Constraints.Max
-	p.native.SetZoom(float64(u.pageScale(gtx)))
 	webview.SetGround(u.theme.Background)
 	return true
 }
@@ -88,7 +88,7 @@ func (u *window) cutNativePages() {
 	for _, b := range u.floatingBoxes() {
 		u.coverPages(b)
 	}
-	for _, p := range u.browserPanes {
+	for session, p := range u.browserPanes {
 		if p.native == nil || !p.wasOnScreen {
 			continue
 		}
@@ -99,7 +99,7 @@ func (u *window) cutNativePages() {
 		o.Cursor = p.pageCursor
 		if script := overlayScript(o); script != p.overlaySent {
 			p.overlaySent = script
-			p.native.Draw(script)
+			u.drawOverPage(p, session, script)
 		}
 	}
 }
@@ -143,8 +143,8 @@ func (u *window) putNativePageAway(session string, p *browserPaneUI) {
 		p.native.Hide()
 		return
 	}
-	p.native.Close()
-	p.native, p.nativeURL = nil, ""
+	p.native.Release()
+	p.native = nil
 }
 
 // windowPress is the tag of the area over the whole window that hears every
@@ -166,56 +166,35 @@ func keyboardFromPages(gtx C) {
 	event.Op(gtx.Ops, windowPress)
 }
 
-// nativeLoaded tells the backend about a load of session's own page, which
-// shows it on the tab and follows a page the person took elsewhere.
-func (u *window) nativeLoaded(session string, l webview.Load) {
-	if err := u.client.NativeLoadBrowser(u.ctx, session, l.Loading, l.URL); err != nil {
-		log.Printf("browser of %s: page load: %v", session, err)
-	}
+// drawOverPage hands the page the notes' and the agent's layer to draw over
+// itself (pageOverlayScript): the window cannot draw over another process's
+// window. Queued behind the pane's other calls, a newer drawing replaces one
+// not yet sent.
+func (u *window) drawOverPage(p *browserPaneUI, session, script string) {
+	p.queue.push(browserCall{merge: "draw", send: func(ctx context.Context) error {
+		return u.client.BrowserDraw(ctx, session, script)
+	}})
 }
 
-// nativeEvalWait bounds a read of the page the window draws itself, as
-// inputWait bounds one of the backend's.
-const nativeEvalWait = 2 * time.Second
+// pageShotWait bounds a shot of the page for the sketch's picture.
+const pageShotWait = 5 * time.Second
 
-// elementAt is the element under x,y, CSS pixels, of the session's page: read
-// in the page the window draws itself when there is one, where the person
-// sees and scrolls it, and in the backend's otherwise.
-func (u *window) elementAt(ctx context.Context, page *webview.Page, session string, x, y float64) (api.BrowserElement, error) {
-	if page == nil {
-		return u.client.BrowserElementAt(ctx, session, x, y)
-	}
-	ctx, cancel := context.WithTimeout(ctx, nativeEvalWait)
+// shootPage is the page as it shows, without the layer the notes draw over
+// it, for the sketch's picture, which draws the strokes itself.
+func (u *window) shootPage(ctx context.Context, session string) (*image.RGBA, error) {
+	ctx, cancel := context.WithTimeout(ctx, pageShotWait)
 	defer cancel()
-	out, err := page.Eval(ctx, pagescript.ElementAt(x, y))
-	if err != nil {
-		return api.BrowserElement{}, err
-	}
-	var el *api.BrowserElement
-	if err := json.Unmarshal([]byte(out), &el); err != nil || el == nil {
-		return api.BrowserElement{}, err
-	}
-	return *el, nil
-}
-
-// locateIn is where the elements selectors find stand, read where elementAt
-// reads, first revealing reveal's element.
-func (u *window) locateIn(ctx context.Context, page *webview.Page, session string, selectors []string, reveal string) ([]api.BrowserRect, error) {
-	if page == nil {
-		return u.client.BrowserLocate(ctx, session, selectors, reveal)
-	}
-	script, err := pagescript.Locate(selectors, reveal)
+	raw, err := u.client.BrowserSnapshot(ctx, session)
 	if err != nil {
 		return nil, err
 	}
-	ctx, cancel := context.WithTimeout(ctx, nativeEvalWait)
-	defer cancel()
-	out, err := page.Eval(ctx, script)
+	img, err := png.Decode(bytes.NewReader(raw))
 	if err != nil {
 		return nil, err
 	}
-	boxes := []api.BrowserRect{}
-	return boxes, json.Unmarshal([]byte(out), &boxes)
+	rgba := image.NewRGBA(img.Bounds())
+	draw.Draw(rgba, rgba.Bounds(), img, img.Bounds().Min, draw.Src)
+	return rgba, nil
 }
 
 // nativeNotesInput takes, over a page the window draws itself, only what the
@@ -275,14 +254,32 @@ func (u *window) nativeNotesInput(gtx C, p *browserPaneUI, session string, scale
 // while picking, which the page does not get then, and looks again under the
 // pointer and for the noted elements.
 func (u *window) scrollNativePage(gtx C, p *browserPaneUI, session string, x, y float64, d f32.Point) {
-	page := p.native
 	p.notes.nextLocate, p.notes.followUntil = time.Time{}, gtx.Now.Add(noteFollowFor)
 	p.notes.hover = api.BrowserElement{}
-	p.queue.push(browserCall{send: func(ctx context.Context) error {
-		ctx, cancel := context.WithTimeout(ctx, nativeEvalWait)
-		defer cancel()
-		_, err := page.Eval(ctx, fmt.Sprintf("scrollBy(%g, %g)", d.X, d.Y))
-		return err
-	}})
+	m := api.BrowserMouseOptions{ID: session, Type: "wheel", X: x, Y: y, DX: float64(d.X), DY: float64(d.Y)}
+	p.queue.push(browserCall{mouse: &m, send: func(ctx context.Context) error { return u.client.BrowserMouse(ctx, m) }})
 	u.probeElement(p, session, x, y, false)
+}
+
+// windowWait bounds telling the backend the window's X window: the last one,
+// zero, goes out as the window closes, and must not hold it open.
+const windowWait = 2 * time.Second
+
+// setBrowserWindow tells the backend the window's X window when it changed,
+// so lich-browser sends the keys its pages get only for sitting under the
+// pointer there; one the backend did not take is told again at the next
+// ViewEvent. It waits for the answer: the zero that says the window is gone
+// comes just before the process may end. A backend that restarts drops the
+// window (markLost), and lich's next window tells the new one.
+func (u *window) setBrowserWindow(xid uint64) {
+	if xid == u.browserWindow {
+		return
+	}
+	ctx, cancel := context.WithTimeout(u.ctx, windowWait)
+	defer cancel()
+	if err := u.client.SetBrowserWindow(ctx, xid); err != nil {
+		log.Printf("browser window: %v", err)
+		return
+	}
+	u.browserWindow = xid
 }

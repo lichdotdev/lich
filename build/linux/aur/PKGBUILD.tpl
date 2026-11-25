@@ -29,10 +29,11 @@ sha256sums=('SKIP'
             'SKIP')
 
 package() {
-  # makepkg unpacks the release tarball: lich and lich-native, which lich
-  # looks for beside itself.
+  # makepkg unpacks the release tarball: lich, and lich-native and
+  # lich-browser, which lich looks for beside itself.
   install -Dm755 lich "${pkgdir}/usr/bin/lich"
   install -Dm755 lich-native "${pkgdir}/usr/bin/lich-native"
+  install -Dm755 lich-browser "${pkgdir}/usr/bin/lich-browser"
   install -Dm644 "lich-${pkgver}.desktop" "${pkgdir}/usr/share/applications/lich.desktop"
   install -Dm644 "lich-${pkgver}.png" "${pkgdir}/usr/share/icons/hicolor/128x128/apps/lich.png"
 }
