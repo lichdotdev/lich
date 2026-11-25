@@ -26,6 +26,9 @@ type forge interface {
 	pullRequestDetail(path string, number int, openOnly bool) (*PRDetail, error)
 	listPullRequests(path, state string) ([]PRSummary, error)
 	pullRequestDiff(path string, number int) (string, error)
+	// commitRangeDiff asks the forge for a range of commits this clone does
+	// not hold.
+	commitRangeDiff(path, first, last string) (api.CommitRangeDiff, error)
 	createPullRequest(path string) error
 	mergePullRequest(path string, opts api.MergePullRequestOptions) error
 	pullRequestHead(path string, number int) (prHead, error)

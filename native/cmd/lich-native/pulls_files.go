@@ -138,6 +138,10 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	if len(d.Commits) > 0 {
 		files.pr.head = d.Commits[len(d.Commits)-1].OID
 	}
+	read, key := v.filesRead(p, d)
+	if files.pr.base != "" {
+		files.pr.toReview, files.pr.blocks = nil, nil
+	}
 	in := p.files
 	session, target := p.reviewSession(d)
 	if target != d.URL {
@@ -145,22 +149,57 @@ func (v *pullView) filesTab(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDet
 	}
 	files.th, files.light, files.code, files.target, files.checkout = th, in.light, in.code, target, p.prCheckout(d)
 	files.inject, files.submit = in.injector(session), in.submitter(session)
-	read := p.store.diff(p.project.Path, d.Number)
 	switch {
 	// The cards fold by their ticks when first read, so they wait for them.
 	case !read.loaded, !viewed.loaded:
 		return v.skeletonFiles(gtx, th)
 	case read.err != "":
-		return th.PanelNotice(i18n.T("pulls.pullsFiles.loadFailed", i18n.Args{"error": read.err}), pullsPadX).Layout(gtx)
+		notice := th.PanelNotice(i18n.T("pulls.pullsFiles.loadFailed", i18n.Args{"error": read.err}), pullsPadX).Layout
+		if key == d.URL {
+			return notice(gtx)
+		}
+		// The picker stays, to go back to every commit.
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return v.filesToolbar(gtx, th, p, d) }),
+			layout.Rigid(th.Separator),
+			layout.Rigid(notice),
+		)
 	}
-	files.takeRead(d.URL, &diffRead{text: read.val})
+	files.takeRead(key, &diffRead{text: read.val})
 	files.takeAnswers()
 	files.takeTicks(gtx)
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-		layout.Rigid(func(gtx C) D { return v.filesToolbar(gtx, th) }),
+		layout.Rigid(func(gtx C) D { return v.filesToolbar(gtx, th, p, d) }),
 		layout.Rigid(th.Separator),
 		layout.Flexed(1, func(gtx C) D { return v.filesBody(gtx, th) }),
 	)
+}
+
+// filesRead is the diff the Files tab shows, the whole pull request's or the
+// picked commits', and the key its cards are kept under. It sets the cards'
+// head and base to the commits'.
+func (v *pullView) filesRead(p *pullsScreen, d backend.PRDetail) (pullsRead[string], string) {
+	v.files.pr.base = ""
+	from, to, ok := v.pick.span(d.URL, d.Commits)
+	if !ok {
+		return p.store.diff(p.project.Path, d.Number), d.URL
+	}
+	first, last := d.Commits[from].OID, d.Commits[to].OID
+	r := p.store.commitRange(p.project.Path, first, last)
+	v.files.pr.head, v.files.pr.base = last, r.val.Base
+	return pullsRead[string]{val: r.val.Diff, err: r.err, loaded: r.loaded}, d.URL + "\x00" + first + ".." + last
+}
+
+// filesCount is the Files tab's count: the pull request's, or the picked
+// commits' once their files are read.
+func (v *pullView) filesCount(d backend.PRDetail) int {
+	if _, _, ok := v.pick.span(d.URL, d.Commits); !ok {
+		return d.ChangedFiles
+	}
+	if v.files == nil || v.files.pr.base == "" {
+		return 0
+	}
+	return len(v.files.order)
 }
 
 // filesBody is the tree, when shown, beside the cards.
@@ -249,17 +288,12 @@ func (v *pullView) treeLayout(gtx C, th *ui.Theme) D {
 	return t.rows.Layout(gtx, th, rows, t.active)
 }
 
-// filesToolbar is the tree's toggle, the files changed since the review,
-// "N of M viewed", and the dock's split and collapse-all toggles; the diff's
-// size sits on the tab strip.
-func (v *pullView) filesToolbar(gtx C, th *ui.Theme) D {
+// filesToolbar is the tree's toggle, the commit picker, the files changed
+// since the review and "N of M viewed" (or, for picked commits, which ones
+// and that they take no comment or tick), and the dock's split and
+// collapse-all toggles; the diff's size sits on the tab strip.
+func (v *pullView) filesToolbar(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail) D {
 	files := v.files
-	viewed := 0
-	for _, path := range files.order {
-		if files.pr.isViewed(files.cards[path]) {
-			viewed++
-		}
-	}
 	if v.tree.toggle.Click.Clicked(gtx) {
 		v.tree.hidden = !v.tree.hidden
 	}
@@ -271,12 +305,33 @@ func (v *pullView) filesToolbar(gtx C, th *ui.Theme) D {
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 			layout.Rigid(func(gtx C) D { return th.IconAction(v.root, &v.tree.toggle, treeIcon, treeLabel, false).Layout(gtx) }),
 			ui.Gap(2),
-			layout.Rigid(func(gtx C) D { return v.changedSinceReview(gtx, th) }),
-			layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.pullsFiles.viewed", i18n.Args{"viewed": viewed, "total": len(files.order)})).Muted().Layout),
+			layout.Rigid(func(gtx C) D { return v.commitPicker(gtx, th, p, d) }),
+			ui.Gap(2),
+			layout.Rigid(func(gtx C) D { return v.filesProgress(gtx, th) }),
 			layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
 			layout.Rigid(func(gtx C) D { return files.layoutActions(gtx, th) }),
 		)
 	})
+}
+
+// filesProgress is the files changed since the review and "N of M viewed",
+// or for picked commits the run and that it takes no comment or tick.
+func (v *pullView) filesProgress(gtx C, th *ui.Theme) D {
+	files := v.files
+	if base := files.pr.base; base != "" {
+		run := shortOID(base) + ".." + shortOID(files.pr.head)
+		return th.Text(ui.TextXS, i18n.T("pulls.pullsFiles.rangeNote", i18n.Args{"range": run})).Muted().Layout(gtx)
+	}
+	viewed := 0
+	for _, path := range files.order {
+		if files.pr.isViewed(files.cards[path]) {
+			viewed++
+		}
+	}
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return v.changedSinceReview(gtx, th) }),
+		layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.pullsFiles.viewed", i18n.Args{"viewed": viewed, "total": len(files.order)})).Muted().Layout),
+	)
 }
 
 // changedSinceReview is how many files moved since they were ticked and the

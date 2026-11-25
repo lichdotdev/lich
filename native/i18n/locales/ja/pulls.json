@@ -59,7 +59,8 @@
     "required": "必須"
   },
   "pullsCommits": {
-    "none": "コミットはありません。"
+    "none": "コミットはありません。",
+    "viewChanges": "変更を見る"
   },
   "pullsConflicts": {
     "loading": "コンフリクトしているファイルを調べています…",
@@ -195,7 +196,13 @@
     "changedSinceReview": "確認後に変更あり",
     "filesChangedSinceReview": {
       "other": "{date} の確認以降に {count} 件のファイルが変更されました"
-    }
+    },
+    "allCommits": "すべてのコミット",
+    "commits": {
+      "other": "{count} 件のコミット"
+    },
+    "rangeNote": "{range} を表示中 · コメントと確認済みは使えません",
+    "rangeHint": "Shift+クリックで範囲を選択"
   },
   "reviewThread": {
     "replyFailed": "返信に失敗しました: {error}",

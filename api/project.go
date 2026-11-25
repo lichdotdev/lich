@@ -49,6 +49,7 @@ var (
 	ProjectPullRequestAvatar        = define[AvatarOptions, []byte]("project.PullRequestAvatar")
 	ProjectPullRequestDiff          = define[NumberOptions, string]("project.PullRequestDiff")
 	ProjectPullRequestMergeBase     = define[NumberOptions, string]("project.PullRequestMergeBase")
+	ProjectCommitRangeDiff          = define[CommitRangeOptions, CommitRangeDiff]("project.CommitRangeDiff")
 	ProjectPullRequestConflicts     = define[PRConflictsOptions, []string]("project.PullRequestConflicts")
 	ProjectCreatePullRequest        = define[PathOptions, None]("project.CreatePullRequest")
 	ProjectMergePullRequest         = define[MergePullRequestOptions, None]("project.MergePullRequest")
@@ -198,6 +199,20 @@ type RemoveWorktreeOptions struct {
 type NumberOptions struct {
 	Path   string `json:"path"`
 	Number int    `json:"number"`
+}
+
+// CommitRangeOptions names the commits First to Last of a pull request of
+// the checkout at Path's repository, First no newer than Last.
+type CommitRangeOptions struct {
+	Path  string `json:"path"`
+	First string `json:"first"`
+	Last  string `json:"last"`
+}
+
+// CommitRangeDiff is the unified diff from Base, First's parent, to Last.
+type CommitRangeDiff struct {
+	Base string `json:"base"`
+	Diff string `json:"diff"`
 }
 
 // ListPullRequestsOptions lists the pull requests in State ("open", "closed",

@@ -140,6 +140,7 @@ project.CarryUncommitted(CarryUncommittedOptions) None
 project.CheckLog(CheckLogOptions) CheckLog
 project.CommentOnPullRequest(PRBodyOptions) None
 project.CommitIdentity(PathOptions) CommitIdentity
+project.CommitRangeDiff(CommitRangeOptions) CommitRangeDiff
 project.CreatePullRequest(PathOptions) None
 project.CreateWorktree(CreateWorktreeOptions) *Worktree
 project.CreateWorktreeFromPR(CreateWorktreeFromPROptions) *Worktree
@@ -1079,6 +1080,17 @@ CommitIdentity {
 	name string
 	email string
 	local bool
+}
+
+CommitRangeOptions {
+	path string
+	first string
+	last string
+}
+
+CommitRangeDiff {
+	base string
+	diff string
 }
 
 CreateWorktreeOptions {

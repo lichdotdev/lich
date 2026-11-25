@@ -59,7 +59,8 @@
     "required": "Obrigatório"
   },
   "pullsCommits": {
-    "none": "Nenhum commit."
+    "none": "Nenhum commit.",
+    "viewChanges": "Ver alterações"
   },
   "pullsConflicts": {
     "loading": "Descobrindo quais arquivos conflitam…",
@@ -197,7 +198,14 @@
     "filesChangedSinceReview": {
       "one": "{count} arquivo mudou desde a sua revisão em {date}",
       "other": "{count} arquivos mudaram desde a sua revisão em {date}"
-    }
+    },
+    "allCommits": "Todos os commits",
+    "commits": {
+      "one": "{count} commit",
+      "other": "{count} commits"
+    },
+    "rangeNote": "Vendo {range} · sem comentários nem Visto",
+    "rangeHint": "Shift+clique escolhe um intervalo"
   },
   "reviewThread": {
     "replyFailed": "Falha ao responder: {error}",

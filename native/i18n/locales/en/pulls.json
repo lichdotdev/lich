@@ -59,7 +59,8 @@
     "required": "Required"
   },
   "pullsCommits": {
-    "none": "No commits."
+    "none": "No commits.",
+    "viewChanges": "View changes"
   },
   "pullsConflicts": {
     "loading": "Working out which files conflict…",
@@ -197,7 +198,14 @@
     "filesChangedSinceReview": {
       "one": "{count} file changed since your review on {date}",
       "other": "{count} files changed since your review on {date}"
-    }
+    },
+    "allCommits": "All commits",
+    "commits": {
+      "one": "{count} commit",
+      "other": "{count} commits"
+    },
+    "rangeNote": "Viewing {range} · comments and Viewed are off",
+    "rangeHint": "Shift+click picks a range"
   },
   "reviewThread": {
     "replyFailed": "Reply failed: {error}",

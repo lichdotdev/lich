@@ -1262,6 +1262,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
     its `step_script` section, or of the whole trace when it never got that far; a canceled one has no log.
     The first 100 jobs of a pipeline and the first 100 commits of a merge request are read.
   - A watch for a review never fires: a GitLab review has no id the watch could tell a new one by.
+  - A run of commits picked over Files (`internal/project/commitrange.go`) is diffed by git alone: GitLab's
+    compare answers JSON hunks, not a diff, and is not read. A merge request whose commits the clone never
+    fetched answers "these commits are not in this clone"; on GitHub the compare API answers for them.
   - An administrator merge is refused: GitLab has no bypass of a branch's rules from the merge call. Merge,
     squash and rebase map onto glab's own; glab's rebase rebases the branch on GitLab and then merges it.
   - GitLab finds a branch's merge request by the branch's name alone, so a fork's merge request counts only

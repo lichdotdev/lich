@@ -90,6 +90,7 @@ type pullView struct {
 	// viewed is each PR's ticks, by URL, read from the store once a window.
 	files  *reviewPanel
 	viewed map[string]*viewedTicks
+	pick   commitPick
 	// busy is the action in flight ("session", "approve", "merge"), which its
 	// button says it is doing; set off the frame.
 	busyMu sync.Mutex
@@ -555,7 +556,7 @@ func (t pullsTab) label() string {
 
 func (v *pullView) tabStrip(gtx C, th *ui.Theme, p *pullsScreen, d backend.PRDetail) D {
 	items, resolved := conversationTimeline(p.store.conversation(p.project.Path, d.Number).val)
-	counts := map[pullsTab]int{tabConversation: len(items) + len(resolved), tabCommits: len(d.Commits), tabFiles: d.ChangedFiles, tabChecks: d.Checks.Total}
+	counts := map[pullsTab]int{tabConversation: len(items) + len(resolved), tabCommits: len(d.Commits), tabFiles: v.filesCount(d), tabChecks: d.Checks.Total}
 	var triggers []ui.TabsTrigger
 	for _, t := range tabsOf(d, v.forge) {
 		trigger := ui.TabsTrigger{Text: t.label()}
