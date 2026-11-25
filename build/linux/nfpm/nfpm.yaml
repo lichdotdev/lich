@@ -22,6 +22,8 @@ contents:
   # Beside lich, where lich looks for it.
   - src: "./bin/lich-native"
     dst: "/usr/local/bin/lich-native"
+  - src: "./bin/lich-browser"
+    dst: "/usr/local/bin/lich-browser"
   - src: "./build/appicon.png"
     dst: "/usr/share/icons/hicolor/128x128/apps/lich.png"
   - src: "./build/linux/lich.desktop"
@@ -35,7 +37,8 @@ recommends:
   - zenity
   - git
 
-# What the native window links against (`objdump -p bin/lich-native`), plus
+# What the native window and lich-browser link against (`objdump -p
+# bin/lich-native bin/lich-browser`), plus
 # fontconfig, whose fc-match it asks for the system fonts. rpm takes sonames,
 # which resolve on Fedora, openSUSE and RHEL alike where package names do not.
 # build/linux/aur/PKGBUILD.tpl carries the archlinux list too.

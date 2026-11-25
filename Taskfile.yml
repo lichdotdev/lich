@@ -37,6 +37,14 @@ tasks:
     cmds:
       - cmd: CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" -o ../{{.BIN_DIR}}/lich-native ./cmd/lich-native
 
+  build:browser:
+    desc: Build lich-browser, which holds every page, into bin/lich-browser (cgo; WebKitGTK, Linux)
+    # Built in native/ beside the window, shipped beside lich, which starts
+    # it (docs/lich-browser.md).
+    dir: native
+    cmds:
+      - cmd: CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" -o ../{{.BIN_DIR}}/lich-browser ./cmd/lich-browser
+
   build:native:windows:
     desc: Cross-build bin/lich-native.exe from Linux with Zig (native/build-windows.sh)
     cmds:
@@ -165,6 +173,8 @@ tasks:
     preconditions:
       - sh: test -x {{.BIN_DIR}}/lich-native
         msg: "bin/lich-native is missing: task build:native puts it there"
+      - sh: test -x {{.BIN_DIR}}/lich-browser
+        msg: "bin/lich-browser is missing: task build:browser puts it there"
     cmds:
       - task: package:nfpm
         vars: { FORMAT: deb, TARGET: '{{.APP_NAME}}.deb' }
