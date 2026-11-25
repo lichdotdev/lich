@@ -6,6 +6,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/chromedp/cdproto/network"
 	"github.com/lichdotdev/lich/browserwire"
 )
 
@@ -14,23 +15,24 @@ import (
 type loadTrack struct {
 	mu             sync.Mutex
 	started, ended int
-	// failed: the last load to end failed before it committed.
-	failed    bool
+	// failed is how the last load to end failed before it committed, nil
+	// when it committed.
+	failed    error
 	startedAt browserTime
 	// wake is closed and replaced at each event.
 	wake chan struct{}
 }
 
-func (l *loadTrack) note(step string, at browserTime) {
+func (l *loadTrack) note(ev browserwire.LoadEvent, heard time.Time) {
 	l.mu.Lock()
 	defer l.mu.Unlock()
-	switch step {
+	switch ev.Step {
 	case browserwire.LoadStarted:
 		l.started++
-		l.startedAt = at
+		l.startedAt = browserTime{wall: heard, ticks: time.Duration(ev.At)}
 	case browserwire.LoadCommitted, browserwire.LoadFinished, browserwire.LoadFailed:
 		if l.ended < l.started {
-			l.ended, l.failed = l.started, step == browserwire.LoadFailed
+			l.ended, l.failed = l.started, loadFailure(ev)
 		}
 	default:
 		return
@@ -46,10 +48,22 @@ func (l *loadTrack) mark() int {
 	return l.started
 }
 
+// loadFailure is how ev's load failed: nil for none, errNavDownload for a
+// navigation that became a download, else WebKit's error.
+func loadFailure(ev browserwire.LoadEvent) error {
+	switch {
+	case ev.Step != browserwire.LoadFailed:
+		return nil
+	case ev.Download:
+		return errNavDownload
+	}
+	return fmt.Errorf("page load error %s", ev.Error)
+}
+
 // await waits for a load past from to start, giving up after startWait, then
-// for it to end, and says whether it failed. A request that loads nothing,
-// a fragment or a pushState, starts no load.
-func (l *loadTrack) await(ctx context.Context, from int, startWait time.Duration) (failed bool, err error) {
+// for it to end, and returns how it failed. A request that loads nothing, a
+// fragment or a pushState, starts no load.
+func (l *loadTrack) await(ctx context.Context, from int, startWait time.Duration) (failed, err error) {
 	noStart := time.NewTimer(startWait)
 	defer noStart.Stop()
 	for {
@@ -63,10 +77,10 @@ func (l *loadTrack) await(ctx context.Context, from int, startWait time.Duration
 		case <-wake:
 		case <-noStart.C:
 			if started == from {
-				return false, nil
+				return nil, nil
 			}
 		case <-ctx.Done():
-			return false, ctx.Err()
+			return nil, ctx.Err()
 		}
 	}
 }
@@ -94,42 +108,15 @@ func (l *loadTrack) awaitSince(ctx context.Context, since browserTime, wait time
 	}
 }
 
-// inflight is the front tab's subresource requests in flight, by when each
-// began. The wire names no request, so a request that finishes takes the
-// latest start off: a long poll begun before an action stays in flight and
-// never holds it, as Chrome's own fetches do.
-type inflight struct {
-	mu sync.Mutex
-	at []browserTime
-}
-
-func (f *inflight) note(ev browserwire.RequestEvent, heard time.Time) {
-	f.mu.Lock()
-	defer f.mu.Unlock()
+// noteRequest keeps a fetch or XHR of the front tab beginning, and any
+// request ending, for the settle, as Chrome's page keeps them.
+func (p *webkitPage) noteRequest(ev browserwire.RequestEvent, heard time.Time) {
 	switch {
-	case ev.Started:
-		f.at = append(f.at, browserTime{wall: heard, ticks: time.Duration(ev.At)})
-	case ev.Finished && len(f.at) > 0:
-		f.at = f.at[:len(f.at)-1]
+	case ev.Started && (ev.Type == browserwire.RequestFetch || ev.Type == browserwire.RequestXHR):
+		p.requests.begin(network.RequestID(ev.ID), browserTime{wall: heard, ticks: time.Duration(ev.At)})
+	case ev.Finished:
+		p.requests.end(network.RequestID(ev.ID))
 	}
-}
-
-func (f *inflight) reset() {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	f.at = nil
-}
-
-// since says whether one that began at or after start is still in flight.
-func (f *inflight) since(start browserTime) bool {
-	f.mu.Lock()
-	defer f.mu.Unlock()
-	for _, at := range f.at {
-		if !at.before(start) {
-			return true
-		}
-	}
-	return false
 }
 
 func (p *webkitPage) ActionTime(ctx context.Context) (time.Duration, error) {
@@ -165,27 +152,29 @@ func (p *webkitPage) quiet(ctx context.Context, max time.Duration) (bool, error)
 
 // load sends a request that loads the front tab, then waits for the load it
 // starts to end and for the new document's readiness, as Chrome's
-// settleAfter does.
-func (p *webkitPage) load(ctx context.Context, method string, params any) (failed bool, err error) {
-	err = p.gated(ctx, func(ctx context.Context) error {
+// settleAfter does. A load that failed is a failedLoad.
+func (p *webkitPage) load(ctx context.Context, method string, params any) error {
+	return p.gated(ctx, func(ctx context.Context) error {
 		from := p.loads.mark()
 		if err := p.do(ctx, method, params, nil); err != nil {
 			return err
 		}
-		failed, err = p.loads.await(ctx, from, domSettle)
-		if err != nil || failed {
+		failed, err := p.loads.await(ctx, from, domSettle)
+		if err != nil {
 			return err
+		}
+		if failed != nil {
+			return failedLoad{failed}
 		}
 		return awaitReady(ctx, p.evalRaw)
 	})
-	return failed, err
 }
 
-// loadError is a navigation that failed before it committed. WebKit fails a
-// navigation that became a download the same way, so it is errNavAborted,
-// which the service tells from a page that did not load by the download.
-type loadError struct{ url string }
+// failedLoad is a load that ended before it committed: an error to the
+// agent's navigation, none to a reload or a history step, which leave the
+// page as WebKit shows it, as Chrome's do.
+type failedLoad struct{ err error }
 
-func (e loadError) Error() string { return "page load error: " + e.url + " did not load" }
+func (e failedLoad) Error() string { return e.err.Error() }
 
-func (e loadError) Is(target error) bool { return target == errNavAborted }
+func (e failedLoad) Unwrap() error { return e.err }

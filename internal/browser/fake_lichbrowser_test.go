@@ -47,6 +47,8 @@ type fakeLichBrowser struct {
 type fakeWirePage struct {
 	tabs  []browserwire.Tab
 	front int
+	// out: the page is in a window of its own, its tabs embedded nowhere.
+	out bool
 }
 
 func newFakeLichBrowser(t *testing.T) *fakeLichBrowser {
@@ -57,6 +59,9 @@ func newFakeLichBrowser(t *testing.T) *fakeLichBrowser {
 // uses.
 func wkService(t *testing.T, f *fakeLichBrowser) (*Service, *emitted) {
 	t.Helper()
+	downloads := t.TempDir()
+	downloadFolder = func() (string, error) { return downloads, nil }
+	t.Cleanup(func() { downloadFolder = downloadDir })
 	s := testService(t, &fakeLauncher{})
 	out := &emitted{}
 	s.emit = out.emit
@@ -152,7 +157,7 @@ func (f *fakeLichBrowser) answer(out io.Writer, req browserwire.Request) (any, s
 		return f.evalAnswer(pp.Script)
 	case browserwire.Snapshot:
 		return f.snapshot(), ""
-	case browserwire.Open, browserwire.NewTab, browserwire.SelectTab, browserwire.CloseTab, browserwire.Close:
+	case browserwire.Open, browserwire.NewTab, browserwire.SelectTab, browserwire.CloseTab, browserwire.Close, browserwire.PopOut:
 		return nil, f.tabRequest(out, req.Method, pp.Page, pp.URL, pp.Tab)
 	case browserwire.Navigate, browserwire.Reload, browserwire.Back, browserwire.Forward:
 		f.loadPage(out, pp.Page, pp.URL)
@@ -205,6 +210,8 @@ func (f *fakeLichBrowser) tabRequest(out io.Writer, method, id, url, tab string)
 		delete(f.pages, id)
 		f.mu.Unlock()
 		return ""
+	case method == browserwire.PopOut:
+		p.out = true
 	case method == browserwire.NewTab:
 		f.addTabLocked(p, "about:blank")
 	case method == browserwire.SelectTab:
@@ -239,6 +246,9 @@ func (f *fakeLichBrowser) tabsLocked(id string, p *fakeWirePage) browserwire.Tab
 	tabs := make([]browserwire.Tab, len(p.tabs))
 	for i, t := range p.tabs {
 		t.Front, t.Icon = i == p.front, f.icon
+		if p.out {
+			t.XID = 0
+		}
 		tabs[i] = t
 	}
 	return browserwire.TabsEvent{Page: id, Tabs: tabs}
@@ -257,14 +267,20 @@ func (f *fakeLichBrowser) loadPage(out io.Writer, id, url string) {
 	f.clock += int64(time.Millisecond)
 	at := f.clock
 	f.mu.Unlock()
+	ev := browserwire.LoadEvent{Page: id, Tab: tab, URL: url, At: at}
 	load := func(step string) {
-		f.write(out, map[string]any{"event": browserwire.EventLoad, "params": browserwire.LoadEvent{Page: id, Tab: tab, Step: step, URL: url, At: at}})
+		ev.Step = step
+		f.write(out, map[string]any{"event": browserwire.EventLoad, "params": ev})
 	}
 	load(browserwire.LoadStarted)
-	if url != "" && (url == f.failURL || url == f.downloadURL) {
-		if url == f.downloadURL {
-			f.write(out, map[string]any{"event": browserwire.EventDownload, "params": browserwire.DownloadEvent{Page: id, GUID: "g1", URL: url, Name: "x.zip", State: browserwire.DownloadInProgress}})
-		}
+	switch {
+	case url == "":
+	case url == f.failURL:
+		ev.Error = "Could not resolve host"
+		load(browserwire.LoadFailed)
+		return
+	case url == f.downloadURL:
+		ev.Download = true
 		load(browserwire.LoadFailed)
 		return
 	}
@@ -272,10 +288,10 @@ func (f *fakeLichBrowser) loadPage(out io.Writer, id, url string) {
 	if url != "" {
 		p.tabs[p.front].URL, p.tabs[p.front].Title = url, "Title of "+url
 	}
-	ev := f.tabsLocked(id, p)
+	tabs := f.tabsLocked(id, p)
 	f.mu.Unlock()
 	load(browserwire.LoadCommitted)
-	f.write(out, map[string]any{"event": browserwire.EventTabs, "params": ev})
+	f.write(out, map[string]any{"event": browserwire.EventTabs, "params": tabs})
 	load(browserwire.LoadFinished)
 }
 

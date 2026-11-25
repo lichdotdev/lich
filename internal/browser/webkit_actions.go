@@ -25,25 +25,20 @@ import (
 var errNoFrames = errors.New("lich-browser's page is drawn by the window, not by frames")
 
 func (p *webkitPage) Navigate(ctx context.Context, url string) error {
-	failed, err := p.load(ctx, browserwire.Navigate, browserwire.NavigateParams{Page: p.id, URL: url})
-	if err == nil && failed {
-		return loadError{url: url}
+	return p.load(ctx, browserwire.Navigate, browserwire.NavigateParams{Page: p.id, URL: url})
+}
+
+func (p *webkitPage) Reload(ctx context.Context) error { return p.history(ctx, browserwire.Reload) }
+
+func (p *webkitPage) Back(ctx context.Context) error { return p.history(ctx, browserwire.Back) }
+
+func (p *webkitPage) Forward(ctx context.Context) error { return p.history(ctx, browserwire.Forward) }
+
+func (p *webkitPage) history(ctx context.Context, method string) error {
+	err := p.load(ctx, method, browserwire.PageParams{Page: p.id})
+	if errors.As(err, new(failedLoad)) {
+		return nil
 	}
-	return err
-}
-
-func (p *webkitPage) Reload(ctx context.Context) error {
-	_, err := p.load(ctx, browserwire.Reload, browserwire.PageParams{Page: p.id})
-	return err
-}
-
-func (p *webkitPage) Back(ctx context.Context) error {
-	_, err := p.load(ctx, browserwire.Back, browserwire.PageParams{Page: p.id})
-	return err
-}
-
-func (p *webkitPage) Forward(ctx context.Context) error {
-	_, err := p.load(ctx, browserwire.Forward, browserwire.PageParams{Page: p.id})
 	return err
 }
 
@@ -314,12 +309,19 @@ func (p *webkitPage) Key(context.Context, api.BrowserKeyOptions) error { return 
 
 func (p *webkitPage) InsertText(context.Context, string) error { return nil }
 
-// Focus has nothing to raise: the page has no window of its own.
-func (p *webkitPage) Focus(context.Context) error { return nil }
+// Focus raises the page's own window; the service asks only once it has one.
+func (p *webkitPage) Focus(ctx context.Context) error {
+	return p.do(ctx, browserwire.Raise, browserwire.PageParams{Page: p.id}, nil)
+}
+
+// PopOut moves the page to a window of its own, as it is: nothing reloads.
+func (p *webkitPage) PopOut(ctx context.Context) error {
+	return p.do(ctx, browserwire.PopOut, browserwire.PageParams{Page: p.id}, nil)
+}
 
 // Cookies and SetCookies carry cookies across a Chrome relaunch, which a
-// lich-browser page never has: a zoom replaces the rescale's, and it opens
-// in no window of its own.
+// lich-browser page never has: a zoom replaces the rescale's, and PopOut the
+// promotion's.
 func (p *webkitPage) Cookies(context.Context) ([]*network.CookieParam, error) { return nil, nil }
 
 func (p *webkitPage) SetCookies(context.Context, []*network.CookieParam) error { return nil }

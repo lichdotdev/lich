@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"os"
 	"os/exec"
 	"sync"
 	"time"
@@ -17,9 +18,6 @@ import (
 // helloWait bounds lich-browser's start, up to its answer to hello: a GTK
 // and WebKit cold off the disk, well under pageWait.
 const helloWait = 15 * time.Second
-
-// errOwnWindow: lich-browser shows a page only in the window's pane.
-var errOwnWindow = errors.New("this browser shows its page only in lich's window, beside its session; it has no window of its own")
 
 // lichBrowser is the lich-browser process every page lives in, started at the
 // first page and again at the first page after it ended. A page belongs to the
@@ -97,12 +95,10 @@ func (b *lichBrowser) stop() {
 	}
 }
 
-// launch is the Launcher of a page in lich-browser. The profile dir is the
-// service's to delete and lich-browser's pages keep none in it.
+// launch is the Launcher of a page in lich-browser, in a window of its own
+// when headed. The profile dir is the service's to delete: each page's
+// context is lich-browser's own and ends with it.
 func (b *lichBrowser) launch(_ string, headed bool, scale float64) (Page, error) {
-	if headed {
-		return nil, errOwnWindow
-	}
 	c, err := b.connect()
 	if err != nil {
 		return nil, err
@@ -111,12 +107,31 @@ func (b *lichBrowser) launch(_ string, headed bool, scale float64) (Page, error)
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
 	c.add(p)
-	open := browserwire.OpenParams{Page: p.id, URL: "about:blank", Scale: scale, W: layoutW, H: layoutH}
+	open := browserwire.OpenParams{Page: p.id, URL: "about:blank", Scale: scale, W: layoutW, H: layoutH, Downloads: downloadsFor()}
 	if err := c.call(ctx, browserwire.Open, open, nil); err != nil {
 		c.remove(p)
 		return nil, err
 	}
+	if headed {
+		if err := p.PopOut(ctx); err != nil {
+			return nil, errors.Join(err, p.Close())
+		}
+	}
 	return p, nil
+}
+
+// downloadsFor is the folder a page's downloads land in, the one Chrome's
+// do; "" when there is none, which leaves them to lich-browser.
+func downloadsFor() string {
+	dir, err := downloadFolder()
+	if err == nil {
+		err = os.MkdirAll(dir, 0o755)
+	}
+	if err != nil {
+		slog.Warn("browser: downloads stay off", "err", err)
+		return ""
+	}
+	return dir
 }
 
 // layoutW and layoutH are the size a page opens at before the service lays it

@@ -76,14 +76,18 @@ func TestWebkitNavigationOutcomes(t *testing.T) {
 				t.Fatal(err)
 			}
 			h, err := s.Navigate("s", tc.url)
+			begun := time.Now()
 			if tc.wantErr {
-				if err == nil || !strings.Contains(err.Error(), "did not load") {
+				if err == nil || !strings.Contains(err.Error(), "page load error Could not resolve host") {
 					t.Fatalf("Navigate = %v, want the page not loaded", err)
 				}
 				return
 			}
 			if err != nil || h.URL != tc.wantURL {
 				t.Fatalf("Navigate = %+v, %v: want at %s", h, err, tc.wantURL)
+			}
+			if took := time.Since(begun); took >= downloadNotice {
+				t.Fatalf("Navigate took %v: a load that says it became a download waits for nothing", took)
 			}
 		})
 	}
@@ -336,20 +340,61 @@ func TestWebkitWindowReachesEveryProcess(t *testing.T) {
 	}
 }
 
-func TestWebkitHasNoWindowOfItsOwn(t *testing.T) {
+func TestWebkitOpensInAWindowOfItsOwn(t *testing.T) {
 	f := newFakeLichBrowser(t)
-	s, _ := wkService(t, f)
-	if _, err := s.OpenVisible("fresh"); !errors.Is(err, errOwnWindow) {
-		t.Fatalf("OpenVisible = %v, want no window of its own", err)
+	s, out := wkService(t, f)
+	if h, err := s.OpenVisible("fresh"); err != nil || !h.Headed {
+		t.Fatalf("OpenVisible = %+v, %v: want a page in a window of its own", h, err)
 	}
 	if _, err := s.Open("s", "https://example.com/"); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := s.OpenVisible("s"); !errors.Is(err, errOwnWindow) {
-		t.Fatalf("OpenVisible = %v, want no window of its own", err)
+	if h, err := s.OpenVisible("s"); err != nil || !h.Headed || h.URL != "https://example.com/" {
+		t.Fatalf("OpenVisible = %+v, %v: want the same page in its own window", h, err)
 	}
-	if hs, _ := s.List("s"); len(hs) != 1 {
-		t.Fatal("refusing a window of its own closed the browser")
+	if n := len(f.called(browserwire.Open)); n != 2 {
+		t.Fatalf("%d opens, want the page moved out as it was, not opened again", n)
+	}
+	if n := len(f.called(browserwire.PopOut)); n != 2 {
+		t.Fatalf("%d pop outs, want 2", n)
+	}
+	if _, err := s.OpenVisible("s"); err != nil || len(f.called(browserwire.Raise)) != 1 {
+		t.Fatalf("OpenVisible again = %v, want its window raised", err)
+	}
+	if _, err := s.Attach("s", Viewport{W: 800, H: 600, Scale: 1}); !errors.Is(err, errInWindow) {
+		t.Fatalf("Attach = %v, want the page left in its window", err)
+	}
+	st := out.states()
+	if last := st[len(st)-1]; !last.Headed || last.Tabs[0].XID != 0 {
+		t.Fatalf("browser-state %+v: want headed, its tab embedded nowhere", last)
+	}
+	f.mu.Lock()
+	var id string
+	for pid, p := range f.pages {
+		if p.tabs[0].URL == "https://example.com/" {
+			id = pid
+		}
+	}
+	f.mu.Unlock()
+	f.send(browserwire.EventClosed, browserwire.PageParams{Page: id})
+	waitFor(t, "the browser closed with its window", func() bool {
+		hs, _ := s.List("s")
+		return len(hs) == 0
+	})
+	if n := len(f.called(browserwire.Close)); n != 0 {
+		t.Fatalf("%d closes sent for a page lich-browser already ended", n)
+	}
+}
+
+func TestWebkitPageDownloadsWhereChromesDo(t *testing.T) {
+	f := newFakeLichBrowser(t)
+	s, _ := wkService(t, f)
+	if _, err := s.Open("s", "https://example.com/"); err != nil {
+		t.Fatal(err)
+	}
+	want, _ := downloadFolder()
+	if got := decodeParams[browserwire.OpenParams](t, f.called(browserwire.Open)[0]).Downloads; got != want {
+		t.Fatalf("open's downloads %q, want %q", got, want)
 	}
 }
 

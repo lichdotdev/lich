@@ -24,10 +24,12 @@ type webkitPage struct {
 	indexCounter
 	gate     dialogGate
 	loads    loadTrack
-	requests inflight
+	requests fetches
 
-	mu             sync.Mutex
-	dead, closed   bool
+	mu           sync.Mutex
+	dead, closed bool
+	// ended: lich-browser ended the page itself, its window closed.
+	ended          bool
 	zoom           float64
 	tabs           []api.BrowserTab
 	front          string
@@ -57,12 +59,12 @@ func (p *webkitPage) event(name string, raw json.RawMessage) {
 	case browserwire.EventLoad:
 		var ev browserwire.LoadEvent
 		if err = json.Unmarshal(raw, &ev); err == nil && p.isFront(ev.Tab) {
-			p.loads.note(ev.Step, browserTime{wall: time.Now(), ticks: time.Duration(ev.At)})
+			p.loads.note(ev, time.Now())
 		}
 	case browserwire.EventRequest:
 		var ev browserwire.RequestEvent
 		if err = json.Unmarshal(raw, &ev); err == nil && p.isFront(ev.Tab) {
-			p.requests.note(ev, time.Now())
+			p.noteRequest(ev, time.Now())
 		}
 	case browserwire.EventConsole:
 		var ev browserwire.ConsoleEvent
@@ -102,6 +104,11 @@ func (p *webkitPage) otherEvent(name string, raw json.RawMessage) error {
 		}
 	case browserwire.EventCrashed:
 		p.gone()
+	case browserwire.EventClosed:
+		p.mu.Lock()
+		p.ended = true
+		p.mu.Unlock()
+		p.gone()
 	}
 	return nil
 }
@@ -129,7 +136,7 @@ func (p *webkitPage) setTabs(tabs []browserwire.Tab) {
 	moved := front != nil && (front.URL != p.url || front.Title != p.title)
 	if front != nil && front.ID != p.front {
 		p.front = front.ID
-		p.requests.reset()
+		p.requests.clear()
 	}
 	if moved {
 		p.url, p.title = front.URL, front.Title
@@ -249,7 +256,7 @@ func (p *webkitPage) Alive() bool {
 
 func (p *webkitPage) Close() error {
 	p.mu.Lock()
-	was := p.closed
+	was := p.closed || p.ended
 	p.closed = true
 	p.mu.Unlock()
 	p.conn.remove(p)

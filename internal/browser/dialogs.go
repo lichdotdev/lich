@@ -99,9 +99,10 @@ func (s *Service) openDialog(id string) (*session, api.BrowserDialog, error) {
 }
 
 // settleBeforeunload holds an accept of a beforeunload until
-// beforeunloadSettle after it opened.
+// beforeunloadSettle after it opened, in Chrome: WebKit's page proceeds
+// on its own.
 func (s *Service) settleBeforeunload(sess *session, d api.BrowserDialog, accept bool) {
-	if !accept || d.Type != beforeunload {
+	if !accept || d.Type != beforeunload || s.wk != nil {
 		return
 	}
 	s.mu.Lock()

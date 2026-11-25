@@ -299,6 +299,10 @@ const abortedText = "net::ERR_ABORTED"
 
 var errNavAborted = errors.New("page load error " + abortedText)
 
+// errNavDownload is a navigation its engine says became a download, which
+// lich-browser's does: no wait for the download's own event to tell.
+var errNavDownload = errors.New("the navigation became a download")
+
 // navGrace is how long after an action a navigation it starts may take to
 // replace the document: until then the old one reads as complete.
 const navGrace = 150 * time.Millisecond

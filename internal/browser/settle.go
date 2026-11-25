@@ -88,6 +88,13 @@ func (f *fetches) begin(id network.RequestID, at browserTime) {
 	}
 }
 
+// clear forgets every request: the tab they were of left the front.
+func (f *fetches) clear() {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	clear(f.at)
+}
+
 func (f *fetches) end(id network.RequestID) {
 	f.mu.Lock()
 	defer f.mu.Unlock()

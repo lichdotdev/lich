@@ -15,29 +15,30 @@ func at(ms int) browserTime {
 	return browserTime{wall: time.Now(), ticks: time.Duration(ms) * time.Millisecond}
 }
 
-func TestInflightHoldsOnlyWhatBeganSince(t *testing.T) {
-	start := func(ms int) browserwire.RequestEvent {
-		return browserwire.RequestEvent{Started: true, At: int64(time.Duration(ms) * time.Millisecond)}
+func TestWebkitSettleHoldsOnlyTheFetchesTheActionBegan(t *testing.T) {
+	begin := func(id, kind string, ms int) browserwire.RequestEvent {
+		return browserwire.RequestEvent{ID: id, Type: kind, Started: true, At: int64(time.Duration(ms) * time.Millisecond)}
 	}
-	finish := browserwire.RequestEvent{Finished: true}
+	end := func(id string) browserwire.RequestEvent { return browserwire.RequestEvent{ID: id, Finished: true} }
 	for _, tc := range []struct {
 		name   string
 		events []browserwire.RequestEvent
 		want   bool
 	}{
 		{"none", nil, false},
-		{"a fetch the action began", []browserwire.RequestEvent{start(20)}, true},
-		{"a long poll from before", []browserwire.RequestEvent{start(5)}, false},
-		{"the action's fetch landed", []browserwire.RequestEvent{start(20), finish}, false},
-		{"the poll stays, the fetch landed", []browserwire.RequestEvent{start(5), start(20), finish}, false},
-		{"two fetches, one landed", []browserwire.RequestEvent{start(20), start(30), finish}, true},
+		{"a fetch the action began", []browserwire.RequestEvent{begin("a", browserwire.RequestFetch, 20)}, true},
+		{"an XHR the action began", []browserwire.RequestEvent{begin("a", browserwire.RequestXHR, 20)}, true},
+		{"an image", []browserwire.RequestEvent{begin("a", browserwire.RequestImage, 20)}, false},
+		{"a long poll from before", []browserwire.RequestEvent{begin("a", browserwire.RequestFetch, 5)}, false},
+		{"the action's fetch landed", []browserwire.RequestEvent{begin("a", browserwire.RequestFetch, 20), end("a")}, false},
+		{"the poll landed, the fetch did not", []browserwire.RequestEvent{begin("p", browserwire.RequestFetch, 5), begin("a", browserwire.RequestFetch, 20), end("p")}, true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			var f inflight
+			var p webkitPage
 			for _, ev := range tc.events {
-				f.note(ev, time.Now())
+				p.noteRequest(ev, time.Now())
 			}
-			if got := f.since(at(10)); got != tc.want {
+			if got := p.requests.since(at(10)); got != tc.want {
 				t.Fatalf("in flight since 10ms = %v, want %v", got, tc.want)
 			}
 		})
@@ -45,15 +46,20 @@ func TestInflightHoldsOnlyWhatBeganSince(t *testing.T) {
 }
 
 func TestLoadTrackAwait(t *testing.T) {
+	started := browserwire.LoadEvent{Step: browserwire.LoadStarted}
+	committed := browserwire.LoadEvent{Step: browserwire.LoadCommitted}
+	failed := browserwire.LoadEvent{Step: browserwire.LoadFailed, Error: "Could not resolve host"}
+	download := browserwire.LoadEvent{Step: browserwire.LoadFailed, Download: true}
 	for _, tc := range []struct {
-		name       string
-		steps      []string
-		wantFailed bool
+		name    string
+		steps   []browserwire.LoadEvent
+		wantErr string
 	}{
-		{"no load starts", nil, false},
-		{"commits", []string{browserwire.LoadStarted, browserwire.LoadCommitted}, false},
-		{"fails", []string{browserwire.LoadStarted, browserwire.LoadFailed}, true},
-		{"fails after it committed", []string{browserwire.LoadStarted, browserwire.LoadCommitted, browserwire.LoadFailed}, false},
+		{"no load starts", nil, ""},
+		{"commits", []browserwire.LoadEvent{started, committed}, ""},
+		{"fails", []browserwire.LoadEvent{started, failed}, "page load error Could not resolve host"},
+		{"becomes a download", []browserwire.LoadEvent{started, download}, errNavDownload.Error()},
+		{"fails after it committed", []browserwire.LoadEvent{started, committed, failed}, ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			l := loadTrack{wake: make(chan struct{})}
@@ -61,12 +67,12 @@ func TestLoadTrackAwait(t *testing.T) {
 			go func() {
 				for _, step := range tc.steps {
 					time.Sleep(time.Millisecond)
-					l.note(step, at(1))
+					l.note(step, time.Now())
 				}
 			}()
 			failed, err := l.await(t.Context(), from, 50*time.Millisecond)
-			if err != nil || failed != tc.wantFailed {
-				t.Fatalf("await = %v, %v: want failed %v", failed, err, tc.wantFailed)
+			if err != nil || (failed == nil) != (tc.wantErr == "") || failed != nil && failed.Error() != tc.wantErr {
+				t.Fatalf("await = %v, %v: want %q", failed, err, tc.wantErr)
 			}
 		})
 	}
@@ -74,14 +80,14 @@ func TestLoadTrackAwait(t *testing.T) {
 
 func TestLoadTrackAwaitSinceWaitsForTheActionsLoad(t *testing.T) {
 	l := loadTrack{wake: make(chan struct{})}
-	l.note(browserwire.LoadStarted, at(5))
+	l.note(loadAt(browserwire.LoadStarted, 5), time.Now())
 	if err := l.awaitSince(t.Context(), at(10), time.Second); err != nil {
 		t.Fatal("a load from before the action held it:", err)
 	}
-	l.note(browserwire.LoadStarted, at(20))
+	l.note(loadAt(browserwire.LoadStarted, 20), time.Now())
 	go func() {
 		time.Sleep(5 * time.Millisecond)
-		l.note(browserwire.LoadCommitted, at(25))
+		l.note(loadAt(browserwire.LoadCommitted, 25), time.Now())
 	}()
 	begun := time.Now()
 	if err := l.awaitSince(t.Context(), at(10), time.Second); err != nil || time.Since(begun) < 5*time.Millisecond {
@@ -89,13 +95,17 @@ func TestLoadTrackAwaitSinceWaitsForTheActionsLoad(t *testing.T) {
 	}
 	ctx, cancel := context.WithCancel(t.Context())
 	cancel()
-	l.note(browserwire.LoadStarted, at(30))
+	l.note(loadAt(browserwire.LoadStarted, 30), time.Now())
 	if err := l.awaitSince(ctx, at(10), time.Second); err == nil {
 		t.Fatal("a cancelled wait did not say so")
 	}
 	if err := l.awaitSince(t.Context(), at(10), time.Millisecond); err != nil {
 		t.Fatal("a load past the wait is no error:", err)
 	}
+}
+
+func loadAt(step string, ms int) browserwire.LoadEvent {
+	return browserwire.LoadEvent{Step: step, At: int64(time.Duration(ms) * time.Millisecond)}
 }
 
 func TestWebkitServiceCallsReachTheWire(t *testing.T) {

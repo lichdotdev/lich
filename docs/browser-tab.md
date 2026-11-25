@@ -12,8 +12,8 @@ window the window embeds over the pane (`docs/lich-browser.md`,
 the pane's input, relaunching at another scale and Chrome's DevTools is the
 Chrome page's, which Windows, macOS and Linux without either keep. With
 lich-browser a scale or zoom change reaches the page as its zoom, DevTools is
-WebKit's inspector in a window of its own, and Open in a window is refused:
-the page has no window of its own.
+WebKit's inspector in a window of its own, and Open in a window moves the
+same page out (`popOut`), nothing reloaded or lost.
 
 ## Why frames and not a webview
 
@@ -54,8 +54,8 @@ clicked.
   profile, with its cookies (session ones included); its pane goes. chromedp
   cannot show a headless process in place, so what lives only in the page, a
   half-filled form or sessionStorage, does not survive. Browser on the card
-  then brings that window forward. A lich-browser page refuses it
-  (`errOwnWindow`) and stays in its pane.
+  then brings that window forward. A lich-browser page moves out as it is,
+  half-filled form included.
 
 `browser-state` tells the window when a browser starts, closes, moves to a
 window or loads another page, and each tab's `loading` from Chrome's

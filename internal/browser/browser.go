@@ -244,7 +244,7 @@ func (s *Service) OpenVisible(owner string) (Handle, error) {
 	case sess == nil:
 		return s.launchFresh(owner, s.blankURL(owner), true, false)
 	case !sess.headed && s.wk != nil:
-		return Handle{}, errOwnWindow
+		return s.popOut(sess)
 	case !sess.headed:
 		return s.promote(sess)
 	}
@@ -267,6 +267,20 @@ func (s *Service) promote(sess *session) (Handle, error) {
 	s.emitState(sess, false)
 	spec.headed = true
 	return s.start(spec)
+}
+
+// popOut moves a lich-browser page to a window of its own in place: unlike
+// Chrome's promote, the half-filled form and sessionStorage stay.
+func (s *Service) popOut(sess *session) (Handle, error) {
+	if err := runPage(sess.page.(*webkitPage).PopOut); err != nil {
+		return Handle{}, s.failed(sess, err)
+	}
+	s.mu.Lock()
+	sess.headed, sess.watching, sess.windowDraws, sess.asked = true, false, false, false
+	s.mu.Unlock()
+	s.emitState(sess, true)
+	s.touch(sess)
+	return s.handleOf(sess), nil
 }
 
 // handOver reads the cookies of sess's browser for the one that replaces it
