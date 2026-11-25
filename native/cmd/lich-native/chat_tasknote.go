@@ -91,7 +91,7 @@ func taskNoteLongTag(chunk, tag string) string {
 }
 
 // chatTaskNotes draws each note as a row under the next: the provider's mark,
-// the summary, a hairline and, when it carries text, a chevron that unfolds it.
+// the summary and, when it carries text, a chevron that unfolds it.
 // They open shut: the agent reads them, the person seldom needs to.
 func (u *window) chatTaskNotes(gtx C, th *ui.Theme, p *chatPane, kind string, it backend.ChatItem, notes []taskNote) D {
 	children := make([]layout.FlexChild, 0, 2*len(notes))

@@ -278,7 +278,8 @@ func (t *topbar) tab(gtx C, th *ui.Theme, f topbarFrame, i int, widths []int, dr
 }
 
 // tabFace draws a tab: the Sidebar surface and a Border hairline when active,
-// Accent on a carried tab, a faint fill when hovered, and the pinned-group hairline.
+// Accent on a carried tab, a faint fill when hovered and, on a carried tab, the
+// low elevation.
 func (t *topbar) tabFace(gtx C, th *ui.Theme, f topbarFrame, i int, st *tabState, act *topbarAction) D {
 	tab := f.tabs[i]
 	active := tab.ID == f.active

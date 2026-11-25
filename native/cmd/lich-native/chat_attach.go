@@ -41,8 +41,8 @@ var (
 	chatCardRemoveInset = ui.Space(1.5)
 	// chatCardNameLines is how many lines a file's name wraps to.
 	chatCardNameLines = 3
-	// chatStripPadBottom is the room between the cards and the hairline
-	// under them.
+	// chatStripPadBottom is the room between the cards and the text under
+	// them.
 	chatStripPadBottom = ui.Space(3)
 	// chatGhostOpacity is a ghost card's ink, and chatDragRingWidth the
 	// dashes of the ghost and of the box while a file is dragged.
@@ -242,8 +242,8 @@ func (u *window) attachActs(gtx C, p *chatPane, sv sessionView) {
 	}
 }
 
-// composerStrip is the strip of the composer's cards over its text, then a
-// hairline across the box: the cards, a ghost card while a file is dragged
+// composerStrip is the strip of the composer's cards over its text, set
+// apart from it by space: the cards, a ghost card while a file is dragged
 // over the session or a drop on it resolves, and the add square. Nothing
 // without a card or a ghost.
 func (u *window) composerStrip(gtx C, th *ui.Theme, p *chatPane, fill color.NRGBA) D {

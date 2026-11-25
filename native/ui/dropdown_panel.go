@@ -228,7 +228,7 @@ func (th *Theme) PopoverPanel(gtx C, content func(gtx C, th *Theme) D) D {
 	return D{Size: size}
 }
 
-// popoverSurface is a menu's surface, rounded-lg and over a toast's shadow:
+// popoverSurface is a menu's surface, rounded-lg and on the middle elevation:
 // a PopoverPanel stands over the conversation's text, not over a trigger,
 // and without the shadow it reads as part of it.
 func (th *Theme) popoverSurface(gtx C, size image.Point) {

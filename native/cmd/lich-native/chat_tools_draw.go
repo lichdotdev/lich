@@ -376,9 +376,6 @@ func (u *window) mcpView(gtx C, th *ui.Theme, p *chatPane, sv sessionView, l api
 	return t.scrolled(gtx, th, head, lines, nil)
 }
 
-// mcpRow is a server's line: the glyph says its state, and only what the
-// glyph cannot say is written, its tools once connected and the error of a
-// failure.
 // mcpCounts is the servers counted by state, in the state's tone, the
 // states none is in left out.
 func mcpCounts(th *ui.Theme, servers []api.ChatMCPServer) []toned {
@@ -415,6 +412,9 @@ func mcpStatusCount(status string, n int) string {
 	return i18n.T("chat.tools.statusCount.disabled", args)
 }
 
+// mcpRow is a server's line: the glyph says its state, and only what the
+// glyph cannot say is written, its tools once connected and the error of a
+// failure.
 func mcpRow(gtx C, th *ui.Theme, s api.ChatMCPServer) D {
 	ic, ink, _ := mcpStatus(th, s)
 	meta := ""

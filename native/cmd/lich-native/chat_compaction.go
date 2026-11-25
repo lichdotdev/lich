@@ -122,7 +122,7 @@ func chatCompactTitle(cc *api.ChatCompaction) (title, detail string) {
 }
 
 // chatCompaction is a finished compaction's marker, set in the conversation
-// where it happened between two hairlines, as a turn's end is: the hook
+// where it happened, alone in the column's middle: the hook
 // output in its tooltip, and the summary opening under it on a click.
 func (u *window) chatCompaction(gtx C, th *ui.Theme, p *chatPane, it backend.ChatItem) D {
 	cc := it.Compaction
