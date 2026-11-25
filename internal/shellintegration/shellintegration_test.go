@@ -87,7 +87,11 @@ func runInteractive(t *testing.T, shell, rcName string) string {
 		t.Fatal(err)
 	}
 	home := t.TempDir()
-	if err := os.WriteFile(filepath.Join(home, rcName), []byte("echo user-rc-ran\n"), 0o644); err != nil {
+	// A short PS1 in place of the host's (Ubuntu's /etc/bash.bashrc sets
+	// \u@\h:\w): past TERM=dumb's 80 columns readline scrolls the line
+	// sideways and drops the prompt, marks included.
+	rc := "PS1='$ '\necho user-rc-ran\n"
+	if err := os.WriteFile(filepath.Join(home, rcName), []byte(rc), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	args, env := Apply(bin, []string{"-i"}, []string{"HOME=" + home, "PATH=" + os.Getenv("PATH"), "TERM=dumb"}, dir)
