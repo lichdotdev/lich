@@ -9,6 +9,7 @@
 
 extern void lichBrowserRun(uintptr_t handle);
 extern void lichDrawn(uintptr_t key);
+extern void lichDamaged(uintptr_t key);
 extern uintptr_t lichDevtoolsKey(uintptr_t inspected);
 extern void lichDevtoolsOpened(uintptr_t key, LichTab *tab);
 extern void lichDevtoolsClosed(uintptr_t inspected);
@@ -37,14 +38,23 @@ static int has_dri3(void) {
 	return XQueryExtension(x, "DRI3", &opcode, &event, &error);
 }
 
+// offscreen: there is no X display, and each tab draws in a
+// GtkOffscreenWindow on Wayland, its frames sent over the wire
+// (docs/lich-browser.md).
+static int offscreen;
+
+int lich_browser_offscreen(void) { return offscreen; }
+
 int lich_browser_init(void) {
-	gdk_set_allowed_backends("x11");
+	const char *display = getenv("DISPLAY");
+	offscreen = display == NULL || *display == 0;
+	gdk_set_allowed_backends(offscreen ? "wayland" : "x11");
 	if (!gtk_init_check(NULL, NULL)) {
 		return 0;
 	}
 	// WebKit's DMA-BUF renderer leaves pages black on an X server without
 	// DRI3, such as Xvfb.
-	if (!has_dri3()) {
+	if (!offscreen && !has_dri3()) {
 		setenv("WEBKIT_DISABLE_DMABUF_RENDERER", "1", 0);
 	}
 	// On GTK 3 over X11 WebKit asks for linear DMA-BUF buffers, which NVIDIA's
@@ -52,7 +62,8 @@ int lich_browser_init(void) {
 	// page stayed black. Shared memory keeps the page on the GPU the web
 	// process inherits, the X server's under prime-run; sent to another GPU
 	// to dodge the refusal, a page cost the window 125 ms a frame crossing
-	// back (hybrid laptop, measured 2026-11-19).
+	// back (hybrid laptop, measured 2026-11-19). Off screen, the frames are
+	// read on the CPU anyway.
 	setenv("WEBKIT_DMABUF_RENDERER_FORCE_SHM", "1", 0);
 	return 1;
 }
@@ -105,9 +116,20 @@ static void allocate(LichTab *tab, int width, int height) {
 	gtk_widget_size_allocate(tab->view, &area);
 }
 
+// size_offscreen sizes an off-screen tab's window to width x height device
+// pixels, in GTK's units as allocate does.
+static void size_offscreen(LichTab *tab) {
+	int scale = gtk_widget_get_scale_factor(tab->holder);
+	gtk_widget_set_size_request(tab->holder, (tab->width + scale - 1) / scale, (tab->height + scale - 1) / scale);
+}
+
 // lich_tab_fit lays a view back in its own X window out at that window's
 // size, which no ConfigureNotify tells when it did not change.
 void lich_tab_fit(LichTab *tab) {
+	if (offscreen) {
+		size_offscreen(tab);
+		return;
+	}
 	XWindowAttributes a;
 	if (XGetWindowAttributes(tab->x, tab->xid, &a)) {
 		allocate(tab, a.width, a.height);
@@ -161,8 +183,33 @@ static Window new_window(Display *x, int width, int height) {
 	return xid;
 }
 
+static gboolean damaged(GtkWidget *holder, GdkEvent *event, gpointer tab) {
+	lichDamaged(((LichTab *)tab)->key);
+	return FALSE;
+}
+
+// hold_offscreen makes a tab of view in a GtkOffscreenWindow: shown, so
+// WebKit runs it as a page in sight, and telling each time it draws.
+static LichTab *hold_offscreen(LichPage *page, GtkWidget *view, uintptr_t key, int width, int height) {
+	LichTab *tab = calloc(1, sizeof(LichTab));
+	tab->page = page;
+	tab->key = key;
+	tab->width = width;
+	tab->height = height;
+	tab->holder = gtk_offscreen_window_new();
+	tab->view = view;
+	gtk_container_add(GTK_CONTAINER(tab->holder), tab->view);
+	g_signal_connect(tab->holder, "damage-event", G_CALLBACK(damaged), tab);
+	size_offscreen(tab);
+	gtk_widget_show_all(tab->holder);
+	return tab;
+}
+
 // hold makes a tab of view, in an X window of its own off screen.
 static LichTab *hold(LichPage *page, GtkWidget *view, uintptr_t key, int width, int height) {
+	if (offscreen) {
+		return hold_offscreen(page, view, key, width, height);
+	}
 	GdkDisplay *display = gdk_display_get_default();
 	LichTab *tab = calloc(1, sizeof(LichTab));
 	tab->x = gdk_x11_display_get_xdisplay(display);
@@ -233,7 +280,10 @@ void lich_tab_close_inspector(LichTab *tab) {
 }
 
 void lich_tab_close(LichTab *tab) {
-	gdk_window_remove_filter(tab->window, follow, tab);
+	if (!offscreen) {
+		gdk_window_remove_filter(tab->window, follow, tab);
+	}
+	g_signal_handlers_disconnect_by_data(tab->holder, tab);
 	g_signal_handlers_disconnect_by_data(tab->view, tab);
 	if (tab->inspector) {
 		// The inspector's view is WebKit's, which ends it with the inspector.
@@ -242,8 +292,10 @@ void lich_tab_close(LichTab *tab) {
 		g_signal_handlers_disconnect_by_data(webkit_web_view_get_inspector(WEBKIT_WEB_VIEW(tab->view)), tab);
 	}
 	gtk_widget_destroy(tab->holder);
-	XDestroyWindow(tab->x, tab->xid);
-	XFlush(tab->x);
+	if (!offscreen) {
+		XDestroyWindow(tab->x, tab->xid);
+		XFlush(tab->x);
+	}
 	free(tab);
 }
 
@@ -252,6 +304,10 @@ void lich_tab_close(LichTab *tab) {
 void lich_tab_resize(LichTab *tab, int width, int height) {
 	tab->width = width;
 	tab->height = height;
+	if (offscreen) {
+		size_offscreen(tab);
+		return;
+	}
 	if (tab->embedded) {
 		return;
 	}
@@ -306,6 +362,21 @@ unsigned char *lich_tab_icon(LichTab *tab, int *length) {
 	}
 	*length = png->len;
 	return g_byte_array_free(png, FALSE);
+}
+
+// lich_tab_frame is what an off-screen tab drew last: cairo ARGB32 pixels,
+// width x height with stride bytes a row, that GTK owns and may draw over
+// once the caller returns to it; NULL before it drew.
+unsigned char *lich_tab_frame(LichTab *tab, int *width, int *height, int *stride) {
+	cairo_surface_t *s = gtk_offscreen_window_get_surface(GTK_OFFSCREEN_WINDOW(tab->holder));
+	if (!s || cairo_surface_get_type(s) != CAIRO_SURFACE_TYPE_IMAGE) {
+		return NULL;
+	}
+	cairo_surface_flush(s);
+	*width = cairo_image_surface_get_width(s);
+	*height = cairo_image_surface_get_height(s);
+	*stride = cairo_image_surface_get_stride(s);
+	return cairo_image_surface_get_data(s);
 }
 
 // lich_tab_allow trusts leaf, a PEM certificate Go verified, for host in the

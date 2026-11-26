@@ -20,6 +20,7 @@ type osPage struct {
 	buttons uint32
 	// waiting are the wire's input events the page has yet to get.
 	waiting []*waiter
+	cast    casting
 }
 
 func (b *browser) mouse(o browserwire.MouseParams) (*page, string, error) {
