@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image/color"
 	"strconv"
 	"strings"
 
@@ -10,6 +11,7 @@ import (
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
+	"github.com/lichdotdev/lich/native/ui/icons"
 	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
@@ -111,18 +113,27 @@ func (u *window) chatEnvelope(gtx C, th *ui.Theme, p *chatPane, key string, env 
 		layout.Rigid(func(gtx C) D { return u.chatUser(gtx, th, p, key, env.text["prompt"]) }))
 }
 
-// chatWorkerNote is a worker's outcome: its agent's mark, what happened and
-// muted how, a hairline to the column's edge, and the result as Markdown under
-// it. A click on the row opens the worker's card while it is still open; the
-// result keeps its own links.
+// chatWorkerNote is a worker's outcome as one line, shut: the worker's
+// provider mark, a glyph of how it ended, what happened, muted how, the first
+// line of its text, a chevron that unfolds the text, and an arrow that opens
+// the worker's card while it is still open. The text, a result as Markdown,
+// is the agent's to read; the person seldom needs it.
 func (u *window) chatWorkerNote(gtx C, th *ui.Theme, p *chatPane, key string, env envelope) D {
-	click := p.note(key)
-	if click.Clicked(gtx) {
+	open := p.note(key)
+	if open.Clicked(gtx) {
 		if sv, ok := u.model.sessionViewOf(env.session); ok {
 			u.openSession(sv.projectID, sv.ID)
 		}
 	}
+	f := p.fold(key)
+	f.update(gtx)
+	sv, alive := u.model.sessionViewOf(env.session)
 	title, meta, body := workerNoteText(env)
+	result := env.text["result"]
+	text := result
+	if text == "" {
+		text = body
+	}
 	tone := th.Foreground
 	switch env.kind {
 	case "worker-waiting":
@@ -130,25 +141,94 @@ func (u *window) chatWorkerNote(gtx C, th *ui.Theme, p *chatPane, key string, en
 	case "worker-failed":
 		tone = th.Destructive
 	}
-	row := []layout.FlexChild{layout.Rigid(th.Text(ui.TextSM, title).Weight(font.Medium).In(tone).Layout)}
-	if meta != "" {
-		row = append(row, ui.Gap(2), layout.Rigid(th.Text(ui.TextSM, meta).Muted().Layout))
-	}
+	glyph, ink := workerNoteGlyph(th, env.kind)
 
-	children := []layout.FlexChild{layout.Rigid(func(gtx C) D {
-		return click.Layout(gtx, func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...) })
+	line := func(gtx C) D {
+		row := []layout.FlexChild{
+			layout.Rigid(func(gtx C) D { return providerGlyph(gtx, th, sv.Kind, ui.Space(3.5), markPixel) }),
+			ui.Gap(2),
+			layout.Rigid(func(gtx C) D { return glyph.Layout(gtx, ui.Space(3.5), ink) }),
+			ui.Gap(1.5),
+			layout.Rigid(th.Text(ui.TextSM, title).Weight(font.Medium).In(tone).Layout),
+		}
+		if meta != "" {
+			row = append(row, ui.Gap(2), layout.Rigid(th.Text(ui.TextSM, meta).Muted().Layout))
+		}
+		preview := ""
+		if !f.open {
+			preview = markdownMarks.Replace(firstLine(strings.TrimSpace(text)))
+		}
+		row = append(row, ui.Gap(2), layout.Flexed(1, th.Text(ui.TextSM, preview).Muted().Truncated().Layout))
+		if text != "" {
+			ic := icChatClosed
+			if f.open {
+				ic = icChatOpen
+			}
+			fg := th.MutedForeground
+			if f.click.Hovered() {
+				fg = th.Foreground
+			}
+			row = append(row, ui.Gap(2), layout.Rigid(func(gtx C) D { return ic.Layout(gtx, ui.Space(3.5), fg) }))
+		}
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, row...)
+	}
+	head := []layout.FlexChild{layout.Flexed(1, func(gtx C) D {
+		if text == "" {
+			return line(gtx)
+		}
+		return f.click.Layout(gtx, line)
 	})}
-	if result := env.text["result"]; result != "" {
-		children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D {
-			notify := func(t ui.Toast) { u.toaster.Show(t) }
-			return p.md.LayoutLinks(gtx, th, key, result, markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths})
-		}))
-	} else if body != "" {
-		children = append(children, ui.VGap(1), layout.Rigid(func(gtx C) D {
-			return th.Text(ui.TextSM, body).Muted().Wrapped().Layout(gtx)
+	if alive {
+		head = append(head, ui.Gap(2), layout.Rigid(func(gtx C) D {
+			return open.Layout(gtx, func(gtx C) D {
+				fg := th.MutedForeground
+				if open.Hovered() {
+					fg = th.Foreground
+				}
+				return icOpenCard.Layout(gtx, ui.Space(3.5), fg)
+			})
 		}))
 	}
-	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+	headRow := layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, head...) })
+	if text == "" {
+		return layout.Flex{Axis: layout.Vertical}.Layout(gtx, headRow)
+	}
+	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, headRow,
+		layout.Rigid(func(gtx C) D {
+			if f.shut(gtx.Now) {
+				return f.body.Layout(gtx, false, chatNothing)
+			}
+			return f.body.Layout(gtx, f.open, func(gtx C) D {
+				return layout.Inset{Top: ui.Space(1.5), Left: ui.Space(5.5)}.Layout(gtx, func(gtx C) D {
+					if result == "" {
+						return th.Text(ui.TextSM, body).Muted().Wrapped().Layout(gtx)
+					}
+					notify := func(t ui.Toast) { u.toaster.Show(t) }
+					return p.md.LayoutLinks(gtx, th, key, result, markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths})
+				})
+			})
+		}),
+	)
+}
+
+// markdownMarks are the marks a shut note's preview drops: it is a line of
+// plain text, and code spans and bold read as their marks there.
+var markdownMarks = strings.NewReplacer("`", "", "**", "")
+
+// workerNoteGlyph is the glyph of how a worker's task ended, in the tone the
+// turn's closing line gives the same end.
+func workerNoteGlyph(th *ui.Theme, kind string) (*icons.Icon, color.NRGBA) {
+	switch kind {
+	case "worker-finished":
+		return icCheck, th.TonePass
+	case "worker-failed":
+		return icToolsFailed, th.Destructive
+	case "worker-stopped":
+		return icChatStop, th.MutedForeground
+	case "worker-waiting":
+		return icQueued, th.ToneWait
+	}
+	return icQueued, th.MutedForeground
 }
 
 // workerNoteText is a worker note's title, the muted words beside it and the

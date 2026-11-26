@@ -159,10 +159,24 @@ func TestAnEnvelopeIsDrawnAsItsRows(t *testing.T) {
 	writeShot(t, r, "envelopes.png")
 }
 
-// A click on a worker's row opens its card.
-func TestAClickOnAWorkersRowOpensItsCard(t *testing.T) {
+// A worker's note opens shut: a click on its line unfolds the result, and the
+// arrow beside it opens the worker's card (contract changed: the line's click
+// opened the card before the note folded).
+func TestAWorkersNoteUnfoldsAndItsArrowOpensTheCard(t *testing.T) {
 	u, r := envelopeFrames(t)
+	// Markdown draws no labels: the result shows as the room it takes
+	// between the note and the one under it.
+	shut := r.at(t, "Fix #412 is waiting").Y - r.at(t, "Fix #412 finished").Y
 	r.clickLabel(t, "Fix #412 finished")
+	r.settle(t)
+	if open := r.at(t, "Fix #412 is waiting").Y - r.at(t, "Fix #412 finished").Y; open <= shut {
+		t.Fatalf("a click on the note did not unfold its result (%v to %v apart):\n%s", shut, open, r.drawn())
+	}
+	writeShot(t, r, "envelopes-open.png")
+	if sv, ok := u.model.activeSession(); ok && sv.ID == "s2" {
+		t.Fatal("a click on the note's line opened the worker's card")
+	}
+	r.click(t, r.controlOf(t, "Fix #412 finished"))
 	if sv, ok := u.model.activeSession(); !ok || sv.ID != "s2" {
 		t.Errorf("active session = %q, want the worker s2", sv.ID)
 	}

@@ -82,6 +82,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **A report from another session shows in the chat as one shut line with its agent's mark, how it ended and its first words.** Click the line to read the whole report, or the arrow beside it to open that session.
 - **Buttons are one size across lich.** Dialogs, Pulls threads and comments, and every screen's actions now share the same height; only the small buttons inside dense rows stay smaller.
 - **Shortcut hints read as real keys, one per key, and a button's shortcut follows its word.** Reply in Pulls now reads Reply, then Ctrl and ↵ as two small faded keys, and every button with a shortcut does the same.
 - **lich installs and updates its own plugin by itself, and it runs in every session lich starts, even after you turned it off or removed it in the agent's own config.** Settings › Updates shows the version your sessions run; a notice with Retry appears only when lich could not set it up.
