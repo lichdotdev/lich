@@ -109,7 +109,8 @@ func (a chatPluginAction) removes() bool {
 
 // chatPluginActions is what the detail offers on p, of what its provider takes:
 // an update, turning it off or on and uninstalling it once installed,
-// installing it in each scope before; nothing on lich's own.
+// installing it in each scope before; on lich's own, only turning it on, since
+// off it runs none of the hooks lich's sessions need.
 func chatPluginActions(p api.ChatPlugin, l api.ChatPluginList) []chatPluginAction {
 	var acts []chatPluginAction
 	add := func(action, scope, label string) {
@@ -119,6 +120,9 @@ func chatPluginActions(p api.ChatPlugin, l api.ChatPluginList) []chatPluginActio
 	}
 	switch {
 	case p.Fixed:
+		if p.Installed && !p.Enabled {
+			add(api.PluginEnable, p.Scope, i18n.T("chat.plugins.act.enable"))
+		}
 	case p.Installed:
 		add(api.PluginUpdate, p.Scope, i18n.T("chat.plugins.act.update"))
 		if p.Enabled {

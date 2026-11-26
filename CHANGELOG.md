@@ -142,7 +142,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **A lich plugin left disabled in Claude Code, Codex or Antigravity shows as not installed, instead of letting subagents run outside lich without a word.** Install it again from the prompt or Settings, then restart the sessions that started while it was off.
+- **A lich plugin left disabled in Claude Code, Codex or Antigravity shows as not installed, instead of letting subagents run outside lich without a word.** Install it again from Settings › Updates › lich plugin, or press Turn on on lich in a Claude Code or Codex chat's /plugin.
 - **Continue in moves a session drawn as a chat to another profile, as it does a terminal.** It refused with "switch this session to its terminal"; the chat now closes, its conversation moves and it opens again in the profile you picked, on the same model, effort and mode.
 - **lich no longer keeps a CPU core busy listing your sessions when dozens are open.** The tray, `lich sessions` and the agents' list of sessions read only what each transcript added since the last look, so opening a session or a worktree no longer waits behind them.
 - **Switching between stable and beta on Arch is an ordinary package upgrade, with no removal by hand.** The update keeps the name of the package you installed, `lich` from install.sh or `lich-bin` from the AUR.

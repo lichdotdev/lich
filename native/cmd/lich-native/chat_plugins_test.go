@@ -1,6 +1,7 @@
 package main
 
 import (
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -116,6 +117,36 @@ func TestLichsOwnPluginTakesNoAction(t *testing.T) {
 	r.click(t, r.at(t, "lich"))
 	if !r.shows("lich installs and updates this plugin itself.") || r.shows("Uninstall") || r.shows("Turn off") {
 		t.Errorf("lich's plugin offers an action:\n%s", r.drawn())
+	}
+}
+
+// lich's own plugin, off, runs none of lich's hooks, so its detail offers
+// Turn on and nothing else.
+func TestLichsOwnPluginOffTurnsOn(t *testing.T) {
+	u, r, f, p := toolsFrames(t, "/plugin")
+	list := toolsPlugins
+	list.Plugins = slices.Clone(toolsPlugins.Plugins)
+	for i := range list.Plugins {
+		if list.Plugins[i].Fixed {
+			list.Plugins[i].Enabled = false
+		}
+	}
+	f.mu.Lock()
+	f.answers[api.ChatPlugins.Name] = list
+	f.mu.Unlock()
+	p.tools.open(chatPluginCommand)
+	u.fetchTools(p, "s1")
+	toolsSettle(r)
+	r.click(t, r.at(t, "lich"))
+	toolsSettle(r)
+	if !r.showsAll("off", "Turn on", "lich installs and updates this plugin itself.") || r.shows("Uninstall") || r.shows("Update") {
+		t.Fatalf("lich's plugin, off, does not offer Turn on alone:\n%s", r.drawn())
+	}
+	writeShot(t, r, "plugins-lich-off.png")
+	r.click(t, r.at(t, "Turn on"))
+	if body := f.waitCall(t, api.ChatPluginAct.Name); !strings.Contains(body, `"action":"enable"`) ||
+		!strings.Contains(body, `"target":"lich@lich-plugin"`) || !strings.Contains(body, `"scope":"user"`) {
+		t.Errorf("Turn on asked %s", body)
 	}
 }
 
