@@ -139,6 +139,12 @@ func (p *webkitPage) setTabs(tabs []browserwire.Tab) {
 	}
 	p.mu.Lock()
 	p.tabs = out
+	// An engine tells a page's title after its load, and an event sent
+	// before it heard it can land after readPlace read the page's own: no
+	// title for the same URL is no change.
+	if front != nil && front.Title == "" && front.URL == p.url {
+		front.Title = p.title
+	}
 	moved := front != nil && (front.URL != p.url || front.Title != p.title)
 	if front != nil && front.ID != p.front {
 		p.front = front.ID
