@@ -388,15 +388,18 @@ jobs:
         if: matrix.arch == 'amd64'
         run: HOMEBREW_NO_AUTO_UPDATE=1 brew install nasm
 
-      # The window (cgo: Gio's Cocoa and Metal, libghostty-vt, libjpeg-turbo),
-      # built on the runner of its own architecture.
-      - name: Build lich-native (${{ matrix.arch }})
+      # The window (cgo: Gio's Cocoa and Metal, libghostty-vt, libjpeg-turbo)
+      # and lich-browser (cgo: WKWebView), built on the runner of their own
+      # architecture.
+      - name: Build lich-native and lich-browser (${{ matrix.arch }})
         working-directory: native
         run: |
           ./libjpeg-turbo.sh "$HOME/libjpeg-turbo"
           PKG_CONFIG_PATH="$HOME/libjpeg-turbo/lib/pkgconfig:$HOME/libghostty-vt/share/pkgconfig" CGO_ENABLED=1 \
             go build -trimpath -ldflags "-s -w" -o ../bin/lich-native ./cmd/lich-native
+          CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" -o ../bin/lich-browser ./cmd/lich-browser
           bash ../.github/scripts/mac-native-floor.sh ../bin/lich-native
+          bash ../.github/scripts/mac-native-floor.sh ../bin/lich-browser
 
       # The .app the cask installs. The binaries it is built from are removed
       # so the upload below cannot pick them up.
@@ -406,11 +409,11 @@ jobs:
         run: |
           cd bin
           tag="${GITHUB_REF_NAME//\//-}"
-          ../build/darwin/bundle.sh "lich-darwin-${ARCH}" "${tag#v}" stage lich-native
+          ../build/darwin/bundle.sh "lich-darwin-${ARCH}" "${tag#v}" stage lich-native lich-browser
           # ditto, not zip: it is the archiver that keeps a bundle's symlinks,
           # permissions and signature intact for Homebrew Cask to unpack.
           ditto -c -k --keepParent stage/Lich.app "lich-${tag}-darwin-${ARCH}.zip"
-          rm lich-darwin-arm64 lich-darwin-amd64 lich-native
+          rm lich-darwin-arm64 lich-darwin-amd64 lich-native lich-browser
           ls -la lich-${tag}-*
 
       # End to end on the runner before the assets ship; the script says what

@@ -302,8 +302,13 @@ jobs:
       - name: Build lich-native
         run: go build -trimpath -ldflags "-s -w" -o "$RUNNER_TEMP/lich-native" ./cmd/lich-native
 
-      - name: Check what lich-native asks of a machine
-        run: bash ../.github/scripts/mac-native-floor.sh "$RUNNER_TEMP/lich-native"
+      - name: Build lich-browser
+        run: go build -trimpath -ldflags "-s -w" -o "$RUNNER_TEMP/lich-browser" ./cmd/lich-browser
+
+      - name: Check what lich-native and lich-browser ask of a machine
+        run: |
+          bash ../.github/scripts/mac-native-floor.sh "$RUNNER_TEMP/lich-native"
+          bash ../.github/scripts/mac-native-floor.sh "$RUNNER_TEMP/lich-browser"
 
       - name: Build the backend
         working-directory: .

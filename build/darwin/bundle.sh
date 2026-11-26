@@ -3,11 +3,12 @@
 # lich in /Applications, Launchpad and Spotlight and gives it its icon; a bare
 # binary on PATH appears in none of them.
 #
-#   build/darwin/bundle.sh bin/lich-darwin-arm64 0.30.0 bin bin/lich-native
+#   build/darwin/bundle.sh bin/lich-darwin-arm64 0.30.0 bin bin/lich-native bin/lich-browser
 #
 # The native window goes beside lich in Contents/MacOS, where macOS counts a
 # process as the app's own (its Dock tile, its icon, its name in the menu
-# bar): it is the process holding the window.
+# bar): it is the process holding the window. lich-browser, which holds every
+# page, goes there too, where lich looks for it.
 #
 # macOS host only: sips and iconutil are Apple's, so the icon is generated at
 # build time from build/appicon-mac.png instead of committing an .icns — one
@@ -15,11 +16,12 @@
 # anywhere (task build:mac); only this wrapping step needs a Mac.
 set -eu
 
-usage="usage: bundle.sh <binary> <version> <outdir> <lich-native>"
+usage="usage: bundle.sh <binary> <version> <outdir> <lich-native> <lich-browser>"
 bin="${1:?$usage}"
 version="${2:?$usage}"
 outdir="${3:?$usage}"
 native="${4:?$usage}"
+browser="${5:?$usage}"
 
 root="$(cd "$(dirname "$0")/../.." && pwd)"
 app="$outdir/Lich.app"
@@ -30,6 +32,8 @@ cp "$bin" "$app/Contents/MacOS/lich"
 chmod +x "$app/Contents/MacOS/lich"
 cp "$native" "$app/Contents/MacOS/lich-native"
 chmod +x "$app/Contents/MacOS/lich-native"
+cp "$browser" "$app/Contents/MacOS/lich-browser"
+chmod +x "$app/Contents/MacOS/lich-browser"
 
 sed "s/@VERSION@/${version}/g" "$root/build/darwin/Info.plist.tpl" \
   > "$app/Contents/Info.plist"
@@ -50,6 +54,7 @@ rm -rf "$(dirname "$iconset")"
 # Innermost first, as codesign wants it. This is not notarization —
 # Gatekeeper still calls the developer unidentified.
 codesign --force --sign - "$app/Contents/MacOS/lich-native"
+codesign --force --sign - "$app/Contents/MacOS/lich-browser"
 codesign --force --sign - "$app"
 
 echo "built $app"
