@@ -220,6 +220,9 @@ func TestPullsScreenOnGitLabWaitsForTheForgeAndNeverAsksGitHub(t *testing.T) {
 	release.Do(func() { close(hold) })
 	r.waitFor(t, "!7")
 	r.clickLabel(t, "Fix the thing")
+	// The skeleton already says Merge requests, and its shimmer never goes
+	// still: wait for what only the detail draws.
+	r.waitFor(t, "fix → main")
 	r.waitFor(t, "Merge requests")
 	if r.shows(i18n.T("pulls.pullRequestView.tab.conversation")) {
 		t.Error("a merge request shows Conversation")

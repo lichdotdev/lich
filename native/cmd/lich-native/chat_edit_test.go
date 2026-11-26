@@ -150,8 +150,8 @@ func TestEditPath(t *testing.T) {
 	}{
 		"the diff's new side":       {"--- a/x.go\n+++ b/x.go\n@@ -1 +1 @@\n", "", "", "x.go"},
 		"a file deleted":            {"--- a/gone.go\n+++ /dev/null\n@@ -1 +0,0 @@\n", "", "", "gone.go"},
-		"absolute, in the checkout": {"--- /repo/a/b.go\n+++ /repo/a/b.go\n", "", "/repo", "a/b.go"},
-		"absolute, outside":         {"", "/etc/hosts", "/repo", "/etc/hosts"},
+		"absolute, in the checkout": {"--- " + osPath("/repo/a/b.go") + "\n+++ " + osPath("/repo/a/b.go") + "\n", "", osPath("/repo"), "a/b.go"},
+		"absolute, outside":         {"", osPath("/etc/hosts"), osPath("/repo"), osPath("/etc/hosts")},
 		"no diff, the target":       {"", "notes.md", "/repo", "notes.md"},
 	} {
 		t.Run(name, func(t *testing.T) {

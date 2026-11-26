@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"encoding/json"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -69,7 +70,8 @@ func TestAMessageOfCardsAloneGoesWithThem(t *testing.T) {
 	if !r.shows("notes") {
 		t.Errorf("the message sent does not show its card:\n%s", r.drawn())
 	}
-	if body := f.waitCall(t, api.ChatPrompt.Name); !strings.Contains(body, `"attachments":[{"path":"`+notes) {
+	path, _ := json.Marshal(notes) // a Windows path's \ is escaped in the body
+	if body := f.waitCall(t, api.ChatPrompt.Name); !strings.Contains(body, `"attachments":[{"path":`+string(path)) {
 		t.Errorf("sent %s, want the file attached", body)
 	}
 }
@@ -103,7 +105,8 @@ func TestAQueuedMessageKeepsItsCards(t *testing.T) {
 		t.Fatalf("queue %v, composer %q: want the message with its card queued", q, filePaths(p.attached))
 	}
 	u.model.flushQueue(context.Background(), api.ChatTurn{SessionID: "s1", StopReason: "end_turn"})
-	if body := f.waitCall(t, api.ChatPrompt.Name); !strings.Contains(body, notes) {
+	path, _ := json.Marshal(notes)
+	if body := f.waitCall(t, api.ChatPrompt.Name); !strings.Contains(body, string(path)) {
 		t.Errorf("the turn's end sent %s, want the card's file", body)
 	}
 }

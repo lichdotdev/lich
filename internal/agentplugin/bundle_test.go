@@ -6,6 +6,7 @@ import (
 	"compress/gzip"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 )
@@ -97,7 +98,7 @@ func TestInstallUnpacksTheReleaseSessionsLoad(t *testing.T) {
 			t.Errorf("%s = %q (err %v), want the release's %q", name, data, err, body)
 		}
 	}
-	if info, err := os.Stat(filepath.Join(dir, "hooks", "report-state.sh")); err != nil || info.Mode().Perm()&0o100 == 0 {
+	if info, err := os.Stat(filepath.Join(dir, "hooks", "report-state.sh")); err != nil || runtime.GOOS != "windows" && info.Mode().Perm()&0o100 == 0 {
 		t.Errorf("a hook script lost its exec bit: %v (err %v)", info, err)
 	}
 	entries, _ := os.ReadDir(root)

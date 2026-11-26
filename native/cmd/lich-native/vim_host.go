@@ -462,7 +462,9 @@ func (h *vimHost) inConfig(path string) bool {
 	h.mu.Lock()
 	dir := h.configDir
 	h.mu.Unlock()
-	return dir != "" && strings.HasPrefix(path, dir+string(filepath.Separator))
+	// Cleaned, since Windows takes either separator and Neovim may answer
+	// with the one the caller did not use.
+	return dir != "" && strings.HasPrefix(filepath.Clean(path), filepath.Clean(dir)+string(filepath.Separator))
 }
 
 // vimConfigFile is the person's Neovim config to edit: init.lua or

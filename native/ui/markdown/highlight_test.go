@@ -79,11 +79,11 @@ var fiveHundredLines = "```go\n" + strings.Repeat("func f(x int) string {\n\tret
 
 func TestAFiveHundredLineBlockRendersWithinAFrame(t *testing.T) {
 	th := highlightTheme()
-	start := time.Now()
+	start := spent()
 	renderBlocks(th, fiveHundredLines)
 	// A frame at 60 Hz; the block renders again only when its body's text
 	// changes.
-	if took := time.Since(start); took > 16*time.Millisecond {
+	if took := spent() - start; took > 16*time.Millisecond {
 		t.Errorf("rendering 500 lines of Go took %v, more than a frame", took)
 	}
 }

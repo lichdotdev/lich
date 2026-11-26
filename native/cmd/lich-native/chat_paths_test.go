@@ -15,25 +15,25 @@ import (
 	"github.com/lichdotdev/lich/native/ui/filetree"
 )
 
-const pathsCheckout = "/repo"
+var pathsCheckout = osPath("/repo")
 
 var pathsListing = api.FileListing{Files: []string{"app.go", "youtrack/client_test.go", "youtrack/api/client.go"}}
 
 func TestAPathInAnAnswerLinksWhatTheCheckoutHolds(t *testing.T) {
 	f := newChatFiles(pathsListing.Files)
 	for written, want := range map[string]bool{
-		"app.go":                  true,
-		"./app.go":                true,
-		"/repo/app.go":            true,
-		"youtrack/":               true,
-		"youtrack":                true,
-		"youtrack/client_test.go": true,
-		"client_test.go":          true, // the tail of one file, as a terminal's path:line
-		"api/":                    false,
-		"gone.go":                 false,
-		"../app.go":               false,
-		"/elsewhere/app.go":       false,
-		"~/app.go":                false,
+		"app.go":                    true,
+		"./app.go":                  true,
+		osPath("/repo/app.go"):      true,
+		"youtrack/":                 true,
+		"youtrack":                  true,
+		"youtrack/client_test.go":   true,
+		"client_test.go":            true, // the tail of one file, as a terminal's path:line
+		"api/":                      false,
+		"gone.go":                   false,
+		"../app.go":                 false,
+		osPath("/elsewhere/app.go"): false,
+		"~/app.go":                  false,
 	} {
 		if got := f.links(pathsCheckout, written); got != want {
 			t.Errorf("%q links %v, want %v", written, got, want)
@@ -50,7 +50,18 @@ func pathFrames(t *testing.T, text string) (*window, *frameRig, *chatBackend) {
 	u.model.projects[0].Path = pathsCheckout
 	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "a1", Kind: api.ItemAgent, Turn: 1, Text: text}})
 	r.frame()
-	f.waitCall(t, api.ProjectTree.Name)
+	// The call made is not the listing read: an answer the listing does not
+	// change settles before it lands.
+	p := u.chats.pane("s1")
+	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(time.Millisecond) {
+		if files, _, _ := p.files.get(); files != nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("the checkout's listing never landed")
+		}
+		r.frame()
+	}
 	r.settle(t)
 	return u, r, f
 }

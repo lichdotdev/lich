@@ -298,7 +298,9 @@ func skillsHanded(t *testing.T, r rig, provider string, d Delivery) []string {
 		dir = d.SkillsDir
 		if provider == providers.OMP {
 			data, err := os.ReadFile(d.OMPConfig)
-			if err != nil || !strings.Contains(string(data), d.SkillsDir) {
+			// The path is a double-quoted scalar, where a Windows \ is escaped.
+			quoted, _ := json.Marshal(d.SkillsDir)
+			if err != nil || !strings.Contains(string(data), string(quoted)) {
 				t.Errorf("omp overlay %q (err %v) does not name %s", data, err, d.SkillsDir)
 			}
 		}

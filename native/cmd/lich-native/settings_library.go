@@ -172,7 +172,7 @@ func (s *settingsScreen) forgetLibraryVisit() {
 func (s *settingsScreen) foundHeading(th *ui.Theme, found []backend.LibraryFound) layout.Widget {
 	l := &s.library
 	return libraryHeading(th, i18n.T("settings.librarySettings.found"), func(gtx C) D {
-		if l.moveAll.Clicked(gtx) {
+		if l.moveAll.Clicked(gtx) && s.startMove() {
 			go s.moveIn(found...)
 		}
 		all := th.Button(&l.moveAll, i18n.T("settings.librarySettings.moveInAll"))
@@ -202,7 +202,7 @@ func (s *settingsScreen) foundRow(gtx C, th *ui.Theme, f backend.LibraryFound) D
 	l := &s.library
 	key := f.Kind + "/" + f.Name
 	row, move := clickableOf(l.rows, "found/"+key), clickableOf(l.moves, key)
-	if move.Clicked(gtx) {
+	if move.Clicked(gtx) && s.startMove() {
 		go s.moveIn(f)
 	}
 	return libraryRowFrame(gtx, th, row, func(gtx C) D {
@@ -472,17 +472,25 @@ func (l *librarySettings) isMoving() bool {
 	return l.moving
 }
 
-// moveIn moves each item into the library in turn, stopping at the first
-// that fails so the toast names it.
-func (s *settingsScreen) moveIn(found ...backend.LibraryFound) {
+// startMove marks a move under way in the frame that took its click, false
+// when one already is, and asks for the next frame: what this frame drew
+// before the click still shows its buttons enabled.
+func (s *settingsScreen) startMove() bool {
 	l := &s.library
 	l.mu.Lock()
-	if l.moving {
-		l.mu.Unlock()
-		return
-	}
+	started := !l.moving
 	l.moving = true
 	l.mu.Unlock()
+	if started {
+		s.invalidate()
+	}
+	return started
+}
+
+// moveIn moves each item into the library in turn, stopping at the first
+// that fails so the toast names it; startMove has marked it under way.
+func (s *settingsScreen) moveIn(found ...backend.LibraryFound) {
+	l := &s.library
 	defer func() {
 		l.mu.Lock()
 		l.moving = false

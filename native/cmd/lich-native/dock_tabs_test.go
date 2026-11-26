@@ -36,6 +36,12 @@ func tabButtonsOf(r *frameRig) []f32.Point {
 
 func TestDockTabButtonOpensItsTabInTheFrameThatTookTheClick(t *testing.T) {
 	u, r := stageFrames(t, dockCode)
+	// Review's changes read once first: the fake backend answers at once, and
+	// their first load landing between the two frames r.click compares reads
+	// as a click that drew the old state.
+	u.dock.tab = dockReview
+	r.waitFor(t, "No uncommitted changes")
+	u.dock.tab = dockCode
 	r.settle(t)
 	buttons := tabButtonsOf(r)
 	if len(buttons) != dockBuiltinTabs {

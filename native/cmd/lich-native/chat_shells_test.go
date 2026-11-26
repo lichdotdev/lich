@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"gioui.org/io/key"
+	"gioui.org/layout"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
@@ -239,5 +240,36 @@ func TestCtrlBInTheComposerIsNotNewWorktree(t *testing.T) {
 	f.waitCall(t, api.ChatBackground.Name)
 	if slices.Contains(fired, hotkeyNewWorktree) {
 		t.Errorf("Ctrl+B in the box also ran New worktree: %v", fired)
+	}
+}
+
+// A read of a running shell's output that brings nothing new leaves the list
+// where the person scrolled it; only output that grew brings it to its end.
+func TestAShellReadWithNothingNewKeepsTheScroll(t *testing.T) {
+	_, r, f, p := shellsFrames(t)
+	f.mu.Lock()
+	f.answers[api.ChatShellOutput.Name] = strings.Repeat("a line of output\n", 80)
+	f.mu.Unlock()
+	r.click(t, r.at(t, "2 shells"))
+	r.click(t, r.at(t, "npm run dev"))
+	toolsSettle(r)
+	p.tools.list.Position = layout.Position{}
+	r.frame()
+	reads := f.callsOf(api.ChatShellOutput.Name)
+	r.now = r.now.Add(chatShellPoll)
+	r.frame()
+	fetching := func() bool {
+		p.tools.mu.Lock()
+		defer p.tools.mu.Unlock()
+		return p.tools.shell.fetching
+	}
+	for deadline := time.Now().Add(5 * time.Second); f.callsOf(api.ChatShellOutput.Name) == reads || fetching(); time.Sleep(time.Millisecond) {
+		if time.Now().After(deadline) {
+			t.Fatal("the running shell's output was not read again")
+		}
+	}
+	r.frame()
+	if first := p.tools.list.Position.First; first != 0 {
+		t.Errorf("a read with nothing new scrolled the output to line %d", first)
 	}
 }
