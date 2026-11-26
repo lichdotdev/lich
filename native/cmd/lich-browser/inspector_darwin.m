@@ -36,11 +36,7 @@ static WKWebView *web_view_in(NSView *view) {
 static WKWebView *inspector_view(LichTabObj *tab, id<LichInspector> inspector) {
 	if ([(id)inspector respondsToSelector:@selector(inspectorWebView)]) {
 		WKWebView *view = [inspector inspectorWebView];
-		// Docked, it is in the page's own window until detach moved it.
-		if (view.window && ![view.window isKindOfClass:LichWindow.class]) {
-			return view;
-		}
-		return nil;
+		return view.window ? view : nil;
 	}
 	// A WebKit without inspectorWebView: the web view in a window of no tab's.
 	for (NSWindow *window in NSApp.windows) {
@@ -65,31 +61,46 @@ static void adopt(LichTabObj *inspected, WKWebView *view) {
 	tab.inspects = inspected;
 	tab.scale = inspected.scale;
 	tab.view = view;
-	tab.theirs = view.window;
-	[tab.theirs orderOut:nil];
+	if (view.window != inspected.window) {
+		tab.theirs = view.window;
+		[tab.theirs orderOut:nil];
+	}
 	lich_hold(tab, view, inspected.width, inspected.height);
-	__weak LichTabObj *weak = inspected;
-	[NSNotificationCenter.defaultCenter addObserverForName:NSWindowWillCloseNotification
-	                                                object:tab.theirs
-	                                                 queue:NSOperationQueue.mainQueue
-	                                            usingBlock:^(NSNotification *note) {
-		                                            LichTabObj *inspected = weak;
-		                                            if (inspected && !inspected.closed) {
-			                                            lichDevtoolsClosed(inspected.key);
-		                                            }
-	                                            }];
+	if (tab.theirs) {
+		__weak LichTabObj *weak = inspected;
+		[NSNotificationCenter.defaultCenter addObserverForName:NSWindowWillCloseNotification
+		                                                object:tab.theirs
+		                                                 queue:NSOperationQueue.mainQueue
+		                                            usingBlock:^(NSNotification *note) {
+			                                            LichTabObj *inspected = weak;
+			                                            if (inspected && !inspected.closed) {
+				                                            lichDevtoolsClosed(inspected.key);
+			                                            }
+		                                            }];
+	}
 	lichDevtoolsOpened(key, (LichTab *)(__bridge_retained void *)tab);
 }
+
+// DETACH_TRIES is how long a docked inspector is given to move to a window
+// of its own before its view is taken from the page's.
+#define DETACH_TRIES 10
 
 static void find(LichTabObj *inspected, id<LichInspector> inspector, int tries) {
 	if (inspected.closed) {
 		return;
 	}
-	if ([(id)inspector respondsToSelector:@selector(isAttached)] && [inspector isAttached]) {
-		[inspector detach];
-	}
 	WKWebView *view = inspector_view(inspected, inspector);
+	BOOL docked = view && view.window == inspected.window;
+	if (docked && FIND_TRIES - tries < DETACH_TRIES && [(id)inspector respondsToSelector:@selector(detach)]) {
+		[inspector detach];
+		view = nil;
+	}
 	if (view) {
+		if (docked) {
+			// WebKit shrank the page beside its inspector: it has the holder again.
+			NSLog(@"lich-browser: the inspector stayed docked; its view moves to a tab");
+			inspected.view.frame = inspected.holder.bounds;
+		}
 		adopt(inspected, view);
 		return;
 	}

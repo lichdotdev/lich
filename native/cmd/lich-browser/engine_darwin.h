@@ -28,6 +28,7 @@ uint32_t CGSMainConnectionID(void);
 // on; 0 gives it back to the window.
 - (void)_setOverrideDeviceScaleFactor:(CGFloat)scale;
 - (id)_inspector;
+- (void)_doAfterNextPresentationUpdate:(void (^)(void))update;
 - (void)_setResourceLoadDelegate:(id)delegate;
 @end
 
@@ -36,7 +37,6 @@ uint32_t CGSMainConnectionID(void);
 - (void)show;
 - (void)close;
 - (void)detach;
-- (BOOL)isAttached;
 - (WKWebView *)inspectorWebView;
 @end
 

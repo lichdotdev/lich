@@ -38,30 +38,55 @@ static NSPoint in_window(WKWebView *view, double x, double y) {
 	return [view convertPoint:p toView:nil];
 }
 
-// on_screen is a window point in Quartz's global coordinates, from the top
-// left of the main screen, which a CGEvent carries.
-static CGPoint on_screen(NSWindow *window, NSPoint p) {
-	NSPoint s = [window convertPointToScreen:p];
-	return CGPointMake(s.x, NSMaxY(NSScreen.screens.firstObject.frame) - s.y);
-}
-
-// to_window makes a CGEvent's NSEvent one of window's, at its point there.
-static NSEvent *to_window(CGEventRef e, NSWindow *window) {
-	CGEventSetIntegerValueField(e, kCGMouseEventWindowUnderMousePointer, window.windowNumber);
-	CGEventSetIntegerValueField(e, kCGMouseEventWindowUnderMousePointerThatCanHandleThisEvent, window.windowNumber);
+// pixel_wheel is a wheel event of move's window, at its point, by dx, dy
+// points, scale times each field the CGEvent carries.
+static NSEvent *pixel_wheel(NSEvent *move, double dx, double dy, double scale) {
+	CGEventRef e = CGEventCreateCopy(move.CGEvent);
+	CGEventSetType(e, kCGEventScrollWheel);
+	CGEventSetIntegerValueField(e, kCGScrollWheelEventIsContinuous, 1);
+	CGEventSetIntegerValueField(e, kCGScrollWheelEventPointDeltaAxis1, lround(dy * scale));
+	CGEventSetIntegerValueField(e, kCGScrollWheelEventPointDeltaAxis2, lround(dx * scale));
+	CGEventSetIntegerValueField(e, kCGScrollWheelEventDeltaAxis1, lround(dy * scale));
+	CGEventSetIntegerValueField(e, kCGScrollWheelEventDeltaAxis2, lround(dx * scale));
+	CGEventSetDoubleValueField(e, kCGScrollWheelEventFixedPtDeltaAxis1, dy * scale);
+	CGEventSetDoubleValueField(e, kCGScrollWheelEventFixedPtDeltaAxis2, dx * scale);
 	NSEvent *event = [NSEvent eventWithCGEvent:e];
 	CFRelease(e);
 	return event;
 }
 
-static void wheel(WKWebView *view, NSPoint at, int mods, double dx, double dy) {
+// scroll_event is a pixel wheel event of view's window at at, made from a
+// mouse move of that window: NSEvent has no maker for a wheel, and one made
+// from a fresh CGEvent names no window, which WebKit drops. AppKit reads its
+// deltas through an acceleration of its own (8 points a point on the macOS 15
+// runner), so the event is made again at the scale that gives what was
+// asked.
+static NSEvent *scroll_event(WKWebView *view, NSPoint at, int mods, double dx, double dy) {
 	CGFloat z = view.pageZoom;
-	// A wheel turned down scrolls the page down: a negative delta, in points.
-	CGEventRef e = CGEventCreateScrollWheelEvent2(NULL, kCGScrollEventUnitPixel, 2, (int32_t)lround(-dy * z),
-	                                              (int32_t)lround(-dx * z), 0);
-	CGEventSetLocation(e, on_screen(view.window, at));
-	CGEventSetFlags(e, (CGEventFlags)flags_of(mods));
-	[view scrollWheel:to_window(e, view.window)];
+	NSEvent *move = [NSEvent mouseEventWithType:NSEventTypeMouseMoved location:at modifierFlags:flags_of(mods)
+	                                  timestamp:now() windowNumber:view.window.windowNumber context:nil
+	                                eventNumber:0 clickCount:0 pressure:0];
+	double x = -dx * z, y = -dy * z;
+	NSEvent *event = pixel_wheel(move, x, y, 1);
+	double got = fabs(y) >= fabs(x) ? event.scrollingDeltaY : event.scrollingDeltaX, want = fabs(y) >= fabs(x) ? y : x;
+	if (got != 0 && fabs(got - want) > 0.5) {
+		event = pixel_wheel(move, x, y, want / got);
+	}
+	return event;
+}
+
+// wheel waits for the page's next presentation: a wheel sent before WebKit
+// committed the page's layers once scrolls nothing (one sent right after a
+// load, on the macOS 15 runner).
+static void wheel(WKWebView *view, NSPoint at, int mods, double dx, double dy) {
+	NSEvent *event = scroll_event(view, at, mods, dx, dy);
+	if (![view respondsToSelector:@selector(_doAfterNextPresentationUpdate:)]) {
+		[view scrollWheel:event];
+		return;
+	}
+	[view _doAfterNextPresentationUpdate:^{
+		[view scrollWheel:event];
+	}];
 }
 
 // The event types of a press, a release and a drag, by DOM button: 0 left,
@@ -93,11 +118,17 @@ static NSEvent *pointer_event(WKWebView *view, NSEventType type, NSPoint at, int
 		                      windowNumber:window.windowNumber context:nil eventNumber:0 clickCount:clicks
 		                          pressure:(type == downs[slot(button)] || type == drags[slot(button)]) ? 1 : 0];
 	}
-	// An other button's number goes only by a CGEvent.
-	CGEventRef e = CGEventCreateMouseEvent(NULL, (CGEventType)type, on_screen(window, at), cg_button(button));
-	CGEventSetIntegerValueField(e, kCGMouseEventClickState, clicks);
-	CGEventSetFlags(e, (CGEventFlags)flags_of(mods));
-	return to_window(e, window);
+	// An other button's number goes only by a CGEvent, made from a left
+	// button's of the window for the window an NSEvent of its own lacks.
+	NSEvent *left = [NSEvent mouseEventWithType:type == downs[1] ? NSEventTypeLeftMouseDown : type == ups[1] ? NSEventTypeLeftMouseUp : NSEventTypeLeftMouseDragged
+	                                   location:at modifierFlags:flags_of(mods) timestamp:now() windowNumber:window.windowNumber
+	                                    context:nil eventNumber:0 clickCount:clicks pressure:0];
+	CGEventRef e = CGEventCreateCopy(left.CGEvent);
+	CGEventSetType(e, (CGEventType)type);
+	CGEventSetIntegerValueField(e, kCGMouseEventButtonNumber, cg_button(button));
+	NSEvent *event = [NSEvent eventWithCGEvent:e];
+	CFRelease(e);
+	return event;
 }
 
 // lich_tab_mouse's button is the one held for a move, -1 for none.
