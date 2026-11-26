@@ -15,6 +15,15 @@ import (
 	"github.com/lichdotdev/lich/internal/logging"
 )
 
+// BrowserEnv pins the lich-browser to start, by path, as restart.NativeEnv
+// pins the window.
+const BrowserEnv = "LICH_BROWSER"
+
+const (
+	browserBinary = "lich-browser"
+	buildBrowser  = "build it from native/"
+)
+
 // helloWait bounds lich-browser's start, up to its answer to hello: a GTK
 // and WebKit cold off the disk, well under pageWait.
 const helloWait = 15 * time.Second

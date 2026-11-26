@@ -599,28 +599,7 @@ func TestWebkitPaneCalls(t *testing.T) {
 	if b, err := s.Icon(t.Context(), api.BrowserIconOptions{Key: key}); err != nil || len(b) == 0 {
 		t.Fatalf("icon %q = %v: want the tab's PNG", key, err)
 	}
-	for _, input := range []error{
-		mustNil(s.MouseInput(t.Context(), api.BrowserMouseOptions{ID: "s", Type: "move"})),
-		mustNil(s.KeyInput(t.Context(), api.BrowserKeyOptions{ID: "s", Type: "down"})),
-		mustNil(s.TextInput(t.Context(), api.BrowserTextOptions{ID: "s", Text: "x"})),
-	} {
-		if input != nil {
-			t.Fatal(input)
-		}
-	}
-	if n := len(f.called(browserwire.Mouse)) + len(f.called(browserwire.Key)) + len(f.called(browserwire.Text)); n != 0 {
-		t.Fatalf("%d pane inputs reached lich-browser, which takes them from the X server", n)
-	}
-	if _, err := s.MouseInput(t.Context(), api.BrowserMouseOptions{ID: "s", Type: "wheel", X: 5, Y: 6, DY: 120}); err != nil {
-		t.Fatal(err)
-	}
-	wheel := f.called(browserwire.Mouse)
-	if len(wheel) != 1 {
-		t.Fatalf("%d wheels reached lich-browser, want the one Select sends, which X gives the page none of", len(wheel))
-	}
-	if m := decodeParams[browserwire.MouseParams](t, wheel[0]); m.Kind != browserwire.MouseWheel || m.X != 5 || m.Y != 6 || m.DY != 120 {
-		t.Fatalf("wheel %+v, want the pane's at 5,6 by 120", m)
-	}
+	paneInputReachesThePage(t, s, f)
 }
 
 func TestWebkitWindowLayerIsNeverTheAgents(t *testing.T) {
