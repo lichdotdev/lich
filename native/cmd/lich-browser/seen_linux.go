@@ -41,7 +41,7 @@ type waiter struct {
 func (p *page) await(event string, done func(any, error)) {
 	w := &waiter{event: event, done: done}
 	p.waiting = append(p.waiting, w)
-	time.AfterFunc(seenWait, func() { onGTK(func() { p.answer(w) }) })
+	time.AfterFunc(seenWait, func() { onMain(func() { p.answer(w) }) })
 }
 
 func (p *page) answer(w *waiter) {

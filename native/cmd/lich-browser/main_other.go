@@ -1,4 +1,4 @@
-//go:build !linux
+//go:build !linux && !windows
 
 // Command lich-browser holds every page lich shows (docs/lich-browser.md); it
 // runs on Linux only so far, and the backend keeps Chrome elsewhere.

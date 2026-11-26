@@ -1,8 +1,10 @@
+//go:build linux || windows
+
 package main
 
 /*
 #include <stdlib.h>
-#include "browser_linux.h"
+#include "browser.h"
 */
 import "C"
 
@@ -80,7 +82,7 @@ func iconOf(t *tab) []byte {
 	if png == nil {
 		return nil
 	}
-	defer C.g_free(C.gpointer(png))
+	defer C.lich_free(unsafe.Pointer(png))
 	return C.GoBytes(unsafe.Pointer(png), n)
 }
 
@@ -117,30 +119,38 @@ func lichTabClosing(key C.uintptr_t) {
 // not told.
 //
 //export lichRequestStarted
-func lichRequestStarted(key C.uintptr_t, uri, accept *C.char, document C.int) C.int {
+func lichRequestStarted(key C.uintptr_t, uri, accept, kind *C.char) C.int {
 	t := the.tabs[uintptr(key)]
 	if t == nil || t != t.page.front {
 		return 0
 	}
-	kind := browserwire.RequestDocument
-	if document == 0 {
-		kind = requestType(C.GoString(uri), C.GoString(accept))
+	return C.int(the.requestStarted(t, C.GoString(kind), C.GoString(uri), C.GoString(accept)))
+}
+
+// requestStarted tells a request of t's starting, of kind or, with none, the
+// kind its URI and Accept header suggest, and answers its id.
+func (b *browser) requestStarted(t *tab, kind, uri, accept string) int {
+	if kind == "" {
+		kind = requestType(uri, accept)
 	}
-	the.requests++
-	id := the.requests
-	the.wire.event(browserwire.EventRequest, browserwire.RequestEvent{
-		Page: t.page.id, Tab: t.id, ID: strconv.Itoa(id), Type: kind, Started: true, At: the.at(),
+	b.requests++
+	b.wire.event(browserwire.EventRequest, browserwire.RequestEvent{
+		Page: t.page.id, Tab: t.id, ID: strconv.Itoa(b.requests), Type: kind, Started: true, At: b.at(),
 	})
-	return C.int(id)
+	return b.requests
 }
 
 //export lichRequestFinished
 func lichRequestFinished(key C.uintptr_t, id C.int) {
 	if t := the.tabs[uintptr(key)]; t != nil {
-		the.wire.event(browserwire.EventRequest, browserwire.RequestEvent{
-			Page: t.page.id, Tab: t.id, ID: strconv.Itoa(int(id)), Finished: true, At: the.at(),
-		})
+		the.requestFinished(t, int(id))
 	}
+}
+
+func (b *browser) requestFinished(t *tab, id int) {
+	b.wire.event(browserwire.EventRequest, browserwire.RequestEvent{
+		Page: t.page.id, Tab: t.id, ID: strconv.Itoa(id), Finished: true, At: b.at(),
+	})
 }
 
 //export lichCrashed
@@ -177,7 +187,7 @@ func lichDownloadPath(key C.uintptr_t, suggested *C.char) *C.char {
 var downloadStates = [...]string{browserwire.DownloadInProgress, browserwire.DownloadCompleted, browserwire.DownloadCanceled}
 
 //export lichDownload
-func lichDownload(key C.uintptr_t, guid C.int, url, name, path *C.char, state C.int, received, total C.gint64) {
+func lichDownload(key C.uintptr_t, guid C.int, url, name, path *C.char, state C.int, received, total C.int64_t) {
 	p := the.byKey[uintptr(key)]
 	if p == nil || int(state) >= len(downloadStates) {
 		return
