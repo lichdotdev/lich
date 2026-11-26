@@ -170,6 +170,7 @@ what lich can read back out of it, since each CLI records different things.
 | Resume a conversation started outside lich, from the palette's History tab | yes | yes | yes | yes | yes | Linux; macOS and Windows untested | yes | yes |
 | A long paste can land as editable text instead of a folded placeholder (Settings › Providers, off by default) | yes | no | no | yes | not measured | no, it becomes a `paste_N.txt` attachment | no | yes |
 | Fork a conversation into a new worktree, or in its own checkout | yes | yes | no | yes | no | no | no | no |
+| An agent forks its own conversation (`lich open --fork`); into a new worktree it starts at the last commit, without the uncommitted changes | yes | yes | no | yes | no | no | no | no |
 | A fork hangs from its source session in the sidebar's tree | yes | yes | no | yes | no | no | no | no |
 | Warned when you resume, from the agent's own app, a conversation another card has open | yes | on your next prompt | on your next prompt, untested | no | yes | on your next prompt from Crush 0.99.0; before it, at its next tool call | no | yes |
 | Told when it edits a file another session edited minutes before, and which session it was | yes | yes | yes | yes | yes | from Crush 0.99 | yes | with your next message |
@@ -179,7 +180,7 @@ what lich can read back out of it, since each CLI records different things.
 | A folder you trusted in your main account opens without the "trust this folder?" question in every other profile | yes | yes | no profiles | asks nothing | asks nothing | not measured | yes | asks nothing |
 | A sandboxed session opens without the "trust this folder?" question | yes | yes | yes | asks nothing | asks nothing | yes, and it no longer asks to initialize the project | yes | asks nothing |
 | A worktree of a folder you trusted opens without the "trust this folder?" question | yes | yes | yes | asks nothing | asks nothing | yes, and it no longer asks to initialize the project | yes | asks nothing |
-| Drive a session shown as a chat from `lich control` or an agent: prompt, stop, model, effort, slash command; a session in its terminal is refused | yes | yes; a model or effort applies from your next message | yes | yes | yes | no chat | not verified | yes, no effort, and a model only between turns |
+| Drive a session shown as a chat from `lich control` or an agent: prompt, stop, model, effort, compact, new conversation, slash command; a session in its terminal is refused | yes | yes; a model or effort applies from your next message | yes | yes | yes | no chat | not verified | yes, no effort, and a model only between turns |
 | A subagent the agent starts runs as a lich session with its own card, in the asking session's checkout, hands its full report back and closes once done; its own subagents get cards too, one level down | yes | yes | yes | yes | yes | yes | in a terminal; its chat runs no hooks | yes |
 | Context, cost and plan usage as the CLI measured them itself | in a chat | no | no | no | no | no | no | no |
 | Delegate privately from a subagent or workflow step | yes | yes | yes | yes | yes | yes | yes | yes |

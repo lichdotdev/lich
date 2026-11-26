@@ -173,6 +173,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Retomar, pela aba Histórico da paleta, uma conversa iniciada fora do lich | sim | sim | sim | sim | sim | Linux; macOS e Windows sem teste | sim | sim |
 | Um paste longo pode entrar como texto editável em vez de um placeholder recolhido (Configurações › Provedores, desligado por padrão) | sim | não | não | sim | não medido | não, vira o anexo `paste_N.txt` | não | sim |
 | Fazer fork de uma conversa para uma nova worktree, ou no mesmo checkout | sim | sim | não | sim | não | não | não | não |
+| Um agente faz fork da própria conversa (`lich open --fork`); numa worktree nova ele começa no último commit, sem as mudanças não commitadas | sim | sim | não | sim | não | não | não | não |
 | Um fork fica pendurado na sessão de origem, na árvore da barra lateral | sim | sim | não | sim | não | não | não | não |
 | Aviso quando você retoma, pelo app do próprio agente, uma conversa que já está aberta em outro card | sim | no seu próximo prompt | no seu próximo prompt, sem teste | não | sim | no seu próximo prompt a partir do Crush 0.99.0; nas versões anteriores, na próxima chamada de tool | não | sim |
 | Avisado quando edita um arquivo que outra sessão editou minutos antes, e qual sessão foi | sim | sim | sim | sim | sim | a partir do Crush 0.99 | sim | com a sua próxima mensagem |
@@ -182,7 +183,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Uma pasta que você marcou como confiável na conta principal abre sem a pergunta "trust this folder?" em todos os outros perfis | sim | sim | sem perfis | não pergunta nada | não pergunta nada | não medido | sim | não pergunta nada |
 | Uma sessão na sandbox abre sem a pergunta "trust this folder?" | sim | sim | sim | não pergunta nada | não pergunta nada | sim, e não pede mais para inicializar o projeto | sim | não pergunta nada |
 | Uma worktree de uma pasta confiável abre sem a pergunta "trust this folder?" | sim | sim | sim | não pergunta nada | não pergunta nada | sim, e não pede mais para inicializar o projeto | sim | não pergunta nada |
-| Controlar uma sessão em chat por `lich control` ou por um agente: prompt, parar, modelo, esforço, slash command; uma sessão no terminal é recusada | sim | sim; o modelo ou o esforço vale a partir da sua próxima mensagem | sim | sim | sim | sem chat | não verificado | sim, sem esforço, e o modelo só entre um turno e outro |
+| Controlar uma sessão em chat por `lich control` ou por um agente: prompt, parar, modelo, esforço, compactar, conversa nova, slash command; uma sessão no terminal é recusada | sim | sim; o modelo ou o esforço vale a partir da sua próxima mensagem | sim | sim | sim | sem chat | não verificado | sim, sem esforço, e o modelo só entre um turno e outro |
 | Um subagente iniciado pelo agente roda como sessão do lich com card próprio, no checkout da sessão que pediu, entrega o relatório completo e fecha ao terminar; os subagentes dele também ganham card, um nível abaixo | sim | sim | sim | sim | sim | sim | no terminal; o chat dele não roda hooks | sim |
 | Contexto, custo e uso do plano medidos pela própria CLI | no chat | não | não | não | não | não | não | não |
 | Delegar em privado a partir de um subagente ou etapa de workflow | sim | sim | sim | sim | sim | sim | sim | sim |

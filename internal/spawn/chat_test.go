@@ -2,6 +2,7 @@ package spawn
 
 import (
 	"context"
+	"errors"
 	"strings"
 	"testing"
 	"time"
@@ -24,6 +25,8 @@ type fakeChat struct {
 	options  []api.ChatOption
 	err      error
 	deadline time.Time
+	// compact is the compaction command the chat lists, "" for none.
+	compact string
 }
 
 func (f *fakeChat) Drawn(id string) bool { return f.drawn && !f.terminal[id] }
@@ -55,6 +58,18 @@ func (f *fakeChat) Options(context.Context, api.SessionIDOptions) ([]api.ChatOpt
 
 func (f *fakeChat) SetOption(_ context.Context, opts api.ChatSetOptionOptions) (api.None, error) {
 	f.calls = append(f.calls, "set "+opts.ID+" "+strings.Join([]string{opts.OptionID, opts.Value}, "="))
+	return api.None{}, f.err
+}
+
+func (f *fakeChat) CompactCommand(context.Context, api.SessionIDOptions) (string, error) {
+	if f.compact == "" {
+		return "", errors.New("its agent lists no command that compacts its conversation")
+	}
+	return f.compact, nil
+}
+
+func (f *fakeChat) New(_ context.Context, opts api.SessionIDOptions) (api.None, error) {
+	f.calls = append(f.calls, "new "+opts.ID)
 	return api.None{}, f.err
 }
 

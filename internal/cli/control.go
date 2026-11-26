@@ -62,8 +62,11 @@ func controlOutcome(state string) error {
 // and sends it again.
 func controlledText(out spawn.Controlled) string {
 	what := "the prompt"
-	if out.Action == spawn.ControlCommand {
+	switch out.Action {
+	case spawn.ControlCommand:
 		what = "/" + strings.TrimLeft(strings.TrimSpace(out.Value), "/")
+	case spawn.ControlCompact:
+		what = "the compaction"
 	}
 	switch out.State {
 	case spawn.ControlDone:
@@ -84,6 +87,8 @@ func doneText(out spawn.Controlled, what string) string {
 		return fmt.Sprintf("%q uses %s from its next request on.", out.Label, out.Value)
 	case spawn.ControlEffort:
 		return fmt.Sprintf("%q runs at %s effort from its next request on.", out.Label, out.Value)
+	case spawn.ControlNew:
+		return fmt.Sprintf("%q started a new, empty conversation.", out.Label)
 	}
 	return fmt.Sprintf("%q started a turn on %s.", out.Label, what)
 }
@@ -93,22 +98,24 @@ var controlTools = []mcpTool{
 	{
 		Name: "control_session",
 		Description: "Drive another lich session drawn as a chat, on any agent with one: send it a " +
-			"prompt, stop the turn it is running, set the model or reasoning effort its chat offers, or " +
-			"run one of its slash commands, such as compact. A prompt or a command waits up " +
-			"to 10 seconds for its turn to start; a result saying it waits behind the running turn is " +
-			"not a failure, and it still goes through. A session in its terminal is refused, and so " +
-			"is Crush, which has no chat. Your own session takes model and effort, never the other " +
-			"actions. The slash commands /model and /effort are refused because Claude Code would " +
+			"prompt, stop the turn it is running, set the model or reasoning effort its chat offers, " +
+			"compact its conversation, start it on a new, empty one, or run one of its slash commands. " +
+			"A prompt, a command or a compaction waits up to 10 seconds for its turn to start; a result " +
+			"saying it waits behind the running turn is not a failure, and it still goes through. A " +
+			"session in its terminal is refused, and so is Crush, which has no chat. Your own session " +
+			"takes model, effort and compact, never the other actions: a compaction of your own runs " +
+			"once the turn asking for it ends, so ask for it as your last step. The slash commands /model and /effort are refused because Claude Code would " +
 			"save them as the user's default for every new session; use the model and effort actions. " +
 			"Experimental: may change outside semver.",
 		Schema: schema(map[string]any{
 			"session": property("string",
 				"The session to drive, by the label on its card, the name it answers to or its lich id."),
-			"action": property("string", "One of prompt, abort, model, effort, command."),
+			"action": property("string", "One of prompt, abort, model, effort, compact, new, command."),
 			"value": property("string",
 				"prompt: the text. model: a model the session's chat offers, by its id. effort: "+
-					"one of the effort levels its chat offers. command: the slash command's name, "+
-					"with or without the slash. abort: omit."),
+					"one of the effort levels its chat offers. compact: optional, what the summary "+
+					"should keep. command: the slash command's name, with or without the slash. "+
+					"abort and new: omit."),
 			"args": property("string", "command only: what follows the command's name, as typed."),
 			"project": property("string",
 				"Project to narrow to, by name or by directory path, when the same label "+

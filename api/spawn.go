@@ -58,6 +58,9 @@ type OpenSessionOptions struct {
 	Effort    string `json:"effort"`
 	Folder    string `json:"folder"`
 	Ultracode bool   `json:"ultracode"`
+	// Fork starts the session on a branch of the caller's conversation
+	// instead of an empty one.
+	Fork bool `json:"fork"`
 }
 
 // OpenSubagentOptions is one OpenSubagent call, an object for the reason

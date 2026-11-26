@@ -1911,6 +1911,7 @@ OpenSessionOptions {
 	effort string
 	folder string
 	ultracode bool
+	fork bool
 }
 
 OpenSubagentOptions {

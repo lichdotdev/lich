@@ -174,6 +174,7 @@ distinto.
 | Reanudar una conversación iniciada fuera de lich, desde la pestaña Historial de la paleta | sí | sí | sí | sí | sí | Linux; macOS y Windows sin probar | sí | sí |
 | Un pegado largo puede llegar como texto editable en vez de un marcador plegado (Ajustes › Proveedores, desactivado por defecto) | sí | no | no | sí | no medido | no, se convierte en un adjunto `paste_N.txt` | no | sí |
 | Bifurcar una conversación en un nuevo worktree, o en su propio checkout | sí | sí | no | sí | no | no | no | no |
+| Un agente bifurca su propia conversación (`lich open --fork`); en un worktree nuevo empieza en el último commit, sin los cambios sin commitear | sí | sí | no | sí | no | no | no | no |
 | Una bifurcación cuelga de su sesión de origen en el árbol de la barra lateral | sí | sí | no | sí | no | no | no | no |
 | Aviso cuando retomas, desde la propia app del agente, una conversación que otra tarjeta tiene abierta | sí | en tu próximo prompt | en tu próximo prompt, sin probar | no | sí | en tu próximo prompt desde Crush 0.99.0; en versiones anteriores, en su próxima llamada a una herramienta | no | sí |
 | Avisado cuando edita un archivo que otra sesión editó minutos antes, y qué sesión fue | sí | sí | sí | sí | sí | desde Crush 0.99 | sí | con tu siguiente mensaje |
@@ -183,7 +184,7 @@ distinto.
 | Una carpeta en la que confiaste en tu cuenta principal se abre sin la pregunta "trust this folder?" en todos los demás perfiles | sí | sí | sin perfiles | no pregunta nada | no pregunta nada | no medido | sí | no pregunta nada |
 | Una sesión en sandbox se abre sin la pregunta "trust this folder?" | sí | sí | sí | no pregunta nada | no pregunta nada | sí, y ya no pregunta si inicializar el proyecto | sí | no pregunta nada |
 | Un worktree de una carpeta en la que confiaste se abre sin la pregunta "trust this folder?" | sí | sí | sí | no pregunta nada | no pregunta nada | sí, y ya no pregunta si inicializar el proyecto | sí | no pregunta nada |
-| Dirigir una sesión mostrada como chat desde `lich control` o un agente: prompt, detener, modelo, esfuerzo, slash command; una sesión en su terminal se rechaza | sí | sí; el modelo o el esfuerzo vale desde tu próximo mensaje | sí | sí | sí | sin chat | sin verificar | sí, sin esfuerzo, y el modelo solo entre turnos |
+| Dirigir una sesión mostrada como chat desde `lich control` o un agente: prompt, detener, modelo, esfuerzo, compactar, conversación nueva, slash command; una sesión en su terminal se rechaza | sí | sí; el modelo o el esfuerzo vale desde tu próximo mensaje | sí | sí | sí | sin chat | sin verificar | sí, sin esfuerzo, y el modelo solo entre turnos |
 | Un subagente que inicia el agente se ejecuta como una sesión de lich con su propia tarjeta, en el checkout de la sesión que lo pidió, entrega su informe completo y se cierra al terminar; sus propios subagentes también reciben tarjeta, un nivel más abajo | sí | sí | sí | sí | sí | sí | en una terminal; su chat no ejecuta hooks | sí |
 | Contexto, costo y uso del plan tal como los midió el propio CLI | en un chat | no | no | no | no | no | no | no |
 | Delegar en privado desde un subagente o un paso de workflow | sí | sí | sí | sí | sí | sí | sí | sí |

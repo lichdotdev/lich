@@ -159,6 +159,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   start branches its source's conversation, and only the terminal's resume flag does that; the chat resumes a
   conversation, it cannot branch one. The setting decides the birth only: a resumed or restored session keeps
   the view it had.
+- **An agent forks only its own conversation, and only on Claude Code, Codex and opencode** (`internal/spawn/fork.go`):
+  `lich open --fork` and `open_session`'s `fork` branch the caller's conversation (`providers.SupportsFork`); the
+  other five are refused, as the window's Fork is. The fork runs the caller's agent on the conversation's own model
+  and effort, so naming a kind, model, effort or ultracode is refused rather than dropped, and so is another
+  project. Without a worktree it opens in the caller's checkout, where both agents edit the same files. Into a new
+  worktree it starts at the branch's last commit: the window's Fork carries the source's uncommitted work
+  (`seedWorktree`), and this does not. A caller with no conversation yet, or one its provider pruned, is refused.
 - **A session drawn as a chat takes the relay's tasks and notes as its next message, and nothing that needs its
   terminal** (`internal/chat/relay.go`, `internal/terminal/chatprompt.go`): `ChatPrompt` hands the text to the
   chat, which sends it at once or queues it, oldest first, behind the turn running; the receipt is acked when its
@@ -742,8 +749,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   - `/model` and `/effort` are refused as slash commands: Claude Code's TUI writes them to
     `~/.claude/settings.json`, the default for every new session (2.1.288), and a chat's was not measured. The
     `model` and `effort` actions are the per-session route.
-  - A session cannot control itself past `model` and `effort`: an abort would end the asking turn, and a prompt or
-    a slash command would only run after it.
+  - A session cannot control itself past `model`, `effort` and `compact`: an abort would end the asking turn, a new
+    conversation would drop the one it runs in, and a prompt or a slash command would only run after it. Its own
+    `compact` is taken as its next message, so it runs once the asking turn ends, and nothing tells the agent when.
+  - `compact` sends the compaction command the chat lists (`/compact`, `/summarize`, `internal/chat/compaction.go`)
+    and is refused on a chat that lists neither; which providers list one is whatever each reports at its start.
   - A slash command reaches the agent as the text of a message, never the window: the commands the chat's own
     box answers itself (`/new`, `/clear`, `/reset`, and the `/mcp`, `/memory`, `/permissions` panels) are
     sent to the agent as typed, and what each agent makes of them in its structured mode was not measured.

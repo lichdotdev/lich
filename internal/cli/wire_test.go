@@ -414,6 +414,10 @@ func (s *spawnStore) CloseProject(_ context.Context, opts api.ProjectIDOptions) 
 	return api.None{}, nil
 }
 
+func (*spawnStore) MarkForked(context.Context, api.SessionIDOptions) (api.None, error) {
+	return api.None{}, nil
+}
+
 func (*spawnStore) PurgeWorktreeSessions(_ context.Context, opts api.WorktreeSessionsOptions) (api.None, error) {
 	return api.None{}, nil
 }
@@ -507,6 +511,16 @@ func (s *spawnTerminal) Start(_ context.Context, opts api.StartOptions) (api.Non
 // Nothing renamed itself here either, so a session is addressed by the name
 // lich derives for it.
 func (*spawnTerminal) AgentName(string) string { return "" }
+
+func (*spawnTerminal) Resumable(string, string, string) bool { return true }
+
+func (*spawnTerminal) CompactCommand(context.Context, api.SessionIDOptions) (string, error) {
+	return "/compact", nil
+}
+
+func (*spawnTerminal) New(context.Context, api.SessionIDOptions) (api.None, error) {
+	return api.None{}, nil
+}
 
 func (*spawnTerminal) SuggestProfile(string, string) error { return nil }
 
