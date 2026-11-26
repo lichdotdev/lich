@@ -94,6 +94,13 @@ type fakeSessions struct {
 	// closeProjErr is the write refusing.
 	closedProjects []string
 	closeProjErr   error
+	// forked records each session row marked a fork.
+	forked []string
+}
+
+func (f *fakeSessions) MarkForked(_ context.Context, opts api.SessionIDOptions) (api.None, error) {
+	f.forked = append(f.forked, opts.ID)
+	return api.None{}, nil
 }
 
 // closedRow is one session the store was asked to take out of the workspace.
@@ -420,6 +427,8 @@ type started struct {
 	kind      string
 	cols      int
 	rows      int
+	resume    string
+	fork      bool
 }
 
 type fakeTerminal struct {
@@ -435,6 +444,12 @@ type fakeTerminal struct {
 	// suggestErr is why one cannot apply.
 	suggested  []string
 	suggestErr error
+	// gone is the conversations the provider no longer has.
+	gone map[string]bool
+}
+
+func (f *fakeTerminal) Resumable(_, providerSessionID, _ string) bool {
+	return !f.gone[providerSessionID]
 }
 
 func (f *fakeTerminal) AgentName(id string) string { return f.names[id] }
@@ -451,7 +466,7 @@ func (f *fakeTerminal) CloseBy(id, closerID string) error {
 }
 
 func (f *fakeTerminal) Start(_ context.Context, opts api.StartOptions) (api.None, error) {
-	f.spawns = append(f.spawns, started{opts.ID, opts.ProjectID, opts.Cwd, opts.Kind, opts.Cols, opts.Rows})
+	f.spawns = append(f.spawns, started{opts.ID, opts.ProjectID, opts.Cwd, opts.Kind, opts.Cols, opts.Rows, opts.Resume, opts.Fork})
 	return api.None{}, f.err
 }
 

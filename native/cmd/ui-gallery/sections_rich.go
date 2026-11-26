@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"math"
+	"strings"
 
 	"gioui.org/layout"
 
@@ -16,10 +17,14 @@ import (
 	"github.com/lichdotdev/lich/native/ui/markdown"
 )
 
-const richMarkdown = "## Markdown\n\nA paragraph with **bold**, *italics*, `inline code` and a [link](https://example.com).\n\n" +
+var richMarkdown = "## Markdown\n\nA paragraph with **bold**, *italics*, `inline code` and a [link](https://example.com).\n\n" +
 	"Paths in code wear their icon: `app.go`, `main.ts`, `README.md`, `config.json`, `notes.zzz` and `docs/`.\n\n" +
 	"- [x] a task done\n- [ ] a task to do\n  - and a nested item\n\n| Viewer | Input |\n|---|---|\n| Markdown | text |\n| Code | source and filename |\n\n" +
-	"```go\n" + richSource + "```\n"
+	"```go\n" + richSource + "```\n\n" +
+	"> [!NOTE]\n> Sessions inherit the login shell's `PATH`.\n\n> [!TIP]\n> `task --list` shows every task.\n\n" +
+	"> [!IMPORTANT]\n> The hook runs before the spawn.\n\n> [!WARNING]\n> The migration drops `legacy_id`.\n\n> [!CAUTION]\n> `git reset --hard` discards the other sessions' changes.\n\n" +
+	"```diff\n--- a/internal/relay/wait.go\n+++ b/internal/relay/wait.go\n@@ -41,4 +41,4 @@\n \tr.mu.Lock()\n-\tdeadline := time.Now().Add(30 * time.Second)\n+\tdeadline, _ := ctx.Deadline()\n \tfor !r.done(t) {\n```\n\n" +
+	"```\n" + strings.Repeat("a line of a long log\n", 30) + "```\n"
 
 // richState holds what the rich content viewers keep between frames.
 type richState struct {
@@ -100,6 +105,15 @@ const richPatch = `diff --git a/demo.go b/demo.go
  	return "hello, " + name
  }
 `
+
+func init() {
+	alerts := map[markdown.Alert]string{markdown.AlertNote: "Note", markdown.AlertTip: "Tip", markdown.AlertImportant: "Important", markdown.AlertWarning: "Warning", markdown.AlertCaution: "Caution"}
+	markdown.Words = markdown.Labels{
+		Alert: func(a markdown.Alert) string { return alerts[a] },
+		More:  func(count int) string { return fmt.Sprintf("Show %d more lines", count) },
+		Less:  func() string { return "Show less" },
+	}
+}
 
 var richDiffLabels = diffview.Labels{
 	Expand: func(count int) string { return fmt.Sprintf("Expand %d lines", count) },

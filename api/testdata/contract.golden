@@ -122,7 +122,7 @@ kiroprofile.DeleteProfile(ProfileSlugOptions) None
 kiroprofile.LoginCommand(ProfileSlugOptions) string
 kiroprofile.Profiles(None) []ProfileInfo
 kiroprofile.UpdateProfile(UpdateProfileOptions) Profile
-library.List(None) Library
+library.List(LibraryListOptions) Library
 library.MoveIn(LibraryItemOptions) None
 library.Seen(LibrarySeenOptions) None
 library.Set(LibrarySwitchOptions) None
@@ -1020,10 +1020,16 @@ ExtensionSendOptions {
 	message json
 }
 
+LibraryListOptions {
+	project,omitempty string
+}
+
 Library {
 	skills []LibraryItem
 	mcp []LibraryItem
 	found []LibraryFound
+	project []LibraryFound
+	plugins []LibraryItem
 	plugin LibraryPlugin
 	providers []LibraryProvider
 }
@@ -1043,6 +1049,7 @@ LibrarySwitchOptions {
 	provider string
 	profile string
 	on bool
+	project,omitempty string
 }
 
 PatchNotesOptions {
@@ -1911,6 +1918,7 @@ OpenSessionOptions {
 	effort string
 	folder string
 	ultracode bool
+	fork bool
 }
 
 OpenSubagentOptions {
@@ -3342,6 +3350,7 @@ LibrarySwitch {
 	provider string
 	profile string
 	on bool
+	reason,omitempty string
 }
 
 StepLog {

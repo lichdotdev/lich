@@ -826,9 +826,12 @@
     "moveInAll": "全部移入",
     "noSkills": "lich 的库里还没有技能。",
     "noMCP": "lich 的库里还没有 MCP 服务器。",
+    "project": "在此项目中",
     "reason": {
       "notWritten": "lich 还不会把 MCP 服务器写入 {provider}",
-      "sharedFile": "{provider} 的所有配置文件读取同一个文件，因此一个开关对全部生效"
+      "sharedFile": "{provider} 的所有配置文件读取同一个文件，因此一个开关对全部生效",
+      "committed": "{provider} 保存此开关的文件已提交到此仓库",
+      "noSwitch": "{provider} 只能通过移除来停用插件"
     },
     "pluginBrings": "钩子：{hooks} · 技能：{skills} · MCP 服务器：{mcp}",
     "pluginLocked": "lich 打开的每个会话都会运行它，无法关闭。",

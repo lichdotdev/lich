@@ -77,12 +77,15 @@ func renderBlock(th *ui.Theme, source []byte, n ast.Node, fg color.NRGBA) (markd
 	case *ast.ThematicBreak:
 		return markdownBlock{rule: true}, true
 	case *ast.FencedCodeBlock, *ast.CodeBlock:
-		cell := highlightCode(th, source, n)
-		if cell == nil {
+		tones := diffTones(source, n)
+		var cell *markdownCell
+		if tones != nil {
+			cell = diffCell(th, source, n, tones, fg)
+		} else if cell = highlightCode(th, source, n); cell == nil {
 			cell = renderNode(th, source, n, fg)
 		}
 		cell.lineHeight = markdownCodeLineHeightScale
-		return markdownBlock{prose: cell, panel: true, code: rawCode(source, n), copy: new(codeCopy)}, len(cell.spans) > 0
+		return markdownBlock{prose: cell, panel: true, code: rawCode(source, n), copy: new(codePanel), diff: tones}, len(cell.spans) > 0
 	default:
 		cell := renderNode(th, source, n, fg)
 		return markdownBlock{prose: cell}, len(cell.spans) > 0
@@ -92,6 +95,9 @@ func renderBlock(th *ui.Theme, source []byte, n ast.Node, fg color.NRGBA) (markd
 // renderQuote keeps a quote of paragraphs as one run of text, and gives one
 // holding anything else, a code block or a list, a block per child.
 func renderQuote(th *ui.Theme, source []byte, n *ast.Blockquote) (markdownBlock, bool) {
+	if alert := takeAlert(source, n); alert != noAlert {
+		return markdownBlock{blocks: renderChildren(th, source, n, markdownProseColor(th)), quote: true, alert: alert}, true
+	}
 	paragraphs := true
 	for child := n.FirstChild(); child != nil; child = child.NextSibling() {
 		_, isParagraph := child.(*ast.Paragraph)
@@ -101,13 +107,19 @@ func renderQuote(th *ui.Theme, source []byte, n *ast.Blockquote) (markdownBlock,
 		cell := renderNode(th, source, n, th.MutedForeground)
 		return markdownBlock{prose: cell, quote: true}, len(cell.spans) > 0
 	}
+	blocks := renderChildren(th, source, n, th.MutedForeground)
+	return markdownBlock{blocks: blocks, quote: true}, len(blocks) > 0
+}
+
+// renderChildren is a block per child of n, its text in fg.
+func renderChildren(th *ui.Theme, source []byte, n ast.Node, fg color.NRGBA) []markdownBlock {
 	var blocks []markdownBlock
 	for child := n.FirstChild(); child != nil; child = child.NextSibling() {
-		if block, ok := renderBlock(th, source, child, th.MutedForeground); ok {
+		if block, ok := renderBlock(th, source, child, fg); ok {
 			blocks = append(blocks, block)
 		}
 	}
-	return markdownBlock{blocks: blocks, quote: true}, len(blocks) > 0
+	return blocks
 }
 
 // spanWriter walks a node into spans, preserving its inline formatting.

@@ -88,6 +88,7 @@ type Sessions interface {
 	CloseSession(_ context.Context, opts api.ParkSessionOptions) (api.None, error)
 	CloseProject(_ context.Context, opts api.ProjectIDOptions) (api.None, error)
 	PurgeWorktreeSessions(_ context.Context, opts api.WorktreeSessionsOptions) (api.None, error)
+	MarkForked(_ context.Context, opts api.SessionIDOptions) (api.None, error)
 }
 
 // Worktrees is the git side. The project service implements it.
@@ -117,6 +118,9 @@ type Terminal interface {
 	// SuggestProfile offers the person a profile for a session, moving nothing,
 	// and answers why it cannot apply when it cannot.
 	SuggestProfile(id, slug string) error
+	// Resumable reports whether the provider still has conversation
+	// providerSessionID, the one a fork branches.
+	Resumable(kind, providerSessionID, cwd string) bool
 }
 
 // Events is where an opened session is announced to the window. A nil one leaves
@@ -164,6 +168,11 @@ type Chat interface {
 	Options(ctx context.Context, opts api.SessionIDOptions) ([]api.ChatOption, error)
 	// SetOption sets one of them, the way the chat's picker does.
 	SetOption(ctx context.Context, opts api.ChatSetOptionOptions) (api.None, error)
+	// CompactCommand is the command session id's provider compacts its
+	// conversation on.
+	CompactCommand(ctx context.Context, opts api.SessionIDOptions) (string, error)
+	// New starts an empty conversation in session id's chat.
+	New(ctx context.Context, opts api.SessionIDOptions) (api.None, error)
 }
 
 // SetChat wires the chat service. Without it every session starts its
@@ -176,11 +185,19 @@ type OpenOptions = api.OpenSessionOptions
 
 // Open creates a session and starts its PTY.
 func (s *Service) Open(ctx context.Context, opts OpenOptions) (Session, error) {
-	return s.openSession(ctx, request{
+	req := request{
 		fromID: opts.From, projectName: opts.Project, kind: opts.Kind, worktree: opts.Worktree,
 		base: opts.Base, model: opts.Model, effort: opts.Effort, folder: opts.Folder,
 		ultracode: opts.Ultracode,
-	})
+	}
+	if opts.Fork {
+		conversation, err := s.forkedConversation(opts)
+		if err != nil {
+			return Session{}, err
+		}
+		req.fork = conversation
+	}
+	return s.openSession(ctx, req)
 }
 
 type OpenSubagentOptions = api.OpenSubagentOptions
@@ -230,6 +247,9 @@ type request struct {
 	ultracode, subagent, handoff                                              bool
 	// detach starts the agent in the background (OpenSubagentNow).
 	detach bool
+	// fork is the caller's conversation the session branches, "" for an
+	// empty one (forkedConversation).
+	fork string
 }
 
 // ctx says who is asking (scope.Session): a session opened from inside the
@@ -295,6 +315,12 @@ func (s *Service) openSession(ctx context.Context, req request) (Session, error)
 	if req.handoff {
 		folder, at = callerFolder(target, req.fromID), besideCaller(target, req.fromID, at)
 	}
+	if req.fork != "" && req.worktree == "" {
+		at = besideCaller(target, req.fromID, at)
+	}
+	if req.fork != "" && folder == "" {
+		folder = callerFolder(target, req.fromID)
+	}
 	cwd, stored, label := at.cwd, at.stored, at.label
 
 	id, err := newSessionID()
@@ -339,6 +365,7 @@ func (s *Service) openSession(ctx context.Context, req request) (Session, error)
 	// A session born into a folder wears the color its sessions share, or it
 	// would take it off the folder; held like an override's failure.
 	colorErr := s.wearFolderColor(context.Background(), target, store.Session{ID: id}, folder)
+	forkErr := s.markFork(id, label, req.fork)
 	// Announced before the spawn, and regardless of how it goes: the row exists
 	// either way, so the card has to exist either way too — a session only the
 	// database knows about is one the user cannot reach to see what went wrong.
@@ -347,7 +374,7 @@ func (s *Service) openSession(ctx context.Context, req request) (Session, error)
 	}
 	callerErr := s.fileCaller(target, callerToFile, folder)
 	markErr := s.markSubagent(id, label, req)
-	start := func() error { return s.startAgent(id, label, target.ID, cwd, kind) }
+	start := func() error { return s.startAgent(id, label, target.ID, cwd, kind, req.fork) }
 	if req.detach {
 		go func() {
 			if err := start(); err != nil {
@@ -357,22 +384,22 @@ func (s *Service) openSession(ctx context.Context, req request) (Session, error)
 	} else if err := start(); err != nil {
 		return Session{}, err
 	}
-	if err := errors.Join(callerErr, overrideErr, colorErr, markErr); err != nil {
+	if err := errors.Join(callerErr, overrideErr, colorErr, markErr, forkErr); err != nil {
 		return Session{}, err
 	}
 	return opened, nil
 }
 
 // startAgent starts session id's agent: its chat when it is drawn as one,
-// else its terminal.
-func (s *Service) startAgent(id, label, projectID, cwd, kind string) error {
+// else its terminal, branching conversation fork when one is named.
+func (s *Service) startAgent(id, label, projectID, cwd, kind, fork string) error {
 	if s.chat != nil && s.chat.Drawn(id) {
 		if err := s.chat.Open(context.Background(), id); err != nil {
 			return fmt.Errorf("session %q was created but its chat did not start: %w", label, err)
 		}
 		return nil
 	}
-	if _, err := s.term.Start(context.Background(), api.StartOptions{ID: id, ProjectID: projectID, Cwd: cwd, Kind: kind, Cols: startCols, Rows: startRows}); err != nil {
+	if _, err := s.term.Start(context.Background(), api.StartOptions{ID: id, ProjectID: projectID, Cwd: cwd, Kind: kind, Resume: fork, Fork: fork != "", Cols: startCols, Rows: startRows}); err != nil {
 		return fmt.Errorf("session %q was created but its terminal did not start: %w", label, err)
 	}
 	return nil

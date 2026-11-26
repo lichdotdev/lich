@@ -646,6 +646,7 @@ func (c *client) open(args []string) error {
 	effort := flags.String("effort", "", "reasoning effort the provider runs at, in the provider's own spelling")
 	folder := flags.String("folder", "", "sidebar folder to file the session under")
 	ultracode := flags.Bool("ultracode", false, "turn Claude Code's ultracode on, at whatever effort the session runs")
+	fork := flags.Bool("fork", false, forkFlagUsage)
 	prompt := flags.String("prompt", "", "task to hand the new session as soon as its agent is up")
 	private := flags.Bool("private", false, privateFlagUsage+"; needs --prompt")
 	subagent := flags.Bool("subagent", false, subagentFlagUsage)
@@ -665,6 +666,9 @@ func (c *client) open(args []string) error {
 	var opened spawn.Session
 	var err error
 	if *subagent {
+		if *fork {
+			return errors.New("--fork opens a session of its own, not a subagent: drop one of them")
+		}
 		if err := c.checkSubagent(*prompt, *project, *folder, *private); err != nil {
 			return err
 		}
@@ -676,7 +680,7 @@ func (c *client) open(args []string) error {
 	} else {
 		opened, err = callMethod(context.Background(), c, api.SpawnOpen, spawn.OpenOptions{
 			From: c.sessionID(), Project: *project, Kind: *kind, Worktree: *worktree, Base: *base,
-			Model: *model, Effort: *effort, Folder: *folder, Ultracode: *ultracode,
+			Model: *model, Effort: *effort, Folder: *folder, Ultracode: *ultracode, Fork: *fork,
 		}, openCall)
 	}
 	if err != nil {
@@ -698,6 +702,12 @@ func (c *client) open(args []string) error {
 	}
 	return c.report(*delivered, false)
 }
+
+// forkFlagUsage describes --fork on `lich open` and fork on open_session.
+const forkFlagUsage = "branch this session's conversation into the new session, history and all, " +
+	"in this session's checkout and folder unless a worktree or a folder is named; the new " +
+	"session runs this session's agent on the conversation's own model and effort, and this " +
+	"session carries on untouched"
 
 // subagentFlagUsage describes --subagent on `lich open`.
 const subagentFlagUsage = "open the session as this session's subagent: in this session's checkout " +

@@ -637,6 +637,8 @@ var mcpTools = append([]mcpTool{
 					"a set of workers opened for one piece of work stays together on the user's "+
 					"screen. Names are matched exactly: list_folders shows the ones there are, "+
 					"and a name none of them has starts a new folder."),
+			"fork": property("boolean", forkFlagUsage+
+				". Only Claude Code, Codex and opencode can; a fork opens in its terminal."),
 			"prompt": property("string",
 				"Task to hand the new session as soon as its agent is up. Omit to open it idle "+
 					"and send later. Capped at 8 KB, like send_to_session: name what to read, "+
@@ -654,6 +656,7 @@ var mcpTools = append([]mcpTool{
 				From: c.sessionID(), Project: args.text("project"), Kind: args.text("kind"),
 				Worktree: args.text("worktree"), Base: args.text("base"), Model: args.text("model"),
 				Effort: args.text("effort"), Folder: args.text("folder"), Ultracode: args.flag("ultracode"),
+				Fork: args.flag("fork"),
 			}, openCall)
 			if err != nil {
 				return "", err

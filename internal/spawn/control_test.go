@@ -31,6 +31,7 @@ func newControlService(t *testing.T) (*Service, *fakeChat) {
 		drawn:    true,
 		terminal: map[string]bool{"s4": true, "s5": true},
 		receipt:  relay.PromptReceipt{State: relay.PromptAcked},
+		compact:  "/compact",
 		options: []api.ChatOption{
 			{ID: "model", Category: api.OptionModel, Choices: []api.ChatChoice{{ID: "opus"}, {ID: "sonnet"}}},
 			{ID: "effort", Category: api.OptionEffort, Choices: []api.ChatChoice{{ID: "high"}, {ID: "low"}}},
@@ -54,6 +55,9 @@ func TestControlDrivesTheSessionsChat(t *testing.T) {
 		{"effort", "high", "", "set s2 effort=high"},
 		{"command", "compact", "keep the plan", "take s2 /compact keep the plan"},
 		{"command", "/clear", "", "take s2 /clear"},
+		{"compact", "", "", "take s2 /compact"},
+		{"compact", "keep the plan", "", "take s2 /compact keep the plan"},
+		{"new", "", "", "new s2"},
 	}
 	for _, tc := range tests {
 		t.Run(tc.action+" "+tc.value, func(t *testing.T) {
@@ -103,7 +107,10 @@ func TestControlRefusesBeforeReachingTheSession(t *testing.T) {
 		{"no command", "s1", "auth-fix", "command", "/", "", "needs the name of a slash command"},
 		{"/model as a command", "s1", "auth-fix", "command", "/model", "opus", "The model action"},
 		{"/effort as a command", "s1", "auth-fix", "command", "Effort", "", "The effort action"},
-		{"an unknown action", "s1", "auth-fix", "compact", "", "", "the actions are prompt, abort"},
+		{"an unknown action", "s1", "auth-fix", "rewind", "", "", "the actions are prompt, abort"},
+		{"a value on a new conversation", "s1", "auth-fix", "new", "now", "", "takes nothing after it"},
+		{"args on a compaction", "s1", "auth-fix", "compact", "", "x", "only a command takes arguments"},
+		{"a new conversation of the caller", "s1", "s1", "new", "", "", "hand the work off with handoff_session"},
 		{"no target", "s1", " ", "abort", "", "", "name the session to control"},
 		{"a target nobody has", "s1", "nobody", "abort", "", "", "no session named"},
 	}
@@ -153,6 +160,45 @@ func TestControlSetsTheCallersOwnModelAndEffort(t *testing.T) {
 			}
 			if len(chat.calls) != 1 || !strings.HasPrefix(chat.calls[0], "set s1 ") {
 				t.Fatalf("chat got %q, want the caller's own option set", chat.calls)
+			}
+		})
+	}
+}
+
+// A compaction the caller asks of itself is taken as its next message, so it
+// runs once the turn asking for it is over.
+func TestControlCompactsTheCallersOwnConversation(t *testing.T) {
+	svc, chat := newControlService(t)
+	chat.receipt = relay.PromptReceipt{}
+	got, err := svc.Control(context.Background(), ControlOptions{From: "s1", Target: "s1", Action: "compact"})
+	if err != nil {
+		t.Fatalf("Control: %v", err)
+	}
+	if len(chat.calls) != 1 || chat.calls[0] != "take s1 /compact" || got.State != ControlDelivered {
+		t.Fatalf("Control = %+v with %q, want /compact queued behind the caller's turn", got, chat.calls)
+	}
+}
+
+// Each provider compacts on the command its chat lists, and one that lists
+// none is refused before anything is sent.
+func TestControlCompactsOnTheCommandTheChatLists(t *testing.T) {
+	for _, tc := range []struct{ listed, want string }{
+		{"/compact", "take s3 /compact"},
+		{"/summarize", "take s3 /summarize"},
+		{"", ""},
+	} {
+		t.Run(tc.listed, func(t *testing.T) {
+			svc, chat := newControlService(t)
+			chat.compact = tc.listed
+			_, err := svc.Control(context.Background(), ControlOptions{From: "s1", Target: "codex-run", Action: "compact"})
+			if tc.want == "" {
+				if err == nil || !strings.Contains(err.Error(), `"codex-run": its agent lists no command`) || len(chat.calls) != 0 {
+					t.Fatalf("err = %v with %q, want the compaction refused", err, chat.calls)
+				}
+				return
+			}
+			if err != nil || len(chat.calls) != 1 || chat.calls[0] != tc.want {
+				t.Fatalf("err = %v with %q, want %q", err, chat.calls, tc.want)
 			}
 		})
 	}

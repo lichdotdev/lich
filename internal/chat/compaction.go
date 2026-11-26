@@ -1,6 +1,8 @@
 package chat
 
 import (
+	"context"
+	"errors"
 	"slices"
 	"strconv"
 	"strings"
@@ -164,6 +166,21 @@ func (c *chatSession) counted() int {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 	return c.tokens
+}
+
+// CompactCommand is the compaction command session id's provider lists, the
+// one a message compacts its conversation on.
+func (s *Service) CompactCommand(ctx context.Context, opts api.SessionIDOptions) (string, error) {
+	cmds, err := s.Commands(ctx, opts)
+	if err != nil {
+		return "", err
+	}
+	for _, cmd := range cmds {
+		if slices.Contains(compactCommands, cmd.Text) {
+			return cmd.Text, nil
+		}
+	}
+	return "", errors.New("its agent lists no command that compacts its conversation")
 }
 
 // compactTyped opens the compaction a message asks for, where its first word

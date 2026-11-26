@@ -22,6 +22,8 @@ const (
 	ControlModel   = "model"
 	ControlEffort  = "effort"
 	ControlCommand = "command"
+	ControlCompact = "compact"
+	ControlNew     = "new"
 )
 
 // promptWait bounds the wait for a prompt's turn to start: an idle chat starts
@@ -71,13 +73,10 @@ func (s *Service) Control(ctx context.Context, opts ControlOptions) (Controlled,
 	if err := scope.Target(ctx, label, found.session.Sandbox == store.SessionConfined); err != nil {
 		return Controlled{}, err
 	}
-	// model and effort are the exception: they only change what the session's
-	// next requests carry, which the asking turn survives.
-	if found.session.ID == opts.From && action != ControlModel && action != ControlEffort {
-		return Controlled{}, fmt.Errorf(
-			"%q is this session, and a session cannot control itself: an abort would end the "+
-				"turn asking for it, and a prompt or a slash command would only run once that "+
-				"turn is over", label)
+	if found.session.ID == opts.From {
+		if err := selfControl(label, action); err != nil {
+			return Controlled{}, err
+		}
 	}
 	ctx, cancel := context.WithTimeout(ctx, ControlWaitLimit)
 	defer cancel()
@@ -98,6 +97,12 @@ func (s *Service) runControl(ctx context.Context, id, label, action, value, text
 		_, err = s.chat.Cancel(ctx, api.SessionIDOptions{ID: id})
 	case ControlModel, ControlEffort:
 		err = s.setChoice(ctx, id, label, action, value)
+	case ControlNew:
+		_, err = s.chat.New(ctx, api.SessionIDOptions{ID: id})
+	case ControlCompact:
+		if text, err = s.chat.CompactCommand(ctx, api.SessionIDOptions{ID: id}); err == nil {
+			return s.takePrompt(ctx, id, label, strings.TrimSpace(text+" "+value))
+		}
 	default:
 		return s.takePrompt(ctx, id, label, text)
 	}
@@ -120,10 +125,12 @@ func controlText(action, value, args string) (string, error) {
 			return "", errors.New("a prompt needs its text, and none was given")
 		}
 		return value, nil
-	case ControlAbort:
+	case ControlAbort, ControlNew:
 		if value != "" {
-			return "", errors.New("an abort takes nothing after it")
+			return "", fmt.Errorf("%s takes nothing after it", action)
 		}
+		return "", nil
+	case ControlCompact:
 		return "", nil
 	case ControlModel, ControlEffort:
 		if strings.TrimSpace(value) == "" {
@@ -134,8 +141,29 @@ func controlText(action, value, args string) (string, error) {
 		return slashCommand(value, args)
 	}
 	return "", fmt.Errorf(
-		"%q is not something lich control does: the actions are prompt, abort, model, effort and command",
+		"%q is not something lich control does: the actions are prompt, abort, model, effort, "+
+			"command, compact and new",
 		action)
+}
+
+// selfControl refuses what the caller's own session cannot take: an abort ends
+// the turn asking for it, a new conversation drops the one that turn runs in,
+// and a prompt or a slash command would only run once that turn is over. A
+// compaction is wanted exactly then, and a model or an effort only changes
+// what the next requests carry, which the asking turn survives.
+func selfControl(label, action string) error {
+	switch action {
+	case ControlModel, ControlEffort, ControlCompact:
+		return nil
+	case ControlNew:
+		return fmt.Errorf(
+			"%q is this session, and a new conversation would drop the one this turn runs in: "+
+				"hand the work off with handoff_session instead", label)
+	}
+	return fmt.Errorf(
+		"%q is this session, and a session cannot control itself: an abort would end the "+
+			"turn asking for it, and a prompt or a slash command would only run once that "+
+			"turn is over", label)
 }
 
 // slashCommand is the message a command sends, or why lich will not send it.

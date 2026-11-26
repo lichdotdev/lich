@@ -83,7 +83,8 @@ var commands = []command{
 		name: "open",
 		args: "[--project <name-or-path>] [--kind <provider>] [--worktree <branch>]\n" +
 			"            [--base <branch>] [--model <model>] [--effort <level>] [--ultracode]\n" +
-			"            [--folder <name>] [--prompt <task> [--private | --subagent]] [--json]",
+			"            [--fork] [--folder <name>] [--prompt <task> [--private | --subagent]]\n" +
+			"            [--json]",
 		about: "Open a new session and start it. --project takes a project already open,\n" +
 			"by name, or the absolute path of a directory, which is opened as a\n" +
 			"project first — one lich closed comes back with the sessions it was\n" +
@@ -92,6 +93,9 @@ var commands = []command{
 			"--effort at that reasoning effort, both in the provider's own spelling.\n" +
 			"--ultracode turns Claude Code's ultracode on, at whatever effort it runs.\n" +
 			"--folder files it under that sidebar folder from its first frame.\n" +
+			"--fork branches this session's conversation into the new one, in this\n" +
+			"session's checkout unless --worktree names one (Claude Code, Codex and\n" +
+			"opencode only).\n" +
 			"--prompt hands the new session that task as soon as its agent is up, so\n" +
 			"opening a worker for a task is one command rather than two, and\n" +
 			"--private hands it over the way `send --private` does. --subagent opens\n" +
@@ -167,10 +171,10 @@ var commands = []command{
 		name: "control",
 		args: "[--project <name-or-path>] [--json] <session>\n" +
 			"            prompt <text> | abort | model <model> | effort <level> |\n" +
-			"            command <name> [<args>]",
+			"            compact [<instructions>] | new | command <name> [<args>]",
 		about: "Drive a session drawn as a chat: send it a prompt, stop its turn, set\n" +
-			"its model or effort to one its chat offers, or run one of its slash\n" +
-			"commands. Works on every agent with a chat, not on a session in its\n" +
+			"its model or effort to one its chat offers, compact its conversation,\n" +
+			"start it on a new one, or run one of its slash commands. Works on every agent with a chat, not on a session in its\n" +
 			"terminal. Waits up to 10 seconds for a prompt's turn to start; one\n" +
 			"queued behind the running turn exits 2, and still goes through.\n" +
 			"Experimental: may change outside semver.",

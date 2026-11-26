@@ -3,6 +3,7 @@ package library
 import (
 	"context"
 	"encoding/json"
+	"sort"
 	"time"
 )
 
@@ -30,8 +31,20 @@ func (s *Service) Watch(ctx context.Context) {
 	}
 }
 
-// fingerprint is what the providers hold, as one comparable string.
+// fingerprint is what the providers hold, their plugins and what the projects
+// the screens asked about declare, as one comparable string.
 func (s *Service) fingerprint() string {
-	data, _ := json.Marshal(s.found())
+	s.projectsMu.Lock()
+	projects := make([]string, 0, len(s.projects))
+	for p := range s.projects {
+		projects = append(projects, p)
+	}
+	s.projectsMu.Unlock()
+	sort.Strings(projects)
+	state := []any{s.found(), s.plugins("")}
+	for _, p := range projects {
+		state = append(state, s.projectServers(p), s.plugins(p))
+	}
+	data, _ := json.Marshal(state)
 	return string(data)
 }
