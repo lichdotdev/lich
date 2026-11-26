@@ -1,29 +1,25 @@
 package agentplugin
 
 import (
-	"fmt"
-	"os"
 	"path/filepath"
 
 	"github.com/lichdotdev/lich/internal/ompprofile"
 )
 
-// The oh-my-pi side. omp has no plugin CLI either, and its extensions are
-// modules it imports from a directory it scans unprompted — so, as with
-// opencode, installing one is writing the file and the file being there is the
-// install. omp keeps no plugin state to ask, so the marker line lich writes
-// above the module is again the only record of what version is installed.
+// The oh-my-pi side. Its sessions load the extension from lich's own copy of
+// the plugin with `-e` (bundle.go, internal/terminal), so the copy a lich of the
+// past wrote into omp's extensions directory is removed: omp loads that
+// directory beside `-e`, and would run both (measured on 19.1.1).
 //
-// The MCP registration is the part that differs. omp takes no `--mcp-config`
-// flag, and the only place it reads a server from is an `mcpServers` document
-// beside the extensions — so lich writes one (mcpDocument, shared with Cursor
-// CLI, which reads the same shape).
+// The MCP registration is the part a session cannot be handed. omp takes no
+// `--mcp-config` flag, and the only place it reads a server from is an
+// `mcpServers` document beside the extensions — so lich writes one
+// (mcpDocument, shared with Cursor CLI, which reads the same shape).
 
 const (
-	// ompSource is the module's path inside the plugin repository, and ompFile
-	// the name it takes in omp's extensions directory — the directory omp scans
-	// unprompted, which is what makes the file being there the whole install.
-	ompSource        = "omp/lich.js"
+	// OMPExtension is the extension's path inside the plugin, and ompFile the
+	// name a lich of the past gave it in omp's extensions directory.
+	OMPExtension     = "omp/lich.js"
 	ompFile          = "lich.js"
 	ompExtensionsDir = "extensions"
 
@@ -34,21 +30,16 @@ const (
 )
 
 func (s *Service) ompInstall() error {
-	version, err := s.releaseVersion()
-	if err != nil {
+	if err := s.installBundle(); err != nil {
 		return err
 	}
-	data, err := s.fetchFile(version, ompSource)
-	if err != nil {
-		return err
-	}
+	version, _ := bundleVersion()
 	dir, err := ompAgentDir()
 	if err != nil {
 		return err
 	}
 	// Merged before anything is written, because the only way this step fails is
-	// a document lich must not replace — and an install that leaves an extension
-	// behind while refusing the registration is worse than one the user retries.
+	// a document lich must not replace.
 	registration, err := mcpDocument(filepath.Join(dir, ompMCPFile), s.lichBin())
 	if err != nil {
 		return err
@@ -56,13 +47,7 @@ func (s *Service) ompInstall() error {
 	if err := s.installSkills(version, filepath.Join(dir, "skills")); err != nil {
 		return err
 	}
-	extensions := filepath.Join(dir, ompExtensionsDir)
-	if err := os.MkdirAll(extensions, 0o755); err != nil {
-		return fmt.Errorf("create %s: %w", extensions, err)
-	}
-	body := fmt.Sprintf("%s %s v%s — installed by lich, replace with the file from %s\n%s",
-		jsComment, markerName, version, marketplaceRepo, data)
-	if err := writeFile(filepath.Join(extensions, ompFile), []byte(body), 0o644); err != nil {
+	if err := removeOmpExtension(); err != nil {
 		return err
 	}
 	if registration == nil {
@@ -71,18 +56,28 @@ func (s *Service) ompInstall() error {
 	return writeFile(filepath.Join(dir, ompMCPFile), registration, 0o644)
 }
 
-// ompInstalledVersion reads the version off the marker line lich wrote, or
-// ("", false) when the module is absent, unreadable, or was not written by lich.
+// ompInstalledVersion is the version of the plugin omp sessions load, once the
+// install has written what omp reads from its own directory: the theme skill,
+// and lich's MCP server unless lich cannot name its binary.
 func (s *Service) ompInstalledVersion() (string, bool) {
 	dir, err := ompAgentDir()
-	if err != nil {
+	if err != nil || !skillPresent(filepath.Join(dir, "skills")) {
 		return "", false
 	}
-	data, err := os.ReadFile(filepath.Join(dir, ompExtensionsDir, ompFile))
-	if err != nil {
+	if _, registered := documentCommand(ompMCPPath)(); !registered && s.lichBin() != "" {
 		return "", false
 	}
-	return versionOf(data, jsComment)
+	return bundleVersion()
+}
+
+// removeOmpExtension deletes the extension lich wrote into omp's extensions
+// directory.
+func removeOmpExtension() error {
+	dir, err := ompAgentDir()
+	if err != nil {
+		return err
+	}
+	return removeMarked(filepath.Join(dir, ompExtensionsDir, ompFile))
 }
 
 // ompAgentDir is the directory omp keeps its state in — extensions, MCP servers

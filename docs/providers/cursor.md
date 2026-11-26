@@ -31,13 +31,13 @@ passes that id as `--model`. On resume the model comes back from the conversatio
 
 ## Hooks
 
-A Cursor CLI session reports through Claude Code's plugin, or not at all (`internal/agentplugin`,
-`internal/terminal/start.go`, `providerKind`). lich installs no plugin into Cursor, and it does not have to: the
-CLI executes every Claude Code hook on the machine, the user's own and each installed plugin's (measured on
-2026.08.11: `hookSource: claude-user` and `claude-plugin`, with `${CLAUDE_PLUGIN_ROOT}` expanded). So on a
-machine where the lich plugin is installed in Claude Code, a Cursor session reports the chat id it is running and
-the files it touches, with nothing installed there, and on a machine without it that session reports nothing at
-all. Nothing on the card says which of the two it is.
+A Cursor CLI session reports through lich's own copy of the plugin, in the Claude Code plugin format, which lich
+hands it with `--plugin-dir` (`internal/terminal/plugin.go`; measured on 2026.11.19). Cursor also executes every
+Claude Code hook on the machine, the user's own and each installed plugin's (measured on 2026.08.11:
+`hookSource: claude-user` and `claude-plugin`, with `${CLAUDE_PLUGIN_ROOT}` expanded), and runs an installed lich
+plugin beside the one on its command line, so lich takes that install out of Claude Code (`docs/ceilings.md` ›
+Plugin install and upgrades). On 2026.11.19 a hook in Claude Code's `settings.json` did not fire in a Cursor
+session; only plugin hooks did.
 
 **The turn arrives; the wait does not.** Of the nine events the plugin registers, Cursor's TUI delivers every
 one but `Notification`, `UserPromptSubmit` and `Stop` included (measured 2026.08.11 through 2026.10.01;
@@ -62,9 +62,9 @@ reaches the last turn's words or a task list in it.
 
 ## Plugin install
 
-lich installs nothing into Cursor. Installing for Cursor refuses while Claude Code has no plugin, its version is
-Claude Code's, and its row offers no update of its own: the update is the Claude Code row's, one line up the same
-screen.
+lich installs nothing into Cursor beyond its MCP registration. Its version is the release lich hands Claude Code
+too, and its row offers no update of its own: the update is the Claude Code row's, one line up the same screen.
+Its chat (the ACP server) runs no plugin hooks, so it is handed none.
 
 ## MCP
 

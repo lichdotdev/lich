@@ -380,9 +380,13 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 	plugins := agentplugin.New(db)
 	routes.AgentPlugin(dispatcher, plugins)
 	go plugins.RepairRegistrations()
+	// The release Claude Code, Cursor CLI, opencode and oh-my-pi sessions load,
+	// unpacked on a first start, and the install a lich of the past left in
+	// their config taken out once it is.
+	go plugins.EnsureBundle()
 	// A profile follows Personal's lich plugin: an install or update there
-	// reaches every Claude Code and Codex profile, and a start brings in the
-	// ones left behind or logged in before they got it.
+	// reaches every Codex profile, and a start brings in the ones left behind or
+	// logged in before they got it.
 	plugins.SetEmit(hub.Emit)
 	// Before the pass and before any spawn, so no session of this lich runs a
 	// version the sweep takes (claudeprofile.SweepPluginStore).
