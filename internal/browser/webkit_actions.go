@@ -165,11 +165,12 @@ func evalText(raw string) string {
 }
 
 // Screenshot is the front tab's snapshot scaled to shotScale image pixels
-// per CSS pixel, as Chrome's clip is.
+// per CSS pixel, as Chrome's clip is, without the window's layer: the notes
+// and the agent's own cursor and chip are the window's, not the page's.
 func (p *webkitPage) Screenshot(ctx context.Context, dest string) (w, h int, err error) {
 	var snap browserwire.SnapshotResult
 	err = p.gated(ctx, func(ctx context.Context) error {
-		return p.do(ctx, browserwire.Snapshot, browserwire.PageParams{Page: p.id}, &snap)
+		return p.do(ctx, browserwire.Snapshot, browserwire.SnapshotParams{Page: p.id, Bare: true}, &snap)
 	})
 	if err != nil {
 		return 0, 0, err

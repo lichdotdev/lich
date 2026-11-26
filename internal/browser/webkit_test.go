@@ -72,6 +72,61 @@ func TestWebkitOpenAndNavigateAnswerWithTheLoadedPage(t *testing.T) {
 	}
 }
 
+// A history step answers once its load landed, as Chrome's does: lich-browser
+// answers the request at once and loads after.
+func TestWebkitHistoryStepsAnswerOnceLoaded(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		step func(s *Service, id string) error
+	}{
+		{"reload", (*Service).Reload},
+		{"back", (*Service).Back},
+		{"forward", (*Service).Forward},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newFakeLichBrowser(t)
+			f.lateLoads = true
+			s, _ := wkService(t, f)
+			h, err := s.Open("s", "https://example.com/")
+			if err != nil {
+				t.Fatal(err)
+			}
+			begun := time.Now()
+			if err := tc.step(s, h.ID); err != nil {
+				t.Fatal(err)
+			}
+			if took := time.Since(begun); took < lateLoad {
+				t.Fatalf("%s answered after %v, before its load landed %v after the request", tc.name, took, lateLoad)
+			}
+		})
+	}
+}
+
+// The agent's screenshot is the page alone: the window's layer (its notes,
+// the agent's cursor and chip) is the window's, drawn into the page.
+func TestWebkitAgentScreenshotLeavesTheWindowsLayerOut(t *testing.T) {
+	f := newFakeLichBrowser(t)
+	s, _ := wkService(t, f)
+	h, err := s.Open("s", "https://example.com/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, shoot := range []func(id, dest string) (string, error){s.Screenshot, s.AnnotatedScreenshot} {
+		if _, err := shoot(h.ID, filepath.Join(t.TempDir(), "shot.png")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	shots := f.called(browserwire.Snapshot)
+	if len(shots) != 2 {
+		t.Fatalf("%d snapshots, want one per screenshot", len(shots))
+	}
+	for _, raw := range shots {
+		if !decodeParams[browserwire.SnapshotParams](t, raw).Bare {
+			t.Fatalf("snapshot %s: the agent's screenshot holds the window's layer", raw)
+		}
+	}
+}
+
 func TestWebkitHelloRefusesAnotherWire(t *testing.T) {
 	f := newFakeLichBrowser(t)
 	f.version = browserwire.Version + 1
