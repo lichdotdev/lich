@@ -109,20 +109,38 @@ func (c *fileCard) markdownSource(p *reviewPanel) (src string, loading bool, err
 func openLink(client *backend.Client, notify func(ui.Toast), url string) {
 	go func() {
 		if err := client.OpenExternal(context.Background(), url); err != nil {
-			notify(ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.openFailed", i18n.Args{"name": url}), Description: backend.ErrorText(err)})
+			notify(openLinkFailure(url, err))
 		}
 	}()
+}
+
+func openLinkFailure(url string, err error) ui.Toast {
+	return ui.Toast{Variant: ui.ToastError, Title: i18n.T("diff.binaryState.openFailed", i18n.Args{"name": url}), Description: backend.ErrorText(err)}
+}
+
+func routeChatLink(session, url string, openBrowser func(session, url string), openExternal func(url string)) {
+	if filepath.IsAbs(url) {
+		openBrowser(session, url)
+		return
+	}
+	openExternal(url)
+}
+
+func openChatBrowserURL(ctx context.Context, session, url string, open func(context.Context, string, string) error, notify func(ui.Toast)) error {
+	err := open(ctx, session, url)
+	if err != nil {
+		notify(openLinkFailure(url, err))
+	}
+	return err
 }
 
 // openChatLink sends an absolute local link through the session's preview
 // browser, which serves checkout files and artifacts over HTTP.
 func (u *window) openChatLink(session string, notify func(ui.Toast), url string) {
-	if !filepath.IsAbs(url) {
-		openLink(u.client, notify, url)
-		return
-	}
-	u.sendBrowser(session, "open link", func(ctx context.Context) error {
-		return u.client.OpenBrowserURL(ctx, session, url)
-	})
-	u.openBrowser(session)
+	routeChatLink(session, url, func(session, url string) {
+		u.sendBrowser(session, "open link", func(ctx context.Context) error {
+			return openChatBrowserURL(ctx, session, url, u.client.OpenBrowserURL, notify)
+		})
+		u.openBrowser(session)
+	}, func(url string) { openLink(u.client, notify, url) })
 }
