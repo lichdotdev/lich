@@ -54,6 +54,25 @@ window takes it back (the window's own `XSetInputFocus`). `lich-browser`
 learns the window's X window from `window` to send it the keys a page gets
 only for sitting under the pointer.
 
+## Showing a page in the window (Windows, macOS)
+
+`xid` and `window` carry each system's own handle; the rest of the wire is
+the same.
+
+- **Windows** (WebView2): each tab is an HWND of `lich-browser.exe`'s, a
+  hidden toplevel off screen with no window to sit in. The window makes it a
+  child of its own with `SetParent` and places, shows, hides and clips it
+  (`SetWindowRgn`) as the X11 path does. `lich-browser.exe` loads WebView2
+  through the official `WebView2Loader.dll`, shipped beside it; its header
+  `WebView2.h` is vendored.
+- **macOS** (WKWebView): one process cannot put a view in another's window,
+  so each tab's WKWebView draws in an off-screen window of `lich-browser`'s
+  and exports its layer as a `CAContext`; `xid` is that context's id. The
+  window shows it in a `CALayerHost` over the pane, the way Chromium shows
+  its GPU process, and sends the pane's pointer and keys over the wire
+  (`browser.Mouse`, `.Key`, `.Text`, as the screencast does). `CALayerHost`
+  is private API.
+
 Wayland without XWayland: a later step draws pages off screen and hands the
 window their frames by shared memory. Until then the window opens on
 XWayland (`app.PreferX11`) as it does today.
