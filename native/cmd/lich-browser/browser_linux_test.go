@@ -130,6 +130,65 @@ func TestSnapshotIsTheViewportAtTheScale(t *testing.T) {
 	}
 }
 
+// keysPage is a form with two fields, the first holding "ab", which records
+// each key event it gets and its submit.
+const keysPage = `data:text/html,<form id=f onsubmit="event.preventDefault(); window.submitted = true">
+<input id=a value=ab><input id=b><button>Go</button></form>
+<script>window.keys = []; for (const t of ['keydown', 'keyup']) document.addEventListener(t, e => keys.push(t + ':' + e.key), true);</script>`
+
+// A named key does what it does on Chrome, with the page's input method
+// whatever the desktop runs: the person's fcitx5 swallowed every key the
+// wire sent, so no Enter, Tab or Backspace reached the page (rc.4).
+func TestNamedKeysActOnThePage(t *testing.T) {
+	pressNamedKeys(t, false)
+}
+
+// An embedded page knows the window's X window, where keys the person types
+// over the page go on to. An input method that hands a key back later
+// (fcitx5) had the wire's keys sent there too, so they never reached the
+// page. The window here is another lich-browser's tab, which takes keys as a
+// page. Measured under fcitx5 on its own D-Bus and Xvfb; with no input
+// method, it guards the path every key takes.
+func TestNamedKeysActOnAnEmbeddedPage(t *testing.T) {
+	pressNamedKeys(t, true)
+}
+
+func pressNamedKeys(t *testing.T, embedded bool) {
+	for _, tc := range []struct{ key, check, want string }{
+		{"Backspace", "a.value", `"a"`},
+		{"Enter", "!!window.submitted", "true"},
+		{"Tab", "document.activeElement.id", `"b"`},
+	} {
+		t.Run(tc.key, func(t *testing.T) {
+			c := start(t)
+			if embedded {
+				c.must(browserwire.Window, browserwire.WindowParams{XID: otherWindow(t)}, nil)
+			}
+			c.open("b1", keysPage, 400, 300, 1)
+			c.eval("b1", "a.focus(), a.setSelectionRange(2, 2), 0")
+			for _, kind := range []string{browserwire.KeyDown, browserwire.KeyUp} {
+				c.must(browserwire.Key, browserwire.KeyParams{Page: "b1", Kind: kind, Key: tc.key, Code: tc.key}, nil)
+			}
+			if got := c.eval("b1", tc.check); got != tc.want {
+				t.Fatalf("after %s, %s is %s, want %s; keys %s", tc.key, tc.check, got, tc.want, c.eval("b1", "keys"))
+			}
+		})
+	}
+}
+
+// otherWindow is the X window of another lich-browser's tab.
+func otherWindow(t *testing.T) uint64 {
+	t.Helper()
+	other := start(t)
+	other.open("w", "data:text/html,", 200, 100, 1)
+	raw, _ := other.event(0, browserwire.EventTabs, nil)
+	var tabs browserwire.TabsEvent
+	if err := json.Unmarshal(raw, &tabs); err != nil || len(tabs.Tabs) == 0 || tabs.Tabs[0].XID == 0 {
+		t.Fatalf("the other window's tabs %s", raw)
+	}
+	return tabs.Tabs[0].XID
+}
+
 func TestNativeInputTypesIntoAnInputAndIsTrusted(t *testing.T) {
 	c := start(t)
 	s := site(t)
@@ -402,6 +461,60 @@ func TestTheWindowsLayerDrawsTheLatestAndABareSnapshotLeavesItOut(t *testing.T) 
 	}
 	if got := c.eval("b1", "document.getElementById('"+browserwire.LayerID+"').style.visibility"); got != `""` {
 		t.Fatalf("after a bare snapshot the layer's visibility is %s, want it shown again", got)
+	}
+}
+
+// tabsWhere waits for the page's tabs to match ok, from index from on.
+func (c *client) tabsWhere(from int, ok func([]browserwire.Tab) bool) []browserwire.Tab {
+	c.t.Helper()
+	var ev browserwire.TabsEvent
+	c.event(from, browserwire.EventTabs, func(raw json.RawMessage) bool {
+		return json.Unmarshal(raw, &ev) == nil && ok(ev.Tabs)
+	})
+	return ev.Tabs
+}
+
+// WebKit's inspector is a tab of the page's, as Chrome's DevTools are in the
+// pane, never a window of its own; every request still acts on the page.
+// WebKit docks it into a page large enough and asks a window for a smaller
+// one: the backend's pages are large, and the docked one opened nowhere.
+func TestTheInspectorIsATabAfterThePage(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		w, h int
+	}{{"a small page", 400, 300}, {"a page large enough to dock it", 1280, 800}} {
+		t.Run(tc.name, func(t *testing.T) { inspectAsATab(t, tc.w, tc.h) })
+	}
+}
+
+func inspectAsATab(t *testing.T, w, h int) {
+	c := start(t)
+	s := site(t)
+	c.open("b1", "about:blank", w, h, 1)
+	from := c.mark()
+	c.must(browserwire.Navigate, browserwire.NavigateParams{Page: "b1", URL: s.URL}, nil)
+	c.loaded(from, "b1")
+	from = c.mark()
+	c.must(browserwire.Inspect, browserwire.PageParams{Page: "b1"}, nil)
+	tabs := c.tabsWhere(from, func(tabs []browserwire.Tab) bool { return len(tabs) == 2 })
+	page, tools := tabs[0], tabs[1]
+	if !tools.DevTools || !tools.Front || page.Front || tools.XID == 0 || tools.XID == page.XID {
+		t.Fatalf("tabs %+v: want the inspector after the page, in front, in an X window of its own", tabs)
+	}
+	if got := c.eval("b1", "document.title"); got != `"Form"` {
+		t.Fatalf("with the inspector in front eval read %s, want the page's title", got)
+	}
+	from = c.mark()
+	c.must(browserwire.SelectTab, browserwire.TabParams{Page: "b1", Tab: page.ID}, nil)
+	c.tabsWhere(from, func(tabs []browserwire.Tab) bool { return len(tabs) == 2 && tabs[0].Front && !tabs[1].Front })
+	from = c.mark()
+	c.must(browserwire.Inspect, browserwire.PageParams{Page: "b1"}, nil)
+	c.tabsWhere(from, func(tabs []browserwire.Tab) bool { return len(tabs) == 2 && tabs[1].Front })
+	from = c.mark()
+	c.must(browserwire.CloseTab, browserwire.TabParams{Page: "b1", Tab: tools.ID}, nil)
+	tabs = c.tabsWhere(from, func(tabs []browserwire.Tab) bool { return len(tabs) == 1 })
+	if !tabs[0].Front || tabs[0].DevTools {
+		t.Fatalf("after closing the inspector, tabs %+v: want the page alone in front", tabs)
 	}
 }
 

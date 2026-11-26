@@ -533,7 +533,7 @@
       "crush": "Informa de su estado, su nombre y los cambios de git. Un Crush anterior a 0.99.0 no tiene evento de fin de turno, así que ahí solo informa del id de su sesión y actualiza el estado de git.",
       "omp": "Informa de su estado, su nombre y los cambios de git. No se ha observado que emita un evento de aprobación, así que una sesión que espera tu permiso muestra un spinner y no una campana.",
       "antigravity": "Informa de su estado, su nombre y los cambios de git. No se ha observado que emita un evento de aprobación, así que una sesión que espera tu permiso muestra un spinner y no una campana.",
-      "cursor": "Usa el plugin instalado en Claude Code, así que informa de lo mismo que esa versión y se actualiza con ella. Aquí lich solo añade sus propias herramientas. Tampoco emite un evento de aprobación, así que una sesión que espera tu permiso muestra un spinner y no una campana."
+      "cursor": "Usa el mismo plugin que Claude Code, así que informa de lo mismo que esa versión y se actualiza con ella. Aquí lich solo añade sus propias herramientas. Tampoco emite un evento de aprobación, así que una sesión que espera tu permiso muestra un spinner y no una campana."
     },
     "installFailed": "Error al instalar: {error}",
     "updateFailed": "Error al actualizar: {error}",

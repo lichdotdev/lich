@@ -180,70 +180,6 @@ func TestComputeStatusCursorNeverOffersTheFix(t *testing.T) {
 	}
 }
 
-func TestClaudeInstalledVersionReadsConfigDir(t *testing.T) {
-	t.Setenv("CLAUDE_CONFIG_DIR", writeClaudeState(t, `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"0.3.1"}]}}`))
-
-	ver, ok := claudeInstalledVersion()
-	if !ok || ver != "0.3.1" {
-		t.Fatalf("got (%q,%v), want (0.3.1,true)", ver, ok)
-	}
-}
-
-func TestClaudeInstalledVersionReadsPluginCacheDir(t *testing.T) {
-	t.Setenv("CLAUDE_CONFIG_DIR", writeClaudeState(t, `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"0.3.1"}]}}`))
-	moved := writeClaudeState(t, `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"0.4.0"}]}}`)
-	t.Setenv("CLAUDE_CODE_PLUGIN_CACHE_DIR", filepath.Join(moved, "plugins"))
-
-	ver, ok := claudeInstalledVersion()
-	if !ok || ver != "0.4.0" {
-		t.Fatalf("got (%q,%v), want (0.4.0,true)", ver, ok)
-	}
-}
-
-func TestClaudeInstalledVersionMissingFile(t *testing.T) {
-	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
-	if ver, ok := claudeInstalledVersion(); ok || ver != "" {
-		t.Fatalf("got (%q,%v), want empty/false for missing file", ver, ok)
-	}
-}
-
-// A plugin left in installed_plugins.json but not enabled runs none of its
-// hooks: its subagent calls ran natively while lich read it as installed.
-func TestClaudeInstalledVersionNeedsTheSettingsToEnableIt(t *testing.T) {
-	for name, settings := range map[string]string{
-		"no settings file": "",
-		"key absent":       `{"enabledPlugins":{"ponytail@ponytail":true}}`,
-		"disabled":         `{"enabledPlugins":{"lich@lich-plugin":false}}`,
-		"not JSON":         `{`,
-	} {
-		t.Run(name, func(t *testing.T) {
-			dir := writeClaudeState(t, `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"0.23.0"}]}}`)
-			path := filepath.Join(dir, "settings.json")
-			if err := os.Remove(path); err != nil {
-				t.Fatal(err)
-			}
-			if settings != "" {
-				if err := os.WriteFile(path, []byte(settings), 0o644); err != nil {
-					t.Fatal(err)
-				}
-			}
-			t.Setenv("CLAUDE_CONFIG_DIR", dir)
-			if ver, ok := claudeInstalledVersion(); ok || ver != "" {
-				t.Fatalf("got (%q,%v), want empty/false", ver, ok)
-			}
-		})
-	}
-}
-
-func TestClaudeInstalledVersionNoConfigDir(t *testing.T) {
-	t.Setenv("CLAUDE_CONFIG_DIR", "")
-	t.Setenv("HOME", "")
-	t.Setenv("USERPROFILE", "")
-	if ver, ok := claudeInstalledVersion(); ok || ver != "" {
-		t.Fatalf("got (%q,%v), want empty/false without a config dir", ver, ok)
-	}
-}
-
 // writeClaudeState lays out a Claude Code config dir holding body as its
 // installed-plugin state, and returns the dir. It clears the variable that
 // would move the plugins directory out of it.
@@ -284,34 +220,6 @@ func TestNewDefaults(t *testing.T) {
 	}
 }
 
-func TestClaudeConfigDir(t *testing.T) {
-	t.Run("env override wins", func(t *testing.T) {
-		t.Setenv("CLAUDE_CONFIG_DIR", "/custom/claude")
-		if got := claudeConfigDir(); got != "/custom/claude" {
-			t.Fatalf("claudeConfigDir() = %q, want %q", got, "/custom/claude")
-		}
-	})
-
-	t.Run("falls back to home", func(t *testing.T) {
-		t.Setenv("CLAUDE_CONFIG_DIR", "")
-		// os.UserHomeDir reads HOME on Unix and USERPROFILE on Windows.
-		t.Setenv("HOME", "/home/someone")
-		t.Setenv("USERPROFILE", "/home/someone")
-		if got := claudeConfigDir(); got != filepath.Join("/home/someone", ".claude") {
-			t.Fatalf("claudeConfigDir() = %q, want %q", got, "/home/someone/.claude")
-		}
-	})
-
-	t.Run("empty when home is unresolvable", func(t *testing.T) {
-		t.Setenv("CLAUDE_CONFIG_DIR", "")
-		t.Setenv("HOME", "")
-		t.Setenv("USERPROFILE", "")
-		if got := claudeConfigDir(); got != "" {
-			t.Fatalf("claudeConfigDir() = %q, want %q", got, "")
-		}
-	})
-}
-
 // serveBody starts a test server returning status/body and returns a Service
 // pointed at it, with every provider CLI present.
 func serveBody(t *testing.T, status int, body string) *Service {
@@ -342,8 +250,11 @@ func statusOf(t *testing.T, list []Status, provider string) Status {
 	return Status{}
 }
 
+// Claude Code's row is the release lich hands its sessions, whatever Claude
+// Code has installed itself.
 func TestStatus(t *testing.T) {
-	t.Setenv("CLAUDE_CONFIG_DIR", writeClaudeState(t, `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"0.13.1-rc.3"}]}}`))
+	t.Setenv("CLAUDE_CONFIG_DIR", writeClaudeState(t, `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"0.13.9"}]}}`))
+	plantRelease(t, bundleHome(t), "0.13.1-rc.3")
 
 	s := serveBody(t, http.StatusOK, `[{"tag_name":"v0.13.1"}]`)
 	// Codex's version comes from its CLI, which is not spawned here; only the
@@ -369,7 +280,7 @@ func TestStatus(t *testing.T) {
 // run the plugin and nothing else: an entry for one that cannot would put an
 // install button on a CLI with nothing to install.
 func TestStatusListsEveryHarness(t *testing.T) {
-	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
+	bundleHome(t)
 	s := serveBody(t, http.StatusOK, `[{"tag_name":"v0.13.1"}]`)
 	s.lookPath = func(string) (string, error) { return "", errors.New("not found") }
 
@@ -391,7 +302,7 @@ func TestStatusListsEveryHarness(t *testing.T) {
 // reported as unavailable rather than omitted — and that its plugin state is
 // never read, since there is no CLI to have installed anything.
 func TestStatusWithoutTheCLI(t *testing.T) {
-	t.Setenv("CLAUDE_CONFIG_DIR", writeClaudeState(t, `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"0.5.0"}]}}`))
+	plantRelease(t, bundleHome(t), "0.13.0")
 	s := serveBody(t, http.StatusOK, `[{"tag_name":"v0.5.0"}]`)
 	s.lookPath = func(string) (string, error) { return "", errors.New("not found") }
 
@@ -402,7 +313,8 @@ func TestStatusWithoutTheCLI(t *testing.T) {
 }
 
 func TestStatusNotInstalled(t *testing.T) {
-	t.Setenv("CLAUDE_CONFIG_DIR", t.TempDir())
+	t.Setenv("CLAUDE_CONFIG_DIR", writeClaudeState(t, `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"0.13.0"}]}}`))
+	bundleHome(t)
 	s := serveBody(t, http.StatusOK, `[{"tag_name":"v0.13.1"}]`)
 
 	got := statusOf(t, s.status(), providers.Claude)
@@ -453,7 +365,7 @@ const (
 
 func TestMain(m *testing.M) {
 	if os.Getenv(fakeCLIGuard) == "" {
-		os.Exit(m.Run())
+		os.Exit(runIsolated(m))
 	}
 	// Recording before the exit code: a call that fails still has to show which
 	// call it was.
@@ -493,6 +405,19 @@ func TestMain(m *testing.M) {
 
 // stubBin is a BinResolver naming a fixed binary for every provider, standing in
 // for the store.
+// runIsolated runs the suite with the plugin releases under a directory of its
+// own, so a test that never asked for one reads none from the machine running
+// it (bundleHome gives a test its own).
+func runIsolated(m *testing.M) int {
+	dir, err := os.MkdirTemp("", "agentplugin-config-")
+	if err != nil {
+		return 2
+	}
+	defer func() { _ = os.RemoveAll(dir) }()
+	userConfigDir = func() (string, error) { return dir, nil }
+	return m.Run()
+}
+
 func appendEnvLine(log, line string) {
 	f, err := os.OpenFile(log, os.O_CREATE|os.O_APPEND|os.O_WRONLY, 0o600)
 	if err != nil {
@@ -531,9 +456,12 @@ func fakeCLI(t *testing.T, failOn string) (*Service, func() []string) {
 		_, _ = io.WriteString(w, `[{"tag_name":"v`+PluginVersionCeiling+`"},{"tag_name":"v`+testVersion+`"}]`)
 	}))
 	t.Cleanup(release.Close)
+	bundleHome(t)
 	return &Service{
 		bins: stubBin(self), lichBin: lichBinary,
-		http: release.Client(), releasesURL: release.URL,
+		lookPath: func(name string) (string, error) { return name, nil },
+		http:     release.Client(), releasesURL: release.URL,
+		tarballBase: serveBytes(t, tarballPath(testVersion), pluginTarball(t, testVersion, releaseFiles())),
 	}, calls
 }
 
@@ -541,13 +469,9 @@ func fakeCLI(t *testing.T, failOn string) (*Service, func() []string) {
 // CLI: whatever marketplace was declared goes, the marketplace comes back at the
 // tag of the newest compatible release (testVersion; fakeCLI's release list also
 // carries one past the ceiling), and the plugin is installed from it under the
-// key that harness stores it under.
+// key that harness stores it under. Codex is the one harness left installed
+// this way: Claude Code's sessions load lich's release.
 var pinnedCalls = map[string][]string{
-	providers.Claude: {
-		"plugin marketplace remove " + marketplaceName,
-		"plugin marketplace add " + gitURL + "#v" + testVersion,
-		"plugin install " + pluginKey,
-	},
 	providers.Codex: {
 		"plugin marketplace remove " + marketplaceName,
 		"plugin marketplace add " + marketplaceRepo + " --ref v" + testVersion,
@@ -597,13 +521,13 @@ func TestInstallSurvivesANothingToRemove(t *testing.T) {
 // itself fails, the error carries both the call and what the CLI said, which is
 // all the settings screen has to show.
 func TestInstallReportsTheInstallFailure(t *testing.T) {
-	s, _ := fakeCLI(t, "plugin install")
+	s, _ := fakeCLI(t, "plugin add")
 
-	_, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Claude})
+	_, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Codex})
 	if err == nil {
 		t.Fatal("Install: want an error, got nil")
 	}
-	for _, want := range []string{"plugin install " + pluginKey, "refusing"} {
+	for _, want := range []string{"plugin add " + pluginKey, "refusing"} {
 		if !strings.Contains(err.Error(), want) {
 			t.Errorf("error %q missing %q", err, want)
 		}
@@ -700,12 +624,25 @@ func TestRegistersServerAtInstall(t *testing.T) {
 	}
 }
 
+// ompInstalled lays down what an omp install leaves: the theme skill and lich's
+// server in its agent directory, and a release unpacked for its sessions.
+func ompInstalled(t *testing.T, agent, version string) {
+	t.Helper()
+	s, _ := fileServer(t, nil)
+	if err := s.installSkills(testVersion, filepath.Join(agent, "skills")); err != nil {
+		t.Fatal(err)
+	}
+	if err := writeMCPDocument(filepath.Join(agent, ompMCPFile), "/usr/bin/lich"); err != nil {
+		t.Fatal(err)
+	}
+	plantRelease(t, bundleHome(t), version)
+}
+
 // And the decision that rule feeds: an installed oh-my-pi whose lich cannot name
 // its own binary has the plugin's reports and no tool list, so a relayed message
 // must name the shell command instead of a tool that is not there.
 func TestHasToolsIsFalseWhenTheServerCouldNotBeRegistered(t *testing.T) {
-	agent := ompHome(t)
-	writeMarkedModule(t, filepath.Join(agent, ompExtensionsDir, ompFile), toolsMinVersion)
+	ompInstalled(t, ompHome(t), testVersion)
 	s := New(stubBins{})
 	s.lookPath = func(string) (string, error) { return "/usr/bin/omp", nil }
 
@@ -719,69 +656,23 @@ func TestHasToolsIsFalseWhenTheServerCouldNotBeRegistered(t *testing.T) {
 	}
 }
 
-// writeMarkedModule lays down what an install of that version leaves behind: the
-// module with lich's marker line, which is where the version is read back from.
-func writeMarkedModule(t *testing.T, path, version string) {
-	t.Helper()
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		t.Fatal(err)
-	}
-	marker := jsComment + " " + markerName + " v" + version + " — installed by lich\n"
-	if err := os.WriteFile(path, []byte(marker), 0o644); err != nil {
-		t.Fatal(err)
-	}
-}
-
-func TestHasToolsFollowsThePluginVersionElsewhere(t *testing.T) {
-	for _, tt := range []struct {
-		name      string
-		installed string
-		want      bool
-	}{
-		// Pinned as literals rather than read off toolsMinVersion: the number is
-		// a contract with a released plugin, and a test that moved with the
-		// constant would follow it anywhere.
-		{name: "the release that brought them", installed: "0.9.0", want: true},
-		{name: "a newer one", installed: "0.10.0", want: true},
-		{name: "the release before", installed: "0.8.0"},
-		{name: "nothing installed"},
-	} {
-		t.Run(tt.name, func(t *testing.T) {
-			agent := ompHome(t)
-			if tt.installed != "" {
-				writeMarkedModule(t, filepath.Join(agent, ompExtensionsDir, ompFile), tt.installed)
-			}
-			svc := New(stubBins{})
-			svc.lookPath = func(string) (string, error) { return "/usr/bin/omp", nil }
-
-			if got := svc.HasTools(providers.OMP); got != tt.want {
-				t.Errorf("HasTools with %q installed = %v, want %v", tt.installed, got, tt.want)
-			}
-		})
-	}
-}
-
 // Installed is the question the relay asks before reading a session's silence as
 // an answer (relay.reportsState), so each way of answering "no" has to be its
 // own: a provider with no plugin at all, a CLI this machine does not have, and
 // an installed harness whose plugin was never written.
 func TestInstalledAnswersForEachWayThereIsNoPlugin(t *testing.T) {
 	agent := ompHome(t)
+	bundleHome(t)
 	s := New(stubBins{})
 	s.lookPath = func(string) (string, error) { return "/usr/bin/omp", nil }
 
 	if s.Installed(providers.OMP) {
-		t.Error("Installed(omp) = true with nothing in its extensions directory")
+		t.Error("Installed(omp) = true with nothing installed")
 	}
 
-	writeMarkedModule(t, filepath.Join(agent, ompExtensionsDir, ompFile), "0.1.0")
+	ompInstalled(t, agent, testVersion)
 	if !s.Installed(providers.OMP) {
-		t.Error("Installed(omp) = false with the plugin's module in place")
-	}
-	// Written older than toolsMinVersion on purpose: reporting state and carrying
-	// lich's operations are two questions, and only the second weighs a version.
-	if s.HasTools(providers.OMP) {
-		t.Error("HasTools(omp) = true for a plugin older than the release that carries the tools")
+		t.Error("Installed(omp) = false with the plugin installed")
 	}
 
 	s.lookPath = func(string) (string, error) { return "", errors.New("not found") }

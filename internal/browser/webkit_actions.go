@@ -25,7 +25,35 @@ import (
 var errNoFrames = errors.New("lich-browser's page is drawn by the window, not by frames")
 
 func (p *webkitPage) Navigate(ctx context.Context, url string) error {
-	return p.load(ctx, browserwire.Navigate, browserwire.NavigateParams{Page: p.id, URL: url})
+	if err := p.load(ctx, browserwire.Navigate, browserwire.NavigateParams{Page: p.id, URL: url}); err != nil {
+		return err
+	}
+	return p.readPlace(ctx)
+}
+
+// placeScript is where the page is and its title, as the page has them.
+const placeScript = `({url: location.href, title: document.title})`
+
+// readPlace tells the page's URL and title as the page has them once its
+// load is ready: WebKit tells the title only after that, so the navigation's
+// answer had none (rc.4).
+func (p *webkitPage) readPlace(ctx context.Context) error {
+	var at struct {
+		URL   string `json:"url"`
+		Title string `json:"title"`
+	}
+	if err := p.evalRaw(ctx, placeScript, &at); err != nil || at.URL == "" {
+		return err
+	}
+	p.mu.Lock()
+	moved := at.URL != p.url || at.Title != p.title
+	p.url, p.title = at.URL, at.Title
+	onInfo := p.onInfo
+	p.mu.Unlock()
+	if moved && onInfo != nil {
+		onInfo(at.URL, at.Title)
+	}
+	return nil
 }
 
 func (p *webkitPage) Reload(ctx context.Context) error { return p.history(ctx, browserwire.Reload) }
@@ -165,11 +193,12 @@ func evalText(raw string) string {
 }
 
 // Screenshot is the front tab's snapshot scaled to shotScale image pixels
-// per CSS pixel, as Chrome's clip is.
+// per CSS pixel, as Chrome's clip is, without the window's layer: the notes
+// and the agent's own cursor and chip are the window's, not the page's.
 func (p *webkitPage) Screenshot(ctx context.Context, dest string) (w, h int, err error) {
 	var snap browserwire.SnapshotResult
 	err = p.gated(ctx, func(ctx context.Context) error {
-		return p.do(ctx, browserwire.Snapshot, browserwire.PageParams{Page: p.id}, &snap)
+		return p.do(ctx, browserwire.Snapshot, browserwire.SnapshotParams{Page: p.id, Bare: true}, &snap)
 	})
 	if err != nil {
 		return 0, 0, err
@@ -260,7 +289,7 @@ func (p *webkitPage) tabCount(id string) (int, error) {
 	return len(p.tabs), nil
 }
 
-// DevTools is WebKit's inspector on the front tab, in a window of its own.
+// DevTools is WebKit's inspector of the front tab, as a tab of the pane's.
 func (p *webkitPage) DevTools(ctx context.Context) error {
 	return p.do(ctx, browserwire.Inspect, browserwire.PageParams{Page: p.id}, nil)
 }

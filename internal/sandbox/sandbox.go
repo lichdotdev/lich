@@ -280,8 +280,9 @@ func lichConfigDir(home string) string {
 }
 
 // pluginHooksDir holds the hook scripts lich installs for the providers that
-// have no plugin system of their own (internal/agentplugin, pluginScriptDir):
-// the one part of lich's directory every confined session may read.
+// have no plugin system of their own (internal/agentplugin, pluginScriptDir)
+// and the plugin releases sessions load (BundleDir): the one part of lich's
+// directory every confined session may read.
 func pluginHooksDir(home string) string {
 	return filepath.Join(lichConfigDir(home), "plugin")
 }

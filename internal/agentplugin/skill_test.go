@@ -39,7 +39,7 @@ func assertThemeSkill(t *testing.T, skillsDir string) {
 func TestOpencodeInstallWritesTheThemeSkill(t *testing.T) {
 	config := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", config)
-	s, _ := fileServer(t, map[string]string{tagged(opencodeSource): "export const P = async () => ({})\n"})
+	s, _ := fileServer(t, nil)
 
 	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err != nil {
 		t.Fatalf("Install: %v", err)
@@ -49,7 +49,7 @@ func TestOpencodeInstallWritesTheThemeSkill(t *testing.T) {
 
 func TestOMPInstallWritesTheThemeSkill(t *testing.T) {
 	agent := ompHome(t)
-	s, _ := fileServer(t, map[string]string{tagged(ompSource): "export default function lichPlugin(pi) {}\n"})
+	s, _ := fileServer(t, nil)
 
 	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OMP}); err != nil {
 		t.Fatalf("Install: %v", err)
@@ -103,12 +103,11 @@ func TestKiroInstallWritesTheThemeSkill(t *testing.T) {
 	assertThemeSkill(t, filepath.Join(providers.KiroHome(home), "skills"))
 }
 
-// The skill is written before the version marker, so a release missing part of
-// it fails the install without leaving a module that reports it installed.
+// A release missing part of the skill fails the install without leaving the
+// skill that makes it read as installed.
 func TestInstallWithoutTheThemeSkillLeavesNothingInstalled(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	s, _ := fileServer(t, map[string]string{
-		tagged(opencodeSource):                           "export const P = async () => ({})\n",
 		tagged(themeSkill.source + "/" + "validate.mjs"): "",
 	})
 
@@ -190,9 +189,7 @@ func TestKiroInstallLeavesTheExtensionSkillOut(t *testing.T) {
 func TestOpencodeInstallDropsTheExtensionSkillsDescription(t *testing.T) {
 	config := t.TempDir()
 	t.Setenv("XDG_CONFIG_HOME", config)
-	s, _ := fileServerAt(t, ExtensionSkillRelease, map[string]string{
-		taggedAt(ExtensionSkillRelease, opencodeSource): "export const P = async () => ({})\n",
-	})
+	s, _ := fileServerAt(t, ExtensionSkillRelease, nil)
 
 	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err != nil {
 		t.Fatalf("Install: %v", err)

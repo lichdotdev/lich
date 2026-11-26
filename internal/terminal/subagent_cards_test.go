@@ -17,19 +17,22 @@ import (
 // state says version is installed, "" for none.
 func withClaudePlugin(t *testing.T, version string) {
 	t.Helper()
-	dir := t.TempDir()
-	t.Setenv("CLAUDE_CONFIG_DIR", dir)
+	root := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", root)
+	t.Setenv("AppData", root)
+	t.Setenv("HOME", root)
+	config, err := os.UserConfigDir()
+	if err != nil || !strings.HasPrefix(config, root) {
+		t.Fatalf("config dir %q (err %v) is outside the test's temp dir %q", config, err, root)
+	}
 	if version == "" {
 		return
 	}
-	state := `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"` + version + `"}]}}`
-	if err := os.MkdirAll(filepath.Join(dir, "plugins"), 0o755); err != nil {
+	manifest := filepath.Join(config, "lich", "plugin", "releases", version, ".claude-plugin", "plugin.json")
+	if err := os.MkdirAll(filepath.Dir(manifest), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(filepath.Join(dir, "plugins", "installed_plugins.json"), []byte(state), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(`{"enabledPlugins":{"lich@lich-plugin":true}}`), 0o644); err != nil {
+	if err := os.WriteFile(manifest, []byte(`{"name":"lich"}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }
@@ -109,8 +112,8 @@ func TestSubagentRouteWithoutTheCardPlugin(t *testing.T) {
 // own subagent tool; every other spawn keeps the line against it.
 func TestBriefingFollowsSubagentCards(t *testing.T) {
 	t.Parallel()
-	cards := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", false, false, false, relay.RouteCards, prompt.English)
-	plain := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", false, false, false, relay.RouteSessions, prompt.English)
+	cards := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", "", false, false, false, relay.RouteCards, prompt.English)
+	plain := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", "", false, false, false, relay.RouteSessions, prompt.English)
 	briefing := func(args []string) string {
 		at := slices.Index(args, "--append-system-prompt")
 		if at < 0 || at+1 >= len(args) {

@@ -185,13 +185,15 @@ type BrowserTab struct {
 	// changes when the icon does; "" for a page whose icon is unknown or
 	// does not load. browser-state carries the name, never the image.
 	Icon string `json:"icon,omitempty"`
-	// XID is the tab's X window in lich-browser, which the window reparents
-	// into its own and places over the pane (docs/lich-browser.md); zero for
-	// a page the window shows by screencast.
+	// XID is the tab's native surface in lich-browser, which the window shows
+	// over the pane (docs/lich-browser.md): an X window on Linux, an HWND on
+	// Windows, a CAContext id on macOS; zero for a page the window shows by
+	// screencast.
 	XID uint64 `json:"xid,omitempty"`
 }
 
-// BrowserWindowOptions is the window's X window, zero for none.
+// BrowserWindowOptions is the window's native window (an X window, an
+// HWND or an NSWindow number), zero for none.
 type BrowserWindowOptions struct {
 	XID uint64 `json:"xid"`
 }

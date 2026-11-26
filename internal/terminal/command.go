@@ -320,13 +320,14 @@ func flagValue(value string) (string, bool) {
 // come last. Kiro's subcommand opens the session rather than a conversation, so
 // it comes before every flag.
 func providerArgs(
-	kind, name, resume, model, effort, lichBin, agent string, fork, skipPermissions, ultracode bool,
+	kind, name, resume, model, effort, lichBin, agent, plugin string, fork, skipPermissions, ultracode bool,
 	route relay.SubagentRoute, lang prompt.Lang,
 ) []string {
 	mcp := mcpArgs(kind, lichBin)
 	args := append([]string{}, subcommandArgs(kind)...)
 	args = append(args, nameArgs(kind, name, resume, fork)...)
 	args = append(args, agentArgs(kind, agent)...)
+	args = append(args, pluginArgs(kind, plugin)...)
 	args = append(args, resumeArgs(kind, resume, fork)...)
 	args = append(args, skipPermissionArgs(kind, skipPermissions)...)
 	args = append(args, modelArgs(kind, model, resume)...)

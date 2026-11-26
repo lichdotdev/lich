@@ -54,6 +54,25 @@ window takes it back (the window's own `XSetInputFocus`). `lich-browser`
 learns the window's X window from `window` to send it the keys a page gets
 only for sitting under the pointer.
 
+## Showing a page in the window (Windows, macOS)
+
+`xid` and `window` carry each system's own handle; the rest of the wire is
+the same.
+
+- **Windows** (WebView2): each tab is an HWND of `lich-browser.exe`'s, a
+  hidden toplevel off screen with no window to sit in. The window makes it a
+  child of its own with `SetParent` and places, shows, hides and clips it
+  (`SetWindowRgn`) as the X11 path does. `lich-browser.exe` loads WebView2
+  through the official `WebView2Loader.dll`, shipped beside it; its header
+  `WebView2.h` is vendored.
+- **macOS** (WKWebView): one process cannot put a view in another's window,
+  so each tab's WKWebView draws in an off-screen window of `lich-browser`'s
+  and exports its layer as a `CAContext`; `xid` is that context's id. The
+  window shows it in a `CALayerHost` over the pane, the way Chromium shows
+  its GPU process, and sends the pane's pointer and keys over the wire
+  (`browser.Mouse`, `.Key`, `.Text`, as the screencast does). `CALayerHost`
+  is private API.
+
 Wayland without XWayland: a later step draws pages off screen and hands the
 window their frames by shared memory. Until then the window opens on
 XWayland (`app.PreferX11`) as it does today.
@@ -101,7 +120,7 @@ import; this table is what each one does.
 | `size` | `page`, `w`, `h` | | the layout size while no window shows it |
 | `dialog` | `page`, `accept`, `text` | | answers the open JavaScript dialog |
 | `files` | `page`, `paths` | | answers the open file chooser; none cancels it |
-| `inspect` | `page` | | WebKit's inspector on the front tab, in a window of its own |
+| `inspect` | `page` | | WebKit's inspector of the front tab, as a `devtools` tab right after it, brought to the front; the same tab when it is open already |
 | `popOut` | `page` | | the page in a window of its own, as Open in a window: same page, nothing reloads; its tabs' `xid` go 0 while it is out |
 | `popIn` | `page` | | the page back out of its own window, for the pane to embed again |
 | `raise` | `page` | | brings a popped-out page's window to the front |
@@ -111,7 +130,7 @@ import; this table is what each one does.
 
 | event | params | when |
 |---|---|---|
-| `tabs` | `page`, `tabs` (`id`, `url`, `title`, `loading`, `front`, `xid`, `icon`) | a tab opens, closes, comes to the front, or changes URL, title, icon or loading |
+| `tabs` | `page`, `tabs` (`id`, `url`, `title`, `loading`, `front`, `xid`, `icon`, `devtools`) | a tab opens, closes, comes to the front, or changes URL, title, icon or loading. A `devtools` tab is the inspector of the tab before it, with an X window of its own; while it is `front` every request still acts on the tab it inspects. `selectTab` on it shows it, `closeTab` closes the inspector |
 | `load` | `page`, `tab`, `step` (`started`, `committed`, `finished`, `failed`), `url`, `at`, `error`, `download` | each main-frame load step; `failed` carries WebKit's error text in `error`, and `download` when the navigation turned into a download instead |
 | `request` | `page`, `tab`, `id`, `type` (`fetch`, `xhr`, `document`, `script`, `stylesheet`, `image`, `font`, `media`, `other`), `started` or `finished`, `at` | each request of the front tab, for `Settle`: `finished` names the `id` that started, however it ended |
 | `console` | `page`, `text` | an error the page's console shows, or one it did not catch |

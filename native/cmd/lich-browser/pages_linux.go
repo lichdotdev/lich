@@ -46,6 +46,8 @@ type page struct {
 	waiting []*waiter
 	// drawing is the window's layer, one script in the page at a time.
 	drawing latest
+	// inspecting: the pane shows the front tab's inspector in its place.
+	inspecting bool
 }
 
 type tab struct {
@@ -61,6 +63,9 @@ type tab struct {
 	// repaired is the hosts whose chain the tab completed: a host failing
 	// again after it is not fetched for again.
 	repaired map[string]bool
+	// devtools is the tab this tab's inspector is in, nil while closed;
+	// inspects is the tab an inspector's tab inspects.
+	devtools, inspects *tab
 }
 
 func (b *browser) page(id string) (*page, error) {
@@ -142,6 +147,7 @@ func (b *browser) close(o browserwire.PageParams) (any, error) {
 		C.lich_page_pop_in(p.c)
 	}
 	for _, t := range p.tabs {
+		b.closeDevtools(t)
 		b.dropTab(t)
 	}
 	C.lich_page_free(p.c)
@@ -186,6 +192,9 @@ func (b *browser) tabOf(o browserwire.TabParams) (*page, *tab, error) {
 		if t.id == o.Tab {
 			return p, t, nil
 		}
+		if t.devtools != nil && t.devtools.id == o.Tab {
+			return p, t.devtools, nil
+		}
 	}
 	return nil, nil, fmt.Errorf("page %s has no tab %s", o.Page, o.Tab)
 }
@@ -195,7 +204,10 @@ func (b *browser) selectTab(o browserwire.TabParams) (any, error) {
 	if err != nil {
 		return nil, err
 	}
-	p.front = t
+	p.front, p.inspecting = t, false
+	if t.inspects != nil {
+		p.front, p.inspecting = t.inspects, true
+	}
 	p.showFront()
 	b.sendTabs(p)
 	return nil, nil
@@ -212,9 +224,15 @@ func (b *browser) closeTabReq(o browserwire.TabParams) (any, error) {
 // closeTab closes t, putting the tab before it in front when t was.
 func (b *browser) closeTab(t *tab) error {
 	p := t.page
+	if t.inspects != nil {
+		b.closeDevtools(t.inspects)
+		b.sendTabs(p)
+		return nil
+	}
 	if len(p.tabs) == 1 {
 		return errLastTab
 	}
+	b.closeDevtools(t)
 	i := slices.Index(p.tabs, t)
 	p.tabs = slices.Delete(p.tabs, i, i+1)
 	if p.front == t {
@@ -263,6 +281,9 @@ func (b *browser) relayout(p *page) {
 	for _, t := range p.tabs {
 		C.lich_tab_zoom(t.c, C.double(p.scale))
 		C.lich_tab_resize(t.c, w, h)
+		if t.devtools != nil {
+			C.lich_tab_resize(t.devtools.c, w, h)
+		}
 	}
 }
 
@@ -275,8 +296,15 @@ func (b *browser) sendTabs(p *page) {
 		}
 		ev.Tabs = append(ev.Tabs, browserwire.Tab{
 			ID: t.id, URL: C.GoString(C.lich_tab_uri(t.c)), Title: C.GoString(C.lich_tab_title(t.c)),
-			Loading: C.lich_tab_loading(t.c) != 0, Front: t == p.front, XID: xid, Icon: t.icon,
+			Loading: C.lich_tab_loading(t.c) != 0, Front: t == p.front && !p.inspecting, XID: xid, Icon: t.icon,
 		})
+		if t.devtools != nil {
+			dx := uint64(t.devtools.c.xid)
+			if p.poppedOut() {
+				dx = 0
+			}
+			ev.Tabs = append(ev.Tabs, p.devtoolsTab(t, dx))
+		}
 	}
 	b.wire.event(browserwire.EventTabs, ev)
 }

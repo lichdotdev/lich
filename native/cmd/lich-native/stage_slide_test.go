@@ -168,9 +168,8 @@ func TestDockPeekSlidesOverTheStageAsTheExpandDoes(t *testing.T) {
 		}
 		return u.dock.peek.box.Min.X
 	}
-	// Review comes out wider than the dock, at its share of the stage.
 	at := func(share float32) int {
-		w := u.dock.peekWidth(gtx, row-u.islandAt.X)
+		w := u.dock.width(gtx)
 		return row - int(share*float32(w+g)) + g
 	}
 	edges, cols := slide(t, r, tv, pointTo(r, edgePoint), &u.dock.peek.slide, left)

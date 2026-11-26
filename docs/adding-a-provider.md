@@ -4,9 +4,9 @@ A **provider** is an agent CLI lich can run inside a session's PTY. There are
 eight (`internal/providers.Registry`), and adding a ninth means landing in
 about a dozen files across two repositories. This is the map — written after
 Antigravity, so it names what that change actually touched rather than what it
-should have. Cursor CLI came later and needed no plugin install at all — it runs
-every Claude Code hook on the machine, which is a shape the plugin table below
-does not have; [`providers/cursor.md`](providers/cursor.md) carries what that
+should have. Cursor CLI came later and needed no plugin install at all — it loads
+the Claude Code plugin lich hands it with `--plugin-dir`, which is a shape the
+plugin table below does not have; [`providers/cursor.md`](providers/cursor.md) carries what that
 buys and what it costs.
 
 Two rules govern the whole exercise, and both are in
@@ -45,6 +45,7 @@ hits it.
 | Where are its credentials, config and conversations? | `~/.gemini` (+ `~/.gemini/antigravity-cli/`), found by running it against a throwaway `HOME` |
 | What proves a conversation still exists? | `~/.gemini/antigravity-cli/conversations/<id>.db` |
 | What are its lifecycle events, and what is on their payloads? | A real run with a hook that dumps stdin: `PreInvocation`, `PreToolUse`, `PostToolUse`, `PostInvocation`, `Stop`, all camelCase |
+| Can a session be handed a plugin on its command line or environment? | No — `--settings` refuses every plugin key, so lich installs it and turns it back on at spawn (`agentplugin.Reenable`); Claude Code and Cursor take `--plugin-dir`, oh-my-pi `-e`, opencode its inline config (`internal/terminal/plugin.go`) |
 | How is a plugin installed, and does its CLI install a *release*? | `agy plugin install` takes a directory and clones only a default branch — so lich writes the released files itself |
 
 The rig for the last two is the cheap part and the one worth keeping: point the
@@ -62,7 +63,7 @@ tool.
 |---|---|---|
 | `internal/providers/providers.go` | the registry | an id constant, a `Registry` entry (id, display name, binary names, install-docs URL), a line in `AcceptsMCPServer` if it takes an MCP server at spawn, and one in `SupportsFork` — that one is a table every provider must appear in, so a new id fails its test until it is answered, plus an arm in `CostSourceOf` if it records spend |
 | `internal/providers/install_recipes.go` | the Welcome's install | the vendor's own unattended install per OS, its page in a comment, or an `installGaps` reason; `TestEveryProviderHasAnInstallOrAGapOnEveryOS` fails until one is there, and `native/grimoire/sprites.json` needs its book |
-| `internal/terminal/command.go` | what a spawn runs | entries in `skipPermissionFlags`, `modelFlags`, `effortFlags`, `briefingFlags` and `resumeArgs` (with a fork arm there if the CLI branches a conversation) — each one optional, and absent means "no flag rather than somebody else's" — plus a `subcommandArgs` arm if the session is a subcommand rather than the bare binary, and an `mcpArgs` arm (or, for one told through its environment, an `mcpEnv` one) if it is in `AcceptsMCPServer` |
+| `internal/terminal/command.go` | what a spawn runs | entries in `skipPermissionFlags`, `modelFlags`, `effortFlags`, `briefingFlags` and `resumeArgs` (with a fork arm there if the CLI branches a conversation) — each one optional, and absent means "no flag rather than somebody else's" — plus a `subcommandArgs` arm if the session is a subcommand rather than the bare binary, an `mcpArgs` arm (or, for one told through its environment, an `mcpEnv` one) if it is in `AcceptsMCPServer`, and a `pluginArgs` or `pluginEnv` arm in `plugin.go` if it can be handed lich's plugin per session (otherwise a `Reenable` arm in `internal/agentplugin` if a person can turn the install off) |
 | `internal/chat/service.go`, `internal/terminal/chat.go` | whether a session can be drawn as a chat | the id in `Kinds` only if its CLI speaks Claude Code's stream-json, Codex's app-server or ACP over stdio (a driver per protocol: `claude.go`, `codex.go`, `acp.go`), and a `chatArgs` arm for each flag its own `acp --help` (or `app-server --help`) lists (an unknown flag kills the spawn); absent is a `docs/ceilings.md` line and a README row |
 | `internal/terminal/resume.go` | whether a resume can be offered | a `ResumeAvailable` case answering from what that provider left on disk |
 | `internal/terminal/transcript.go`, `sessiondb.go` | where that state lives | the path resolver the case above calls |

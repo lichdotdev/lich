@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/lichdotdev/lich/internal/claudeprofile"
-	"github.com/lichdotdev/lich/internal/providers"
 )
 
 // workProfile is a scratch home with one Claude Code profile in it, and the
@@ -33,11 +32,19 @@ func workProfile(t *testing.T) string {
 	return p.Dir
 }
 
-// TestInstallInClaudeProfileRunsAsTheProfile: the same pinned install Personal
-// gets, every call run with the profile's directory and none of the token that
-// would put another account's policy in charge.
+// claudeUninstallCalls is what taking the install of the past out of a Claude
+// Code home runs: the plugin goes, then its marketplace.
+var claudeUninstallCalls = []string{
+	"plugin uninstall " + pluginKey,
+	"plugin marketplace remove " + marketplaceName,
+}
+
+// TestInstallInClaudeProfileRunsAsTheProfile: the install of the past comes out
+// of the profile's own plugin set, every call run with the profile's directory
+// and none of the token that would put another account's policy in charge.
 func TestInstallInClaudeProfileRunsAsTheProfile(t *testing.T) {
 	dir := workProfile(t)
+	writeClaudePlugin(t, dir, testVersion)
 	svc, calls := fakeCLI(t, "")
 	envLog := filepath.Join(t.TempDir(), "env.log")
 	t.Setenv(fakeCLIEnvLog, envLog)
@@ -46,25 +53,38 @@ func TestInstallInClaudeProfileRunsAsTheProfile(t *testing.T) {
 	if err := svc.InstallInClaudeProfile("work"); err != nil {
 		t.Fatal(err)
 	}
-	if got := calls(); !slices.Equal(got, pinnedCalls[providers.Claude]) {
-		t.Errorf("calls %v, want %v", got, pinnedCalls[providers.Claude])
+	if got := calls(); !slices.Equal(got, claudeUninstallCalls) {
+		t.Errorf("calls %v, want %v", got, claudeUninstallCalls)
 	}
-	data, err := os.ReadFile(envLog)
-	if err != nil {
-		t.Fatal(err)
-	}
-	for line := range strings.SplitSeq(strings.TrimSpace(string(data)), "\n") {
+	for _, line := range envLines(t, envLog) {
 		if line != dir+"|" {
 			t.Errorf("a call ran as %q, want %q", line, dir+"|")
 		}
+	}
+	if _, version, ok := BundleDir(); !ok || version != testVersion {
+		t.Errorf("BundleDir version = (%q,%v), want the release the profile's sessions load", version, ok)
 	}
 	if err := svc.InstallInClaudeProfile("gone"); err == nil {
 		t.Error("installed into a profile that does not exist")
 	}
 }
 
+// A profile with no install of the past costs no Claude Code call at all.
+func TestInstallInClaudeProfileWithNothingToTakeOut(t *testing.T) {
+	workProfile(t)
+	svc, calls := fakeCLI(t, "")
+	if err := svc.InstallInClaudeProfile("work"); err != nil {
+		t.Fatal(err)
+	}
+	if got := calls(); got != nil {
+		t.Errorf("calls %v, want none", got)
+	}
+}
+
 func TestInstallInPersonalRunsInLichsEnvironment(t *testing.T) {
 	workProfile(t)
+	home, _ := os.UserHomeDir()
+	writeClaudePlugin(t, filepath.Join(home, ".claude"), testVersion)
 	svc, _ := fakeCLI(t, "")
 	envLog := filepath.Join(t.TempDir(), "env.log")
 	t.Setenv(fakeCLIEnvLog, envLog)
@@ -78,8 +98,11 @@ func TestInstallInPersonalRunsInLichsEnvironment(t *testing.T) {
 	}
 }
 
-func TestClaudeProfileStatusReadsTheProfilesPlugins(t *testing.T) {
+// A profile's row is the release its sessions load, not what its own plugin
+// set holds.
+func TestClaudeProfileStatusIsTheRelease(t *testing.T) {
 	dir := workProfile(t)
+	writeClaudePlugin(t, dir, testVersion)
 	svc, _ := fakeCLI(t, "")
 	svc.lookPath = func(string) (string, error) { return "claude", nil }
 	st, err := svc.ClaudeProfileStatus("work")
@@ -87,21 +110,15 @@ func TestClaudeProfileStatusReadsTheProfilesPlugins(t *testing.T) {
 		t.Fatal(err)
 	}
 	if st.Installed || ClaudeInstalledIn(dir) {
-		t.Errorf("a new profile reads as installed: %+v", st)
+		t.Errorf("an install in the profile with no release unpacked reads as installed: %+v", st)
 	}
-	state := `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"` + testVersion + `"}]}}`
-	if err := os.WriteFile(filepath.Join(dir, "plugins", "installed_plugins.json"), []byte(state), 0o600); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(`{"enabledPlugins":{"lich@lich-plugin":true}}`), 0o600); err != nil {
-		t.Fatal(err)
-	}
+	plantRelease(t, bundleHome(t), testVersion)
 	st, err = svc.ClaudeProfileStatus("work")
 	if err != nil {
 		t.Fatal(err)
 	}
 	if !st.Installed || st.InstalledVersion != testVersion || !ClaudeInstalledIn(dir) {
-		t.Errorf("after install: %+v", st)
+		t.Errorf("with the release unpacked: %+v", st)
 	}
 	if _, err := svc.ClaudeProfileStatus("gone"); err == nil {
 		t.Error("a status for a profile that does not exist")

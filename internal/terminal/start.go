@@ -88,6 +88,7 @@ func (s *Service) Start(_ context.Context, opts api.StartOptions) (api.None, err
 	inheritClaudeTrust(opts.Kind, opts.Cwd, profileDir)
 	inheritCursorTrust(opts.Kind, opts.Cwd)
 	markCrushInitialized(opts.Kind, opts.Cwd)
+	s.reenablePlugin(opts.Kind, opts.ProjectID, profileDir)
 	reports := s.awaitsStart(opts.Kind, profileDir)
 	awaits := reports && !trustAnswered(opts.Kind, opts.Cwd, profileDir)
 	sess, cwd, err := s.spawnSession(opts, profileDir, name, oc2)
@@ -201,16 +202,16 @@ type spawnLaunch struct {
 
 // spawnArgs is everything a spawn's argv is decided from.
 type spawnArgs struct {
-	kind, cwd, name, resume, model, effort, lichBin, agent string
-	fork, skipPermissions, ultracode, oc2, confined        bool
-	route                                                  relay.SubagentRoute
-	lang                                                   prompt.Lang
+	kind, cwd, name, resume, model, effort, lichBin, agent, plugin string
+	fork, skipPermissions, ultracode, oc2, confined                bool
+	route                                                          relay.SubagentRoute
+	lang                                                           prompt.Lang
 }
 
 // ptyArgs is the argv of a session's terminal.
 func ptyArgs(a spawnArgs) []string {
 	return slices.Concat(confinedTrustArgs(a.kind, a.cwd, a.confined), codexBriefingArgs(a.kind, a.resume, a.route, a.lang), opencode2Args(a.oc2, providerArgs(
-		a.kind, a.name, a.resume, a.model, a.effort, a.lichBin, a.agent, a.fork, a.skipPermissions, a.ultracode, a.route, a.lang,
+		a.kind, a.name, a.resume, a.model, a.effort, a.lichBin, a.agent, a.plugin, a.fork, a.skipPermissions, a.ultracode, a.route, a.lang,
 	)))
 }
 
@@ -244,6 +245,8 @@ func (s *Service) prepareSpawnLocked(opts api.StartOptions, profileDir, name str
 		return spawnLaunch{}, err
 	}
 	env = mcpEnv(env, opts.Kind, mcpBin)
+	plugin, _, _ := agentplugin.BundleDir()
+	env = pluginEnv(env, opts.Kind, plugin)
 	env = todoToolsEnv(env, opts.Kind)
 	filesKey := s.store.SessionFilesKey(opts.ID)
 	artifacts := sessionArtifactDir(s.artifactDir, filesKey)
@@ -275,7 +278,7 @@ func (s *Service) prepareSpawnLocked(opts api.StartOptions, profileDir, name str
 		bin: resolveCommand(opts.Kind, s.store.ProviderBin(opts.Kind, opts.ProjectID), userShell()),
 		args: argv(spawnArgs{
 			kind: opts.Kind, cwd: opts.Cwd, name: name, resume: opts.Resume, model: model,
-			effort: s.store.SessionEffort(opts.ID), lichBin: mcpBin, agent: kiroPluginAgent(opts.Kind),
+			effort: s.store.SessionEffort(opts.ID), lichBin: mcpBin, agent: kiroPluginAgent(opts.Kind), plugin: plugin,
 			fork: opts.Fork, skipPermissions: skipPermissions, ultracode: ultracode, oc2: oc2,
 			confined: inSandbox, route: route, lang: lang,
 		}),
@@ -339,7 +342,7 @@ func (s *Service) spawnOf(id string) spawn {
 func (s *Service) kindOf(id string) string { return s.spawnOf(id).kind }
 
 // repeatedEnding reports whether a `done` is the same turn ending a second
-// time. Cursor CLI runs the plugin installed in Claude Code, and its TUI
+// time. Cursor CLI runs the same plugin as Claude Code, and its TUI
 // delivers that plugin's UserPromptSubmit and Stop (measured on 2026.08.11
 // through 2026.10.01), so every Cursor turn opens with a `busy`. Esc ends one
 // with two stop hooks for the same generation, "aborted" then "error", about
