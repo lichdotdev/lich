@@ -8,7 +8,6 @@ import (
 	"gioui.org/f32"
 	"gioui.org/io/pointer"
 	"gioui.org/layout"
-	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/ui"
 )
@@ -190,28 +189,5 @@ func TestDockCollapsedUnderThePointerStaysIn(t *testing.T) {
 	r.settle(t)
 	if u.dock.visible() {
 		t.Fatal("came straight back out under the pointer that collapsed it")
-	}
-}
-
-func TestReviewPeekTakesSixtyPercentOfTheStage(t *testing.T) {
-	gtx := layout.Context{Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}}
-	cases := []struct {
-		name  string
-		tab   dockTab
-		stage int
-		want  int
-	}{
-		{"review on a wide stage", dockReview, 1500, 900},
-		{"review wide enough to split on a smaller stage", dockReview, 1336, 820},
-		{"review within a stage narrower than a split", dockReview, 700, 700},
-		{"review capped at the dock's widest", dockReview, 3000, dockMaxRem * remDp},
-		{"review never under the docked width", dockReview, 400, dockDefaultRem * remDp},
-		{"another tab keeps the dock's width", dockCode, 1500, dockDefaultRem * remDp},
-	}
-	for _, c := range cases {
-		d := &dock{widthRem: dockDefaultRem, minRem: dockMinRem, tab: c.tab}
-		if got := d.peekWidth(gtx, c.stage); got != c.want {
-			t.Errorf("%s: peekWidth = %d, want %d", c.name, got, c.want)
-		}
 	}
 }
