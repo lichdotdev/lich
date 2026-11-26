@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/neovim/go-client/nvim"
 )
@@ -56,7 +57,16 @@ type vimHost struct {
 	cols   int
 	// configDir is the running Neovim's stdpath('config'), "" before one runs.
 	configDir string
+
+	// typing is the buffer, and the process, that keys go to straight: the
+	// one focused last with no call since, which might have moved the window.
+	// The host's goroutine alone reads it.
+	typing [2]int
 }
+
+// vimBlockedPoll is how often a call Neovim has not answered asks whether
+// it waits for the rest of a typed command.
+const vimBlockedPoll = 20 * time.Millisecond
 
 // vimEvent is what Neovim reported of one buffer: its lines from first to
 // last replaced by lines, at tick; its cursor and mode; a :w; or a :q.
@@ -141,6 +151,37 @@ func vimAvailable() error {
 // do runs call against the running Neovim, starting one first if none is.
 // A call that fails because Neovim went away drops it; the next starts anew.
 func (h *vimHost) do(call func(v *nvim.Nvim, gen int) error) {
+	h.queue(func(v *nvim.Nvim, gen int) error {
+		h.typing = [2]int{}
+		return unblocked(v, func() error { return call(v, gen) })
+	})
+}
+
+// keys types keys into buf of process gen: with nvim_input, which Neovim
+// takes even while it waits for the rest of a command (a count, an
+// operator's motion, the character of an f), where the calls of the API
+// wait for that rest, which would then never come.
+func (h *vimHost) keys(buf func(gen int) int, keys string) {
+	h.queue(func(v *nvim.Nvim, gen int) error {
+		b := buf(gen)
+		if b == 0 {
+			return nil
+		}
+		if h.typing != [2]int{b, gen} {
+			if err := unblocked(v, func() error { return v.ExecLua("lich_editor.focus(...)", nil, b) }); err != nil {
+				return err
+			}
+			h.typing = [2]int{b, gen}
+		}
+		_, err := v.Input(keys)
+		return err
+	})
+}
+
+// queue runs call on the host's goroutine against the running Neovim,
+// starting one first if none is. A call that fails because Neovim went away
+// drops it; the next starts anew.
+func (h *vimHost) queue(call func(v *nvim.Nvim, gen int) error) {
 	job := func() {
 		v, gen, err := h.running()
 		if err != nil {
@@ -155,6 +196,32 @@ func (h *vimHost) do(call func(v *nvim.Nvim, gen int) error) {
 	case h.jobs <- job:
 	default:
 		log.Printf("vim: Neovim is %d calls behind, dropping one", vimQueue)
+	}
+}
+
+// unblocked is call, a request to v, made while Neovim may wait for the
+// rest of a command typed into it, which holds the request until the rest
+// comes: the command is cancelled, as a click cancels it in Vim.
+func unblocked(v *nvim.Nvim, call func() error) error {
+	done := make(chan error, 1)
+	go func() { done <- call() }()
+	tick := time.NewTicker(vimBlockedPoll)
+	defer tick.Stop()
+	for {
+		select {
+		case err := <-done:
+			return err
+		case <-tick.C:
+			m, err := v.Mode()
+			if err != nil {
+				return err
+			}
+			if m.Blocking {
+				if _, err := v.Input("<Esc>"); err != nil {
+					return err
+				}
+			}
+		}
 	}
 }
 

@@ -2664,8 +2664,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   init.lua where there is none, and saving any file under that folder restarts Neovim, as Restart Neovim in the
   palette does;
   a click moves Vim's cursor and a drag starts a characterwise Visual selection, but
-  the wheel only sets the top line, and with wrap off a long line never scrolls sideways to the cursor. A key
-  typed while Neovim is still starting is lost.
+  the wheel only sets the top line, and with wrap off a long line never scrolls sideways to the cursor; a smooth
+  scroll of the config (snacks.nvim's, mini.animate's) is off in lich's buffers, since the editor follows every top
+  line Neovim reports. A click, a wheel or a save that reaches Neovim while it waits for the rest of a typed
+  command (a count, an operator's motion, the character of an `f`) cancels that command with Esc, as a click does
+  in Vim: Neovim answers no other call until the command ends. A key typed while Neovim is still starting is lost.
 
 ## Languages
 
