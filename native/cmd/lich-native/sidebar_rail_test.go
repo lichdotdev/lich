@@ -134,9 +134,16 @@ func TestTheRailBadgeKeepsTheCardsCornerAndDropsItAtRest(t *testing.T) {
 
 func TestTheRailServicesBadgeCountsOnlyAProjectWithServices(t *testing.T) {
 	draw := func(tally servicesTally) string {
-		r := newFrameRig(image.Pt(16, 16), func(gtx C, th *ui.Theme) {
-			gtx.Constraints.Min = gtx.Constraints.Max
-			railServicesBadge(gtx, th, tally)
+		r := newFrameRig(image.Pt(32, 32), func(gtx C, th *ui.Theme) {
+			var click ui.Clickable
+			click.Layout(gtx, func(gtx C) D {
+				return ui.SquareFace(gtx, th.Surface, func(gtx C) D {
+					return layout.Stack{}.Layout(gtx,
+						layout.Stacked(func(gtx C) D { return icServices.Layout(gtx, ui.Space(4), th.MutedForeground) }),
+						layout.Expanded(func(gtx C) D { return railServicesBadge(gtx, th, tally) }),
+					)
+				})
+			})
 		})
 		drawn, _ := r.frame()
 		return drawn

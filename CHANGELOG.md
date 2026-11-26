@@ -144,6 +144,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - **Continue in moves a session drawn as a chat to another profile, as it does a terminal.** It refused with "switch this session to its terminal"; the chat now closes, its conversation moves and it opens again in the profile you picked, on the same model, effort and mode.
+- **The Add service dialog keeps the keyboard when a terminal is open.** Typing in its fields no longer goes to the terminal behind it.
+- **The Services icon in the collapsed sidebar keeps its count badge inside the button.** The count no longer clips against the rail.
 - **lich no longer keeps a CPU core busy listing your sessions when dozens are open.** The tray, `lich sessions` and the agents' list of sessions read only what each transcript added since the last look, so opening a session or a worktree no longer waits behind them.
 - **Switching between stable and beta on Arch is an ordinary package upgrade, with no removal by hand.** The update keeps the name of the package you installed, `lich` from install.sh or `lich-bin` from the AUR.
 - **A site whose server leaves out part of its certificate chain opens in the built-in browser on Linux, as it does in Chrome.** It showed "Unacceptable TLS certificate"; lich now fetches the missing certificate the way Chrome does and still refuses one that fails any other check.
