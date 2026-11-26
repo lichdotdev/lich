@@ -30,16 +30,19 @@ var (
 // button does.
 const codeCopiedFor = 1500 * time.Millisecond
 
-// codeCopy is a code block's copy button and the pointer over the block. It
-// outlives the block: a streaming answer renders its blocks again on every
-// change, and a hover or a check must not flicker away with them.
-type codeCopy struct {
+// codePanel is a code block's copy button, its fold and the pointer over
+// the block. It outlives the block: a streaming answer renders its blocks
+// again on every change, and a hover, a check or an opened fold must not
+// flicker away with them.
+type codePanel struct {
 	click    ui.Clickable
 	hovered  bool
 	copiedAt time.Time
+	more     ui.Clickable
+	open     bool
 }
 
-func (c *codeCopy) done(now time.Time) bool {
+func (c *codePanel) done(now time.Time) bool {
 	return !c.copiedAt.IsZero() && now.Sub(c.copiedAt) < codeCopiedFor
 }
 
@@ -57,7 +60,7 @@ func rawCode(source []byte, n ast.Node) string {
 
 // layout draws the button at at while the pointer is over the panel of size,
 // putting code on the clipboard the way the window does everywhere.
-func (c *codeCopy) layout(gtx C, th *ui.Theme, code string, size, at image.Point) {
+func (c *codePanel) layout(gtx C, th *ui.Theme, code string, size, at image.Point) {
 	for {
 		ev, ok := gtx.Event(pointer.Filter{Target: &c.hovered, Kinds: pointer.Enter | pointer.Leave | pointer.Cancel})
 		if !ok {

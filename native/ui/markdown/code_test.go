@@ -1,6 +1,7 @@
 package markdown
 
 import (
+	"fmt"
 	"image"
 	"image/color"
 	"strings"
@@ -195,5 +196,53 @@ func TestBlocksInsideAQuoteKeepTheirOwnDrawing(t *testing.T) {
 	ground := img.RGBAAt(img.Bounds().Dx()-1, img.Bounds().Dy()-1)
 	if bar := img.RGBAAt(1, gtx.Sp(BodySize)*3); bar == ground {
 		t.Error("the quote's bar stops above the code block it holds")
+	}
+}
+
+func numberedCode(n int) string {
+	lines := make([]string, n)
+	for i := range lines {
+		lines[i] = fmt.Sprintf("line %d", i+1)
+	}
+	return "```\n" + strings.Join(lines, "\n") + "\n```"
+}
+
+// A long code block shows codeShown lines and a way to the rest, and opens
+// whole; its copy button copies all of it either way.
+func TestALongCodeBlockFoldsPastItsShownLines(t *testing.T) {
+	th := markdownTheme()
+	short := renderBlocks(th, numberedCode(codeShown))
+	long := renderBlocks(th, numberedCode(codeShown+10))
+	gtx, _ := markdownFrame(2000)
+	shown := short[0].layout(gtx, th, Links{}).Size.Y
+	folded := long[0].layout(gtx, th, Links{}).Size.Y
+	more := layoutCodeMore(gtx, th, long[0].copy, 10).Size.Y
+	if folded != shown+more {
+		t.Errorf("a folded block of %d lines is %dpx, want the %dpx of %d lines and the %dpx under them", codeShown+10, folded, shown, codeShown, more)
+	}
+	long[0].copy.open = true
+	if opened := long[0].layout(gtx, th, Links{}).Size.Y; opened <= folded {
+		t.Errorf("the opened block is %dpx, want past the folded %dpx", opened, folded)
+	}
+	if !strings.HasSuffix(long[0].code, fmt.Sprintf("line %d", codeShown+10)) {
+		t.Errorf("the copied code ends %q, want every line", long[0].code[len(long[0].code)-10:])
+	}
+}
+
+// A line wrapped on screen is one line of code: the fold counts lines as
+// written.
+func TestTheFoldCountsAWrappedLineOnce(t *testing.T) {
+	th := markdownTheme()
+	src := strings.Replace(numberedCode(codeShown+1), "line 1\n", strings.Repeat("wrapping words ", 40)+"\n", 1)
+	blocks := renderBlocks(th, src)
+	gtx, _ := markdownFrame(2000)
+	gtx.Constraints.Max.X = 300
+	tops := blocks[0].prose.lineTops(gtx, th.Shaper, 0)
+	if len(tops) != codeShown+2 {
+		t.Fatalf("%d tops, want one per line and the end", len(tops))
+	}
+	line := int(float32(gtx.Sp(BodySize)) * markdownCodeLineHeightScale)
+	if tops[1] < 2*line || tops[2]-tops[1] != line {
+		t.Errorf("tops start %v, want the wrapped first line taller than the next", tops[:3])
 	}
 }
