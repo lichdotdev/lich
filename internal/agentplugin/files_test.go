@@ -983,9 +983,9 @@ func antigravityHome(t *testing.T) string {
 	return dir
 }
 
-// antigravityCLI points the Service's shell-out — the MCP registration, and
-// nothing else here — at the test binary's fake CLI, and returns a reader of the
-// calls it received.
+// antigravityCLI points the Service's shell-out — the MCP registration and the
+// plugin's enable, nothing else here — at the test binary's fake CLI, and
+// returns a reader of the calls it received.
 func antigravityCLI(t *testing.T, s *Service) func() []string {
 	t.Helper()
 	log := filepath.Join(t.TempDir(), "calls.log")
@@ -1116,6 +1116,33 @@ func TestAntigravityInstalledVersionRoundTrips(t *testing.T) {
 	}
 }
 
+// A plugin the person disabled runs no hooks, so it reads as missing, and
+// Install enables it again: writing the files alone leaves it off.
+func TestAntigravityDisabledReadsAsMissingUntilInstallEnablesIt(t *testing.T) {
+	dir := antigravityHome(t)
+	s, _ := fileServer(t, antigravityFiles())
+	calls := antigravityCLI(t, s)
+	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err != nil {
+		t.Fatalf("Install: %v", err)
+	}
+	if got := calls(); !slices.Contains(got, "plugin enable "+pluginName) {
+		t.Errorf("calls = %v, want the plugin enabled", got)
+	}
+	config := filepath.Join(dir, "..", "..", "config.json")
+	if err := os.WriteFile(config, []byte(`{"plugins":{"lich":{"enabled":false}}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := s.installedVersion(providers.Antigravity); ok {
+		t.Errorf("installedVersion = (%q,true) for a disabled plugin, want false", got)
+	}
+	if err := os.WriteFile(config, []byte(`{"plugins":{"lich":{"enabled":true}}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, ok := s.installedVersion(providers.Antigravity); !ok {
+		t.Error("an enabled plugin reads as missing")
+	}
+}
+
 // A copy installed through `agy plugin install` carries a manifest with no
 // version. Reporting one for it would claim an install lich never wrote and
 // cannot update.
@@ -1170,8 +1197,8 @@ func TestAntigravityInstallWithoutABinaryStillWritesTheHooks(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(dir, antigravityHooksFile)); err != nil {
 		t.Errorf("the registration was not written: %v", err)
 	}
-	if got := calls(); len(got) > 0 {
-		t.Errorf("calls = %v, want none: there is no binary to register", got)
+	if got := calls(); slices.ContainsFunc(got, func(c string) bool { return strings.HasPrefix(c, "mcp ") }) {
+		t.Errorf("calls = %v, want no mcp call: there is no binary to register", got)
 	}
 }
 

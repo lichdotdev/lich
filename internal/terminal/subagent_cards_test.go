@@ -29,6 +29,9 @@ func withClaudePlugin(t *testing.T, version string) {
 	if err := os.WriteFile(filepath.Join(dir, "plugins", "installed_plugins.json"), []byte(state), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(`{"enabledPlugins":{"lich@lich-plugin":true}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
 }
 
 // The lich-plugin mod reads LICH_SUBAGENT_DEPTH on every Claude Code session to

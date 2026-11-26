@@ -1181,6 +1181,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   entry is `modified` or `untrusted` a toast says so and opens that session's chat `/hooks` panel, switching a
   terminal session to its chat first; the person trusts the hook there, lich never does. One check per run: a hook
   changed while lich runs is told on the next start.
+- **A disabled lich plugin runs none of its hooks** (`internal/agentplugin`): Claude Code, Codex and
+  Antigravity keep a plugin the person disabled installed, so its subagent calls run natively and its sessions
+  report nothing. lich reads such a plugin as not installed, so the window offers Install again: Claude Code's
+  `enabledPlugins["lich@lich-plugin"]` in the config directory's `settings.json`, absent reading as disabled
+  (measured on 2.1.332), and Codex's `enabled` in `plugin list --json` (0.170.0) are re-enabled by the
+  remove-and-reinstall, and Antigravity's `plugins.lich.enabled` in `~/.gemini/config/config.json` by the
+  `agy plugin enable lich` Install ends with (1.5.15). Cursor CLI reads Claude Code's. oh-my-pi, opencode, Kiro
+  CLI and Crush have no switch for the files lich writes, beyond removing them. A session started while the
+  plugin was off keeps running without its hooks until it restarts.
 - **Codex runs every lich MCP tool without asking** (`internal/terminal/command.go`, `mcpArgs`): a Codex session
   is spawned with `-c mcp_servers.lich.default_tools_approval_mode="approve"`, so the `open_session` a vetoed or
   sealed subagent call is sent to never waits on an approval, and neither does any other lich tool. The tools only

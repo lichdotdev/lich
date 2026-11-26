@@ -93,6 +93,9 @@ func TestClaudeProfileStatusReadsTheProfilesPlugins(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, "plugins", "installed_plugins.json"), []byte(state), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(`{"enabledPlugins":{"lich@lich-plugin":true}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
 	st, err = svc.ClaudeProfileStatus("work")
 	if err != nil {
 		t.Fatal(err)

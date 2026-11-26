@@ -46,6 +46,9 @@ func writeClaudePlugin(t *testing.T, dir, version string) {
 	if err := os.WriteFile(filepath.Join(dir, "plugins", "installed_plugins.json"), []byte(state), 0o600); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(`{"enabledPlugins":{"lich@lich-plugin":true}}`), 0o600); err != nil {
+		t.Fatal(err)
+	}
 }
 
 func writeCodexPlugin(t *testing.T, dir, version string) {

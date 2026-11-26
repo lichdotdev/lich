@@ -121,7 +121,12 @@ func (s *Service) antigravityInstall() error {
 	if err := s.antigravityRegisterMCP(); err != nil {
 		return err
 	}
-	return writeFile(filepath.Join(dir, antigravityManifest), manifest, 0o644)
+	if err := writeFile(filepath.Join(dir, antigravityManifest), manifest, 0o644); err != nil {
+		return err
+	}
+	// The files alone leave a plugin the person disabled disabled; enabling one
+	// already enabled is a no-op (measured on 1.5.15).
+	return s.run(providers.Antigravity, "plugin", "enable", pluginName)
 }
 
 // antigravityManifestFile is the manifest lich writes, carrying the released
@@ -172,10 +177,30 @@ func (s *Service) antigravityInstalledVersion() (string, bool) {
 	var manifest struct {
 		Version string `json:"version"`
 	}
-	if err := json.Unmarshal(data, &manifest); err != nil || manifest.Version == "" {
+	if err := json.Unmarshal(data, &manifest); err != nil || manifest.Version == "" || antigravityDisabled(dir) {
 		return "", false
 	}
 	return manifest.Version, true
+}
+
+// antigravityDisabled is whether `agy plugin disable` turned the plugin in dir
+// off, which it records in config.json two levels up; a plugin with no entry
+// there is enabled (measured on 1.5.15). A disabled plugin runs no hooks.
+func antigravityDisabled(dir string) bool {
+	data, err := os.ReadFile(filepath.Join(dir, "..", "..", "config.json"))
+	if err != nil {
+		return false
+	}
+	var config struct {
+		Plugins map[string]struct {
+			Enabled *bool `json:"enabled"`
+		} `json:"plugins"`
+	}
+	if json.Unmarshal(data, &config) != nil {
+		return false
+	}
+	enabled := config.Plugins[pluginName].Enabled
+	return enabled != nil && !*enabled
 }
 
 // antigravityPluginDir resolves the directory Antigravity discovers global

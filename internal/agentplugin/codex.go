@@ -82,13 +82,16 @@ func parseCodexPluginList(data []byte, key string) (string, bool) {
 			PluginID  string `json:"pluginId"`
 			Version   string `json:"version"`
 			Installed bool   `json:"installed"`
+			// Absent before Codex listed it; a disabled plugin runs no hooks, and
+			// Install, which reinstalls, enables it again (measured on 0.170.0).
+			Enabled *bool `json:"enabled"`
 		} `json:"installed"`
 	}
 	if err := json.Unmarshal(data[start:], &doc); err != nil {
 		return "", false
 	}
 	for _, p := range doc.Installed {
-		if p.PluginID == key && p.Installed && p.Version != "" {
+		if p.PluginID == key && p.Installed && p.Version != "" && (p.Enabled == nil || *p.Enabled) {
 			return p.Version, true
 		}
 	}

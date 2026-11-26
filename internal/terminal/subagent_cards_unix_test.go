@@ -77,6 +77,9 @@ func claudeProfileWithPlugin(t *testing.T, version string) string {
 	if err := os.WriteFile(filepath.Join(profile, "plugins", "installed_plugins.json"), []byte(state), 0o644); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(profile, "settings.json"), []byte(`{"enabledPlugins":{"lich@lich-plugin":true}}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
 	return profile
 }
 

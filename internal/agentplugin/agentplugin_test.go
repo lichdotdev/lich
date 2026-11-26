@@ -106,6 +106,18 @@ func TestParseCodexPluginList(t *testing.T) {
 			want:   "",
 			wantOK: false,
 		},
+		{
+			name:   "enabled",
+			json:   `{"installed":[{"pluginId":"lich@lich-plugin","version":"0.5.0","installed":true,"enabled":true}]}`,
+			want:   "0.5.0",
+			wantOK: true,
+		},
+		{
+			name:   "installed but disabled",
+			json:   `{"installed":[{"pluginId":"lich@lich-plugin","version":"0.5.0","installed":true,"enabled":false}]}`,
+			want:   "",
+			wantOK: false,
+		},
 		{name: "no json at all", json: "command not found", want: "", wantOK: false},
 		{name: "malformed", json: `{`, want: "", wantOK: false},
 	}
@@ -195,6 +207,34 @@ func TestClaudeInstalledVersionMissingFile(t *testing.T) {
 	}
 }
 
+// A plugin left in installed_plugins.json but not enabled runs none of its
+// hooks: its subagent calls ran natively while lich read it as installed.
+func TestClaudeInstalledVersionNeedsTheSettingsToEnableIt(t *testing.T) {
+	for name, settings := range map[string]string{
+		"no settings file": "",
+		"key absent":       `{"enabledPlugins":{"ponytail@ponytail":true}}`,
+		"disabled":         `{"enabledPlugins":{"lich@lich-plugin":false}}`,
+		"not JSON":         `{`,
+	} {
+		t.Run(name, func(t *testing.T) {
+			dir := writeClaudeState(t, `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"0.23.0"}]}}`)
+			path := filepath.Join(dir, "settings.json")
+			if err := os.Remove(path); err != nil {
+				t.Fatal(err)
+			}
+			if settings != "" {
+				if err := os.WriteFile(path, []byte(settings), 0o644); err != nil {
+					t.Fatal(err)
+				}
+			}
+			t.Setenv("CLAUDE_CONFIG_DIR", dir)
+			if ver, ok := claudeInstalledVersion(); ok || ver != "" {
+				t.Fatalf("got (%q,%v), want empty/false", ver, ok)
+			}
+		})
+	}
+}
+
 func TestClaudeInstalledVersionNoConfigDir(t *testing.T) {
 	t.Setenv("CLAUDE_CONFIG_DIR", "")
 	t.Setenv("HOME", "")
@@ -216,6 +256,9 @@ func writeClaudeState(t *testing.T, body string) string {
 		t.Fatal(err)
 	}
 	if err := os.WriteFile(filepath.Join(pluginsDir, "installed_plugins.json"), []byte(body), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(`{"enabledPlugins":{"lich@lich-plugin":true}}`), 0o644); err != nil {
 		t.Fatal(err)
 	}
 	return dir

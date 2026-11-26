@@ -50,7 +50,7 @@ func (s *Service) ClaudeProfileStatus(slug string) (Status, error) {
 	available := s.available(providers.Claude)
 	version, installed := "", false
 	if available {
-		version, installed = claudeInstalledVersionAt(claudeprofile.PluginsDir(slug, dir))
+		version, installed = claudeInstalledVersionAt(dir, claudeprofile.PluginsDir(slug, dir))
 	}
 	return computeStatus(providers.Claude, available, installed, version, s.latestVersion()), nil
 }
@@ -171,7 +171,7 @@ func claudeInstalledVersion() (string, bool) {
 	if dir == "" {
 		return "", false
 	}
-	return claudeInstalledVersionAt(claudeprofile.PluginsDir(claudeprofile.Personal, dir))
+	return claudeInstalledVersionAt(dir, claudeprofile.PluginsDir(claudeprofile.Personal, dir))
 }
 
 // ClaudeInstalledIn reports whether the plugin is installed in the Claude Code
@@ -182,15 +182,35 @@ func ClaudeInstalledIn(dir string) bool {
 }
 
 func claudeInstalledVersionIn(dir string) (string, bool) {
-	return claudeInstalledVersionAt(filepath.Join(dir, "plugins"))
+	return claudeInstalledVersionAt(dir, filepath.Join(dir, "plugins"))
 }
 
-func claudeInstalledVersionAt(plugins string) (string, bool) {
+// claudeInstalledVersionAt is the version installed in plugins for the config
+// directory dir, and only while dir's settings enable it: a disabled plugin
+// stays in installed_plugins.json and runs none of its hooks, so it reads as
+// missing and Install, which reinstalls, enables it again.
+func claudeInstalledVersionAt(dir, plugins string) (string, bool) {
+	if !claudeEnabledIn(dir) {
+		return "", false
+	}
 	data, err := os.ReadFile(filepath.Join(plugins, "installed_plugins.json"))
 	if err != nil {
 		return "", false
 	}
 	return parseInstalledVersion(data, pluginKey)
+}
+
+// claudeEnabledIn is whether dir's user settings enable the plugin. Claude
+// Code reads a key that is absent as disabled (`claude plugin list`, 2.1.332).
+func claudeEnabledIn(dir string) bool {
+	data, err := os.ReadFile(filepath.Join(dir, "settings.json"))
+	if err != nil {
+		return false
+	}
+	var doc struct {
+		EnabledPlugins map[string]json.RawMessage `json:"enabledPlugins"`
+	}
+	return json.Unmarshal(data, &doc) == nil && string(doc.EnabledPlugins[pluginKey]) == "true"
 }
 
 // parseInstalledVersion pulls the plugin's version out of installed_plugins.json.

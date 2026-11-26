@@ -6,6 +6,7 @@ package subagent
 
 import (
 	"context"
+	"log/slog"
 	"strings"
 	"sync"
 	"time"
@@ -99,8 +100,13 @@ func (s *Service) Vetoed(context.Context, api.None) ([]api.SubagentVeto, error) 
 // a card and a native subagent never do the same task.
 func (s *Service) Decide(ctx context.Context, req api.SubagentRequest) (api.SubagentAnswer, func(written bool)) {
 	asker, ok := s.sessions.Asker(req.SessionID)
-	if !ok || req.Nested || asker.Depth >= MaxDepth {
-		return s.allowed(req)
+	switch {
+	case !ok:
+		return s.allowed(req, "unknown session")
+	case req.Nested:
+		return s.allowed(req, "nested conversation")
+	case asker.Depth >= MaxDepth:
+		return s.allowed(req, "deepest card")
 	}
 	if req.Call == api.SubagentWait {
 		return s.wait(req), func(bool) {}
@@ -108,8 +114,11 @@ func (s *Service) Decide(ctx context.Context, req api.SubagentRequest) (api.Suba
 	if req.Sealed {
 		return s.denied(req, api.SubagentAnswer{Decision: api.SubagentDeny, Reason: prompt.For(s.lang()).SubagentSealed}, nil, asker)
 	}
-	if keepsNative(asker.Kind, req.Tasks) || overLimit(req.Tasks) {
-		return s.allowed(req)
+	if keepsNative(asker.Kind, req.Tasks) {
+		return s.allowed(req, "type kept native")
+	}
+	if overLimit(req.Tasks) {
+		return s.allowed(req, "prompt over the limit")
 	}
 	if answer, ok := s.repeat(req); ok {
 		return answer, func(written bool) {
@@ -121,7 +130,10 @@ func (s *Service) Decide(ctx context.Context, req api.SubagentRequest) (api.Suba
 	return s.open(ctx, req, asker)
 }
 
-func (s *Service) allowed(req api.SubagentRequest) (api.SubagentAnswer, func(bool)) {
+// allowed lets the native subagent run, logging why: the hook stays silent on
+// an allow, so this line is the only trace of one.
+func (s *Service) allowed(req api.SubagentRequest, why string) (api.SubagentAnswer, func(bool)) {
+	logAllow(req, why)
 	answer := api.SubagentAnswer{Decision: api.SubagentAllow}
 	return answer, func(written bool) {
 		s.mu.Lock()
@@ -139,6 +151,7 @@ func (s *Service) wait(req api.SubagentRequest) api.SubagentAnswer {
 	denied := c.denied > 0 && !c.allowed
 	s.mu.Unlock()
 	if !denied {
+		logAllow(req, "wait on a native subagent")
 		return api.SubagentAnswer{Decision: api.SubagentAllow}
 	}
 	return api.SubagentAnswer{Decision: api.SubagentDeny, Reason: prompt.For(s.lang()).SubagentWait}
@@ -174,6 +187,10 @@ func (s *Service) repeat(req api.SubagentRequest) (api.SubagentAnswer, bool) {
 		return api.SubagentAnswer{}, false
 	}
 	return api.SubagentAnswer{Decision: api.SubagentDeny, Reason: s.openedReason(opened), Sessions: opened}, true
+}
+
+func logAllow(req api.SubagentRequest, why string) {
+	slog.Info("subagent: allow", "session", req.SessionID, "tool", req.Tool, "tool_use_id", req.ToolUseID, "why", why)
 }
 
 func promptKey(sessionID, text string) string { return sessionID + "\x00" + strings.TrimSpace(text) }

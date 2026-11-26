@@ -40,13 +40,13 @@ func (s *Service) open(ctx context.Context, req api.SubagentRequest, asker Asker
 	select {
 	case opened := <-result:
 		if opened == nil {
-			return s.allowed(req)
+			return s.allowed(req, "card failed to open")
 		}
 		answer := api.SubagentAnswer{Decision: api.SubagentDeny, Reason: s.openedReason(opened), Sessions: opened}
 		return s.denied(req, answer, opened, asker)
 	case <-ctx.Done():
 		close(abandoned)
-		return s.allowed(req)
+		return s.allowed(req, "card not open in time")
 	}
 }
 
