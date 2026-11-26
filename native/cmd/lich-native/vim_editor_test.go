@@ -482,7 +482,7 @@ func TestVimNamesTheLanguageServerThatFailedToStart(t *testing.T) {
 	}
 }
 
-func TestVimRetriesTheServerOnceInstalled(t *testing.T) {
+func TestVimStartsTheServerOnceItsInstallEnds(t *testing.T) {
 	real, err := exec.LookPath("gopls")
 	dir := t.TempDir()
 	if err == nil {
@@ -507,20 +507,35 @@ func TestVimRetriesTheServerOnceInstalled(t *testing.T) {
 		f.vimFeed("lich_editor.focus(...)")
 		return f.vim.state.failed == "gopls"
 	})
-	if err := os.Symlink(real, fake+".new"); err != nil {
-		t.Fatal(err)
+	f.vimInstall("ln -sf " + real + " " + fake)
+	if got := f.vimLspText(true); got != "Installing gopls…" {
+		t.Fatalf("strip says %q while the install runs", got)
 	}
-	if err := os.Rename(fake+".new", fake); err != nil {
-		t.Fatal(err)
-	}
-	f.vim.retry = true
-	f.recheck()
-	vimUntil(t, f, "the installed server attached on coming back", func() bool {
+	vimUntil(t, f, "the installed server attached once the install ended", func() bool {
 		f.vimFeed("lich_editor.focus(...)")
 		return slices.Contains(f.vim.state.lsp, "gopls")
 	})
-	if f.vim.retry {
-		t.Fatal("the editor kept retrying once a server attached")
+}
+
+func TestVimInstallThatFailsSaysWhy(t *testing.T) {
+	bin := t.TempDir()
+	if err := os.WriteFile(filepath.Join(bin, "gopls"), []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	install := filepath.Join(bin, "install")
+	if err := os.WriteFile(install, []byte("#!/bin/sh\necho fetching\necho 'no network' >&2\nexit 2\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	f, _ := vimEditorOf(t, t.TempDir(), "main.go", "package main\n")
+	vimUntil(t, f, "the failure", func() bool {
+		f.vimFeed("lich_editor.focus(...)")
+		return f.vim.state.failed == "gopls"
+	})
+	f.vimInstall(install)
+	vimUntil(t, f, "the install's failure", func() bool { return f.vim.installing == nil })
+	if got := f.vimLspText(true); got != "gopls install failed" || f.vim.installErr != "no network" {
+		t.Fatalf("strip says %q, why %q; want the failure and its last line", got, f.vim.installErr)
 	}
 }
 

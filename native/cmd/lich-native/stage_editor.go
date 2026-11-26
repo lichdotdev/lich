@@ -106,9 +106,6 @@ type editorEnv struct {
 	vim      *vimHost
 	// relative numbers the lines by their distance from the cursor's.
 	relative bool
-	// installLSP runs command, a language server's install, in a terminal
-	// at dir.
-	installLSP func(dir, command string)
 }
 
 func newFileEditor(client *backend.Client, invalidate func(), family string, size unit.Sp, checkout string) *fileEditor {

@@ -2747,9 +2747,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   a server lich started that exits before attaching (a version manager's shim with no version for the folder)
   shows as "failed to start", with the first line of its stderr as lsp.log keeps it in a tooltip, while one the
   person's config started and lost leaves the strip silent; a missing or failed gopls, basedpyright or
-  rust-analyzer offers Install when go, pipx or pip, or rustup is on the PATH, which runs the install in a shell
-  session at the project and starts the server again each time the editor comes back to the stage until one
-  attaches (clangd, lua-language-server and jdtls come from the system's package manager, and get no Install); Settings › Editor › Vim mode › Edit config opens init.lua or
+  rust-analyzer offers Install when go, pipx or pip, or rustup is on the PATH, which runs the install in the
+  background at the project, the strip saying so, and starts the server once it ends; a failed install shows its
+  output's last line in a tooltip and the rest in lich-native.log, and an installed server that lands outside the
+  PATH (go install's GOBIN, pip's user folder) still shows as not found (clangd, lua-language-server and jdtls come from the system's package manager, and get no Install); Settings › Editor › Vim mode › Edit config opens init.lua or
   init.vim of the config folder Neovim reports (NVIM_APPNAME and XDG_CONFIG_HOME followed), writing an empty
   init.lua where there is none, and saving any file under that folder restarts Neovim, as Restart Neovim in the
   palette does;

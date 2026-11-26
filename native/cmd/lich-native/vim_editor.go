@@ -54,9 +54,10 @@ type vimBuffer struct {
 	yankUntil time.Time
 	pum       vimPumView
 	lspUI     vimLspUI
-	// retry is set by an Install: the next time the editor comes back, its
-	// server is started again, until one attaches.
-	retry bool
+	// installing hears the end of an Install running, nil for none;
+	// installErr is the last one's failure.
+	installing <-chan error
+	installErr string
 }
 
 // vimLspUI is the strip's language-server widgets.
@@ -130,6 +131,7 @@ func (f *fileEditor) syncVim() {
 	for _, ev := range events {
 		f.vimApply(ev)
 	}
+	f.vimInstalled()
 }
 
 func (f *fileEditor) vimOff() {
@@ -220,7 +222,6 @@ func (f *fileEditor) vimApply(ev vimEvent) {
 			return
 		}
 		f.vim.state = ev.state
-		f.vim.retry = f.vim.retry && len(ev.state.lsp) == 0
 		f.vimPreview(ev.state.preview)
 		f.vimSelect(*ev.state)
 	case ev.yank != nil:

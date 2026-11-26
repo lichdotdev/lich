@@ -59,6 +59,8 @@
     "vimLspMissing": "{name} が見つかりません",
     "vimConfigFailed": "Neovim の設定を開けませんでした",
     "vimLspFailed": "{name} を起動できませんでした",
-    "vimLspInstall": "インストール"
+    "vimLspInstall": "インストール",
+    "vimLspInstalling": "{name} をインストール中…",
+    "vimLspInstallFailed": "{name} のインストールに失敗しました"
   }
 }

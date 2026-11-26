@@ -59,6 +59,8 @@
     "vimLspMissing": "{name} no encontrado",
     "vimConfigFailed": "No se pudo abrir la configuración de Neovim",
     "vimLspFailed": "{name} no se inició",
-    "vimLspInstall": "Instalar"
+    "vimLspInstall": "Instalar",
+    "vimLspInstalling": "Instalando {name}…",
+    "vimLspInstallFailed": "Falló la instalación de {name}"
   }
 }

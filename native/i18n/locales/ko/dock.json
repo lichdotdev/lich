@@ -59,6 +59,8 @@
     "vimLspMissing": "{name}을(를) 찾을 수 없음",
     "vimConfigFailed": "Neovim 설정을 열 수 없습니다",
     "vimLspFailed": "{name}을(를) 시작하지 못함",
-    "vimLspInstall": "설치"
+    "vimLspInstall": "설치",
+    "vimLspInstalling": "{name} 설치 중…",
+    "vimLspInstallFailed": "{name} 설치 실패"
   }
 }

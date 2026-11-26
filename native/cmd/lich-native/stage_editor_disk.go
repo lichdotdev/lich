@@ -47,9 +47,6 @@ type diskWatch struct {
 // window came back, or the editor came back to the stage.
 func (f *fileEditor) recheck() {
 	f.disk.nudge++
-	if f.vim.retry && f.vimOn() {
-		f.vimFeed("lich_editor.retry(...)")
-	}
 	f.invalidate()
 }
 

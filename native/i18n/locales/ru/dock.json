@@ -61,6 +61,8 @@
     "vimLspMissing": "{name} не найден",
     "vimConfigFailed": "Не удалось открыть конфиг Neovim",
     "vimLspFailed": "{name} не запустился",
-    "vimLspInstall": "Установить"
+    "vimLspInstall": "Установить",
+    "vimLspInstalling": "Устанавливается {name}…",
+    "vimLspInstallFailed": "Не удалось установить {name}"
   }
 }

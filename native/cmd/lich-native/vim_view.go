@@ -283,6 +283,10 @@ func (f *fileEditor) vimLspText(current bool) string {
 		return ""
 	case len(s.lsp) > 0:
 		return strings.Join(s.lsp, ", ")
+	case f.vim.installing != nil:
+		return i18n.T("dock.editor.vimLspInstalling", i18n.Args{"name": s.missing + s.failed})
+	case f.vim.installErr != "":
+		return i18n.T("dock.editor.vimLspInstallFailed", i18n.Args{"name": s.missing + s.failed})
 	case s.missing != "":
 		return i18n.T("dock.editor.vimLspMissing", i18n.Args{"name": s.missing})
 	case s.failed != "":
@@ -300,13 +304,16 @@ func (f *fileEditor) vimLspStatus(gtx C, th *ui.Theme, current bool) D {
 		return text.Layout(gtx)
 	}
 	v := &f.vim.lspUI
-	if v.install.Clicked(gtx) && s.install != "" && f.env.installLSP != nil {
-		f.vim.retry = true
-		f.env.installLSP(f.root(), s.install)
+	if v.install.Clicked(gtx) && s.install != "" && f.vim.installing == nil {
+		f.vimInstall(s.install)
 	}
-	label := th.Tooltip(f.env.root, &v.reason, s.reason)
+	reason := s.reason
+	if f.vim.installErr != "" {
+		reason = f.vim.installErr
+	}
+	label := th.Tooltip(f.env.root, &v.reason, reason)
 	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return label.Layout(gtx, text.Layout) })}
-	if s.install != "" {
+	if s.install != "" && f.vim.installing == nil {
 		btn := th.Button(&v.install, i18n.T("dock.editor.vimLspInstall"))
 		btn.Size, btn.Variant = ui.SizeXS, ui.VariantOutline
 		children = append(children, ui.Gap(2), layout.Rigid(btn.Layout))
