@@ -821,12 +821,14 @@
     "mcpSearchWords": "mcp 服务器 库 移入",
     "pluginsSearchWords": "插件 钩子 lich",
     "found": "在你的提供方中找到",
+    "library": "在 lich 的库中",
     "moveIn": "移入 lich",
     "moveInAll": "全部移入",
     "noSkills": "lich 的库里还没有技能。",
     "noMCP": "lich 的库里还没有 MCP 服务器。",
     "reason": {
-      "notWritten": "lich 还不会把 MCP 服务器写入 {provider}"
+      "notWritten": "lich 还不会把 MCP 服务器写入 {provider}",
+      "sharedFile": "{provider} 的所有配置文件读取同一个文件，因此一个开关对全部生效"
     },
     "pluginBrings": "钩子：{hooks} · 技能：{skills} · MCP 服务器：{mcp}",
     "pluginLocked": "lich 打开的每个会话都会运行它，无法关闭。",

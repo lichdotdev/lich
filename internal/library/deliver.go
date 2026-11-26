@@ -55,7 +55,14 @@ func (s *Service) Deliver(provider, profile, profileDir string) Delivery {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	var d Delivery
-	skills := s.onSkills(provider, profile)
+	skillProfile, mcpProfile := profile, profile
+	if oneSkills(provider) != "" {
+		skillProfile = ""
+	}
+	if oneMCP(provider) != "" {
+		mcpProfile = ""
+	}
+	skills := s.onSkills(provider, skillProfile)
 	switch provider {
 	case providers.Claude, providers.Cursor, providers.OpenCode, providers.OMP:
 		if len(skills) > 0 {
@@ -76,16 +83,16 @@ func (s *Service) Deliver(provider, profile, profileDir string) Delivery {
 			}
 		}
 	case providers.Codex, providers.Antigravity, providers.Kiro:
-		if err := s.writeSkills(s.deliveryDir(provider, profileDir), provider, profile); err != nil {
+		if err := s.writeSkills(s.deliveryDir(provider, profileDir), provider, skillProfile); err != nil {
 			slog.Warn("library: write the skills", "provider", provider, "err", err)
 		}
 	}
 	switch provider {
 	case providers.Claude, providers.Codex, providers.OpenCode:
-		d.MCP = s.onServers(provider, profile)
+		d.MCP = s.onServers(provider, mcpProfile)
 	case providers.OMP, providers.Cursor:
 		for _, doc := range s.mcpDocs(provider) {
-			if err := s.writeServersInto(doc, provider, s.onServers(provider, "")); err != nil {
+			if err := s.writeServersInto(doc, provider, s.onServers(provider, mcpProfile)); err != nil {
 				slog.Warn("library: write the MCP servers", "provider", provider, "err", err)
 			}
 		}

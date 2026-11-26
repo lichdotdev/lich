@@ -223,17 +223,19 @@ func (s *Service) set(key, value string) error {
 	return err
 }
 
-// On is whether item reaches provider's sessions in profile ("" or Personal's
-// slug for Personal): the provider's switch, then the profile's, which is on
-// unless turned off.
+// On is whether item reaches provider's sessions in profile ("" for the
+// provider as a whole): the profile's own switch once it was set, else the
+// provider's, which a move in sets for every profile at once.
 func (s *Service) On(kind, name, provider, profile string) bool {
-	if s.get(switchKey(kind, name, provider, "")) != switchOn {
-		return false
+	if profile != "" {
+		switch s.get(switchKey(kind, name, provider, profile)) {
+		case switchOn:
+			return true
+		case switchOff:
+			return false
+		}
 	}
-	if profile == "" {
-		return true
-	}
-	return s.get(switchKey(kind, name, provider, profile)) != switchOff
+	return s.get(switchKey(kind, name, provider, "")) == switchOn
 }
 
 // changed tells the window the library or what the providers hold moved.

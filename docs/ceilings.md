@@ -1575,9 +1575,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   was, never deleting: a skill folder's `SKILL.md` becomes `SKILL.md.lich-moved` (a link is renamed instead), and an
   MCP entry moves under a `lichMoved_<key>` key beside the provider's own. Claude Code's MCP servers in
   `~/.claude.json`, which it rewrites while it runs, and Codex's in `config.toml` are not offered. What the
-  providers hold is read again every 30 seconds (go.mod carries no file watcher), and a provider's profiles are
-  Claude Code's, Codex's and oh-my-pi's; oh-my-pi and Cursor CLI read one `mcp.json` for every profile, so their MCP
-  switch follows the provider's.
+  providers hold is read again every 30 seconds (go.mod carries no file watcher). A provider with profiles (Claude
+  Code, Codex and oh-my-pi, and opencode, Cursor CLI and Kiro CLI where `internal/xdgprofile` gives them some) gets
+  one switch per profile; a move in turns the item on for all of them at once, and a profile's own switch wins once
+  set. Where lich writes one file or folder that every profile of a provider reads, a split could not be kept, so
+  that provider gets one switch saying why: Codex's and Kiro CLI's skills (Codex's profiles link Personal's
+  `skills/`, and Kiro CLI's read one `~/.kiro/skills`), and oh-my-pi's and Cursor CLI's MCP servers (one `mcp.json`
+  each).
 - **A plugin install is pinned, so the harness never updates it on its own** (`internal/agentplugin/compat.go`,
   `codex.go` `codexPinMarketplace`): for the providers that still install it (Codex, Antigravity, Crush, Kiro CLI),
   lich installs the newest plugin release inside the range it speaks and declares Codex's marketplace at that

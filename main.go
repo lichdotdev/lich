@@ -984,7 +984,14 @@ func libraryProfiles(provider string) []api.Profile {
 	case providers.OMP:
 		list = ompprofile.List
 	default:
-		return nil
+		for _, p := range xdgprofile.Providers() {
+			if p.ID == provider {
+				list = p.List
+			}
+		}
+		if list == nil {
+			return nil
+		}
 	}
 	profiles, err := list()
 	if err != nil {

@@ -822,12 +822,14 @@
     "mcpSearchWords": "mcp servidor biblioteca mover",
     "pluginsSearchWords": "plugin hooks lich",
     "found": "Encontrados nos seus provedores",
+    "library": "Na biblioteca do lich",
     "moveIn": "Mover para o lich",
     "moveInAll": "Mover todos",
     "noSkills": "Ainda não há skills na biblioteca do lich.",
     "noMCP": "Ainda não há servidores MCP na biblioteca do lich.",
     "reason": {
-      "notWritten": "O lich ainda não grava servidores MCP no {provider}"
+      "notWritten": "O lich ainda não grava servidores MCP no {provider}",
+      "sharedFile": "Todos os perfis do {provider} leem o mesmo arquivo, então uma chave vale para todos"
     },
     "pluginBrings": "Hooks: {hooks} · skills: {skills} · servidores MCP: {mcp}",
     "pluginLocked": "Toda sessão que o lich abre usa este plugin. Ele não pode ser desligado.",

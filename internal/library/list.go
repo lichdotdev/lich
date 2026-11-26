@@ -20,6 +20,9 @@ func (s *Service) List(_ context.Context, _ api.None) (api.Library, error) {
 		out.Providers = append(out.Providers, api.LibraryProvider{
 			ID: p.ID, Name: p.Name, Profiles: s.profilesOf(p.ID), NoSkills: noSkills(p.ID), NoMCP: noMCP(p.ID),
 		})
+		if last := &out.Providers[len(out.Providers)-1]; len(last.Profiles) > 0 {
+			last.OneSkills, last.OneMCP = oneSkills(p.ID), oneMCP(p.ID)
+		}
 	}
 	skills, err := s.librarySkills()
 	if err != nil {
@@ -54,9 +57,9 @@ func (s *Service) List(_ context.Context, _ api.None) (api.Library, error) {
 func (s *Service) switches(kind, name string, list []api.LibraryProvider) []api.LibrarySwitch {
 	var out []api.LibrarySwitch
 	for _, p := range list {
-		out = append(out, api.LibrarySwitch{Provider: p.ID, On: s.get(switchKey(kind, name, p.ID, "")) == switchOn})
+		out = append(out, api.LibrarySwitch{Provider: p.ID, On: s.On(kind, name, p.ID, "")})
 		for _, prof := range p.Profiles {
-			out = append(out, api.LibrarySwitch{Provider: p.ID, Profile: prof.Slug, On: s.get(switchKey(kind, name, p.ID, prof.Slug)) != switchOff})
+			out = append(out, api.LibrarySwitch{Provider: p.ID, Profile: prof.Slug, On: s.On(kind, name, p.ID, prof.Slug)})
 		}
 	}
 	return out
@@ -93,6 +96,27 @@ func (s *Service) Set(_ context.Context, opts api.LibrarySwitchOptions) (api.Non
 	}
 	s.changed()
 	return api.None{}, nil
+}
+
+// oneSkills is why provider's profiles share one skills switch, "" when each
+// has its own: Codex's profiles link Personal's skills folder, and Kiro CLI's
+// read one ~/.kiro/skills, both of which lich writes into.
+func oneSkills(provider string) string {
+	switch provider {
+	case providers.Codex, providers.Kiro:
+		return api.LibrarySharedFile
+	}
+	return ""
+}
+
+// oneMCP is why provider's profiles share one MCP switch: oh-my-pi and Cursor
+// CLI read one mcp.json for every profile, which lich writes into.
+func oneMCP(provider string) string {
+	switch provider {
+	case providers.OMP, providers.Cursor:
+		return api.LibrarySharedFile
+	}
+	return ""
 }
 
 // noSkills is why provider cannot take a library skill, "" when it can.

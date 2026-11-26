@@ -822,12 +822,14 @@
     "mcpSearchWords": "mcp サーバー ライブラリ 移動",
     "pluginsSearchWords": "プラグイン フック lich",
     "found": "プロバイダーで見つかったもの",
+    "library": "lich のライブラリ",
     "moveIn": "lich に移す",
     "moveInAll": "すべて移す",
     "noSkills": "lich のライブラリにはまだスキルがありません。",
     "noMCP": "lich のライブラリにはまだ MCP サーバーがありません。",
     "reason": {
-      "notWritten": "lich はまだ {provider} に MCP サーバーを書き込みません"
+      "notWritten": "lich はまだ {provider} に MCP サーバーを書き込みません",
+      "sharedFile": "{provider} のプロファイルはすべて同じファイルを読むため、スイッチは 1 つで全プロファイルに効きます"
     },
     "pluginBrings": "フック: {hooks} · スキル: {skills} · MCP サーバー: {mcp}",
     "pluginLocked": "lich が開くすべてのセッションで動きます。オフにはできません。",

@@ -177,8 +177,8 @@ func TestMoveInAnMCPServer(t *testing.T) {
 	}
 }
 
-// A profile's switch narrows its provider's: off under an on provider, never
-// on under an off one.
+// The provider's switch speaks for every profile until a profile's own is
+// set, which then speaks for that profile alone, either way.
 func TestSwitchesPerProviderAndProfile(t *testing.T) {
 	r := newRig(t)
 	set := func(provider, profile string, on bool) {
@@ -186,24 +186,72 @@ func TestSwitchesPerProviderAndProfile(t *testing.T) {
 			t.Fatal(err)
 		}
 	}
-	if r.On(api.LibrarySkill, "pdf", providers.Claude, "work") {
+	on := func(profile string) bool { return r.On(api.LibrarySkill, "pdf", providers.Claude, profile) }
+	if on("") || on("work") {
 		t.Error("on before any switch")
 	}
 	set(providers.Claude, "", true)
-	if !r.On(api.LibrarySkill, "pdf", providers.Claude, "work") || !r.On(api.LibrarySkill, "pdf", providers.Claude, "") {
-		t.Error("the provider on leaves a profile off")
+	if !on("work") || !on("personal") {
+		t.Error("the provider's switch did not reach its profiles")
 	}
 	set(providers.Claude, "work", false)
-	if r.On(api.LibrarySkill, "pdf", providers.Claude, "work") || !r.On(api.LibrarySkill, "pdf", providers.Claude, "") {
-		t.Error("the profile's switch did not narrow it to Personal")
+	if on("work") || !on("personal") {
+		t.Error("turning Work off reached Personal, or left Work on")
 	}
 	set(providers.Claude, "", false)
 	set(providers.Claude, "work", true)
-	if r.On(api.LibrarySkill, "pdf", providers.Claude, "work") {
-		t.Error("a profile on under a provider off")
+	if !on("work") || on("personal") {
+		t.Error("Work's own switch did not keep it on alone")
 	}
 	if _, err := r.Set(t.Context(), api.LibrarySwitchOptions{Kind: api.LibrarySkill, Name: "pdf", Provider: "shell", On: true}); err == nil {
 		t.Error("a switch for no provider was stored")
+	}
+}
+
+// Each provider with profiles says whether its delivery keeps a switch per
+// profile, kind by kind: the ones lich writes one file or folder for share
+// one switch.
+func TestOneSwitchWhereProfilesShareTheFile(t *testing.T) {
+	want := map[string][2]string{
+		providers.Claude:      {"", ""},
+		providers.Codex:       {api.LibrarySharedFile, ""},
+		providers.Antigravity: {"", ""},
+		providers.OpenCode:    {"", ""},
+		providers.OMP:         {"", api.LibrarySharedFile},
+		providers.Crush:       {"", ""},
+		providers.Cursor:      {"", api.LibrarySharedFile},
+		providers.Kiro:        {api.LibrarySharedFile, ""},
+	}
+	r := newRig(t)
+	r.profiles = func(string) []api.Profile { return []api.Profile{{Slug: "personal"}, {Slug: "work"}} }
+	lib, err := r.List(t.Context(), api.None{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, p := range lib.Providers {
+		if got := [2]string{p.OneSkills, p.OneMCP}; got != want[p.ID] {
+			t.Errorf("%s one switch = %v, want %v", p.ID, got, want[p.ID])
+		}
+	}
+}
+
+// A provider whose profiles share the file takes the provider's switch for
+// every profile, whatever a profile's own says.
+func TestSharedDeliveryFollowsTheProvidersSwitch(t *testing.T) {
+	r := newRig(t)
+	writeSkill(t, filepath.Join(r.config, "lich", "library", "skills"), "pdf")
+	for _, sw := range []api.LibrarySwitchOptions{
+		{Kind: api.LibrarySkill, Name: "pdf", Provider: providers.Codex, On: true},
+		{Kind: api.LibrarySkill, Name: "pdf", Provider: providers.Codex, Profile: "work", On: false},
+	} {
+		if _, err := r.Set(t.Context(), sw); err != nil {
+			t.Fatal(err)
+		}
+	}
+	codex := filepath.Join(r.home, ".codex")
+	r.Deliver(providers.Codex, "work", codex)
+	if _, err := os.Stat(filepath.Join(codex, "skills", "pdf", deliveredMarker)); err != nil {
+		t.Errorf("Codex's shared skills folder lost the skill to a profile's switch: %v", err)
 	}
 }
 

@@ -2982,6 +2982,8 @@ LibraryProvider {
 	profiles []Profile
 	noSkills string
 	noMCP string
+	oneSkills string
+	oneMCP string
 }
 
 PatchNotesHighlight {

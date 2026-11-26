@@ -126,6 +126,7 @@ func (s *settingsScreen) libraryPaneRows(th *ui.Theme, sec settingsSection) []la
 		}
 		rows = append(rows, func(gtx C) D { return layout.Spacer{Height: ui.Space(5)}.Layout(gtx) })
 	}
+	rows = append(rows, libraryHeading(th, i18n.T("settings.librarySettings.library"), nil))
 	if len(items) == 0 {
 		empty := "settings.librarySettings.noSkills"
 		if kind == api.LibraryMCP {
@@ -169,19 +170,28 @@ func (s *settingsScreen) forgetLibraryVisit() {
 
 // foundHeading is the found group's label with Move in all at its right.
 func (s *settingsScreen) foundHeading(th *ui.Theme, found []backend.LibraryFound) layout.Widget {
-	return func(gtx C) D {
-		l := &s.library
+	l := &s.library
+	return libraryHeading(th, i18n.T("settings.librarySettings.found"), func(gtx C) D {
 		if l.moveAll.Clicked(gtx) {
 			go s.moveIn(found...)
 		}
-		gtx.Constraints.Min.X = gtx.Constraints.Max.X
 		all := th.Button(&l.moveAll, i18n.T("settings.librarySettings.moveInAll"))
 		all.Size, all.Variant, all.Disabled = ui.SizeSM, ui.VariantOutline, l.isMoving()
+		return all.Layout(gtx)
+	})
+}
+
+// libraryHeading is a group's label, the nav's own kind, with action at its
+// right when there is one.
+func libraryHeading(th *ui.Theme, label string, action layout.Widget) layout.Widget {
+	return func(gtx C) D {
+		gtx.Constraints.Min.X = gtx.Constraints.Max.X
+		children := []layout.FlexChild{layout.Flexed(1, th.Text(ui.Text2XS, strings.ToUpper(label)).Weight(font.SemiBold).Muted().Layout)}
+		if action != nil {
+			children = append(children, layout.Rigid(action))
+		}
 		return layout.Inset{Bottom: ui.Space(1)}.Layout(gtx, func(gtx C) D {
-			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-				layout.Flexed(1, th.Text(ui.Text2XS, strings.ToUpper(i18n.T("settings.librarySettings.found"))).Weight(font.SemiBold).Muted().Layout),
-				layout.Rigid(all.Layout),
-			)
+			return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 		})
 	}
 }
@@ -316,10 +326,15 @@ func (s *settingsScreen) libraryDetail(th *ui.Theme, sec settingsSection, it bac
 			cannot = append(cannot, p)
 			continue
 		}
-		rows = append(rows, func(gtx C) D { return s.librarySwitchRow(gtx, th, it, p.ID, p.Name, "", 0) })
+		shared := librarySharedReason(p, it.Kind)
+		if len(p.Profiles) < 2 || shared != "" {
+			rows = append(rows, func(gtx C) D { return s.librarySwitchRow(gtx, th, it, p.ID, p.Name, "", shared, 0) })
+			continue
+		}
+		rows = append(rows, func(gtx C) D { return libraryProviderHeading(gtx, th, p) })
 		for _, prof := range p.Profiles {
 			rows = append(rows, func(gtx C) D {
-				return s.librarySwitchRow(gtx, th, it, p.ID, prof.Name, prof.Slug, libraryProfileIndent)
+				return s.librarySwitchRow(gtx, th, it, p.ID, prof.Name, prof.Slug, "", libraryProfileIndent)
 			})
 		}
 	}
@@ -344,8 +359,35 @@ func libraryReason(p backend.LibraryProvider, kind string) string {
 	return i18n.T("settings.librarySettings.reason."+code, i18n.Args{"provider": p.Name})
 }
 
-// librarySwitchRow is one provider, or one of its profiles, and its switch.
-func (s *settingsScreen) librarySwitchRow(gtx C, th *ui.Theme, it backend.LibraryItem, provider, label, profile string, indent unit.Dp) D {
+// librarySharedReason is why p's profiles share one switch for an item of
+// kind, "" when each has its own.
+func librarySharedReason(p backend.LibraryProvider, kind string) string {
+	code := p.OneSkills
+	if kind == api.LibraryMCP {
+		code = p.OneMCP
+	}
+	if code == "" {
+		return ""
+	}
+	return i18n.T("settings.librarySettings.reason."+code, i18n.Args{"provider": p.Name})
+}
+
+// libraryProviderHeading is a provider whose profiles each have a switch: its
+// mark and name, with nothing to press.
+func libraryProviderHeading(gtx C, th *ui.Theme, p backend.LibraryProvider) D {
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5)}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(func(gtx C) D { return providerGlyph(gtx, th, p.ID, libraryMarkBox, markPixel) }),
+			ui.Gap(2.5),
+			layout.Rigid(th.Text(ui.TextSM, p.Name).Layout),
+		)
+	})
+}
+
+// librarySwitchRow is one provider, or one of its profiles, and its switch;
+// note says why one switch serves all of a provider's profiles.
+func (s *settingsScreen) librarySwitchRow(gtx C, th *ui.Theme, it backend.LibraryItem, provider, label, profile, note string, indent unit.Dp) D {
 	l := &s.library
 	key := it.Kind + "/" + it.Name + "/" + provider + "/" + profile
 	st := l.switches[key]
@@ -371,9 +413,15 @@ func (s *settingsScreen) librarySwitchRow(gtx C, th *ui.Theme, it backend.Librar
 				layout.Rigid(func(gtx C) D { return providerGlyph(gtx, th, provider, libraryMarkBox, markPixel) }),
 				ui.Gap(2.5))
 		}
-		children = append(children,
-			layout.Flexed(1, th.Text(ui.TextSM, label).Layout),
-			layout.Rigid(th.Switch(st).Layout))
+		children = append(children, layout.Rigid(th.Text(ui.TextSM, label).Layout))
+		if note != "" {
+			children = append(children, ui.Gap(2.5),
+				layout.Flexed(1, func(gtx C) D { return layout.E.Layout(gtx, th.Text(ui.TextXS, note).Muted().Layout) }),
+				ui.Gap(2.5))
+		} else {
+			children = append(children, layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }))
+		}
+		children = append(children, layout.Rigid(th.Switch(st).Layout))
 		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 	})
 }

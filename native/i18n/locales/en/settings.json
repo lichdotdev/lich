@@ -822,12 +822,14 @@
     "mcpSearchWords": "mcp server library move in",
     "pluginsSearchWords": "plugin hooks lich",
     "found": "Found in your providers",
+    "library": "In lich's library",
     "moveIn": "Move in",
     "moveInAll": "Move in all",
     "noSkills": "No skills in lich's library yet.",
     "noMCP": "No MCP servers in lich's library yet.",
     "reason": {
-      "notWritten": "lich does not write MCP servers into {provider} yet"
+      "notWritten": "lich does not write MCP servers into {provider} yet",
+      "sharedFile": "Every {provider} profile reads the same file, so one switch serves them all"
     },
     "pluginBrings": "Hooks: {hooks} · skills: {skills} · MCP servers: {mcp}",
     "pluginLocked": "Every session lich starts runs it. It cannot be turned off.",

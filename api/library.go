@@ -72,6 +72,9 @@ type LibraryPlugin struct {
 const (
 	// LibraryNotWritten is a provider lich does not yet write that kind into.
 	LibraryNotWritten = "notWritten"
+	// LibrarySharedFile is a provider whose profiles read that kind from one
+	// file or folder, so it cannot be split between them.
+	LibrarySharedFile = "sharedFile"
 )
 
 // LibraryProvider is one provider as the library's screens list it: its
@@ -83,6 +86,10 @@ type LibraryProvider struct {
 	Profiles []Profile `json:"profiles"`
 	NoSkills string    `json:"noSkills"`
 	NoMCP    string    `json:"noMCP"`
+	// OneSkills and OneMCP say why the provider's profiles share one switch
+	// for that kind (a Library* reason code), "" when each profile has its own.
+	OneSkills string `json:"oneSkills"`
+	OneMCP    string `json:"oneMCP"`
 }
 
 // LibraryItemOptions names one found item to move into the library.
