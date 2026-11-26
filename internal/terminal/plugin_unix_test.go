@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/agentplugin"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/providers"
 )
@@ -37,5 +38,31 @@ func TestSpawnAndAnIncompatibleReportAskForThePlugin(t *testing.T) {
 	defer mu.Unlock()
 	if !slices.Equal(asked, []string{providers.Claude, ""}) {
 		t.Errorf("asked %q, want the spawn's provider then a pass for the report", asked)
+	}
+}
+
+// A live session's release is in use, from its spawn to its end, and nothing
+// else is.
+func TestPluginReleasesInUseFollowTheSessions(t *testing.T) {
+	withClaudePlugin(t, "0.19.0")
+	release, _, ok := agentplugin.BundleDir()
+	if !ok {
+		t.Fatal("no release planted")
+	}
+	svc := New(stubBins{bin: stayAliveBin(t)}, nil, events.New())
+	if got := svc.PluginReleasesInUse(); len(got) != 0 {
+		t.Fatalf("in use before any spawn: %v", got)
+	}
+	if _, err := svc.Start(t.Context(), api.StartOptions{ID: "s1", ProjectID: "p1", Cwd: t.TempDir(), Kind: providers.Claude, Cols: 80, Rows: 24}); err != nil {
+		t.Fatalf("Start = %v", err)
+	}
+	if got := svc.PluginReleasesInUse(); !slices.Equal(got, []string{release}) {
+		t.Errorf("in use while it runs: %v, want [%s]", got, release)
+	}
+	if _, err := svc.Close(t.Context(), api.SessionIDOptions{ID: "s1"}); err != nil {
+		t.Fatal(err)
+	}
+	if got := svc.PluginReleasesInUse(); len(got) != 0 {
+		t.Errorf("in use after it ended: %v", got)
 	}
 }

@@ -424,7 +424,7 @@ func (s *Service) crushSupportsHooks() (string, error) {
 		return version, nil
 	}
 	return "", fmt.Errorf(
-		"Crush %s cannot load hooks from crushrc — update to %s or newer",
+		"Crush %s cannot load hooks from crushrc. Update it to %s or newer",
 		version, crushMinVersion)
 }
 

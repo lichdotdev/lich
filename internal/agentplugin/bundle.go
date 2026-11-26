@@ -259,3 +259,39 @@ func (s *Service) migrateInstalls() {
 	}
 	s.migrateClaude()
 }
+
+// SetInUse wires what names the release directories live sessions were spawned
+// with (terminal.Service.PluginReleasesInUse). Startup wiring.
+func (s *Service) SetInUse(fn func() []string) { s.inUse = fn }
+
+// pruneReleases removes every unpacked release but the current one and the
+// ones a live session loads; a release half unpacked is left to the unpack
+// that writes it. Nothing is removed while lich cannot say which are in use,
+// and a removal that fails is logged and left for the next pass.
+func (s *Service) pruneReleases() {
+	if s.inUse == nil {
+		return
+	}
+	root, err := bundleRoot()
+	if err != nil {
+		return
+	}
+	current, _ := bundleVersionIn(root)
+	entries, err := os.ReadDir(root)
+	if err != nil {
+		return
+	}
+	keep := map[string]bool{}
+	for _, dir := range s.inUse() {
+		keep[filepath.Clean(dir)] = true
+	}
+	for _, e := range entries {
+		dir := filepath.Join(root, e.Name())
+		if !e.IsDir() || e.Name() == current || strings.HasPrefix(e.Name(), bundleTmpPrefix) || keep[dir] {
+			continue
+		}
+		if err := os.RemoveAll(dir); err != nil {
+			slog.Warn("agentplugin: remove an unused plugin release", "dir", dir, "err", err)
+		}
+	}
+}

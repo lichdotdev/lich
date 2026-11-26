@@ -184,7 +184,7 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 	s.sessions[opts.ID] = sess
 	// Outside mu's protection by design (see Service.spawns), and stored with the
 	// registration so no report can arrive for a session whose kind is unknown.
-	s.spawns.Store(opts.ID, spawn{kind: opts.Kind, cwd: opts.Cwd, projectID: opts.ProjectID, profile: profileSlug(opts.Kind, profileDir)})
+	s.spawns.Store(opts.ID, spawn{kind: opts.Kind, cwd: opts.Cwd, projectID: opts.ProjectID, profile: profileSlug(opts.Kind, profileDir), plugin: l.plugin})
 	go s.stream(opts.ID, sess)
 	return sess, opts.Cwd, nil
 }
@@ -199,6 +199,8 @@ type spawnLaunch struct {
 	cli      ptySpec
 	confined bool
 	links    []string
+	// plugin is the plugin release the spawn hands the process.
+	plugin string
 }
 
 // spawnArgs is everything a spawn's argv is decided from.
@@ -298,7 +300,7 @@ func (s *Service) prepareSpawnLocked(opts api.StartOptions, profileDir, name str
 	reads := []string{sessionDropDir(s.dropDir, filesKey, inSandbox), s.shellIntegrationDir}
 	cli := spec
 	spec, skippedLinks := wrapSandbox(spec, opts.Kind, userHome(), reads, []string{artifacts}, profileDir, inSandbox, creds)
-	return spawnLaunch{spec: spec, cli: cli, confined: inSandbox, links: skippedLinks}, nil
+	return spawnLaunch{spec: spec, cli: cli, confined: inSandbox, links: skippedLinks, plugin: plugin}, nil
 }
 
 // providerKind resolves which provider mark a session-start report puts on a
@@ -325,6 +327,9 @@ type spawn struct {
 	// chat is whether the session runs as a chat (StartChat) rather than in
 	// its terminal.
 	chat bool
+	// plugin is the plugin release directory the process was handed, "" for
+	// none; it is in use for as long as this record lives.
+	plugin string
 }
 
 // spawnOf is how a live session's PTY was started, or the zero spawn once it is

@@ -79,6 +79,24 @@ func (s *Service) ensurePluginFor(kind string) {
 	}
 }
 
+// PluginReleasesInUse are the plugin release directories live sessions were
+// spawned with, which must not be removed under them. It takes mu, which a
+// spawn holds from reading agentplugin.BundleDir to recording its process, so
+// a spawn handed a release is either counted here or reads the release current
+// once this returns.
+func (s *Service) PluginReleasesInUse() []string {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	var dirs []string
+	s.spawns.Range(func(_, v any) bool {
+		if sp, ok := v.(spawn); ok && sp.plugin != "" {
+			dirs = append(dirs, sp.plugin)
+		}
+		return true
+	})
+	return dirs
+}
+
 // reenablePlugin turns lich's plugin back on for a Codex or Antigravity spawn
 // when the person turned it off (agentplugin.Reenable). A failure costs the
 // session its hooks, never its spawn.

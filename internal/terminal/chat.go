@@ -287,7 +287,7 @@ func (s *Service) spawnChat(opts api.StartOptions, launch ChatLaunch, profileDir
 	if srv := openCodeServer(opts.Kind, oc2, launch); srv != nil {
 		l.spec.env = append(l.spec.env, openCodeQuestionEnv+"=1", openCodePasswordEnv+"="+srv.Password)
 	}
-	started := spawn{kind: opts.Kind, cwd: opts.Cwd, projectID: opts.ProjectID, profile: profileSlug(opts.Kind, profileDir), chat: true}
+	started := spawn{kind: opts.Kind, cwd: opts.Cwd, projectID: opts.ProjectID, profile: profileSlug(opts.Kind, profileDir), chat: true, plugin: l.plugin}
 	// Dropped before Done closes, so whoever waited the process out can start
 	// the terminal at once; only this process's own entry, in case one started
 	// after it under the same id. The turn is left to the chat to close: it

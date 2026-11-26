@@ -106,6 +106,9 @@ func (s *Service) ensure() Problem {
 	case err != nil:
 		slog.Warn("agentplugin: unpack the newest release", "err", err)
 	}
+	if unpacked {
+		s.pruneReleases()
+	}
 	s.migrateInstalls()
 	for _, id := range supported {
 		if !s.wanted(id) || (loadsBundle(id) && !unpacked) {

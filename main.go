@@ -389,6 +389,7 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 	// The plugin sets itself up with no click: the release sessions load, and
 	// the install of every provider that still takes one, now and every hour,
 	// Codex's profiles included (agentplugin.Ensure).
+	plugins.SetInUse(term.PluginReleasesInUse)
 	go plugins.Watch()
 	term.SetPluginEnsure(plugins.EnsureFor)
 	// Every Claude Code profile gets the lich plugin once it is logged in, run as

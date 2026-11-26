@@ -132,6 +132,9 @@ type Service struct {
 	ensureMu  sync.Mutex
 	problemMu sync.Mutex
 	problem   Problem
+	// inUse names the release directories live sessions load (SetInUse); nil
+	// keeps every release, since nothing says which ones are free.
+	inUse func() []string
 }
 
 // New returns a service that shells out through bins.

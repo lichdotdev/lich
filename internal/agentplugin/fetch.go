@@ -74,7 +74,7 @@ func (s *Service) releaseVersion() (string, error) {
 
 // errNoRelease is why no release could be named.
 func errNoRelease() error {
-	return fmt.Errorf("cannot reach the %s releases — are you online?", marketplaceRepo)
+	return fmt.Errorf("cannot reach the %s releases. Check that this machine is online", marketplaceRepo)
 }
 
 // versionOf pulls the version out of the marker line lich writes above what it

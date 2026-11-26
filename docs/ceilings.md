@@ -1528,7 +1528,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `acp` in its chat), and `file://…/opencode/lich.js` appended to the `plugin` list of `OPENCODE_CONFIG_CONTENT`
   for opencode, the person's own list kept. That one module serves both opencode generations: 1.x runs its
   default export's `server()` (measured on 1.18.23 and 1.19.4), 2.x its `setup()`. A release is never written again once unpacked, so a session runs on
-  the files it started with while a newer one lands beside it, and old releases are never deleted. A newer
+  the files it started with while a newer one lands beside it. A release goes once it is neither the current one
+  nor one a live session was spawned with (`pruneReleases`, after each pass that has a release there): the
+  terminal records the release each process was handed for as long as it lives, and answers under the lock a
+  spawn holds from reading the release to recording itself, so no spawn is handed a directory being removed. A
+  removal that fails is logged and tried again on the next pass. A newer
   compatible release is unpacked by lich's next pass (agentplugin.Ensure: at start, every hour, and on a spawn
   that finds the plugin missing), with no prompt. Each of those loads its own config's
   plugins beside lich's, so lich takes out the install a lich of the past put there once a release is unpacked:

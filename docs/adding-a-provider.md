@@ -45,7 +45,7 @@ hits it.
 | Where are its credentials, config and conversations? | `~/.gemini` (+ `~/.gemini/antigravity-cli/`), found by running it against a throwaway `HOME` |
 | What proves a conversation still exists? | `~/.gemini/antigravity-cli/conversations/<id>.db` |
 | What are its lifecycle events, and what is on their payloads? | A real run with a hook that dumps stdin: `PreInvocation`, `PreToolUse`, `PostToolUse`, `PostInvocation`, `Stop`, all camelCase |
-| Can a session be handed a plugin on its command line or environment? | No — `--settings` refuses every plugin key, so lich installs it and turns it back on at spawn (`agentplugin.Reenable`); Claude Code and Cursor take `--plugin-dir`, oh-my-pi `-e`, opencode its inline config (`internal/terminal/plugin.go`) |
+| Can a session be handed a plugin on its command line or environment? | No: `--settings` refuses every plugin key, so lich installs it and turns it back on at spawn (`agentplugin.Reenable`); Claude Code and Cursor take `--plugin-dir`, oh-my-pi `-e`, opencode its inline config (`internal/terminal/plugin.go`) |
 | How is a plugin installed, and does its CLI install a *release*? | `agy plugin install` takes a directory and clones only a default branch — so lich writes the released files itself |
 
 The rig for the last two is the cheap part and the one worth keeping: point the
