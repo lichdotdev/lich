@@ -92,7 +92,7 @@ func later[P any](do func(b *browser, p P, done func(any, error))) handler {
 // add the rest (osHandlers).
 var handlers = map[string]handler{
 	browserwire.Hello: now(func(*browser, struct{}) (any, error) {
-		return browserwire.HelloResult{Version: browserwire.Version}, nil
+		return browserwire.HelloResult{Version: browserwire.Version, Frames: drawsOffscreen()}, nil
 	}),
 	browserwire.Window: now(func(_ *browser, p browserwire.WindowParams) (any, error) {
 		C.lich_browser_set_app(C.uint64_t(p.XID))

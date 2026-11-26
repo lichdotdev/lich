@@ -36,3 +36,13 @@ func paneInputReachesThePage(t *testing.T, s *Service, f *fakeLichBrowser) {
 		t.Fatalf("wheel %+v, want the pane's at 5,6 by 120", m)
 	}
 }
+
+func TestWebkitPaneInputOfAPageDrawnOffScreenGoesOverTheWire(t *testing.T) {
+	f := newFakeLichBrowser(t)
+	f.frames = true
+	s, _ := wkService(t, f)
+	if _, err := s.Attach("s", Viewport{W: 900, H: 700, Scale: 1}); err != nil {
+		t.Fatal(err)
+	}
+	paneInputGoesOverTheWire(t, s, f)
+}

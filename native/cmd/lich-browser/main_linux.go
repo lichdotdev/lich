@@ -14,7 +14,7 @@ import (
 
 func startEngine() error {
 	if C.lich_browser_init() == 0 {
-		return errors.New("GTK cannot open the X display")
+		return errors.New("GTK cannot open the display")
 	}
 	return nil
 }

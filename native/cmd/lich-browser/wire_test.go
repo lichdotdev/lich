@@ -18,7 +18,8 @@ import (
 )
 
 // The tests drive a built lich-browser over its wire, as the backend does,
-// on the screen they run on (CI's Xvfb on Linux, the runner's own on macOS). builtEnv names one built
+// on the screen they run on (CI's Xvfb on Linux, or the headless Wayland
+// waylandEnv names; the runner's own on macOS). builtEnv names one built
 // already, which the Windows CI job runs, having no Go toolchain to build
 // one: there WebView2Loader.dll lies beside it.
 
@@ -69,7 +70,7 @@ func start(t *testing.T) *client {
 		t.Skip(noScreen())
 	}
 	cmd := exec.Command(built)
-	cmd.Env = append(os.Environ(), "WAYLAND_DISPLAY=/nonexistent/wl-none")
+	cmd.Env = browserEnv()
 	cmd.Stderr = &testLog{t: t}
 	in, _ := cmd.StdinPipe()
 	out, _ := cmd.StdoutPipe()

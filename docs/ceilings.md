@@ -2448,7 +2448,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
 - **A page in lich-browser has no pause for the agent to hear** (`internal/browser/webkit*.go`,
-  `docs/lich-browser.md`): on Linux with an X display and `lich-browser` beside `lich`, on macOS with
+  `docs/lich-browser.md`): on Linux with an X or Wayland display and `lich-browser` beside `lich`, on macOS with
   `lich-browser` beside `lich`, and on Windows with `lich-browser.exe` beside `lich.exe`, every page lives there,
   and DevTools is the engine's inspector, a tab of the pane's. Nothing on the wire says the page stopped in its
   debugger, so the agent's tools do not fail naming the pause as they do on a Chrome page: a read answers with the
@@ -2468,6 +2468,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   acceleration AppKit puts on it. A popped-out page's window has no Dock tile (lich-browser is an accessory app),
   and the favicon is fetched apart from the page's cookies. WKDownload refuses a file that exists, so the name Go
   reserves is freed just before WebKit takes it: two downloads of one name at once may race for it.
+- **A page in lich-browser on Wayland without X is drawn from frames, with three gaps against X11**
+  (`native/cmd/lich-browser/frames_linux.go`, `docs/lich-browser.md`): with no X display each tab draws in a
+  `GtkOffscreenWindow`, and the pane shows it the way it showed Chrome's screencast, so every frame crosses the
+  backend's `/events` as a base64 JPEG: 130 KiB a frame at 1280x720 and 353 KiB at 2x, about 65 a second while
+  the wheel scrolls, 2 ms and 8 ms to encode (KWin headless, 2026-11-26), and a PNG once the page holds still.
+  The pane's pointer, keys and committed text reach the page over the wire, trusted, and the clipboard goes
+  through the window, as with Chrome. The gaps: (1) the pane shows the window's arrow over the page, never its
+  I-beam or hand; (2) a file dragged from the desktop does not drop into the page; (3) a page just loaded may
+  show GTK's dark background for one frame, about 50 ms, before WebKit's first paint.
 - **A layer the window floats over the content shows over a page it draws itself only where it says so**
   (`coverPages` in `native/cmd/lich-native/browser_native.go`): the page is a native child window over the pane,
   above anything the window draws, so a layer that floats over the content (a dock or sidebar sliding in, and later

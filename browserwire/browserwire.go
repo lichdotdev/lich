@@ -7,7 +7,7 @@ import "encoding/json"
 
 // Version is what hello answers; a lich-browser answering another one was
 // built from another commit and the backend does not start it.
-const Version = 1
+const Version = 2
 
 // Request is one call from the backend; ID pairs it with its Response.
 type Request struct {
@@ -54,6 +54,10 @@ const (
 	PopIn     = "popIn"
 	Raise     = "raise"
 	Draw      = "draw"
+	// Screencast and StopScreencast start and stop a page's frames, where
+	// HelloResult.Frames says pages draw off screen.
+	Screencast     = "screencast"
+	StopScreencast = "stopScreencast"
 )
 
 // Events.
@@ -67,10 +71,14 @@ const (
 	EventDownload = "download"
 	EventCrashed  = "crashed"
 	EventClosed   = "closed"
+	EventFrame    = "frame"
 )
 
 type HelloResult struct {
 	Version int `json:"version"`
+	// Frames: pages draw off screen, with no surface for the window to
+	// show, so the window draws their frames and sends them its input.
+	Frames bool `json:"frames,omitempty"`
 }
 
 type WindowParams struct {
@@ -184,6 +192,23 @@ type SnapshotResult struct {
 	PNG []byte `json:"png"`
 	W   int    `json:"w"`
 	H   int    `json:"h"`
+}
+
+// ScreencastParams lays the page out at W x H CSS pixels, drawn at Scale,
+// and sends its front tab's frames from then on.
+type ScreencastParams struct {
+	Page  string  `json:"page"`
+	W     int     `json:"w"`
+	H     int     `json:"h"`
+	Scale float64 `json:"scale"`
+}
+
+// FrameEvent is what the shown tab drew: Data is a base64 JPEG at the
+// page's scale, as api.BrowserFrame carries it on.
+type FrameEvent struct {
+	Page string `json:"page"`
+	Tab  string `json:"tab"`
+	Data string `json:"data"`
 }
 
 type ZoomParams struct {

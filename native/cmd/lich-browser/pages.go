@@ -300,4 +300,5 @@ func (b *browser) sendTabs(p *page) {
 		}
 	}
 	b.wire.event(browserwire.EventTabs, ev)
+	p.frameShown()
 }
