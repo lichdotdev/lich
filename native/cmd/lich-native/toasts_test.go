@@ -59,8 +59,9 @@ func TestToastsStandInTheBottomRightCornerOverTheBalloons(t *testing.T) {
 	if drawn.Min.Y < size.Y/2 || drawn.Min.X < size.X/2 {
 		t.Errorf("the toast is drawn at %v, want it in the bottom-right corner, clear of a screen's top-right actions", drawn)
 	}
-	// The box ends the gutter over the balloons; its shadow falls into the gap.
-	if box, top := size.Y-footer-int(gutter), size.Y-footer; drawn.Max.Y < box || drawn.Max.Y > top {
-		t.Errorf("the toast ends at y=%d, want its box at %d and nothing past %d, the top of a %dpx footer", drawn.Max.Y, box, top, footer)
+	// The box stands the mid elevation's reach (8) over the balloons, so its
+	// shadow falls into the gap and ends before them.
+	if box, top := size.Y-footer-8, size.Y-footer; drawn.Max.Y <= box || drawn.Max.Y > top {
+		t.Errorf("the toast ends at y=%d, want its shadow past its box at %d and nothing past %d, the top of a %dpx footer", drawn.Max.Y, box, top, footer)
 	}
 }

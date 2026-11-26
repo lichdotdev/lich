@@ -28,12 +28,12 @@ var (
 		light: []BoxShadow{{Y: 2, Blur: 6, Alpha: 0.08}},
 	}
 	ElevationMid = Elevation{
-		dark:  []BoxShadow{{Y: 8, Blur: 24, Alpha: 0.22}, {Y: 1, Blur: 3, Alpha: 0.14}},
-		light: []BoxShadow{{Y: 10, Blur: 28, Alpha: 0.14}, {Y: 2, Blur: 6, Alpha: 0.08}},
+		dark:  []BoxShadow{{Y: 2, Blur: 12, Alpha: 0.22}, {Y: 1, Blur: 3, Alpha: 0.14}},
+		light: []BoxShadow{{Y: 2, Blur: 12, Alpha: 0.14}, {Y: 1, Blur: 3, Alpha: 0.08}},
 	}
 	ElevationHigh = Elevation{
-		dark:  []BoxShadow{{Y: 16, Blur: 40, Alpha: 0.3}, {Y: 2, Blur: 8, Alpha: 0.18}},
-		light: []BoxShadow{{Y: 20, Blur: 48, Alpha: 0.2}, {Y: 4, Blur: 12, Alpha: 0.1}},
+		dark:  []BoxShadow{{Y: 6, Blur: 24, Alpha: 0.3}, {Y: 2, Blur: 8, Alpha: 0.18}},
+		light: []BoxShadow{{Y: 6, Blur: 24, Alpha: 0.2}, {Y: 2, Blur: 8, Alpha: 0.1}},
 	}
 )
 
@@ -80,14 +80,18 @@ type BoxShadow struct {
 
 // Paint stands in for the blur with rings growing from half the blur inside
 // the box of size to half outside it, so that all of them together are black
-// at Alpha, compensated for the linear-light blend as dialogScrimOpacity is.
-// The shadow lands on whatever the window holds, not a known surface, so it
+// at Alpha in linear light: compensated like dialogScrimOpacity, it read far
+// darker than its CSS. The shadow lands on whatever the window holds, not a known surface, so it
 // stays translucent.
 func (s BoxShadow) Paint(gtx C, size image.Point, radius int) {
 	blur := float32(gtx.Dp(s.Blur))
 	down := gtx.Dp(s.Y)
 	layers := max(1, int(s.Blur/shadowStep))
-	shade := Alpha(black, float32(1-math.Pow(math.Pow(1-s.Alpha, 2.4), 1/float64(layers))))
+	shade := Alpha(black, float32(1-math.Pow(1-s.Alpha, 1/float64(layers))))
+	// Drawn straight on the window, each ring's darkening is under one step
+	// of the 8-bit framebuffer and rounds away, so the shadow vanished once a
+	// motion's opacity layer, where they add up, was popped.
+	defer paint.PushOpacity(gtx.Ops, 1).Pop()
 	for i := range layers {
 		grow := int(blur*(float32(i)+0.5)/float32(layers) - blur/2)
 		box := image.Rect(-grow, down-grow, size.X+grow, size.Y+down+grow)
