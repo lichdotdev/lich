@@ -58,6 +58,7 @@
     "vimFailed": "Neovim did not start, so the editor takes its own keys",
     "vimLspMissing": "{name} not found",
     "vimConfigFailed": "Could not open the Neovim config",
-    "vimLspFailed": "{name} failed to start"
+    "vimLspFailed": "{name} failed to start",
+    "vimLspInstall": "Install"
   }
 }

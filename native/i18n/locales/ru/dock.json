@@ -60,6 +60,7 @@
     "vimFailed": "Neovim не запустился, поэтому редактор работает со своими клавишами",
     "vimLspMissing": "{name} не найден",
     "vimConfigFailed": "Не удалось открыть конфиг Neovim",
-    "vimLspFailed": "{name} не запустился"
+    "vimLspFailed": "{name} не запустился",
+    "vimLspInstall": "Установить"
   }
 }

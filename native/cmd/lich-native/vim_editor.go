@@ -53,6 +53,16 @@ type vimBuffer struct {
 	yank      []godemirror.SelectionRange
 	yankUntil time.Time
 	pum       vimPumView
+	lspUI     vimLspUI
+	// retry is set by an Install: the next time the editor comes back, its
+	// server is started again, until one attaches.
+	retry bool
+}
+
+// vimLspUI is the strip's language-server widgets.
+type vimLspUI struct {
+	install ui.Clickable
+	reason  ui.Tooltip
 }
 
 // vimShown is a :s preview in the editor: bytes from..to of the text are
@@ -210,6 +220,7 @@ func (f *fileEditor) vimApply(ev vimEvent) {
 			return
 		}
 		f.vim.state = ev.state
+		f.vim.retry = f.vim.retry && len(ev.state.lsp) == 0
 		f.vimPreview(ev.state.preview)
 		f.vimSelect(*ev.state)
 	case ev.yank != nil:

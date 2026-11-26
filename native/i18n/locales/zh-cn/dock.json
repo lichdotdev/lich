@@ -58,6 +58,7 @@
     "vimFailed": "Neovim 未能启动，编辑器改用自带的按键",
     "vimLspMissing": "未找到 {name}",
     "vimConfigFailed": "无法打开 Neovim 配置",
-    "vimLspFailed": "{name} 启动失败"
+    "vimLspFailed": "{name} 启动失败",
+    "vimLspInstall": "安装"
   }
 }
