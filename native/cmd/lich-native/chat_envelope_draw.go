@@ -1,12 +1,15 @@
 package main
 
 import (
+	"image"
 	"image/color"
 	"strconv"
 	"strings"
 
 	"gioui.org/font"
 	"gioui.org/layout"
+	"gioui.org/op/clip"
+	"gioui.org/op/paint"
 
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
@@ -47,9 +50,13 @@ func (u *window) chatEnvelopes(gtx C, th *ui.Theme, p *chatPane, it backend.Chat
 			layout.Rigid(rows),
 			ui.VGap(1),
 			layout.Rigid(func(gtx C) D {
-				return layout.E.Layout(gtx, func(gtx C) D {
+				stamp := func(gtx C) D {
 					return u.chatStampRow(gtx, th, c, readable.Text, func(gtx C) D { return u.chatDatedStamp(gtx, th, p, readable) }, over, true)
-				})
+				}
+				if envs[0].kind == "task" {
+					return layout.Inset{Left: chatTaskIndent}.Layout(gtx, stamp)
+				}
+				return layout.E.Layout(gtx, stamp)
 			}),
 		)
 	})
@@ -95,11 +102,7 @@ func envelopesText(envs []envelope) string {
 func (u *window) chatEnvelope(gtx C, th *ui.Theme, p *chatPane, key string, env envelope) D {
 	switch env.kind {
 	case "task":
-		from := ""
-		if env.from != "" {
-			from = i18n.T("chat.notification.from", i18n.Args{"label": env.from})
-		}
-		return u.chatUserFrom(gtx, th, p, key, from, env.text["prompt"])
+		return u.chatTask(gtx, th, p, key, env)
 	case "worker-finished", "worker-failed", "worker-stopped", "worker-waiting", "expired":
 		return u.chatWorkerNote(gtx, th, p, key, env)
 	case "request":
@@ -111,6 +114,68 @@ func (u *window) chatEnvelope(gtx C, th *ui.Theme, p *chatPane, key string, env 
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, line, ui.VGap(2),
 		layout.Rigid(func(gtx C) D { return u.chatUser(gtx, th, p, key, env.text["prompt"]) }))
+}
+
+// chatTaskIndent is how far a task's balloon stands from the column's left
+// edge: past its sender's mark and the gap after it.
+var chatTaskIndent = ui.Space(chatTaskMark + chatTaskGap)
+
+const chatTaskMark, chatTaskGap = 3.5, 2.5
+
+// chatTask is a task another session handed this one, at the column's left
+// as the other side of a conversation: the sender's provider mark, its name
+// and an arrow that opens it while it is open, then the prompt in a Card
+// balloon whose corner by the mark is the tight one. The right side stays the
+// person's own.
+func (u *window) chatTask(gtx C, th *ui.Theme, p *chatPane, key string, env envelope) D {
+	open := p.note(key)
+	if open.Clicked(gtx) {
+		if sv, ok := u.model.sessionViewOf(env.session); ok {
+			u.openSession(sv.projectID, sv.ID)
+		}
+	}
+	sv, alive := u.model.sessionViewOf(env.session)
+	maxW := int(float32(gtx.Constraints.Max.X) * chatUserShare)
+	on := th.On(th.Card)
+	balloon := func(gtx C) D {
+		gtx.Constraints.Min = image.Point{}
+		gtx.Constraints.Max.X = maxW
+		return layout.Background{}.Layout(gtx,
+			func(gtx C) D {
+				r, tip := gtx.Dp(ui.RadiusXL), gtx.Dp(ui.RadiusSM)
+				box := clip.RRect{Rect: image.Rectangle{Max: gtx.Constraints.Min}, NW: r, NE: r, SE: r, SW: tip}
+				paint.FillShape(gtx.Ops, th.Card, box.Op(gtx.Ops))
+				paint.FillShape(gtx.Ops, th.Border, clip.Stroke{Path: box.Path(gtx.Ops), Width: float32(gtx.Dp(1))}.Op())
+				return D{Size: gtx.Constraints.Min}
+			},
+			func(gtx C) D {
+				return layout.Inset{Top: ui.Space(3), Bottom: ui.Space(3), Left: ui.Space(4), Right: ui.Space(4)}.Layout(gtx, func(gtx C) D {
+					return u.userMarkdown(gtx, on, p, key, env.text["prompt"])
+				})
+			})
+	}
+	head := []layout.FlexChild{layout.Rigid(th.Text(ui.TextXS, env.from).Weight(font.Medium).Layout)}
+	if alive {
+		head = append(head, ui.Gap(1.5), layout.Rigid(func(gtx C) D {
+			return open.Layout(gtx, func(gtx C) D {
+				fg := th.MutedForeground
+				if open.Hovered() {
+					fg = th.Foreground
+				}
+				return icOpenCard.Layout(gtx, ui.Space(3), fg)
+			})
+		}))
+	}
+	column := []layout.FlexChild{}
+	if env.from != "" {
+		column = append(column, layout.Rigid(func(gtx C) D { return layout.Flex{Alignment: layout.Middle}.Layout(gtx, head...) }), ui.VGap(1))
+	}
+	column = append(column, layout.Rigid(balloon))
+	return layout.Flex{}.Layout(gtx,
+		layout.Rigid(func(gtx C) D { return providerGlyph(gtx, th, sv.Kind, ui.Space(chatTaskMark), markPixel) }),
+		ui.Gap(chatTaskGap),
+		layout.Rigid(func(gtx C) D { return layout.Flex{Axis: layout.Vertical}.Layout(gtx, column...) }),
+	)
 }
 
 // chatWorkerNote is a worker's outcome as one line, shut: the worker's

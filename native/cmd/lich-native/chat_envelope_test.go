@@ -184,14 +184,27 @@ func TestAWorkersNoteUnfoldsAndItsArrowOpensTheCard(t *testing.T) {
 
 // A worker's chat opens on its task as the person's box, naming who sent it.
 func TestATaskOpensTheWorkersChatAsTheSendersBox(t *testing.T) {
-	_, r := envelopeRig(t, worker)
-	if !r.showsAll("From Relay fixes", "Fix #412: the relay handshake races on reconnect. Add a test that reproduces it first.") {
+	u, r := envelopeRig(t, worker)
+	u.model.projects[0].Sessions = append(u.model.projects[0].Sessions, backend.Session{ID: "s3", Kind: "claude", Label: "Relay fixes"})
+	r.frame()
+	// the sender's name alone heads the box: the left side and the mark say
+	// it is not the person's (contract changed: "From Relay fixes" before)
+	if !r.showsAll("Relay fixes", "Fix #412: the relay handshake races on reconnect. Add a test that reproduces it first.") {
 		t.Fatalf("the task is not drawn as the sender's box:\n%s", r.drawn())
 	}
 	if r.shows("lich-notification") || r.shows("last-message") {
 		t.Errorf("the task was drawn as its XML:\n%s", r.drawn())
 	}
+	// the prompt is short: at the right, as the person's, it would start
+	// past the middle
+	if prompt := r.glyphAt(t, "Fix #412: the relay handshake races on reconnect. Add a test that reproduces it first."); prompt.X > float32(r.size.X)/4 {
+		t.Errorf("the task starts at x=%v of %v, not at the column's left", prompt.X, r.size.X)
+	}
 	writeShot(t, r, "envelope-task.png")
+	r.click(t, r.controlOf(t, "Relay fixes"))
+	if sv, ok := u.model.activeSession(); !ok || sv.ID != "s3" {
+		t.Errorf("active session = %q, want the sender s3", sv.ID)
+	}
 }
 
 // Copying a notification copies its rows' words, and walking back through the
