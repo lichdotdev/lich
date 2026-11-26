@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"path/filepath"
 	"testing"
 
 	"gioui.org/io/pointer"
@@ -23,20 +24,21 @@ func artifactWindow(t *testing.T) (*window, *model) {
 
 func TestAMarkdownArtifactOpensOnTheStageRenderedInTheSessionsCheckoutEditor(t *testing.T) {
 	u, m := artifactWindow(t)
-	u.openArtifactInEditor("a2", backend.Artifact{Name: "notes.md", Path: "/art/notes.md"})
+	path := nativeTestPath("/art/notes.md")
+	u.openArtifactInEditor("a2", backend.Artifact{Name: "notes.md", Path: path})
 	if m.editorShown() != "/repo" {
 		t.Fatalf("stage shows %q's editor, want /repo's", m.editorShown())
 	}
 	n, _ := m.editorOf("/repo")
 	f := u.editors.byCheckout["/repo"]
-	if n.name() != "notes.md" || f.dir != "/art" || f.rel != "notes.md" || f.md.mode != mdRendered {
+	if n.name() != "notes.md" || f.dir != filepath.Dir(path) || f.rel != "notes.md" || f.md.mode != mdRendered {
 		t.Fatalf("node %q, editor %q in %q mode %d; want notes.md of /art, rendered", n.name(), f.rel, f.dir, f.md.mode)
 	}
 }
 
 func TestACheckoutMarkdownOpensInTheCheckoutAfterAnArtifact(t *testing.T) {
 	u, _ := artifactWindow(t)
-	u.openArtifactInEditor("a2", backend.Artifact{Name: "notes.md", Path: "/art/notes.md"})
+	u.openArtifactInEditor("a2", backend.Artifact{Name: "notes.md", Path: nativeTestPath("/art/notes.md")})
 	u.openInEditor("/repo", "notes.md", 0, 0, agentNote{})
 	f := u.editors.byCheckout["/repo"]
 	if f.dir != "" || f.md.mode != mdRendered {
@@ -76,7 +78,7 @@ func TestAnArtifactsHeaderSaysItIsTheAgentsAndReadOnly(t *testing.T) {
 
 func TestClosingAnArtifactFromItsNodesMenuTakesItOffTheStage(t *testing.T) {
 	u, m := artifactWindow(t)
-	u.openArtifactInEditor("a2", backend.Artifact{Name: "notes.md", Path: "/art/notes.md"})
+	u.openArtifactInEditor("a2", backend.Artifact{Name: "notes.md", Path: nativeTestPath("/art/notes.md")})
 	root := new(ui.Root)
 	s := newSidebar(root)
 	s.open = true

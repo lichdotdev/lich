@@ -15,25 +15,25 @@ import (
 	"github.com/lichdotdev/lich/native/ui/filetree"
 )
 
-const pathsCheckout = "/repo"
+var pathsCheckout = nativeTestPath("/repo")
 
 var pathsListing = api.FileListing{Files: []string{"app.go", "youtrack/client_test.go", "youtrack/api/client.go"}}
 
 func TestAPathInAnAnswerLinksWhatTheCheckoutHolds(t *testing.T) {
 	f := newChatFiles(pathsListing.Files)
 	for written, want := range map[string]bool{
-		"app.go":                  true,
-		"./app.go":                true,
-		"/repo/app.go":            true,
-		"youtrack/":               true,
-		"youtrack":                true,
-		"youtrack/client_test.go": true,
-		"client_test.go":          true, // the tail of one file, as a terminal's path:line
-		"api/":                    false,
-		"gone.go":                 false,
-		"../app.go":               false,
-		"/elsewhere/app.go":       false,
-		"~/app.go":                false,
+		"app.go":                            true,
+		"./app.go":                          true,
+		nativeTestPath("/repo/app.go"):      true,
+		"youtrack/":                         true,
+		"youtrack":                          true,
+		"youtrack/client_test.go":           true,
+		"client_test.go":                    true, // the tail of one file, as a terminal's path:line
+		"api/":                              false,
+		"gone.go":                           false,
+		"../app.go":                         false,
+		nativeTestPath("/elsewhere/app.go"): false,
+		"~/app.go":                          false,
 	} {
 		if got := f.links(pathsCheckout, written); got != want {
 			t.Errorf("%q links %v, want %v", written, got, want)

@@ -178,7 +178,8 @@ func TestThePlusAndTheAddSquareOpenThePicker(t *testing.T) {
 			u.footer.attachAt = u.attachAtPrompt
 			u.footer.layout = footerLayout{Left: []string{"changes"}}
 			r.settle(t)
-			r.click(t, r.smallestClickIn(t, boxPlus))
+			r.queueClick(r.smallestClickIn(t, boxPlus))
+			r.frame()
 			waitCards(t, r, p, notes)
 			r.settle(t)
 			other := writeFile(t, filepath.Join(filepath.Dir(notes), "spec-v2.pdf"), "%PDF")
@@ -187,7 +188,8 @@ func TestThePlusAndTheAddSquareOpenThePicker(t *testing.T) {
 			if !ok {
 				t.Fatalf("no add square with a file attached:\n%s", r.drawn())
 			}
-			r.click(t, centre(sq))
+			r.queueClick(centre(sq))
+			r.frame()
 			waitCards(t, r, p, notes, other)
 		})
 	}

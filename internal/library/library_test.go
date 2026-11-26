@@ -298,8 +298,11 @@ func skillsHanded(t *testing.T, r rig, provider string, d Delivery) []string {
 		dir = d.SkillsDir
 		if provider == providers.OMP {
 			data, err := os.ReadFile(d.OMPConfig)
-			if err != nil || !strings.Contains(string(data), d.SkillsDir) {
-				t.Errorf("omp overlay %q (err %v) does not name %s", data, err, d.SkillsDir)
+			_, encoded, ok := strings.Cut(string(data), "    - ")
+			var configuredDir string
+			decodeErr := json.Unmarshal([]byte(strings.TrimSpace(encoded)), &configuredDir)
+			if err != nil || !ok || decodeErr != nil || configuredDir != d.SkillsDir {
+				t.Errorf("omp overlay %q (read err %v, decode err %v) does not name %s", data, err, decodeErr, d.SkillsDir)
 			}
 		}
 		if provider == providers.Claude || provider == providers.Cursor {

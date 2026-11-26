@@ -11,6 +11,9 @@ import (
 
 // fileURI is path as a file manager lists it in a drag's text/uri-list.
 func fileURI(path string) string {
+	if filepath.VolumeName(path) != "" {
+		path = string(filepath.Separator) + path
+	}
 	return (&url.URL{Scheme: "file", Path: filepath.ToSlash(path)}).String() + "\r\n"
 }
 

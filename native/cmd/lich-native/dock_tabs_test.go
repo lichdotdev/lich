@@ -37,6 +37,10 @@ func tabButtonsOf(r *frameRig) []f32.Point {
 func TestDockTabButtonOpensItsTabInTheFrameThatTookTheClick(t *testing.T) {
 	u, r := stageFrames(t, dockCode)
 	r.settle(t)
+	u.dock.show(dockReview)
+	r.waitFor(t, i18n.T("diff.reviewPanel.noChanges"))
+	u.dock.show(dockCode)
+	r.settle(t)
 	buttons := tabButtonsOf(r)
 	if len(buttons) != dockBuiltinTabs {
 		t.Fatalf("%d tab buttons at the dock's foot, want %d", len(buttons), dockBuiltinTabs)

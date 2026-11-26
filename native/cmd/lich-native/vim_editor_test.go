@@ -412,15 +412,16 @@ func TestVimRestartRebuildsTheBuffersFromTheEditors(t *testing.T) {
 
 func TestVimKnowsTheFilesOfTheConfig(t *testing.T) {
 	h := newVimHost(func() {})
-	if h.inConfig("/home/p/.config/nvim/init.lua") {
+	config := nativeTestPath("/home/p/.config/nvim")
+	if h.inConfig(filepath.Join(config, "init.lua")) {
 		t.Fatal("a file counted as config before Neovim said where its config is")
 	}
-	h.configDir = "/home/p/.config/nvim"
+	h.configDir = config
 	for path, want := range map[string]bool{
-		"/home/p/.config/nvim/init.lua":        true,
-		"/home/p/.config/nvim/lua/plugins.lua": true,
-		"/home/p/.config/nvim-old/init.lua":    false,
-		"/home/p/code/lich/native/main.go":     false,
+		filepath.Join(config, "init.lua"):                  true,
+		filepath.Join(config, "lua", "plugins.lua"):        true,
+		filepath.Join(config+"-old", "init.lua"):           false,
+		nativeTestPath("/home/p/code/lich/native/main.go"): false,
 	} {
 		if got := h.inConfig(path); got != want {
 			t.Errorf("%s in config = %v", path, got)

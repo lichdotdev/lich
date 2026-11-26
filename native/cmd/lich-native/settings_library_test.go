@@ -115,7 +115,7 @@ func TestSkillsScreen(t *testing.T) {
 	r.frames(2)
 	r.settle(t)
 	shootBothThemes(t, r, "settings-skills-hover")
-	r.clickLabel(t, i18n.T("settings.librarySettings.moveIn"))
+	r.pressLabel(t, i18n.T("settings.librarySettings.moveIn"))
 	if got := calledWith(t, f, "library.MoveIn"); !strings.Contains(got, `"name":"codixel"`) {
 		t.Errorf("move in %s, want codixel", got)
 	}

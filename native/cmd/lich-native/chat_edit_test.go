@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -145,14 +146,17 @@ func TestSplitDiffLeavesGitsHeaderOut(t *testing.T) {
 }
 
 func TestEditPath(t *testing.T) {
+	checkout := nativeTestPath("/repo")
+	inside := filepath.ToSlash(filepath.Join(checkout, "a", "b.go"))
+	outside := filepath.ToSlash(nativeTestPath("/etc/hosts"))
 	for name, tc := range map[string]struct {
 		diff, title, checkout, want string
 	}{
 		"the diff's new side":       {"--- a/x.go\n+++ b/x.go\n@@ -1 +1 @@\n", "", "", "x.go"},
 		"a file deleted":            {"--- a/gone.go\n+++ /dev/null\n@@ -1 +0,0 @@\n", "", "", "gone.go"},
-		"absolute, in the checkout": {"--- /repo/a/b.go\n+++ /repo/a/b.go\n", "", "/repo", "a/b.go"},
-		"absolute, outside":         {"", "/etc/hosts", "/repo", "/etc/hosts"},
-		"no diff, the target":       {"", "notes.md", "/repo", "notes.md"},
+		"absolute, in the checkout": {"--- " + inside + "\n+++ " + inside + "\n", "", checkout, "a/b.go"},
+		"absolute, outside":         {"", outside, checkout, outside},
+		"no diff, the target":       {"", "notes.md", checkout, "notes.md"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			if got := editPath(&backend.ChatToolCall{Diff: tc.diff, Title: tc.title}, tc.checkout); got != tc.want {
