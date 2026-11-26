@@ -435,9 +435,9 @@ func (v *pullView) inlinePending(gtx C, i int, c backend.ReviewComment) D {
 										return D{}
 									}
 									editB := on.Button(clickableAt(s.edits, i), i18n.T("pulls.pullsConversation.edit"))
-									editB.Size, editB.Variant = ui.SizeXS, ui.VariantGhost
+									editB.Size, editB.Variant = ui.SizeSM, ui.VariantGhost
 									discardB := on.Button(clickableAt(s.discards, i), i18n.T("pulls.pullsConversation.discard"))
-									discardB.Size, discardB.Variant = ui.SizeXS, ui.VariantDestructive
+									discardB.Size, discardB.Variant = ui.SizeSM, ui.VariantDestructive
 									return layout.Flex{Alignment: layout.Middle}.Layout(gtx, layout.Rigid(editB.Layout), ui.Gap(1), layout.Rigid(discardB.Layout))
 								}),
 							)

@@ -134,5 +134,5 @@ func size(s extension.Size) ui.Size {
 	case extension.SizeIconLG:
 		return ui.SizeIconLG
 	}
-	return ui.SizeDefault
+	return ui.SizeMD
 }
