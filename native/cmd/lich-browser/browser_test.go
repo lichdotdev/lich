@@ -448,7 +448,13 @@ func TestTheWindowsLayerDrawsTheLatestAndABareSnapshotLeavesItOut(t *testing.T) 
 	for _, color := range []string{"rgb(0,0,255)", "rgb(0,255,0)", "rgb(255,0,0)"} {
 		c.must(browserwire.Draw, browserwire.DrawParams{Page: "b1", Script: layer(color)}, nil)
 	}
-	got := c.eval("b1", "new Promise(r => setTimeout(() => r(getComputedStyle(document.getElementById('"+browserwire.LayerID+"')).backgroundColor), 200))")
+	// A Draw is answered before the page runs it, and the newest waits for the
+	// one running: the layer turns red some time after, slower on a cold
+	// runner. Any other colour that stays is a drawing that won out of turn.
+	got := c.eval("b1", `new Promise(r => { const until = Date.now() + 5000;
+		const look = () => { const c = getComputedStyle(document.getElementById('`+browserwire.LayerID+`')).backgroundColor;
+			c === 'rgb(255, 0, 0)' || Date.now() > until ? r(c) : setTimeout(look, 20); };
+		look(); })`)
 	if got != `"rgb(255, 0, 0)"` {
 		t.Fatalf("the layer is %s, want the last drawing's red", got)
 	}
