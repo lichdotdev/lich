@@ -36,6 +36,9 @@ type fakeLichBrowser struct {
 	// lateLoads sends a load after the answer to the request that started
 	// it, as lich-browser does, the blank one open starts included.
 	lateLoads bool
+	// titles are the tabs with their titles, sent once the page answered
+	// the read after its load.
+	titles []func()
 	// later is what goes out after the answer being written; held what
 	// goes out once the next request came, as open's blank load starts in
 	// WebKit after the backend sent its navigation.
@@ -182,6 +185,20 @@ func (f *fakeLichBrowser) answer(out io.Writer, req browserwire.Request) (any, s
 		f.mu.Unlock()
 		return browserwire.ClockResult{NS: ns}, ""
 	case browserwire.Eval:
+		f.mu.Lock()
+		titles := f.titles
+		f.titles = nil
+		f.mu.Unlock()
+		if len(titles) > 0 {
+			defer time.AfterFunc(lateLoad, func() {
+				for _, send := range titles {
+					send()
+				}
+			})
+		}
+		if pp.Script == placeScript {
+			return f.place(pp.Page), ""
+		}
 		return f.evalAnswer(pp.Script)
 	case browserwire.Snapshot:
 		return f.snapshot(), ""
@@ -200,6 +217,18 @@ func (f *fakeLichBrowser) answer(out io.Writer, req browserwire.Request) (any, s
 		f.write(out, map[string]any{"event": browserwire.EventDialog, "params": browserwire.DialogEvent{Page: pp.Page}})
 	}
 	return nil, ""
+}
+
+// place is the page's front tab's URL and title, as the page has them.
+func (f *fakeLichBrowser) place(id string) browserwire.EvalResult {
+	f.mu.Lock()
+	defer f.mu.Unlock()
+	p := f.pages[id]
+	if p == nil {
+		return browserwire.EvalResult{}
+	}
+	raw, _ := json.Marshal(map[string]string{"url": p.tabs[p.front].URL, "title": p.tabs[p.front].Title})
+	return browserwire.EvalResult{JSON: string(raw)}
 }
 
 func (f *fakeLichBrowser) evalAnswer(script string) (any, string) {
@@ -338,8 +367,20 @@ func (f *fakeLichBrowser) loadPage(out io.Writer, id, url string) {
 	tabs := f.tabsLocked(id, p)
 	f.mu.Unlock()
 	load(browserwire.LoadCommitted)
-	write(map[string]any{"event": browserwire.EventTabs, "params": tabs})
+	if !f.lateLoads {
+		write(map[string]any{"event": browserwire.EventTabs, "params": tabs})
+		load(browserwire.LoadFinished)
+		return
+	}
+	// WebKit tells the URL at the commit and the title only after the load
+	// ended and the document is ready.
+	untitled := f.tabsLocked(id, p)
+	untitled.Tabs[p.front].Title = ""
+	write(map[string]any{"event": browserwire.EventTabs, "params": untitled})
 	load(browserwire.LoadFinished)
+	f.mu.Lock()
+	f.titles = append(f.titles, func() { f.write(out, map[string]any{"event": browserwire.EventTabs, "params": tabs}) })
+	f.mu.Unlock()
 }
 
 // called is the params of every request of method, in order.

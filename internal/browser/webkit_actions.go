@@ -25,7 +25,35 @@ import (
 var errNoFrames = errors.New("lich-browser's page is drawn by the window, not by frames")
 
 func (p *webkitPage) Navigate(ctx context.Context, url string) error {
-	return p.load(ctx, browserwire.Navigate, browserwire.NavigateParams{Page: p.id, URL: url})
+	if err := p.load(ctx, browserwire.Navigate, browserwire.NavigateParams{Page: p.id, URL: url}); err != nil {
+		return err
+	}
+	return p.readPlace(ctx)
+}
+
+// placeScript is where the page is and its title, as the page has them.
+const placeScript = `({url: location.href, title: document.title})`
+
+// readPlace tells the page's URL and title as the page has them once its
+// load is ready: WebKit tells the title only after that, so the navigation's
+// answer had none (rc.4).
+func (p *webkitPage) readPlace(ctx context.Context) error {
+	var at struct {
+		URL   string `json:"url"`
+		Title string `json:"title"`
+	}
+	if err := p.evalRaw(ctx, placeScript, &at); err != nil || at.URL == "" {
+		return err
+	}
+	p.mu.Lock()
+	moved := at.URL != p.url || at.Title != p.title
+	p.url, p.title = at.URL, at.Title
+	onInfo := p.onInfo
+	p.mu.Unlock()
+	if moved && onInfo != nil {
+		onInfo(at.URL, at.Title)
+	}
+	return nil
 }
 
 func (p *webkitPage) Reload(ctx context.Context) error { return p.history(ctx, browserwire.Reload) }
