@@ -59,13 +59,13 @@ func (c *chatSession) titleAfter(reason string) {
 	if done {
 		return
 	}
-	go c.title(t, text)
+	c.svc.background(func(ctx context.Context) { c.title(ctx, t, text) })
 }
 
 // title asks for the name and applies it. Every failure is silence: the card
 // keeps the name lich gave it.
-func (c *chatSession) title(t titler, text string) {
-	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
+func (c *chatSession) title(ctx context.Context, t titler, text string) {
+	ctx, cancel := context.WithTimeout(ctx, callTimeout)
 	defer cancel()
 	cmd, err := c.proc.Command(ctx, t.titleArgs(fmt.Sprintf(prompt.For(c.svc.lang()).ChatTitlePrompt, clip(text)))...)
 	if err == nil {

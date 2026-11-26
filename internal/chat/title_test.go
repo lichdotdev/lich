@@ -3,8 +3,14 @@
 package chat
 
 import (
+	"fmt"
+	"os"
+	"regexp"
+	"strconv"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
@@ -97,6 +103,55 @@ func TestTitleOnOtherProviders(t *testing.T) {
 			}
 			if tc.kind == providers.OpenCode {
 				r.eventually("the session deleted", func() bool { return strings.Contains(r.fakeLog(), "session delete ses_fake") })
+			}
+		})
+	}
+}
+
+// fakeHangTitleEnv has the fake's title call log its pid and never answer, the
+// way a provider left waiting on its API would.
+const fakeHangTitleEnv = "LICH_CHAT_FAKE_HANG_TITLE"
+
+func (f *fake) hangTitle() {
+	if os.Getenv(fakeHangTitleEnv) == "" {
+		return
+	}
+	fmt.Fprintf(f.log, "title pid %d\n", os.Getpid())
+	select {}
+}
+
+var titlePid = regexp.MustCompile(`title pid (\d+)`)
+
+// TestShutdownEndsTheTitleCall: the call that names a session is lich's own
+// process, and quitting ends it and waits it out, as it does a chat: one left
+// running writes to the store and the profile after both are gone. Codex is
+// out, it names its threads itself.
+func TestShutdownEndsTheTitleCall(t *testing.T) {
+	for _, kind := range []string{providers.Claude, providers.OMP, providers.OpenCode} {
+		t.Run(kind, func(t *testing.T) {
+			t.Setenv(fakeHangTitleEnv, "1")
+			r := newRig(t, kind)
+			if err := r.setView(api.ViewChat); err != nil {
+				t.Fatalf("SetView: %v", err)
+			}
+			r.prompt("hi")
+			var pid int
+			r.eventually("the title call", func() bool {
+				m := titlePid.FindStringSubmatch(r.fakeLog())
+				if m != nil {
+					pid, _ = strconv.Atoi(m[1])
+				}
+				return m != nil
+			})
+			done := make(chan struct{})
+			go func() { r.svc.Shutdown(); close(done) }()
+			select {
+			case <-done:
+			case <-time.After(callTimeout / 2):
+				t.Fatal("Shutdown waited for the title call's own timeout")
+			}
+			if err := syscall.Kill(pid, 0); err == nil {
+				t.Errorf("the title call (pid %d) outlived Shutdown", pid)
 			}
 		})
 	}

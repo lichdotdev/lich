@@ -71,6 +71,7 @@ func runFake(args []string) {
 		return
 	}
 	if slices.Contains(args, "--no-session-persistence") || slices.Contains(args, "--no-title") {
+		f.hangTitle()
 		f.claudeTitle()
 		return
 	}
@@ -78,6 +79,7 @@ func runFake(args []string) {
 		return
 	}
 	if len(args) > 1 && args[0] == "run" && slices.Contains(args, "--format") {
+		f.hangTitle()
 		f.openCodeTitle()
 		return
 	}

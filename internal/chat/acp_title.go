@@ -83,10 +83,10 @@ func (d *acpDriver) titleReply(out []byte) string {
 	return reply.String()
 }
 
-// forgetTitleSession runs on a context of its own: the call it follows may have been
+// forgetTitleSession runs on a timeout of its own: the call it follows may have been
 // killed by its timeout, which is when a session is most likely left behind.
 func (d *acpDriver) forgetTitleSession(session string) {
-	ctx, cancel := context.WithTimeout(context.Background(), callTimeout)
+	ctx, cancel := context.WithTimeout(d.c.svc.quit, callTimeout)
 	defer cancel()
 	cmd, err := d.c.proc.Command(ctx, "session", "delete", session)
 	if err == nil {

@@ -47,12 +47,17 @@ type Service struct {
 	switching map[string]bool
 	// typed are the sessions the person wrote in (suggestionsPaused).
 	typed map[string]bool
+	// quit ends with Shutdown, and calls holds what runs on it (background).
+	quit     context.Context
+	quitDone context.CancelFunc
+	calls    sync.WaitGroup
 }
 
 // New is a chat service running its providers through term, and the way the
 // relay's prompts reach a session term runs as a chat.
 func New(term *terminal.Service, db *store.Service, hub *events.Hub, lang func() prompt.Lang) *Service {
 	s := &Service{term: term, store: db, hub: hub, lang: lang, sessions: map[string]*chatSession{}, switching: map[string]bool{}, typed: map[string]bool{}}
+	s.quit, s.quitDone = context.WithCancel(context.Background())
 	term.SetChat(s)
 	return s
 }
@@ -350,9 +355,23 @@ func (s *Service) End(id string) {
 	}
 }
 
-// Shutdown stops every chat, on the way out of lich.
+// background runs fn off the caller on a context Shutdown cancels before it
+// waits fn out, and not at all once Shutdown began: a CLI lich runs beside a
+// chat outlived its own teardown and wrote to the store and the profile after
+// both were gone.
+func (s *Service) background(fn func(ctx context.Context)) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.quit.Err() != nil {
+		return
+	}
+	s.calls.Go(func() { fn(s.quit) })
+}
+
+// Shutdown stops every chat and what runs beside them, on the way out of lich.
 func (s *Service) Shutdown() {
 	s.mu.Lock()
+	s.quitDone()
 	running := make([]*chatSession, 0, len(s.sessions))
 	for _, c := range s.sessions {
 		running = append(running, c)
@@ -363,4 +382,5 @@ func (s *Service) Shutdown() {
 		wg.Go(c.stop)
 	}
 	wg.Wait()
+	s.calls.Wait()
 }
