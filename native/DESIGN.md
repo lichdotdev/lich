@@ -118,7 +118,7 @@ A card painted a color mixes it into the accent: `tintRest` 0.10 at rest, `tintH
 The only chromatic color besides a card's own paint and the history graph's lanes. It encodes state and never
 decorates. A lane's color (`th.GraphLanes`, one set per scheme, not a theme token) carries which branch a line is,
 which the eye cannot follow through a crossing in one gray: use it for that graph and nothing else. `ToneMerged`
-is one color per scheme too, not a theme token.
+is one color per scheme too, not a theme token, and so are `ToneNote` and `ToneImportant`.
 
 | Token | Meaning |
 | --- | --- |
@@ -126,6 +126,7 @@ is one color per scheme too, not a theme token.
 | `ToneWait` | waiting on the user, running, outdated |
 | `Destructive` | destructive action, failure, removed lines |
 | `ToneMerged` | a merged pull request |
+| `ToneNote`, `ToneImportant` | a Markdown note and important alert, and nothing else |
 
 Added and removed lines in a code excerpt tint their row with `MixOKLab(Background, tone, 0.12)` and color
 their text with the tone itself.
@@ -148,6 +149,17 @@ their text with the tone itself.
   Its copy button is a ghost `SizeIconXS` one (Lucide `copy`, a check for 1.5s after a click) shown only while the
   pointer is over the block, as a message's copy is, with no tooltip; it stands on the first line inside the
   right padding, and the code wraps short of it, so it never covers text and nothing moves when it shows.
+  A block past 20 lines (`codeShown`, the chat's edit diff count) shows those, cut under the last one's glyphs,
+  and a muted `TextXS` "Show N more lines" under the panel that opens it at once, no animation, as a shell
+  command's output does, and turns into "Show less". A `diff` or `patch` fence tints its added and removed rows
+  across the panel with `MixOKLab(fill, tone, 0.12)` and colors their text with the tone; header and `@@` lines
+  are `MutedForeground`.
+- A GitHub alert (`> [!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`) is a blockquote whose bar
+  takes its tone (`ToneNote`, `TonePass`, `ToneImportant`, `ToneWait`, `Destructive`), headed by its Lucide icon
+  (`info`, `lightbulb`, `message-square-warning`, `triangle-alert`, `octagon-alert`) and its name in `TextSM`
+  semibold, both in the tone, `Space(0.5)` over the text. The text is prose's color, not a quote's muted one:
+  an alert is meant to be read. These are GitHub's five colors, kept as GitHub draws them so an alert reads
+  the same here as on the agent's pull request.
 - Markdown text is selectable inside one cell (a paragraph, a heading, a list item's text, a table cell, a code
   block): a drag past 3dp selects by character, a double click a word, a triple click the cell, and the text
   cursor shows over it. The selection fills each rune's glyph box, not the line's leading, in the code views'
