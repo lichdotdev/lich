@@ -33,9 +33,41 @@ static gboolean take_keyboard(GtkWidget *view, GdkEvent *event, gpointer data) {
 	return FALSE;
 }
 
+// An input method that answers a key later (fcitx5, ibus) takes the wire's
+// key before this handler sees it and hands it back as a new event once it let
+// it through, which reaches only this handler: it went to the window, and no
+// key of the agent's reached the page (rc.4, measured under fcitx5). The keys
+// the wire sent are kept, so they go on to the page when they come back.
+#define LET_THROUGH 32
+
+typedef struct {
+	guint32 time;
+	guint keyval;
+	GdkEventType type;
+} Key;
+
+static Key let_through[LET_THROUGH];
+static int let_next;
+
+static int same_key(Key k, GdkEventKey *e) { return k.time == e->time && k.keyval == e->keyval && k.type == e->type; }
+
+static gboolean was_let_through(GdkEventKey *e) {
+	for (int i = 0; i < LET_THROUGH; i++) {
+		if (same_key(let_through[i], e)) {
+			return TRUE;
+		}
+	}
+	return FALSE;
+}
+
+static void let_key_through(GdkEventKey *e) {
+	let_through[let_next] = (Key){e->time, e->keyval, e->type};
+	let_next = (let_next + 1) % LET_THROUGH;
+}
+
 static gboolean pass_key(GtkWidget *holder, GdkEventKey *event, gpointer data) {
 	LichTab *tab = data;
-	if (injecting || keyed == tab || !app) {
+	if (injecting || keyed == tab || !app || was_let_through(event)) {
 		return FALSE;
 	}
 	XKeyEvent key = {0};
@@ -178,6 +210,7 @@ void lich_tab_key(LichTab *tab, int press, guint keyval, guint state) {
 	}
 	e->key.string = g_strdup(text);
 	e->key.length = strlen(text);
+	let_key_through(&e->key);
 	inject(e, gdk_seat_get_keyboard(seat()));
 }
 

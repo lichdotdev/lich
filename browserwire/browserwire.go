@@ -222,6 +222,9 @@ type Tab struct {
 	XID uint64 `json:"xid,omitempty"`
 	// Icon is the tab's favicon, PNG.
 	Icon []byte `json:"icon,omitempty"`
+	// DevTools is WebKit's inspector of the tab before it, Front while the
+	// pane shows it in that tab's place; requests still act on that tab.
+	DevTools bool `json:"devtools,omitempty"`
 }
 
 type TabsEvent struct {

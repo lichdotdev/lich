@@ -49,6 +49,116 @@ func TestWebkitOpenLoadsThePageAndReportsItsTabs(t *testing.T) {
 	}
 }
 
+// lich-browser answers open and navigate at once and loads after, open's
+// own blank load included: an answer read before the load came back with
+// about:blank and no title.
+func TestWebkitOpenAndNavigateAnswerWithTheLoadedPage(t *testing.T) {
+	f := newFakeLichBrowser(t)
+	f.lateLoads = true
+	s, _ := wkService(t, f)
+	h, err := s.Open("s", "https://example.com/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if h.URL != "https://example.com/" || h.Title != "Title of https://example.com/" {
+		t.Fatalf("open answered %q %q, want the loaded page's URL and title", h.URL, h.Title)
+	}
+	h, err = s.Navigate(h.ID, "https://example.org/b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if h.URL != "https://example.org/b" || h.Title != "Title of https://example.org/b" {
+		t.Fatalf("navigate answered %q %q, want the loaded page's URL and title", h.URL, h.Title)
+	}
+}
+
+// A history step answers once its load landed, as Chrome's does: lich-browser
+// answers the request at once and loads after.
+func TestWebkitHistoryStepsAnswerOnceLoaded(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		step func(s *Service, id string) error
+	}{
+		{"reload", (*Service).Reload},
+		{"back", (*Service).Back},
+		{"forward", (*Service).Forward},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			f := newFakeLichBrowser(t)
+			f.lateLoads = true
+			s, _ := wkService(t, f)
+			h, err := s.Open("s", "https://example.com/")
+			if err != nil {
+				t.Fatal(err)
+			}
+			begun := time.Now()
+			if err := tc.step(s, h.ID); err != nil {
+				t.Fatal(err)
+			}
+			if took := time.Since(begun); took < lateLoad {
+				t.Fatalf("%s answered after %v, before its load landed %v after the request", tc.name, took, lateLoad)
+			}
+		})
+	}
+}
+
+// The agent's screenshot is the page alone: the window's layer (its notes,
+// the agent's cursor and chip) is the window's, drawn into the page.
+func TestWebkitAgentScreenshotLeavesTheWindowsLayerOut(t *testing.T) {
+	f := newFakeLichBrowser(t)
+	s, _ := wkService(t, f)
+	h, err := s.Open("s", "https://example.com/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, shoot := range []func(id, dest string) (string, error){s.Screenshot, s.AnnotatedScreenshot} {
+		if _, err := shoot(h.ID, filepath.Join(t.TempDir(), "shot.png")); err != nil {
+			t.Fatal(err)
+		}
+	}
+	shots := f.called(browserwire.Snapshot)
+	if len(shots) != 2 {
+		t.Fatalf("%d snapshots, want one per screenshot", len(shots))
+	}
+	for _, raw := range shots {
+		if !decodeParams[browserwire.SnapshotParams](t, raw).Bare {
+			t.Fatalf("snapshot %s: the agent's screenshot holds the window's layer", raw)
+		}
+	}
+}
+
+// lich-browser's inspector is a tab of the pane's after the page it
+// inspects; the agent never sees it, and the page stays where the agent is.
+func TestWebkitInspectorIsThePanesTabNeverTheAgents(t *testing.T) {
+	f := newFakeLichBrowser(t)
+	s, out := wkService(t, f)
+	h, err := s.Open("s", "https://example.com/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := f.onlyPage()
+	f.send(browserwire.EventTabs, browserwire.TabsEvent{Page: page, Tabs: []browserwire.Tab{
+		{ID: "t1", URL: "https://example.com/", Title: "Title of https://example.com/", XID: 0x400001},
+		{ID: "t9", Title: "Web Inspector", DevTools: true, Front: true, XID: 0x400009},
+	}})
+	waitFor(t, "the inspector's tab in the pane", func() bool {
+		st := out.states()
+		tabs := st[len(st)-1].Tabs
+		return len(tabs) == 2 && tabs[1].DevTools && tabs[1].Front && tabs[1].XID == 0x400009
+	})
+	tabs, err := s.Tabs("s")
+	if err != nil || len(tabs) != 1 || tabs[0].ID != "t1" || !tabs[0].Front {
+		t.Fatalf("agent's tabs %+v, %v: want the page alone, in front", tabs, err)
+	}
+	if h, _ := s.Info(h.ID, ""); h.Title == "Web Inspector" {
+		t.Fatal("the inspector's title became the page's")
+	}
+	st := out.states()
+	if last := st[len(st)-1]; last.Title != "Title of https://example.com/" || last.URL != "https://example.com/" {
+		t.Fatalf("state %q %q: want the inspected page's", last.URL, last.Title)
+	}
+}
+
 func TestWebkitHelloRefusesAnotherWire(t *testing.T) {
 	f := newFakeLichBrowser(t)
 	f.version = browserwire.Version + 1

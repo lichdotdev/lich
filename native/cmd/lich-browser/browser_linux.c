@@ -9,6 +9,9 @@
 
 extern void lichBrowserRun(uintptr_t handle);
 extern void lichDrawn(uintptr_t key);
+extern uintptr_t lichDevtoolsKey(uintptr_t inspected);
+extern void lichDevtoolsOpened(uintptr_t key, LichTab *tab);
+extern void lichDevtoolsClosed(uintptr_t inspected);
 extern void lichEvaluated(uintptr_t handle, char *json, char *error);
 extern void lichSnapshot(uintptr_t handle, unsigned char *data, int width, int height, int stride, char *error);
 
@@ -134,10 +137,6 @@ static void adopt(GtkWidget *widget, gpointer window) {
 	gtk_widget_register_window(widget, GDK_WINDOW(window));
 }
 
-// keep_detached refuses the inspector a place inside the tab's own window,
-// which the pane sizes and cuts to the page alone.
-static gboolean keep_detached(WebKitWebInspector *inspector, gpointer data) { return TRUE; }
-
 static GtkWidget *new_view(LichPage *page, WebKitWebView *related) {
 	if (related) {
 		return g_object_new(WEBKIT_TYPE_WEB_VIEW, "related-view", related, "user-content-manager", page->content,
@@ -156,7 +155,8 @@ static Window new_window(Display *x, int width, int height) {
 	return xid;
 }
 
-LichTab *lich_tab_new(LichPage *page, WebKitWebView *related, uintptr_t key, int width, int height) {
+// hold makes a tab of view, in an X window of its own off screen.
+static LichTab *hold(LichPage *page, GtkWidget *view, uintptr_t key, int width, int height) {
 	GdkDisplay *display = gdk_display_get_default();
 	LichTab *tab = calloc(1, sizeof(LichTab));
 	tab->x = gdk_x11_display_get_xdisplay(display);
@@ -171,8 +171,7 @@ LichTab *lich_tab_new(LichPage *page, WebKitWebView *related, uintptr_t key, int
 	g_signal_connect(tab->holder, "realize", G_CALLBACK(adopt), tab->window);
 	gtk_widget_set_has_window(tab->holder, TRUE);
 	gtk_widget_realize(tab->holder);
-	tab->view = new_view(page, related);
-	g_signal_connect(webkit_web_view_get_inspector(WEBKIT_WEB_VIEW(tab->view)), "attach", G_CALLBACK(keep_detached), NULL);
+	tab->view = view;
 	gtk_container_add(GTK_CONTAINER(tab->holder), tab->view);
 	gtk_widget_show_all(tab->holder);
 	gdk_window_ensure_native(gtk_widget_get_window(tab->view));
@@ -183,7 +182,6 @@ LichTab *lich_tab_new(LichPage *page, WebKitWebView *related, uintptr_t key, int
 	XGetWindowAttributes(tab->x, tab->xid, &attrs);
 	XSelectInput(tab->x, tab->xid, attrs.your_event_mask | StructureNotifyMask);
 	gdk_window_add_filter(tab->window, follow, tab);
-	lich_events_connect_tab(tab);
 	lich_input_connect_tab(tab);
 	XMoveResizeWindow(tab->x, tab->xid, OFF_SCREEN, OFF_SCREEN, width, height);
 	XMapWindow(tab->x, tab->xid);
@@ -192,9 +190,51 @@ LichTab *lich_tab_new(LichPage *page, WebKitWebView *related, uintptr_t key, int
 	return tab;
 }
 
+static gboolean open_inspector(WebKitWebInspector *inspector, gpointer tab);
+static void inspector_closed(WebKitWebInspector *inspector, gpointer tab);
+
+LichTab *lich_tab_new(LichPage *page, WebKitWebView *related, uintptr_t key, int width, int height) {
+	LichTab *tab = hold(page, new_view(page, related), key, width, height);
+	WebKitWebInspector *inspector = webkit_web_view_get_inspector(WEBKIT_WEB_VIEW(tab->view));
+	// WebKit docks the inspector into a page large enough (attach) and opens
+	// a window of its own for a smaller one: either way it is a tab.
+	g_signal_connect(inspector, "attach", G_CALLBACK(open_inspector), tab);
+	g_signal_connect(inspector, "open-window", G_CALLBACK(open_inspector), tab);
+	g_signal_connect(inspector, "closed", G_CALLBACK(inspector_closed), tab);
+	lich_events_connect_tab(tab);
+	return tab;
+}
+
+// open_inspector holds the inspector's view in a tab of its own, as Chrome's
+// DevTools are a tab of the pane's, instead of the window WebKit opens.
+static gboolean open_inspector(WebKitWebInspector *inspector, gpointer data) {
+	LichTab *inspected = data;
+	uintptr_t key = lichDevtoolsKey(inspected->key);
+	if (!key) {
+		return FALSE;
+	}
+	GtkWidget *view = GTK_WIDGET(webkit_web_inspector_get_web_view(inspector));
+	LichTab *tab = hold(inspected->page, view, key, inspected->width, inspected->height);
+	tab->inspector = 1;
+	lichDevtoolsOpened(key, tab);
+	return TRUE;
+}
+
+static void inspector_closed(WebKitWebInspector *inspector, gpointer tab) { lichDevtoolsClosed(((LichTab *)tab)->key); }
+
+void lich_tab_close_inspector(LichTab *tab) {
+	webkit_web_inspector_close(webkit_web_view_get_inspector(WEBKIT_WEB_VIEW(tab->view)));
+}
+
 void lich_tab_close(LichTab *tab) {
 	gdk_window_remove_filter(tab->window, follow, tab);
 	g_signal_handlers_disconnect_by_data(tab->view, tab);
+	if (tab->inspector) {
+		// The inspector's view is WebKit's, which ends it with the inspector.
+		gtk_container_remove(GTK_CONTAINER(tab->holder), tab->view);
+	} else {
+		g_signal_handlers_disconnect_by_data(webkit_web_view_get_inspector(WEBKIT_WEB_VIEW(tab->view)), tab);
+	}
 	gtk_widget_destroy(tab->holder);
 	XDestroyWindow(tab->x, tab->xid);
 	XFlush(tab->x);

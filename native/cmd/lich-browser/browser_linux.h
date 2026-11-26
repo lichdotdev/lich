@@ -34,6 +34,8 @@ struct LichTab {
 	uintptr_t key;
 	int width, height;
 	int embedded;
+	// inspector: view is a page's WebKit inspector, not a page.
+	int inspector;
 };
 
 void lich_browser_invoke(uintptr_t handle);
@@ -47,6 +49,7 @@ void lich_page_free(LichPage *page);
 
 LichTab *lich_tab_new(LichPage *page, WebKitWebView *related, uintptr_t key, int width, int height);
 void lich_tab_close(LichTab *tab);
+void lich_tab_close_inspector(LichTab *tab);
 void lich_tab_resize(LichTab *tab, int width, int height);
 void lich_tab_zoom(LichTab *tab, double scale);
 void lich_tab_navigate(LichTab *tab, const char *url);
