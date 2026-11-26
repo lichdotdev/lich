@@ -3,6 +3,7 @@ package browser
 import (
 	"bytes"
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -21,7 +22,8 @@ import (
 	xdraw "golang.org/x/image/draw"
 )
 
-// errNoFrames: the window embeds a lich-browser page, which sends no frames.
+// errNoFrames: the window embeds a lich-browser page, which sends no frames
+// (wireConn.frames).
 var errNoFrames = errors.New("lich-browser's page is drawn by the window, not by frames")
 
 func (p *webkitPage) Navigate(ctx context.Context, url string) error {
@@ -320,31 +322,54 @@ func (p *webkitPage) Resize(ctx context.Context, v Viewport) error {
 	return nil
 }
 
-// The pane's screencast path: the window embeds the page's X window, so a
-// pane gets no frames, and the person's input reaches the page from the X
-// server, never through the backend.
+// The pane's screencast path. Where the window embeds the page's surface it
+// gets no frames, and the person's input reaches the page from the system,
+// never through the backend; where lich-browser draws pages off screen, it
+// sends the frames Chrome's screencast did.
 
-func (p *webkitPage) Screencast(ctx context.Context, v Viewport) error { return p.Resize(ctx, v) }
-
-func (p *webkitPage) StopScreencast(context.Context) error { return nil }
-
-func (p *webkitPage) Still(context.Context) (tab, data string, err error) {
-	return "", "", errNoFrames
+func (p *webkitPage) Screencast(ctx context.Context, v Viewport) error {
+	if !p.conn.frames {
+		return p.Resize(ctx, v)
+	}
+	if err := p.do(ctx, browserwire.Screencast, browserwire.ScreencastParams{Page: p.id, W: v.W, H: v.H, Scale: v.Scale}, nil); err != nil {
+		return err
+	}
+	if v.Scale > 0 {
+		p.mu.Lock()
+		p.zoom = v.Scale
+		p.mu.Unlock()
+	}
+	return nil
 }
 
-// Mouse passes on the wheel alone: the window sends it while Select is on,
-// when the page lets the pointer through to the window and X gives the page
-// no wheel. Everything else reaches the page from the X server.
-func (p *webkitPage) Mouse(ctx context.Context, m api.BrowserMouseOptions) error {
-	if m.Type != "wheel" {
+func (p *webkitPage) StopScreencast(ctx context.Context) error {
+	if !p.conn.frames {
 		return nil
 	}
-	return p.do(ctx, browserwire.Mouse, browserwire.MouseParams{Page: p.id, Kind: browserwire.MouseWheel, X: m.X, Y: m.Y, DX: m.DX, DY: m.DY}, nil)
+	return p.do(ctx, browserwire.StopScreencast, browserwire.PageParams{Page: p.id}, nil)
 }
 
-func (p *webkitPage) Key(context.Context, api.BrowserKeyOptions) error { return nil }
-
-func (p *webkitPage) InsertText(context.Context, string) error { return nil }
+// Still is a PNG of the front tab, never its inspector's: a still of the
+// page while the pane shows the inspector names another tab than the
+// frames, and the pane keeps them.
+func (p *webkitPage) Still(ctx context.Context) (tab, data string, err error) {
+	if !p.conn.frames {
+		return "", "", errNoFrames
+	}
+	select {
+	case <-p.gate.held():
+		return "", "", errDialogOpen
+	default:
+	}
+	p.mu.Lock()
+	front := p.front
+	p.mu.Unlock()
+	var r browserwire.SnapshotResult
+	if err := p.do(ctx, browserwire.Snapshot, browserwire.SnapshotParams{Page: p.id}, &r); err != nil {
+		return "", "", err
+	}
+	return front, base64.StdEncoding.EncodeToString(r.PNG), nil
+}
 
 // Focus raises the page's own window; the service asks only once it has one.
 func (p *webkitPage) Focus(ctx context.Context) error {

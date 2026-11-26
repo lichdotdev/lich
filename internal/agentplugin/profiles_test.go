@@ -7,9 +7,7 @@ import (
 	"slices"
 	"strings"
 	"testing"
-	"time"
 
-	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/codexprofile"
 	"github.com/lichdotdev/lich/internal/providers"
@@ -91,110 +89,52 @@ func ranAs(lines []string, dir string) int {
 	return n
 }
 
-// recordEvents wires the service's emit into a channel of what it reported.
-func recordEvents(svc *Service) <-chan ProfilesEvent {
-	events := make(chan ProfilesEvent, 4)
-	svc.SetEmit(func(name string, data any) {
-		if name == api.PluginProfilesEvent.Name {
-			events <- data.(ProfilesEvent)
-		}
-	})
-	return events
-}
-
-func nextEvent(t *testing.T, events <-chan ProfilesEvent) ProfilesEvent {
-	t.Helper()
-	select {
-	case ev := <-events:
-		return ev
-	case <-time.After(30 * time.Second):
-		t.Fatal("no profiles event after the update")
-		return ProfilesEvent{}
-	}
-}
-
-// TestPersonalUpdateReachesEveryClaudeProfile: updating the plugin in Personal
-// used to leave a profile on the release it was logged in with. Now the same
-// pinned install runs as the profile, after Personal's.
-func TestPersonalUpdateReachesEveryClaudeProfile(t *testing.T) {
-	dir := workProfile(t)
-	home, _ := os.UserHomeDir()
-	writeClaudePlugin(t, filepath.Join(home, ".claude"), testVersion)
-	writeClaudePlugin(t, dir, oldVersion)
-	svc, calls := fakeCLI(t, "")
-	envLog := filepath.Join(t.TempDir(), "env.log")
-	t.Setenv(fakeCLIEnvLog, envLog)
-	events := recordEvents(svc)
-
-	if _, err := svc.Update(t.Context(), api.PluginProviderOptions{Provider: providers.Claude}); err != nil {
-		t.Fatal(err)
-	}
-	ev := nextEvent(t, events)
-	if ev.Provider != providers.Claude || ev.Name != "Claude Code" || ev.Version != testVersion || len(ev.Failures) != 0 {
-		t.Errorf("event %+v, want claude at %s with no failures", ev, testVersion)
-	}
-	want := append(slices.Clone(pinnedCalls[providers.Claude]), pinnedCalls[providers.Claude]...)
-	if got := calls(); !slices.Equal(got, want) {
-		t.Errorf("calls %v, want Personal's install then the profile's: %v", got, want)
-	}
-	if n := ranAs(envLines(t, envLog), dir); n != len(pinnedCalls[providers.Claude]) {
-		t.Errorf("%d calls ran as the profile, want %d", n, len(pinnedCalls[providers.Claude]))
-	}
-}
-
-// TestSyncProfilesInstallsWhereMissingAndNamesFailures is the backend-start
-// sweep: a profile logged in before profiles got the plugin has none and gets
-// it, one already at the release is left alone, and one whose install fails is
-// reported by name.
-func TestSyncProfilesInstallsWhereMissingAndNamesFailures(t *testing.T) {
-	workProfile(t)
-	home, _ := os.UserHomeDir()
-	writeClaudePlugin(t, filepath.Join(home, ".claude"), testVersion)
-	done := createClaudeProfile(t, "Done")
-	writeClaudePlugin(t, done.Dir, testVersion)
-	svc, calls := fakeCLI(t, "plugin install")
-	events := recordEvents(svc)
-
-	svc.SyncProfiles()
-
-	ev := nextEvent(t, events)
-	if len(ev.Failures) != 1 || ev.Failures[0].Profile != "work" || ev.Failures[0].Name != "Work" ||
-		!strings.Contains(ev.Failures[0].Error, "refusing") {
-		t.Errorf("failures %+v, want the work profile's install refused", ev.Failures)
-	}
-	if got := calls(); !slices.Equal(got, pinnedCalls[providers.Claude]) {
-		t.Errorf("calls %v, want one install, into the profile that has none", got)
-	}
-}
-
-// TestSyncProfilesWaitsForPersonal: while Personal itself is behind the
-// release, a profile that has the plugin keeps its version, so the two never
-// drift further apart; one with no plugin at all still gets it. Personal with
-// no plugin leads nowhere.
-func TestSyncProfilesWaitsForPersonal(t *testing.T) {
+// TestClaudeUpdateTakesTheInstallOutOfEveryProfile: Claude Code sessions load
+// lich's release, so an install or update there unpacks it and takes the
+// install of the past out of Personal and every profile that holds one, each
+// run as itself.
+func TestClaudeUpdateTakesTheInstallOutOfEveryProfile(t *testing.T) {
 	work := workProfile(t)
 	home, _ := os.UserHomeDir()
 	personal := filepath.Join(home, ".claude")
+	writeClaudePlugin(t, personal, testVersion)
 	writeClaudePlugin(t, work, oldVersion)
 	bare := createClaudeProfile(t, "Bare")
 	svc, calls := fakeCLI(t, "")
 	envLog := filepath.Join(t.TempDir(), "env.log")
 	t.Setenv(fakeCLIEnvLog, envLog)
-	events := recordEvents(svc)
 
-	svc.SyncProfiles()
-	if got := calls(); got != nil {
-		t.Fatalf("calls %v with no plugin in Personal, want none", got)
+	if err := svc.install(providers.Claude); err != nil {
+		t.Fatal(err)
 	}
-
-	writeClaudePlugin(t, personal, oldVersion)
-	svc.SyncProfiles()
-	if ev := nextEvent(t, events); len(ev.Failures) != 0 {
-		t.Errorf("failures %+v", ev.Failures)
+	want := append(slices.Clone(claudeUninstallCalls), claudeUninstallCalls...)
+	if got := calls(); !slices.Equal(got, want) {
+		t.Errorf("calls %v, want Personal's and the work profile's uninstall: %v", got, want)
 	}
 	lines := envLines(t, envLog)
-	if ranAs(lines, work) != 0 || ranAs(lines, bare.Dir) != len(pinnedCalls[providers.Claude]) {
-		t.Errorf("calls ran as %v, want only the bare profile's install", lines)
+	if ranAs(lines, work) != len(claudeUninstallCalls) || ranAs(lines, bare.Dir) != 0 {
+		t.Errorf("calls ran as %v, want the work profile's alone beside Personal's", lines)
+	}
+	if _, version, ok := BundleDir(); !ok || version != testVersion {
+		t.Errorf("BundleDir version = (%q,%v), want the release unpacked", version, ok)
+	}
+}
+
+// A profile whose uninstall fails keeps its copy and costs the others nothing:
+// its sessions load lich's release over it.
+func TestMigrateClaudeGoesOnPastAFailure(t *testing.T) {
+	work := workProfile(t)
+	writeClaudePlugin(t, work, testVersion)
+	other := createClaudeProfile(t, "Other")
+	writeClaudePlugin(t, other.Dir, testVersion)
+	svc, calls := fakeCLI(t, "plugin uninstall")
+	envLog := filepath.Join(t.TempDir(), "env.log")
+	t.Setenv(fakeCLIEnvLog, envLog)
+
+	svc.migrateClaude()
+	lines := envLines(t, envLog)
+	if ranAs(lines, work) != 1 || ranAs(lines, other.Dir) != 1 {
+		t.Errorf("calls %v ran as %v, want one attempt per profile holding the plugin", calls(), lines)
 	}
 }
 
@@ -226,13 +166,9 @@ func TestPersonalUpdateReachesEveryCodexProfile(t *testing.T) {
 	svc, calls := fakeCLI(t, "")
 	envLog := filepath.Join(t.TempDir(), "env.log")
 	t.Setenv(fakeCLICodexEnvLog, envLog)
-	events := recordEvents(svc)
 
-	if _, err := svc.Update(t.Context(), api.PluginProviderOptions{Provider: providers.Codex}); err != nil {
+	if err := svc.install(providers.Codex); err != nil {
 		t.Fatal(err)
-	}
-	if ev := nextEvent(t, events); ev.Provider != providers.Codex || len(ev.Failures) != 0 {
-		t.Errorf("event %+v", ev)
 	}
 	installs := slices.DeleteFunc(calls(), func(c string) bool { return c == "plugin list --json" })
 	want := append(slices.Clone(pinnedCalls[providers.Codex]), pinnedCalls[providers.Codex]...)
@@ -248,12 +184,12 @@ func TestPersonalUpdateReachesEveryCodexProfile(t *testing.T) {
 	}
 }
 
-// TestSyncProfilesMigratesALinkedCodexProfileFirst: a Codex profile made when
+// TestFollowPersonalMigratesALinkedCodexProfileFirst: a Codex profile made when
 // config.toml was shared still links Personal's, so its plugin list read
 // Personal's and the pass left it alone; the profile's next spawn then rebuilt
 // its own config.toml without the lich plugin or its marketplace. The pass now
 // brings the profile to its own config.toml before asking what it has.
-func TestSyncProfilesMigratesALinkedCodexProfileFirst(t *testing.T) {
+func TestFollowPersonalMigratesALinkedCodexProfileFirst(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
@@ -285,12 +221,9 @@ func TestSyncProfilesMigratesALinkedCodexProfileFirst(t *testing.T) {
 	svc, _ := fakeCLI(t, "")
 	envLog := filepath.Join(t.TempDir(), "env.log")
 	t.Setenv(fakeCLICodexEnvLog, envLog)
-	events := recordEvents(svc)
 
-	svc.SyncProfiles()
-
-	if ev := nextEvent(t, events); ev.Provider != providers.Codex || len(ev.Failures) != 0 {
-		t.Errorf("event %+v, want codex with no failures", ev)
+	if err := svc.followPersonal(providers.Codex); err != nil {
+		t.Errorf("followPersonal = %v, want no failure", err)
 	}
 	if info, err := os.Lstat(ownConfig); err != nil || info.Mode()&os.ModeSymlink != 0 {
 		t.Errorf("profile config.toml still a link (%v), want its own file", err)

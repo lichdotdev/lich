@@ -11,7 +11,6 @@ import (
 	"gioui.org/io/pointer"
 
 	"github.com/lichdotdev/lich/api"
-	"github.com/lichdotdev/lich/native/backend"
 )
 
 // handScreens are the screens the sweep hovers, each built the way its
@@ -20,15 +19,12 @@ func handScreens() map[string]func(*testing.T) *frameRig {
 	screens := map[string]func(*testing.T) *frameRig{
 		"sidebar": func(t *testing.T) *frameRig { _, r := sidebarFrames(t); return r },
 		"git":     func(t *testing.T) *frameRig { _, r := gitFrames(t); return r },
-		"pulls":   func(t *testing.T) *frameRig { _, r := pullsFrames(t); return r },
-		// The tree is read off the frame: without the wait a slow runner hovers
-		// the pane still loading, whose only clickable is its background.
-		"code": func(t *testing.T) *frameRig { _, r, _ := codeFrames(t); r.waitFor(t, "a.go"); return r },
-		"plugin gate": func(t *testing.T) *frameRig {
-			_, r := pluginGateFrames(t, backend.PluginStatus{Provider: "claude", Name: "Claude Code"})
-			return r
-		},
-		"chat": func(t *testing.T) *frameRig { _, r, _ := chatFrames(t, api.ViewChat); return r },
+		// The tree and the list are read off the frame: without the wait a slow
+		// runner hovers the pane still loading, whose only clickable is its
+		// background, and the list's skeleton never goes still.
+		"pulls": func(t *testing.T) *frameRig { _, r := pullsFrames(t); r.waitFor(t, "Fix the thing"); return r },
+		"code":  func(t *testing.T) *frameRig { _, r, _ := codeFrames(t); r.waitFor(t, "a.go"); return r },
+		"chat":  func(t *testing.T) *frameRig { _, r, _ := chatFrames(t, api.ViewChat); return r },
 	}
 	for name, tab := range map[string]dockTab{"review": dockReview, "code tab": dockCode, "artifacts": dockArtifacts} {
 		screens["dock "+name] = func(t *testing.T) *frameRig { _, r := stageFrames(t, tab); return r }

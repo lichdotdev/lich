@@ -32,7 +32,10 @@
       "help": "Ajuda",
       "services": "Serviços",
       "extensions": "Extensões",
-      "chat": "Chat"
+      "chat": "Chat",
+      "skills": "Skills",
+      "mcp": "Servidores MCP",
+      "plugins": "Plugins"
     },
     "notYet": "Ainda não está aqui"
   },
@@ -410,16 +413,7 @@
   "pluginSetting": {
     "title": "Plugin do lich",
     "searchWords": "hooks instalar",
-    "installed": "Plugin instalado. Reinicie suas sessões para aplicar.",
-    "updated": "Plugin atualizado. Reinicie suas sessões para aplicar.",
-    "cliMissing": "CLI não instalada",
-    "notInstalled": "Plugin não instalado",
-    "unsupported": "v{version}, não suportada por este lich",
-    "install": "Instalar",
-    "updateTo": "Atualizar para v{version}",
-    "updateAll": "Atualizar todos",
-    "reregister": "Registrar os hooks de novo",
-    "installVersion": "Instalar v{version}"
+    "notInstalled": "Plugin não instalado"
   },
   "helpSettings": {
     "bugTitle": "Relatar um bug",
@@ -526,18 +520,6 @@
   },
   "settingsVcs": {
     "pathReread": "Não foi possível reler o PATH. Reabra o lich."
-  },
-  "settingsUpdatesPlugin": {
-    "hint": {
-      "codex": "Rode /hooks em uma sessão do Codex para confiar nos hooks do plugin.",
-      "crush": "Informa o status, o nome e as mudanças do git. Um Crush anterior à 0.99.0 não tem evento de fim de turno, então nele só informa o id da sessão e atualiza o status do git.",
-      "omp": "Informa o status, o nome e as mudanças do git. Não tem evento de aprovação observado, então uma sessão esperando sua permissão mostra um spinner em vez de um sino.",
-      "antigravity": "Informa o status, o nome e as mudanças do git. Não tem evento de aprovação observado, então uma sessão esperando sua permissão mostra um spinner em vez de um sino.",
-      "cursor": "Roda o plugin instalado no Claude Code, então informa o que aquela versão informa e atualiza junto com ela. O lich só acrescenta aqui as próprias ferramentas. Também não gera evento de aprovação, então uma sessão esperando sua permissão mostra um spinner em vez de um sino."
-    },
-    "installFailed": "Falha na instalação: {error}",
-    "updateFailed": "Falha na atualização: {error}",
-    "profileFailed": "O plugin do lich não foi atualizado no perfil {profile} de {pass}: {error}"
   },
   "settingsProfiles": {
     "title": "Perfil",
@@ -834,5 +816,24 @@
     "newChats": "Novos chats",
     "sessions": "Sessões",
     "advanced": "Avançado"
+  },
+  "librarySettings": {
+    "skillsSearchWords": "skill biblioteca mover",
+    "mcpSearchWords": "mcp servidor biblioteca mover",
+    "pluginsSearchWords": "plugin hooks lich",
+    "found": "Encontrados nos seus provedores",
+    "library": "Na biblioteca do lich",
+    "moveIn": "Mover para o lich",
+    "moveInAll": "Mover todos",
+    "noSkills": "Ainda não há skills na biblioteca do lich.",
+    "noMCP": "Ainda não há servidores MCP na biblioteca do lich.",
+    "reason": {
+      "notWritten": "O lich ainda não grava servidores MCP no {provider}",
+      "sharedFile": "Todos os perfis do {provider} leem o mesmo arquivo, então uma chave vale para todos"
+    },
+    "pluginBrings": "Hooks: {hooks} · skills: {skills} · servidores MCP: {mcp}",
+    "pluginLocked": "Toda sessão que o lich abre usa este plugin. Ele não pode ser desligado.",
+    "moveFailed": "Não foi possível mover {name}: {error}",
+    "setFailed": "Não foi possível mudar: {error}"
   }
 }

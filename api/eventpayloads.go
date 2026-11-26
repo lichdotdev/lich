@@ -106,11 +106,6 @@ type SessionTodo struct {
 	Total int    `json:"total"`
 }
 
-type PluginIncompatible struct {
-	ID      string `json:"id"`
-	Version string `json:"version"`
-}
-
 // SessionExit is the payload of TerminalExitEvents: the status the session's PTY
 // child exited with. Code is absent when the child left none — killed by a
 // signal, or a wait that failed — so the window can say the session ended
@@ -265,23 +260,6 @@ type ProviderInstall struct {
 type ProfileChanged struct {
 	Provider string  `json:"provider"`
 	Profile  Profile `json:"profile"`
-}
-
-// PluginProfiles is what one pass did: the release it installed and the
-// profiles where the install failed, in the CLI's own words. Name is the
-// provider's display name.
-type PluginProfiles struct {
-	Provider string                 `json:"provider"`
-	Name     string                 `json:"name"`
-	Version  string                 `json:"version"`
-	Failures []PluginProfileFailure `json:"failures"`
-}
-
-// PluginProfileFailure is one profile the plugin could not be installed into.
-type PluginProfileFailure struct {
-	Profile string `json:"profile"`
-	Name    string `json:"name"`
-	Error   string `json:"error"`
 }
 
 // AppUpdateProgress is one step of Apply: bytes received of total during the download

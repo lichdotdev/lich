@@ -32,7 +32,10 @@
       "help": "Help",
       "services": "Services",
       "extensions": "Extensions",
-      "chat": "Chat"
+      "chat": "Chat",
+      "skills": "Skills",
+      "mcp": "MCP servers",
+      "plugins": "Plugins"
     },
     "notYet": "Not here yet"
   },
@@ -410,16 +413,7 @@
   "pluginSetting": {
     "title": "lich plugin",
     "searchWords": "hooks install",
-    "installed": "Plugin installed. Restart your sessions to apply.",
-    "updated": "Plugin updated. Restart your sessions to apply.",
-    "cliMissing": "CLI not installed",
-    "notInstalled": "Plugin not installed",
-    "unsupported": "v{version}, not supported by this lich",
-    "install": "Install",
-    "updateTo": "Update to v{version}",
-    "updateAll": "Update all",
-    "reregister": "Re-register hooks",
-    "installVersion": "Install v{version}"
+    "notInstalled": "Plugin not installed"
   },
   "helpSettings": {
     "bugTitle": "Report a bug",
@@ -526,18 +520,6 @@
   },
   "settingsVcs": {
     "pathReread": "PATH could not be re-read; relaunch lich."
-  },
-  "settingsUpdatesPlugin": {
-    "hint": {
-      "codex": "Run /hooks in a Codex session to trust the plugin's hooks.",
-      "crush": "Reports its status, name and git changes. A Crush older than 0.99.0 has no end-of-turn event, so there it only reports its session id and refreshes git status.",
-      "omp": "Reports its status, name and git changes. It has no observed approval event, so a session waiting on your permission shows a spinner rather than a bell.",
-      "antigravity": "Reports its status, name and git changes. It has no observed approval event, so a session waiting on your permission shows a spinner rather than a bell.",
-      "cursor": "Runs the plugin installed in Claude Code, so it reports what that version reports and updates with it. lich adds only its own tools here. It raises no approval event either, so a session waiting on your permission shows a spinner rather than a bell."
-    },
-    "installFailed": "Install failed: {error}",
-    "updateFailed": "Update failed: {error}",
-    "profileFailed": "The lich plugin is not updated in the {pass} profile {profile}: {error}"
   },
   "settingsProfiles": {
     "title": "Profile",
@@ -834,5 +816,24 @@
     "newChats": "New chats",
     "sessions": "Sessions",
     "advanced": "Advanced"
+  },
+  "librarySettings": {
+    "skillsSearchWords": "skill library move in",
+    "mcpSearchWords": "mcp server library move in",
+    "pluginsSearchWords": "plugin hooks lich",
+    "found": "Found in your providers",
+    "library": "In lich's library",
+    "moveIn": "Move in",
+    "moveInAll": "Move in all",
+    "noSkills": "No skills in lich's library yet.",
+    "noMCP": "No MCP servers in lich's library yet.",
+    "reason": {
+      "notWritten": "lich does not write MCP servers into {provider} yet",
+      "sharedFile": "Every {provider} profile reads the same file, so one switch serves them all"
+    },
+    "pluginBrings": "Hooks: {hooks} · skills: {skills} · MCP servers: {mcp}",
+    "pluginLocked": "Every session lich starts runs it. It cannot be turned off.",
+    "moveFailed": "Could not move {name} in: {error}",
+    "setFailed": "Could not change it: {error}"
   }
 }

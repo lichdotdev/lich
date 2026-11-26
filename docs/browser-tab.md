@@ -8,9 +8,11 @@ wherever that terminal is shown. The agent drives the same page through
 On Linux with an X display and `lich-browser` beside `lich` (or pinned by
 `LICH_BROWSER`), the page is not Chrome's: it lives in lich-browser, whose X
 window the window embeds over the pane (`docs/lich-browser.md`,
-`internal/browser/webkit.go`). Everything below about frames, the screencast,
-the pane's input, relaunching at another scale and Chrome's DevTools is the
-Chrome page's, which Windows, macOS and Linux without either keep. With
+`internal/browser/webkit.go`). On Wayland without X, lich-browser draws the
+page off screen and the pane shows its frames and sends it its input as
+below, from WebKit instead of Chrome. Everything below about relaunching at
+another scale and Chrome's DevTools is the Chrome page's, which Windows,
+macOS and Linux without lich-browser keep. With
 lich-browser a scale or zoom change reaches the page as its zoom, DevTools is
 WebKit's inspector as a tab of the pane's (an X window of its own the window
 embeds as it does the page's), and Open in a window moves the

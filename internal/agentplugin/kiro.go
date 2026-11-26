@@ -209,7 +209,7 @@ func kiroAgentFile(version, scriptDir string) ([]byte, error) {
 	body, err := json.MarshalIndent(kiroAgent{
 		Name: providers.KiroAgentName,
 		Description: fmt.Sprintf(
-			"Installed by %s v%s — replace with the plugin from %s", markerName, version, marketplaceRepo),
+			"Installed by %s v%s from %s. lich writes it again on its next start", markerName, version, marketplaceRepo),
 		Tools: []string{"*"},
 		Resources: []string{
 			"file://AmazonQ.md",

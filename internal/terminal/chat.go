@@ -71,7 +71,7 @@ func chatArgs(a spawnArgs, l ChatLaunch) []string {
 	switch a.kind {
 	case providers.Claude:
 		return slices.Concat(claudeChatArgs, claudeLaunchArgs(l), providerArgs(
-			a.kind, a.name, a.resume, a.model, a.effort, a.lichBin, a.agent, false, a.skipPermissions, a.ultracode, a.route, a.lang,
+			a.kind, a.name, a.resume, a.model, a.effort, a.lichBin, a.agent, a.plugin, a.lib, false, a.skipPermissions, a.ultracode, a.route, a.lang,
 		))
 	case providers.Kiro:
 		model := modelArgs(a.kind, a.model, a.resume)
@@ -87,10 +87,15 @@ func chatArgs(a spawnArgs, l ChatLaunch) []string {
 		// app-server takes neither --model nor the skip-permissions flag, which
 		// the protocol sets (0.170.0).
 		return slices.Concat(confinedTrustArgs(a.kind, a.cwd, a.confined), codexBriefingArgs(a.kind, a.resume, a.route, a.lang),
-			mcpArgs(a.kind, a.lichBin), []string{codexAppServerSubcmd})
+			libraryMCPArgs(a.kind, mcpArgs(a.kind, a.lichBin), a.lib.MCP), []string{codexAppServerSubcmd})
 	}
 	if srv := openCodeServer(a.kind, a.oc2, l); srv != nil {
 		return []string{acpSubcmd, openCodePortFlag, strconv.Itoa(srv.Port)}
+	}
+	// oh-my-pi's root takes -e before the subcommand (measured on 19.1.1).
+	// Cursor's ACP server runs no plugin hooks, so it is handed none.
+	if a.kind == providers.OMP {
+		return slices.Concat(pluginArgs(a.kind, a.plugin), librarySkillArgs(a.kind, a.lib), []string{acpSubcmd})
 	}
 	return []string{acpSubcmd}
 }
@@ -245,6 +250,8 @@ func (s *Service) StartChat(_ context.Context, opts api.StartOptions, launch Cha
 	}
 	inheritClaudeTrust(opts.Kind, opts.Cwd, profileDir)
 	inheritCursorTrust(opts.Kind, opts.Cwd)
+	s.reenablePlugin(opts.Kind, opts.ProjectID, profileDir)
+	s.ensurePluginFor(opts.Kind)
 	p, l, err := s.spawnChat(opts, launch, profileDir, name, oc2)
 	if err != nil {
 		return nil, err
@@ -280,7 +287,7 @@ func (s *Service) spawnChat(opts api.StartOptions, launch ChatLaunch, profileDir
 	if srv := openCodeServer(opts.Kind, oc2, launch); srv != nil {
 		l.spec.env = append(l.spec.env, openCodeQuestionEnv+"=1", openCodePasswordEnv+"="+srv.Password)
 	}
-	started := spawn{kind: opts.Kind, cwd: opts.Cwd, projectID: opts.ProjectID, profile: profileSlug(opts.Kind, profileDir), chat: true}
+	started := spawn{kind: opts.Kind, cwd: opts.Cwd, projectID: opts.ProjectID, profile: profileSlug(opts.Kind, profileDir), chat: true, plugin: l.plugin}
 	// Dropped before Done closes, so whoever waited the process out can start
 	// the terminal at once; only this process's own entry, in case one started
 	// after it under the same id. The turn is left to the chat to close: it

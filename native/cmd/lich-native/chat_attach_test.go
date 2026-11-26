@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"image"
 	"io"
@@ -49,6 +50,27 @@ func pickBackend(t *testing.T, picked backend.Attachment, mu *sync.Mutex, writes
 // row under the text, inside the box.
 var boxPlus = image.Rect(100, 720, 170, 770)
 
+// holdPicks has the footer's "+" hand its pick to the composer only when the
+// returned land says, as a person's pick lands long after the click: the
+// fake backend answers at once, and a card landing between the two frames
+// r.click compares reads as a click that drew the old state.
+func holdPicks(t *testing.T, u *window) (land func()) {
+	t.Helper()
+	picked := make(chan struct{})
+	u.footer.attachAt = func(ctx context.Context, id string, a backend.Attachment) error {
+		<-picked
+		return u.attachAtPrompt(ctx, id, a)
+	}
+	return func() {
+		t.Helper()
+		select {
+		case picked <- struct{}{}:
+		case <-time.After(5 * time.Second):
+			t.Fatal("the click asked for no pick")
+		}
+	}
+}
+
 // waitCards runs frames until session s1's composer holds a card for each of
 // paths, in order.
 func waitCards(t *testing.T, r *frameRig, p *chatPane, paths ...string) {
@@ -71,11 +93,12 @@ func TestAttachInAChatAddsACard(t *testing.T) {
 	var writes []string
 	c := pickBackend(t, backend.Attachment{Path: "/home/me/repo/notes.md"}, &mu, &writes)
 	u.footer.client = c
-	u.footer.attachAt = u.attachAtPrompt
+	land := holdPicks(t, u)
 	p := u.chats.pane("s1")
 	p.editor.SetText("read ")
 	r.settle(t)
 	r.click(t, r.smallestClickIn(t, boxPlus))
+	land()
 	waitCards(t, r, p, "/home/me/repo/notes.md")
 	if p.editor.Text() != "read " {
 		t.Errorf("the composer reads %q, want the text it had", p.editor.Text())

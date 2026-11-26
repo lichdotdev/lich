@@ -50,6 +50,7 @@ one_app() {
 
 codesign --verify --deep --strict --verbose=2 "$app"
 test -f "$app/Contents/MacOS/lich-native"
+test -f "$app/Contents/MacOS/lich-browser"
 
 "$app/Contents/MacOS/lich" &
 for _ in $(seq 1 30); do

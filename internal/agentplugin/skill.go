@@ -49,6 +49,12 @@ var extensionSkill = pluginSkill{
 // ExtensionSkillRelease is the first plugin release that ships extensionSkill.
 const ExtensionSkillRelease = "0.21.1"
 
+// skillPresent is whether an install copied the theme skill into skillsDir.
+func skillPresent(skillsDir string) bool {
+	_, err := os.Stat(filepath.Join(skillsDir, themeSkill.name, skillManifest))
+	return err == nil
+}
+
 // installSkills writes every skill release ships into skillsDir, for a
 // harness that can keep extensionSkill manual only.
 func (s *Service) installSkills(version, skillsDir string) error {

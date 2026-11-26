@@ -15,7 +15,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/semver"
@@ -41,7 +40,9 @@ func fileServer(t *testing.T, files map[string]string) (*Service, func() []strin
 // the newest release it lists and the skills it serves are that release's.
 func fileServerAt(t *testing.T, version string, files map[string]string) (*Service, func() []string) {
 	t.Helper()
+	bundleHome(t)
 	served := skillsRelease(version)
+	served[tarballPath(version)] = string(pluginTarball(t, version, releaseFiles()))
 	maps.Copy(served, files)
 	files = served
 	var asked []string
@@ -65,10 +66,26 @@ func fileServerAt(t *testing.T, version string, files map[string]string) (*Servi
 		http:        srv.Client(),
 		releasesURL: release.URL,
 		rawBase:     srv.URL,
+		tarballBase: srv.URL + "/tarball",
 		bins:        stubBins{},
 		lookPath:    func(name string) (string, error) { return "/usr/bin/" + name, nil },
 		lichBin:     lichBinary,
 	}, func() []string { return asked }
+}
+
+// serveBytes serves body at path alone and returns the base a Service's
+// tarballBase takes, so path is what it asks for.
+func serveBytes(t *testing.T, path string, body []byte) string {
+	t.Helper()
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != path {
+			w.WriteHeader(http.StatusNotFound)
+			return
+		}
+		_, _ = w.Write(body)
+	}))
+	t.Cleanup(srv.Close)
+	return srv.URL + "/tarball"
 }
 
 // skillsRelease is the skills version serves: the theme skill, and the
@@ -85,16 +102,16 @@ func skillsRelease(version string) map[string]string {
 	return files
 }
 
-// assertFetchedWithSkill checks an install fetched its module and the theme
+// assertFetchedWithSkill checks an install fetched the release and the theme
 // skill, and nothing else.
-func assertFetchedWithSkill(t *testing.T, got []string, module string) {
+func assertFetchedWithSkill(t *testing.T, got []string) {
 	t.Helper()
-	want := []string{tagged(module)}
+	want := []string{tarballPath(testVersion)}
 	for _, name := range themeSkill.files {
 		want = append(want, tagged(themeSkill.source+"/"+name))
 	}
 	if !slices.Equal(slices.Sorted(slices.Values(got)), slices.Sorted(slices.Values(want))) {
-		t.Errorf("fetched %v, want the module and the theme skill, %v", got, want)
+		t.Errorf("fetched %v, want the release and the theme skill, %v", got, want)
 	}
 }
 
@@ -120,10 +137,10 @@ func TestFetchFileBodyLimit(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			s, _ := fileServer(t, map[string]string{
-				tagged(opencodeSource): strings.Repeat("x", tc.size),
+				tagged(OpencodeModule): strings.Repeat("x", tc.size),
 			})
 
-			data, err := s.fetchFile(testVersion, opencodeSource)
+			data, err := s.fetchFile(testVersion, OpencodeModule)
 			if (err != nil) != tc.wantErr {
 				t.Fatalf("fetchFile with a %d byte body: err = %v, want an error: %v", tc.size, err, tc.wantErr)
 			}
@@ -136,169 +153,124 @@ func TestFetchFileBodyLimit(t *testing.T) {
 
 // ---------------------------------------------------------------- opencode --
 
-func TestOpencodeInstallWritesTheModule(t *testing.T) {
-	config := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", config)
-	s, asked := fileServer(t, map[string]string{
-		tagged(opencodeSource): "export const LichPlugin = async () => ({})\n",
-	})
-
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err != nil {
-		t.Fatalf("Install: %v", err)
-	}
-
-	path := filepath.Join(config, "opencode", "plugins", opencodeFile)
-	data, err := os.ReadFile(path)
-	if err != nil {
-		t.Fatalf("read the installed module: %v", err)
-	}
-	body := string(data)
-	if !strings.Contains(body, "export const LichPlugin") {
-		t.Errorf("installed module lost the release's body:\n%s", body)
-	}
-	if !strings.HasPrefix(body, jsComment+" "+markerName+" v"+testVersion+" ") {
-		t.Errorf("installed module has no version marker on its first line:\n%s", body)
-	}
-	assertFetchedWithSkill(t, asked(), opencodeSource)
-}
-
-// The version has to survive the round trip: Status reads back what Install
-// wrote, and a marker either side spells differently reports nothing installed.
-func TestOpencodeInstalledVersionRoundTrips(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
-	s, _ := fileServer(t, map[string]string{tagged(opencodeSource): "export const P = async () => ({})\n"})
-
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err != nil {
-		t.Fatalf("Install: %v", err)
-	}
-	got, ok := s.installedVersion(providers.OpenCode)
-	if !ok || got != testVersion {
-		t.Fatalf("installedVersion = (%q,%v), want (%q,true)", got, ok, testVersion)
-	}
-}
-
-// A module somebody installed by hand carries no marker. Reporting a version
-// for it would offer an update over a file lich never wrote.
-func TestOpencodeInstalledVersionIgnoresAnUnmarkedModule(t *testing.T) {
-	config := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", config)
-	dir := filepath.Join(config, "opencode", "plugins")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.WriteFile(filepath.Join(dir, opencodeFile), []byte("export const P = async () => ({})\n"), 0o644); err != nil {
-		t.Fatal(err)
-	}
-	s, _ := fileServer(t, nil)
-
-	if got, ok := s.installedVersion(providers.OpenCode); ok || got != "" {
-		t.Fatalf("installedVersion = (%q,%v), want empty/false for a module lich did not write", got, ok)
-	}
-}
-
-func TestOpencodeInstalledVersionMissingModule(t *testing.T) {
-	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
-	s, _ := fileServer(t, nil)
-	if got, ok := s.installedVersion(providers.OpenCode); ok || got != "" {
-		t.Fatalf("installedVersion = (%q,%v), want empty/false", got, ok)
-	}
-}
-
-// An update replaces the module wholesale, so the older version must not
-// survive anywhere in the file — Status would otherwise read the first marker
-// it finds and report the version the user just left.
-func TestOpencodeUpdateReplacesTheModule(t *testing.T) {
-	config := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", config)
-	s, _ := fileServer(t, map[string]string{tagged(opencodeSource): "export const P = async () => ({ event: async () => {} })\n"})
-
-	dir := filepath.Join(config, "opencode", "plugins")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		t.Fatal(err)
-	}
-	old := jsComment + " " + markerName + " v0.1.0 — installed by lich\nexport const P = async () => ({})\n"
-	if err := os.WriteFile(filepath.Join(dir, opencodeFile), []byte(old), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	if _, err := s.Update(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err != nil {
-		t.Fatalf("Update: %v", err)
-	}
-	data, err := os.ReadFile(filepath.Join(dir, opencodeFile))
-	if err != nil {
-		t.Fatal(err)
-	}
-	if strings.Contains(string(data), "v0.1.0") {
-		t.Errorf("update left the old version behind:\n%s", data)
-	}
-	if got, ok := s.installedVersion(providers.OpenCode); !ok || got != testVersion {
-		t.Errorf("installedVersion = (%q,%v), want (%q,true)", got, ok, testVersion)
-	}
-}
-
-// A release that does not carry the module must leave nothing behind: a
-// half-written plugin directory is worse than an install the user can retry.
-func TestOpencodeInstallWritesNothingWhenTheFetchFails(t *testing.T) {
-	config := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", config)
-	s, _ := fileServer(t, nil) // every path 404s
-
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err == nil {
-		t.Fatal("Install: want an error when the release has no module, got nil")
-	}
-	if _, err := os.Stat(filepath.Join(config, "opencode", "plugins", opencodeFile)); !os.IsNotExist(err) {
-		t.Errorf("a failed install left a module behind (stat err = %v)", err)
-	}
-}
-
-// legacyOpencodeModuleAt plants a module in `plugin/`, where lich wrote it
-// before opencode 2 stopped reading that directory, and returns its path.
-func legacyOpencodeModuleAt(t *testing.T, config, body string) string {
+// opencodeConfig points opencode's config at a temporary directory and returns
+// it.
+func opencodeConfig(t *testing.T) string {
 	t.Helper()
-	dir := filepath.Join(config, "opencode", "plugin")
-	if err := os.MkdirAll(dir, 0o755); err != nil {
+	config := t.TempDir()
+	t.Setenv("XDG_CONFIG_HOME", config)
+	return config
+}
+
+func markedModule(version, body string) string {
+	return jsComment + " " + markerName + " v" + version + " — installed by lich\n" + body
+}
+
+// writeModule writes body at path, making its directory.
+func writeModule(t *testing.T, path, body string) {
+	t.Helper()
+	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	path := filepath.Join(dir, opencodeFile)
 	if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	return path
 }
 
-// opencode 1.x reads both directories, so the copy an older lich left in
-// `plugin/` would report every event a second time beside the new one.
-func TestOpencodeInstallMovesTheModuleAnOlderLichWrote(t *testing.T) {
-	config := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", config)
-	legacy := legacyOpencodeModuleAt(t, config, jsComment+" "+markerName+" v0.1.0 — installed by lich\nexport const P = 1\n")
-	s, _ := fileServer(t, map[string]string{tagged(opencodeSource): "export const P = async () => ({})\n"})
+// opencode sessions load the module from lich's release (internal/terminal), so
+// the install unpacks it and copies only the theme skill into opencode's own
+// directory; no module is written there.
+func TestOpencodeInstallUnpacksThePluginAndCopiesTheSkill(t *testing.T) {
+	config := opencodeConfig(t)
+	s, asked := fileServer(t, nil)
 
-	if got, ok := s.installedVersion(providers.OpenCode); !ok || got != "0.1.0" {
-		t.Fatalf("before the update: installedVersion = (%q,%v), want the older lich's install", got, ok)
+	if err := s.install(providers.OpenCode); err != nil {
+		t.Fatalf("Install: %v", err)
 	}
-	if _, err := s.Update(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err != nil {
-		t.Fatalf("Update: %v", err)
+	if _, version, ok := BundleDir(); !ok || version != testVersion {
+		t.Errorf("BundleDir version = (%q,%v), want the release unpacked", version, ok)
 	}
-	if _, err := os.Stat(legacy); !os.IsNotExist(err) {
-		t.Errorf("the older module is still at %s (stat err = %v)", legacy, err)
+	if !skillPresent(filepath.Join(config, "opencode", "skills")) {
+		t.Error("the theme skill is not in opencode's skills directory")
+	}
+	if _, err := os.Stat(filepath.Join(config, "opencode", "plugins", opencodeFile)); !os.IsNotExist(err) {
+		t.Errorf("a module was written into opencode's plugin directory (stat err = %v)", err)
 	}
 	if got, ok := s.installedVersion(providers.OpenCode); !ok || got != testVersion {
 		t.Errorf("installedVersion = (%q,%v), want (%q,true)", got, ok, testVersion)
+	}
+	assertFetchedWithSkill(t, asked())
+}
+
+// A release lich has unpacked is not yet an install for opencode: without the
+// skill copied, the window keeps offering the install.
+func TestOpencodeInstalledVersionNeedsTheSkill(t *testing.T) {
+	opencodeConfig(t)
+	s, _ := fileServer(t, nil)
+	if err := s.installBundle(); err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := s.installedVersion(providers.OpenCode); ok || got != "" {
+		t.Fatalf("installedVersion = (%q,%v), want empty/false before the install", got, ok)
+	}
+}
+
+// opencode loads its plugin directories beside the inline config, so a module
+// lich wrote there would report every event a second time: today's directory
+// and the one opencode 1 read before opencode 2.
+func TestOpencodeInstallRemovesTheModulesLichWrote(t *testing.T) {
+	config := opencodeConfig(t)
+	paths := []string{
+		filepath.Join(config, "opencode", "plugins", opencodeFile),
+		filepath.Join(config, "opencode", opencodeLegacyPluginDir, opencodeFile),
+	}
+	for _, path := range paths {
+		writeModule(t, path, markedModule("0.1.0", "export const P = 1\n"))
+	}
+	s, _ := fileServer(t, nil)
+
+	if err := s.install(providers.OpenCode); err != nil {
+		t.Fatalf("Install: %v", err)
+	}
+	for _, path := range paths {
+		if _, err := os.Stat(path); !os.IsNotExist(err) {
+			t.Errorf("the module lich wrote is still at %s (stat err = %v)", path, err)
+		}
 	}
 }
 
 func TestOpencodeInstallLeavesAModuleLichDidNotWrite(t *testing.T) {
-	config := t.TempDir()
-	t.Setenv("XDG_CONFIG_HOME", config)
-	theirs := legacyOpencodeModuleAt(t, config, "export const Mine = async () => ({})\n")
-	s, _ := fileServer(t, map[string]string{tagged(opencodeSource): "export const P = async () => ({})\n"})
+	config := opencodeConfig(t)
+	paths := []string{
+		filepath.Join(config, "opencode", "plugins", opencodeFile),
+		filepath.Join(config, "opencode", opencodeLegacyPluginDir, opencodeFile),
+	}
+	for _, path := range paths {
+		writeModule(t, path, "export const Mine = async () => ({})\n")
+	}
+	s, _ := fileServer(t, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err != nil {
+	if err := s.install(providers.OpenCode); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
-	if _, err := os.Stat(theirs); err != nil {
-		t.Errorf("Install removed a module lich never wrote: %v", err)
+	for _, path := range paths {
+		if _, err := os.Stat(path); err != nil {
+			t.Errorf("Install removed a module lich never wrote: %v", err)
+		}
+	}
+}
+
+// A release that will not arrive leaves nothing behind, the skill included.
+func TestOpencodeInstallWritesNothingWhenTheFetchFails(t *testing.T) {
+	config := opencodeConfig(t)
+	s, _ := fileServer(t, nil)
+	s.tarballBase += "/missing"
+
+	if err := s.install(providers.OpenCode); err == nil {
+		t.Fatal("Install: want an error when the release does not arrive, got nil")
+	}
+	if _, err := os.Stat(filepath.Join(config, "opencode", "skills")); !os.IsNotExist(err) {
+		t.Errorf("a failed install wrote skills anyway (stat err = %v)", err)
 	}
 }
 
@@ -319,9 +291,10 @@ func ompHome(t *testing.T) string {
 
 // The profile beats the explicit override, which is the order `omp config path`
 // applies and the opposite of how the two read. Asserted through a real install
-// rather than on the resolver alone: getting it backwards writes the extension
-// into a directory omp never scans, and every report goes missing in silence.
-// (internal/terminal resolves the same rule for resume, and pins it separately.)
+// rather than on the resolver alone: getting it backwards writes the
+// registration into a directory omp never reads, and the tools go missing in
+// silence. (internal/terminal resolves the same rule for resume, and pins it
+// separately.)
 func TestOMPInstallFollowsTheProfileOverTheOverride(t *testing.T) {
 	home := t.TempDir()
 	t.Setenv("HOME", home)
@@ -333,49 +306,44 @@ func TestOMPInstallFollowsTheProfileOverTheOverride(t *testing.T) {
 	}
 	t.Setenv("PI_CODING_AGENT_DIR", t.TempDir())
 	t.Setenv("OMP_PROFILE", "work")
-	s, _ := fileServer(t, map[string]string{tagged(ompSource): "export default () => {}\n"})
+	s, _ := fileServer(t, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OMP}); err != nil {
+	if err := s.install(providers.OMP); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
 	profile := filepath.Join(home, ".omp", "profiles", "work", "agent")
-	if _, err := os.Stat(filepath.Join(profile, ompExtensionsDir, ompFile)); err != nil {
-		t.Fatalf("the extension is not in the profile's directory: %v", err)
+	if _, ok := readOMPServers(t, profile)[relay.MCPServerName]; !ok {
+		t.Fatal("the server is not registered in the profile's directory")
 	}
 	if override := os.Getenv("PI_CODING_AGENT_DIR"); override != "" {
-		if _, err := os.Stat(filepath.Join(override, ompExtensionsDir, ompFile)); !os.IsNotExist(err) {
+		if _, err := os.Stat(filepath.Join(override, ompMCPFile)); !os.IsNotExist(err) {
 			t.Errorf("the override was written too (stat err = %v)", err)
 		}
 	}
-	// And the version reads back from the same place it was written to.
+	// And the install reads back from the same place it was written to.
 	if got, ok := s.installedVersion(providers.OMP); !ok || got != testVersion {
 		t.Errorf("installedVersion = (%q,%v), want (%q,true)", got, ok, testVersion)
 	}
 }
 
-func TestOMPInstallWritesTheExtensionAndRegistersTheServer(t *testing.T) {
+// omp sessions load the extension from lich's release with -e, so the install
+// registers the server and copies the skills, and takes out the extension a
+// lich of the past wrote: omp would run it beside the one -e loads.
+func TestOMPInstallRegistersTheServerAndRemovesTheExtension(t *testing.T) {
 	agent := ompHome(t)
-	s, asked := fileServer(t, map[string]string{
-		tagged(ompSource): "export default function lichPlugin(pi) {}\n",
-	})
+	extension := filepath.Join(agent, ompExtensionsDir, ompFile)
+	writeModule(t, extension, markedModule("0.20.0", "export default () => {}\n"))
+	s, asked := fileServer(t, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OMP}); err != nil {
+	if err := s.install(providers.OMP); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
-	data, err := os.ReadFile(filepath.Join(agent, ompExtensionsDir, ompFile))
-	if err != nil {
-		t.Fatalf("read the installed extension: %v", err)
+	if _, err := os.Stat(extension); !os.IsNotExist(err) {
+		t.Errorf("the extension lich wrote is still there (stat err = %v)", err)
 	}
-	body := string(data)
-	if !strings.Contains(body, "export default function lichPlugin") {
-		t.Errorf("installed extension lost the release's body:\n%s", body)
-	}
-	if !strings.HasPrefix(body, jsComment+" "+markerName+" v"+testVersion+" ") {
-		t.Errorf("installed extension has no version marker on its first line:\n%s", body)
-	}
-	assertFetchedWithSkill(t, asked(), ompSource)
+	assertFetchedWithSkill(t, asked())
 
 	// omp takes no --mcp-config flag, so this document is the only way a session
 	// of its own reaches the other sessions.
@@ -396,6 +364,40 @@ func TestOMPInstallWritesTheExtensionAndRegistersTheServer(t *testing.T) {
 	}
 }
 
+// A release unpacked with nothing registered is not an install: the window
+// keeps offering it, or a session would be promised tools omp cannot reach.
+func TestOMPInstalledVersionNeedsTheRegistration(t *testing.T) {
+	agent := ompHome(t)
+	s, _ := fileServer(t, nil)
+	if err := s.installSkills(testVersion, filepath.Join(agent, "skills")); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.installBundle(); err != nil {
+		t.Fatal(err)
+	}
+	if got, ok := s.installedVersion(providers.OMP); ok || got != "" {
+		t.Fatalf("installedVersion = (%q,%v), want empty/false without the server", got, ok)
+	}
+	s.lichBin = func() string { return "" }
+	if _, ok := s.installedVersion(providers.OMP); !ok {
+		t.Error("installedVersion = false, want true where lich cannot name a binary to register")
+	}
+}
+
+func TestOMPInstallLeavesAnExtensionLichDidNotWrite(t *testing.T) {
+	agent := ompHome(t)
+	extension := filepath.Join(agent, ompExtensionsDir, ompFile)
+	writeModule(t, extension, "export default () => {}\n")
+	s, _ := fileServer(t, nil)
+
+	if err := s.install(providers.OMP); err != nil {
+		t.Fatalf("Install: %v", err)
+	}
+	if _, err := os.Stat(extension); err != nil {
+		t.Errorf("Install removed an extension lich never wrote: %v", err)
+	}
+}
+
 // The document belongs to the user: lich rewrites it, so everything it did not
 // come for has to survive the round trip — other servers, and the keys lich
 // knows nothing about.
@@ -410,9 +412,9 @@ func TestOMPInstallKeepsEveryOtherServer(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(agent, ompMCPFile), []byte(existing), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	s, _ := fileServer(t, map[string]string{tagged(ompSource): "export default () => {}\n"})
+	s, _ := fileServer(t, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OMP}); err != nil {
+	if err := s.install(providers.OMP); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -441,33 +443,29 @@ func TestOMPInstallRefusesAnUnreadableDocument(t *testing.T) {
 	if err := os.WriteFile(path, []byte(garbage), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	s, _ := fileServer(t, map[string]string{tagged(ompSource): "export default () => {}\n"})
+	s, _ := fileServer(t, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OMP}); err == nil {
+	if err := s.install(providers.OMP); err == nil {
 		t.Fatal("Install: want an error for a document lich cannot merge into, got nil")
 	}
 	data, err := os.ReadFile(path)
 	if err != nil || string(data) != garbage {
 		t.Errorf("the document was rewritten anyway: %q (err %v)", data, err)
 	}
-	// And nothing else was written either: an extension reporting into a session
-	// that never got the tools is the half-install this ordering exists to avoid.
-	if _, err := os.Stat(filepath.Join(agent, ompExtensionsDir, ompFile)); !os.IsNotExist(err) {
-		t.Errorf("the refused install wrote the extension anyway (stat err = %v)", err)
+	if _, err := os.Stat(filepath.Join(agent, "skills")); !os.IsNotExist(err) {
+		t.Errorf("the refused install wrote skills anyway (stat err = %v)", err)
 	}
 }
 
-// A release that does not carry the extension must leave nothing behind — no
-// module, and no registration pointing at reports that will never come.
+// A release that will not arrive leaves nothing behind — no registration
+// pointing at reports that will never come.
 func TestOMPInstallWritesNothingWhenTheFetchFails(t *testing.T) {
 	agent := ompHome(t)
-	s, _ := fileServer(t, nil) // every path 404s
+	s, _ := fileServer(t, nil)
+	s.tarballBase += "/missing"
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OMP}); err == nil {
-		t.Fatal("Install: want an error when the release has no extension, got nil")
-	}
-	if _, err := os.Stat(filepath.Join(agent, ompExtensionsDir, ompFile)); !os.IsNotExist(err) {
-		t.Errorf("a failed install left an extension behind (stat err = %v)", err)
+	if err := s.install(providers.OMP); err == nil {
+		t.Fatal("Install: want an error when the release does not arrive, got nil")
 	}
 	if _, err := os.Stat(filepath.Join(agent, ompMCPFile)); !os.IsNotExist(err) {
 		t.Errorf("a failed install registered a server anyway (stat err = %v)", err)
@@ -555,7 +553,7 @@ func installCrush(t *testing.T, s *Service, existingRC string) (string, string) 
 			t.Fatal(err)
 		}
 	}
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Crush}); err != nil {
+	if err := s.install(providers.Crush); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	data, err := os.ReadFile(rc)
@@ -680,7 +678,7 @@ func TestCrushInstallRefusesAnOldCrush(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	crushCLI(t, s, configDir, "0.77.0")
 
-	_, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Crush})
+	err := s.install(providers.Crush)
 	if err == nil {
 		t.Fatal("Install: want an error on a Crush without crushrc hooks, got nil")
 	}
@@ -705,7 +703,7 @@ func TestCrushInstallProceedsOnAnUnreadableVersion(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	crushCLI(t, s, configDir, "")
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Crush}); err != nil {
+	if err := s.install(providers.Crush); err != nil {
 		t.Fatalf("Install with an unreadable crush version: %v", err)
 	}
 }
@@ -1029,7 +1027,7 @@ func TestAntigravityInstallWritesTheCustomization(t *testing.T) {
 	s, _ := fileServer(t, antigravityFiles())
 	antigravityCLI(t, s)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err != nil {
+	if err := s.install(providers.Antigravity); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -1076,7 +1074,7 @@ func TestAntigravityInstallWritesTheSourcedConversationIDParser(t *testing.T) {
 	s, _ := fileServer(t, files)
 	antigravityCLI(t, s)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err != nil {
+	if err := s.install(providers.Antigravity); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -1093,7 +1091,7 @@ func TestAntigravityInstalledVersionRoundTrips(t *testing.T) {
 	s, _ := fileServer(t, antigravityFiles())
 	antigravityCLI(t, s)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err != nil {
+	if err := s.install(providers.Antigravity); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	var manifest struct {
@@ -1122,7 +1120,7 @@ func TestAntigravityDisabledReadsAsMissingUntilInstallEnablesIt(t *testing.T) {
 	dir := antigravityHome(t)
 	s, _ := fileServer(t, antigravityFiles())
 	calls := antigravityCLI(t, s)
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err != nil {
+	if err := s.install(providers.Antigravity); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	if got := calls(); !slices.Contains(got, "plugin enable "+pluginName) {
@@ -1173,7 +1171,7 @@ func TestAntigravityInstallRegistersLichsMCPServer(t *testing.T) {
 	calls := antigravityCLI(t, s)
 	s.lichBin = func() string { return "/opt/lich/lich" }
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err != nil {
+	if err := s.install(providers.Antigravity); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	want := "mcp add " + relay.MCPServerName + " /opt/lich/lich " + relay.MCPSubcommand
@@ -1191,7 +1189,7 @@ func TestAntigravityInstallWithoutABinaryStillWritesTheHooks(t *testing.T) {
 	calls := antigravityCLI(t, s)
 	s.lichBin = func() string { return "" }
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err != nil {
+	if err := s.install(providers.Antigravity); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(dir, antigravityHooksFile)); err != nil {
@@ -1212,7 +1210,7 @@ func TestAntigravityInstallWritesNothingWhenTheFetchFails(t *testing.T) {
 	s, _ := fileServer(t, files)
 	antigravityCLI(t, s)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err == nil {
+	if err := s.install(providers.Antigravity); err == nil {
 		t.Fatal("Install: want an error when the release is missing a script, got nil")
 	}
 	if _, err := os.Stat(filepath.Join(dir, antigravityHooksFile)); !os.IsNotExist(err) {
@@ -1235,7 +1233,7 @@ func TestAntigravityInstallClaimsNothingWhenTheRegistrationFails(t *testing.T) {
 	t.Setenv(fakeCLIFail, "mcp add")
 	s.lichBin = func() string { return "/opt/lich/lich" }
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err == nil {
+	if err := s.install(providers.Antigravity); err == nil {
 		t.Fatal("Install: want an error when the registration is refused, got nil")
 	}
 	// The hooks stay: they are written and they work, and the next install
@@ -1284,6 +1282,14 @@ func readCursorServers(t *testing.T, home string) map[string]any {
 	return servers
 }
 
+// cursorService is a service whose release comes from a local server, so an
+// install never reaches GitHub.
+func cursorService(t *testing.T) *Service {
+	t.Helper()
+	s, _ := fileServer(t, nil)
+	return s
+}
+
 const claudeStateWithPlugin = `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"0.9.0"}]}}`
 
 // Cursor takes no MCP server on its command line and gets none from the Claude
@@ -1291,10 +1297,10 @@ const claudeStateWithPlugin = `{"plugins":{"lich@lich-plugin":[{"scope":"user","
 // reaches the sessions beside it.
 func TestCursorInstallRegistersTheServer(t *testing.T) {
 	home := cursorHome(t, claudeStateWithPlugin)
-	s := New(stubBins{})
+	s := cursorService(t)
 	s.lichBin = func() string { return "/usr/bin/lich" }
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Cursor}); err != nil {
+	if err := s.install(providers.Cursor); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -1310,42 +1316,22 @@ func TestCursorInstallRegistersTheServer(t *testing.T) {
 	}
 }
 
-// The version reported for Cursor is Claude Code's, because that is the install
-// its reports actually come from — and it is reported only once the tools are
-// registered too, since a session needs both halves.
-func TestCursorInstalledVersionIsClaudeCodes(t *testing.T) {
-	cursorHome(t, claudeStateWithPlugin)
-	s := New(stubBins{})
+// The version reported for Cursor is the release its sessions load with
+// --plugin-dir, and only once the tools are registered too, since a session
+// needs both halves.
+func TestCursorInstalledVersionIsTheRelease(t *testing.T) {
+	cursorHome(t, `{"plugins":{}}`)
+	s := cursorService(t)
 	s.lichBin = func() string { return "/usr/bin/lich" }
 
 	if got, ok := s.installedVersion(providers.Cursor); ok {
-		t.Errorf("installedVersion = (%q,%v) before the server was registered, want not installed", got, ok)
+		t.Errorf("installedVersion = (%q,%v) before the install, want not installed", got, ok)
 	}
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Cursor}); err != nil {
+	if err := s.install(providers.Cursor); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
-	if got, ok := s.installedVersion(providers.Cursor); !ok || got != "0.9.0" {
-		t.Errorf("installedVersion = (%q,%v), want (\"0.9.0\",true)", got, ok)
-	}
-}
-
-// Registering the tools while the reports have nowhere to come from is a card
-// that answers with lich's own operations and never says it is working, so the
-// install refuses and names the step that is missing.
-func TestCursorInstallRefusesWithoutTheClaudeCodeInstall(t *testing.T) {
-	home := cursorHome(t, `{"plugins":{}}`)
-	s := New(stubBins{})
-	s.lichBin = func() string { return "/usr/bin/lich" }
-
-	_, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Cursor})
-	if err == nil {
-		t.Fatal("Install = nil with no plugin in Claude Code, want an error naming it")
-	}
-	if !strings.Contains(err.Error(), "Claude Code") {
-		t.Errorf("error does not name what to install: %v", err)
-	}
-	if _, err := os.Stat(filepath.Join(home, ".cursor", cursorMCPFile)); !os.IsNotExist(err) {
-		t.Error("a refused install still wrote the MCP document")
+	if got, ok := s.installedVersion(providers.Cursor); !ok || got != testVersion {
+		t.Errorf("installedVersion = (%q,%v), want (%q,true)", got, ok, testVersion)
 	}
 }
 
@@ -1364,10 +1350,10 @@ func TestCursorInstallKeepsEveryOtherServer(t *testing.T) {
 	if err := os.WriteFile(filepath.Join(dir, cursorMCPFile), []byte(existing), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	s := New(stubBins{})
+	s := cursorService(t)
 	s.lichBin = func() string { return "/usr/bin/lich" }
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Cursor}); err != nil {
+	if err := s.install(providers.Cursor); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -1400,10 +1386,10 @@ func TestCursorInstallRefusesAnUnreadableDocument(t *testing.T) {
 	if err := os.WriteFile(path, []byte(garbage), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	s := New(stubBins{})
+	s := cursorService(t)
 	s.lichBin = func() string { return "/usr/bin/lich" }
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Cursor}); err == nil {
+	if err := s.install(providers.Cursor); err == nil {
 		t.Fatal("Install = nil over a document lich cannot merge into")
 	}
 	data, err := os.ReadFile(path)
@@ -1416,10 +1402,10 @@ func TestCursorInstallRefusesAnUnreadableDocument(t *testing.T) {
 // that cannot run — the session still has the `lich` command line.
 func TestCursorInstallWritesNothingWithoutABinary(t *testing.T) {
 	home := cursorHome(t, claudeStateWithPlugin)
-	s := New(stubBins{})
+	s := cursorService(t)
 	s.lichBin = func() string { return "" }
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Cursor}); err == nil {
+	if err := s.install(providers.Cursor); err == nil {
 		t.Fatal("Install = nil with no lich binary to register")
 	}
 	if _, err := os.Stat(filepath.Join(home, ".cursor", cursorMCPFile)); !os.IsNotExist(err) {
@@ -1432,14 +1418,14 @@ func TestCursorInstallWritesNothingWithoutABinary(t *testing.T) {
 // there, and never when lich cannot name the binary to register.
 func TestHasToolsForCursor(t *testing.T) {
 	cursorHome(t, claudeStateWithPlugin)
-	s := New(stubBins{})
+	s := cursorService(t)
 	s.lookPath = func(string) (string, error) { return "/usr/bin/cursor-agent", nil }
 	s.lichBin = func() string { return "/usr/bin/lich" }
 
 	if s.HasTools(providers.Cursor) {
 		t.Error("HasTools(cursor) = true before lich's server was registered")
 	}
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Cursor}); err != nil {
+	if err := s.install(providers.Cursor); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	if !s.HasTools(providers.Cursor) {

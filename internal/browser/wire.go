@@ -25,6 +25,9 @@ type wireConn struct {
 	w   io.Writer
 	// stop ends the process; it runs once, when the connection fails.
 	stop func()
+	// frames: the process draws its pages off screen, and the window draws
+	// their frames (hello); set before any page opens.
+	frames bool
 
 	mu      sync.Mutex
 	next    int64

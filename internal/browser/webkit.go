@@ -13,9 +13,9 @@ import (
 )
 
 // webkitPage is one session's page in lich-browser, driven over the wire: the
-// page the agent drives is the one the window shows, an X window of
-// lich-browser's it embeds, so it sends no frames and takes no input from the
-// pane (docs/lich-browser.md).
+// page the agent drives is the one the window shows, a surface of
+// lich-browser's it embeds, or on Wayland the frames lich-browser sends
+// (wireConn.frames, docs/lich-browser.md).
 type webkitPage struct {
 	conn *wireConn
 	id   string
@@ -34,6 +34,7 @@ type webkitPage struct {
 	tabs           []api.BrowserTab
 	front          string
 	url, title     string
+	onFrame        func(tab, data string)
 	onInfo         func(url, title string)
 	onDownload     func(guid string, d api.BrowserDownload)
 	onConsoleError func(text string)
@@ -102,6 +103,17 @@ func (p *webkitPage) otherEvent(name string, raw json.RawMessage) error {
 		if onDownload != nil {
 			onDownload(ev.GUID, api.BrowserDownload{Path: ev.Path, Bytes: ev.Received, State: ev.State})
 		}
+	case browserwire.EventFrame:
+		var ev browserwire.FrameEvent
+		if err := json.Unmarshal(raw, &ev); err != nil {
+			return err
+		}
+		p.mu.Lock()
+		onFrame := p.onFrame
+		p.mu.Unlock()
+		if onFrame != nil {
+			onFrame(ev.Tab, ev.Data)
+		}
 	case browserwire.EventCrashed:
 		p.gone()
 	case browserwire.EventClosed:
@@ -139,6 +151,12 @@ func (p *webkitPage) setTabs(tabs []browserwire.Tab) {
 	}
 	p.mu.Lock()
 	p.tabs = out
+	// An engine tells a page's title after its load, and an event sent
+	// before it heard it can land after readPlace read the page's own: no
+	// title for the same URL is no change.
+	if front != nil && front.Title == "" && front.URL == p.url {
+		front.Title = p.title
+	}
 	moved := front != nil && (front.URL != p.url || front.Title != p.title)
 	if front != nil && front.ID != p.front {
 		p.front = front.ID
@@ -222,9 +240,9 @@ func (p *webkitPage) chooseFiles(multiple bool) {
 	}
 }
 
-func (p *webkitPage) Listen(_ func(tab, data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string), onDialog func(*api.BrowserDialog), onTabs func([]api.BrowserTab)) {
+func (p *webkitPage) Listen(onFrame func(tab, data string), onInfo func(url, title string), onDownload func(guid string, d api.BrowserDownload), onConsoleError func(text string), onDialog func(*api.BrowserDialog), onTabs func([]api.BrowserTab)) {
 	p.mu.Lock()
-	p.onInfo, p.onDownload, p.onConsoleError, p.onDialog, p.onTabs = onInfo, onDownload, onConsoleError, onDialog, onTabs
+	p.onFrame, p.onInfo, p.onDownload, p.onConsoleError, p.onDialog, p.onTabs = onFrame, onInfo, onDownload, onConsoleError, onDialog, onTabs
 	tabs := p.tabs
 	p.mu.Unlock()
 	// The tabs open sent came before anyone listened.

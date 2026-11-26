@@ -11,6 +11,7 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/agentplugin"
 	"github.com/lichdotdev/lich/internal/artifact"
+	"github.com/lichdotdev/lich/internal/library"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
@@ -88,6 +89,8 @@ func (s *Service) Start(_ context.Context, opts api.StartOptions) (api.None, err
 	inheritClaudeTrust(opts.Kind, opts.Cwd, profileDir)
 	inheritCursorTrust(opts.Kind, opts.Cwd)
 	markCrushInitialized(opts.Kind, opts.Cwd)
+	s.reenablePlugin(opts.Kind, opts.ProjectID, profileDir)
+	s.ensurePluginFor(opts.Kind)
 	reports := s.awaitsStart(opts.Kind, profileDir)
 	awaits := reports && !trustAnswered(opts.Kind, opts.Cwd, profileDir)
 	sess, cwd, err := s.spawnSession(opts, profileDir, name, oc2)
@@ -182,7 +185,7 @@ func (s *Service) spawnSession(opts api.StartOptions, profileDir, name string, o
 	s.sessions[opts.ID] = sess
 	// Outside mu's protection by design (see Service.spawns), and stored with the
 	// registration so no report can arrive for a session whose kind is unknown.
-	s.spawns.Store(opts.ID, spawn{kind: opts.Kind, cwd: opts.Cwd, projectID: opts.ProjectID, profile: profileSlug(opts.Kind, profileDir)})
+	s.spawns.Store(opts.ID, spawn{kind: opts.Kind, cwd: opts.Cwd, projectID: opts.ProjectID, profile: profileSlug(opts.Kind, profileDir), plugin: l.plugin})
 	go s.stream(opts.ID, sess)
 	return sess, opts.Cwd, nil
 }
@@ -197,20 +200,23 @@ type spawnLaunch struct {
 	cli      ptySpec
 	confined bool
 	links    []string
+	// plugin is the plugin release the spawn hands the process.
+	plugin string
 }
 
 // spawnArgs is everything a spawn's argv is decided from.
 type spawnArgs struct {
-	kind, cwd, name, resume, model, effort, lichBin, agent string
-	fork, skipPermissions, ultracode, oc2, confined        bool
-	route                                                  relay.SubagentRoute
-	lang                                                   prompt.Lang
+	kind, cwd, name, resume, model, effort, lichBin, agent, plugin string
+	lib                                                            library.Delivery
+	fork, skipPermissions, ultracode, oc2, confined                bool
+	route                                                          relay.SubagentRoute
+	lang                                                           prompt.Lang
 }
 
 // ptyArgs is the argv of a session's terminal.
 func ptyArgs(a spawnArgs) []string {
 	return slices.Concat(confinedTrustArgs(a.kind, a.cwd, a.confined), codexBriefingArgs(a.kind, a.resume, a.route, a.lang), opencode2Args(a.oc2, providerArgs(
-		a.kind, a.name, a.resume, a.model, a.effort, a.lichBin, a.agent, a.fork, a.skipPermissions, a.ultracode, a.route, a.lang,
+		a.kind, a.name, a.resume, a.model, a.effort, a.lichBin, a.agent, a.plugin, a.lib, a.fork, a.skipPermissions, a.ultracode, a.route, a.lang,
 	)))
 }
 
@@ -244,6 +250,10 @@ func (s *Service) prepareSpawnLocked(opts api.StartOptions, profileDir, name str
 		return spawnLaunch{}, err
 	}
 	env = mcpEnv(env, opts.Kind, mcpBin)
+	plugin, _, _ := agentplugin.BundleDir()
+	env = pluginEnv(env, opts.Kind, plugin)
+	lib := s.libraryFor(opts.Kind, profileSlug(opts.Kind, profileDir), profileDir)
+	env = libraryEnv(env, opts.Kind, lib)
 	env = todoToolsEnv(env, opts.Kind)
 	filesKey := s.store.SessionFilesKey(opts.ID)
 	artifacts := sessionArtifactDir(s.artifactDir, filesKey)
@@ -275,7 +285,7 @@ func (s *Service) prepareSpawnLocked(opts api.StartOptions, profileDir, name str
 		bin: resolveCommand(opts.Kind, s.store.ProviderBin(opts.Kind, opts.ProjectID), userShell()),
 		args: argv(spawnArgs{
 			kind: opts.Kind, cwd: opts.Cwd, name: name, resume: opts.Resume, model: model,
-			effort: s.store.SessionEffort(opts.ID), lichBin: mcpBin, agent: kiroPluginAgent(opts.Kind),
+			effort: s.store.SessionEffort(opts.ID), lichBin: mcpBin, agent: kiroPluginAgent(opts.Kind), plugin: plugin, lib: lib,
 			fork: opts.Fork, skipPermissions: skipPermissions, ultracode: ultracode, oc2: oc2,
 			confined: inSandbox, route: route, lang: lang,
 		}),
@@ -294,7 +304,7 @@ func (s *Service) prepareSpawnLocked(opts api.StartOptions, profileDir, name str
 	reads := []string{sessionDropDir(s.dropDir, filesKey, inSandbox), s.shellIntegrationDir}
 	cli := spec
 	spec, skippedLinks := wrapSandbox(spec, opts.Kind, userHome(), reads, []string{artifacts}, profileDir, inSandbox, creds)
-	return spawnLaunch{spec: spec, cli: cli, confined: inSandbox, links: skippedLinks}, nil
+	return spawnLaunch{spec: spec, cli: cli, confined: inSandbox, links: skippedLinks, plugin: plugin}, nil
 }
 
 // providerKind resolves which provider mark a session-start report puts on a
@@ -321,6 +331,9 @@ type spawn struct {
 	// chat is whether the session runs as a chat (StartChat) rather than in
 	// its terminal.
 	chat bool
+	// plugin is the plugin release directory the process was handed, "" for
+	// none; it is in use for as long as this record lives.
+	plugin string
 }
 
 // spawnOf is how a live session's PTY was started, or the zero spawn once it is
@@ -339,7 +352,7 @@ func (s *Service) spawnOf(id string) spawn {
 func (s *Service) kindOf(id string) string { return s.spawnOf(id).kind }
 
 // repeatedEnding reports whether a `done` is the same turn ending a second
-// time. Cursor CLI runs the plugin installed in Claude Code, and its TUI
+// time. Cursor CLI runs the same plugin as Claude Code, and its TUI
 // delivers that plugin's UserPromptSubmit and Stop (measured on 2026.08.11
 // through 2026.10.01), so every Cursor turn opens with a `busy`. Esc ends one
 // with two stop hooks for the same generation, "aborted" then "error", about

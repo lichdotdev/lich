@@ -138,7 +138,7 @@ func antigravityManifestFile(version string) ([]byte, error) {
 	body, err := json.MarshalIndent(map[string]string{
 		"name":        pluginName,
 		"version":     version,
-		"description": "Installed by lich — replace with the plugin from " + marketplaceRepo,
+		"description": "Installed by lich from " + marketplaceRepo + ". lich writes it again on its next start",
 	}, "", "  ")
 	if err != nil {
 		return nil, fmt.Errorf("encode %s: %w", antigravityManifest, err)

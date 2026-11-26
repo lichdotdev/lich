@@ -1,8 +1,4 @@
 {
-  "plugin": {
-    "incompatibleInstall": "The lich plugin in {installs} is not supported by this lich. Install v{version}, the release this lich supports.",
-    "incompatibleUpdate": "The lich plugin in {installs} is not supported by this lich. Update lich, or check that you are online to find a release this lich supports."
-  },
   "progress": {
     "updateFailed": "Update failed: {error}",
     "installFailed": "Install failed: {error}",

@@ -23,6 +23,8 @@ import (
 type fakeLichBrowser struct {
 	t       *testing.T
 	version int
+	// frames: the pages draw off screen, as on Wayland.
+	frames bool
 	// eval answers a script the test cares about: its JSON, or the error.
 	eval func(script string) (json, err string, ok bool)
 	// failURL fails its navigation; downloadURL turns its navigation into a
@@ -177,7 +179,7 @@ func (f *fakeLichBrowser) answer(out io.Writer, req browserwire.Request) (any, s
 	_ = json.Unmarshal(req.Params, &pp)
 	switch req.Method {
 	case browserwire.Hello:
-		return browserwire.HelloResult{Version: f.version}, ""
+		return browserwire.HelloResult{Version: f.version, Frames: f.frames}, ""
 	case browserwire.Clock:
 		f.mu.Lock()
 		f.clock += int64(time.Millisecond)

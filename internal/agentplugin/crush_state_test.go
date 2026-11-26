@@ -6,7 +6,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -26,7 +25,7 @@ func installCrushOn(t *testing.T, s *Service, crushVersion string) (string, stri
 	configDir := t.TempDir()
 	lichConfig := lichConfigHome(t)
 	crushCLI(t, s, configDir, crushVersion)
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Crush}); err != nil {
+	if err := s.install(providers.Crush); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	data, err := os.ReadFile(filepath.Join(configDir, "crushrc"))
@@ -207,7 +206,7 @@ func TestCrushStatusOffersTheUpdateOnceCrushHasTheEvents(t *testing.T) {
 	if st := statusOf(t, s.status(), providers.Crush); !st.UpdateAvailable || !st.Reregister {
 		t.Errorf("a block behind the Crush installed: %+v, want an update that re-registers", st)
 	}
-	if _, err := s.Update(t.Context(), api.PluginProviderOptions{Provider: providers.Crush}); err != nil {
+	if err := s.install(providers.Crush); err != nil {
 		t.Fatalf("Update: %v", err)
 	}
 	if st := statusOf(t, s.status(), providers.Crush); st.UpdateAvailable || st.Reregister {

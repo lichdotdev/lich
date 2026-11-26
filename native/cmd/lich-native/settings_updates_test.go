@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/lichdotdev/lich/native/backend"
+	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
 	"github.com/lichdotdev/lich/native/ui/icons"
 )
@@ -57,92 +58,21 @@ func TestInlineWordsKeepsPunctuationWithItsCodeSpan(t *testing.T) {
 	}
 }
 
-func TestPluginRowsSayWhatTheMachineHas(t *testing.T) {
-	base := backend.PluginStatus{Provider: "claude", Name: "Claude Code", Available: true, Compatible: true, LatestVersion: "0.9.0"}
-	installed := base
-	installed.Installed, installed.InstalledVersion = true, "0.9.0"
-	outdated := installed
-	outdated.InstalledVersion, outdated.UpdateAvailable = "0.8.0", true
-	unsupported := outdated
-	unsupported.InstalledVersion, unsupported.Compatible = "0.14.0", false
-	missing := backend.PluginStatus{Provider: "codex"}
-	behind := installed
-	behind.UpdateAvailable, behind.Reregister = true, true
-
+// The row says the release sessions run, the first provider that has it
+// speaking for all, and that there is none when no provider has it.
+func TestPluginVersionText(t *testing.T) {
 	for _, tc := range []struct {
-		name    string
-		st      backend.PluginStatus
-		text    string
-		action  string
-		variant ui.Variant
+		name     string
+		statuses []backend.PluginStatus
+		want     string
 	}{
-		{"cli missing", missing, "CLI not installed", "", ui.VariantDefault},
-		{"not installed", base, "Plugin not installed", "Install", ui.VariantDefault},
-		{"installed", installed, "v0.9.0", "", ui.VariantDefault},
-		{"outdated", outdated, "v0.8.0", "Update to v0.9.0", ui.VariantOutline},
-		{"unsupported", unsupported, "v0.14.0, not supported by this lich", "Install v0.9.0", ui.VariantOutline},
-		{"hooks behind the CLI", behind, "v0.9.0", "Re-register hooks", ui.VariantOutline},
+		{"none read", nil, "Plugin not installed"},
+		{"none installed", []backend.PluginStatus{{Provider: "claude"}, {Provider: "codex", Available: true}}, "Plugin not installed"},
+		{"the first installed", []backend.PluginStatus{{Provider: "claude"}, {Provider: "codex", Installed: true, InstalledVersion: "0.23.0"}, {Provider: "kiro", Installed: true, InstalledVersion: "0.22.0"}}, "v0.23.0"},
 	} {
-		if got := pluginVersionText(tc.st); got != tc.text {
-			t.Errorf("%s: text = %q, want %q", tc.name, got, tc.text)
+		if got := pluginVersionText(tc.statuses); got != tc.want {
+			t.Errorf("%s: pluginVersionText = %q, want %q", tc.name, got, tc.want)
 		}
-		label, variant, ok := pluginAction(tc.st)
-		if label != tc.action || ok != (tc.action != "") || (ok && variant != tc.variant) {
-			t.Errorf("%s: action = %q %v %v, want %q %v", tc.name, label, variant, ok, tc.action, tc.variant)
-		}
-	}
-}
-
-func TestOutdatedPluginsSkipsWhatIsNotInstalled(t *testing.T) {
-	statuses := []backend.PluginStatus{
-		{Provider: "claude", Installed: true, UpdateAvailable: true},
-		{Provider: "codex", Installed: true, UpdateAvailable: true, Compatible: false},
-		{Provider: "cursor", Installed: true},
-		{Provider: "crush", UpdateAvailable: true},
-	}
-	var got []string
-	for _, st := range outdatedPlugins(statuses) {
-		got = append(got, st.Provider)
-	}
-	if want := []string{"claude", "codex"}; !reflect.DeepEqual(got, want) {
-		t.Fatalf("outdated = %v, want %v", got, want)
-	}
-}
-
-func TestPluginNeedsLineOnlyForWhatTheUserDoes(t *testing.T) {
-	ok := backend.PluginStatus{Provider: "claude", Available: true, Installed: true, Compatible: true}
-	outdated := ok
-	outdated.UpdateAvailable = true
-	notInstalled := backend.PluginStatus{Provider: "kiro", Available: true}
-	cliMissing := backend.PluginStatus{Provider: "crush"}
-	codex := ok
-	codex.Provider = "codex"
-	codexMissing := backend.PluginStatus{Provider: "codex"}
-	for _, tc := range []struct {
-		name string
-		st   backend.PluginStatus
-		want bool
-	}{
-		{"up to date", ok, false},
-		{"outdated", outdated, true},
-		{"not installed", notInstalled, true},
-		{"cli missing", cliMissing, false},
-		{"codex installed asks for /hooks", codex, true},
-		{"codex missing asks nothing", codexMissing, false},
-	} {
-		if got := pluginNeedsLine(tc.st); got != tc.want {
-			t.Errorf("%s: pluginNeedsLine = %v, want %v", tc.name, got, tc.want)
-		}
-	}
-}
-
-func TestPluginTitleNamesTheReleaseOnceRead(t *testing.T) {
-	if got := pluginTitle(nil); got != "lich plugin" {
-		t.Errorf("unread title = %q, want %q", got, "lich plugin")
-	}
-	statuses := []backend.PluginStatus{{Provider: "codex"}, {Provider: "claude", LatestVersion: "0.23.0"}}
-	if got := pluginTitle(statuses); got != "lich plugin v0.23.0" {
-		t.Errorf("title = %q, want %q", got, "lich plugin v0.23.0")
 	}
 }
 
@@ -166,4 +96,20 @@ func TestLayoutHighlightsKeepsCautionAsACallout(t *testing.T) {
 	if lead != nil || !reflect.DeepEqual(callouts, []backend.PatchNotesHighlight{caution}) {
 		t.Fatalf("lead %v callouts %v, want caution as the one callout", lead, callouts)
 	}
+}
+
+// Settings › Updates names the plugin's release and offers nothing to press:
+// lich sets the plugin up itself.
+func TestUpdatesShowsThePluginReleaseReadOnly(t *testing.T) {
+	_, r := settingsFrames(t, sectionUpdates)
+	r.settle(t)
+	if !r.showsAll(i18n.T("settings.pluginSetting.title"), "v0.23.0") {
+		t.Fatalf("drawn: %s", r.drawn())
+	}
+	for _, gone := range []string{"Install", "Update all", "Update to v0.23.0", "Re-register hooks"} {
+		if r.shows(gone) {
+			t.Errorf("Updates still offers %q", gone)
+		}
+	}
+	writeShot(t, r, "settings-updates.png")
 }

@@ -255,6 +255,7 @@ func (s *settingsScreen) navClicks(gtx C) {
 		if e.section == sectionProviders {
 			s.providers.open = ""
 		}
+		s.forgetLibraryVisit()
 	}
 }
 
@@ -267,7 +268,7 @@ func (s *settingsScreen) sectionRow(gtx C, th *ui.Theme, e navEntry, values scop
 	if p, ok := s.providerScreen(); ok && sec.id == sectionProviders && sec.id == s.section {
 		where = p.name
 	}
-	badge := sectionBadge(sec, s.scope, s.projects, values)
+	badge := sectionBadge(sec, s.scope, s.projects, values) + s.libraryBadge(sec.id)
 	dim := s.scope != "" && !sec.projectScoped()
 	return th.NavRow(gtx, click, s.on(e), navRowHeight, navRowPadX, func(gtx C, th *ui.Theme) D {
 		fg, icon := th.Foreground, th.MutedForeground

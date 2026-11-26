@@ -10,9 +10,7 @@ type AppUpdateStatus = api.AppUpdateStatus
 
 type PluginStatus = api.PluginStatus
 
-type PluginProfiles = api.PluginProfiles
-
-type PluginProfileFailure = api.PluginProfileFailure
+type PluginProblem = api.PluginProblem
 
 type PatchNotesGroup = api.PatchNotesGroup
 
@@ -38,15 +36,14 @@ func (c *Client) PluginStatuses(ctx context.Context) ([]PluginStatus, error) {
 	return callMethod(ctx, c, api.AgentPluginStatus, api.None{})
 }
 
-// InstallPlugin installs the lich plugin into provider's CLI.
-func (c *Client) InstallPlugin(ctx context.Context, provider string) error {
-	_, err := callMethod(ctx, c, api.AgentPluginInstall, api.PluginProviderOptions{Provider: provider})
-	return err
+// PluginProblem is what lich could not do to give its sessions their plugin,
+// the zero value when nothing failed.
+func (c *Client) PluginProblem(ctx context.Context) (PluginProblem, error) {
+	return callMethod(ctx, c, api.AgentPluginProblem, api.None{})
 }
 
-// UpdatePlugin moves provider's installed lich plugin to the release this lich
-// is compatible with.
-func (c *Client) UpdatePlugin(ctx context.Context, provider string) error {
-	_, err := callMethod(ctx, c, api.AgentPluginUpdate, api.PluginProviderOptions{Provider: provider})
+// RetryPlugin runs lich's plugin setup again and returns once it ran.
+func (c *Client) RetryPlugin(ctx context.Context) error {
+	_, err := callMethod(ctx, c, api.AgentPluginRetry, api.None{})
 	return err
 }

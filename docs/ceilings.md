@@ -692,8 +692,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   ticket if the agent never calls `reply_to_session`, and its card is never named after the conversation. The
   install reads `crush --version` and writes the lifecycle hooks only when it answers 0.99.0 or newer, and a block
   is rewritten only by an install or a plugin update: a Crush upgraded past 0.99.0 under an existing block keeps
-  reporting nothing until then, though its Settings › Updates row offers Re-register hooks at once (`crushBlockBehind`
-  asks `crush --version` on every read of the rows), and the relay reads it that way (`Installed` asks whether lich's block registers
+  reporting nothing until lich's next pass writes the block again (at start and every hour, `crushBlockBehind`
+  asks `crush --version`), and the relay reads it that way (`Installed` asks whether lich's block registers
   `TurnEnd`). A Crush downgraded under a block written for 0.99.0 is the other way round: the events it does not
   know are recorded and never fire (0.98.1's `hook add` takes any name), so the relay waits for a `done` that does
   not come until the ticket's deadline. A conversation picked in Crush's own session list is bound by
@@ -1181,20 +1181,19 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   entry is `modified` or `untrusted` a toast says so and opens that session's chat `/hooks` panel, switching a
   terminal session to its chat first; the person trusts the hook there, lich never does. One check per run: a hook
   changed while lich runs is told on the next start.
-- **A disabled lich plugin runs none of its hooks** (`internal/agentplugin`): Claude Code, Codex and
-  Antigravity keep a plugin the person disabled installed, so its subagent calls run natively and its sessions
-  report nothing. lich reads such a plugin as not installed, so Settings › Updates › lich plugin offers Install
-  again, and a Claude Code or Codex chat's `/plugin` detail offers Turn on, lich's one action on its own plugin
-  there (`claude plugin enable` then `reload_plugins`, after which the running chat ran the plugin's hooks,
-  measured on 2.1.332; Codex's `config/value/write`, unmeasured on a running chat): Claude Code's
-  `enabledPlugins["lich@lich-plugin"]` in the config directory's `settings.json`, absent reading as disabled
-  (measured on 2.1.332), and Codex's `enabled` in `plugin list --json` (0.170.0) are re-enabled by the
-  remove-and-reinstall, and Antigravity's `plugins.lich.enabled` in `~/.gemini/config/config.json` by the
-  `agy plugin enable lich` Install ends with (1.5.15). Cursor CLI reads Claude Code's. oh-my-pi, opencode, Kiro
-  CLI and Crush have no switch for the files lich writes, beyond removing them (oh-my-pi's `omp plugin
-  disable` covers only npm and marketplace plugins, which the lich extension file is not, measured on 18.8.9
-  by its empty `omp plugin list`). Antigravity's chat has no `/plugin`, so its Turn on is the Settings Install. A session started while the
-  plugin was off keeps running without its hooks until it restarts.
+- **A disabled lich plugin is turned back on, or never read, wherever lich can do it** (`internal/agentplugin`,
+  `internal/terminal/plugin.go`): Claude Code, Cursor CLI, opencode and oh-my-pi sessions load lich's own copy of
+  the plugin on their command line or inline config (Plugin install and upgrades), so a plugin the person turned off
+  or removed in their config costs a lich session nothing. Codex and Antigravity take no plugin per session (Codex
+  0.170.0 runs no hook from a `-c` override, and ignores a `-c` that turns a plugin on or off; Antigravity 1.5.15's
+  `--settings` refuses every plugin key), so they keep the install and lich turns it back on before each spawn:
+  `enabled = false` under `[plugins."lich@lich-plugin"]` in the `config.toml` of the home the session runs in
+  becomes `true`, and Antigravity runs `agy plugin enable lich` when `plugins.lich.enabled` in
+  `~/.gemini/config/config.json` is false. A Codex session already open does not pick it up: Codex reads the switch
+  when a conversation starts, so it reaches the next conversation of the same process, a `/new` in its terminal
+  included (measured on 0.170.0). A Codex chat's `/plugin` detail also offers Turn on. Crush and Kiro
+  CLI have no switch for the files lich writes, beyond removing them, which costs their sessions the plugin until
+  lich's next pass writes them again.
 - **Codex runs every lich MCP tool without asking** (`internal/terminal/command.go`, `mcpArgs`): a Codex session
   is spawned with `-c mcp_servers.lich.default_tools_approval_mode="approve"`, so the `open_session` a vetoed or
   sealed subagent call is sent to never waits on an approval, and neither does any other lich tool. The tools only
@@ -1522,23 +1521,77 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 ## Plugin install and upgrades
 
+- **Claude Code, Cursor CLI, opencode and oh-my-pi load lich's copy of the plugin per session, and nothing outside
+  lich loads it** (`internal/agentplugin/bundle.go`, `internal/terminal/plugin.go`): lich unpacks the newest plugin
+  release inside the range it speaks into `<config>/lich/plugin/releases/<version>/`, once, on a first start, and
+  hands it to every spawn: `--plugin-dir=` to Claude Code and Cursor CLI, `-e omp/lich.js` to oh-my-pi (before
+  `acp` in its chat), and `file://…/opencode/lich.js` appended to the `plugin` list of `OPENCODE_CONFIG_CONTENT`
+  for opencode, the person's own list kept. That one module serves both opencode generations: 1.x runs its
+  default export's `server()` (measured on 1.18.23 and 1.19.4), 2.x its `setup()`. A release is never written again once unpacked, so a session runs on
+  the files it started with while a newer one lands beside it. A release goes once it is neither the current one
+  nor one a live session was spawned with (`pruneReleases`, after each pass that has a release there): the
+  terminal records the release each process was handed for as long as it lives, and answers under the lock a
+  spawn holds from reading the release to recording itself, so no spawn is handed a directory being removed. A
+  removal that fails is logged and tried again on the next pass. A newer
+  compatible release is unpacked by lich's next pass (agentplugin.Ensure: at start, every hour, and on a spawn
+  that finds the plugin missing), with no prompt. Each of those loads its own config's
+  plugins beside lich's, so lich takes out the install a lich of the past put there once a release is unpacked:
+  `claude plugin uninstall lich@lich-plugin` and its marketplace in Personal and every Claude Code profile (Cursor
+  runs every plugin installed in Claude Code beside `--plugin-dir`, which would report every event twice, measured
+  on 2026.11.19; the uninstall leaves the release in Claude Code's cache, so a session started on it runs on), and
+  the module or extension lich wrote into opencode's `plugins/` and `plugin/` and oh-my-pi's `extensions/`. A
+  Claude Code plugin named `lich` from `--plugin-dir` replaces an installed one of that name rather than loading
+  beside it (measured on 2.1.332). What it costs: an agent started by hand, outside lich or typed into a lich shell
+  session, runs without lich's hooks and skills, so a `claude` typed into a shell card reports nothing to it; a
+  first start offline leaves those four on the install of the past, or with no plugin at all, until the release
+  arrives; opencode 2 is handed the module the same way, not measured on 2.x; Cursor's chat (its ACP server) runs
+  no plugin hooks either way (measured on 2026.11.19). opencode and oh-my-pi still get the theme skill copied into
+  their own skills directory, and oh-my-pi its MCP registration, by lich's pass.
+- **The plugin sets itself up for the providers you turned on, and says so only when it cannot**
+  (`internal/agentplugin/ensure.go`): a pass at start, every hour and on a spawn or report that finds the plugin
+  missing unpacks the newest compatible release, takes out the install of the past, installs or updates the plugin
+  in each provider that still takes an install, and trusts lich's own Codex hooks at their current hash (the
+  `hooks.state` write a Codex chat's /hooks makes), so Codex needs no /hooks step. A provider turned off in
+  Settings › Providers, or whose CLI is not on PATH, is never written to; turning one on reaches it at its first
+  spawn. There is nothing to press: Settings › Updates shows the release sessions run. What a pass could not do (no
+  release unpacked, or a provider whose install failed) is one warning toast with the failure's text and Retry,
+  and the next start or spawn retries on its own; a session spawned meanwhile starts without the hooks. A failed
+  update leaves the release that is there in use and is only logged.
+- **lich's library hands skills and MCP servers to each provider by the route it takes, and some by none yet**
+  (`internal/library`, `internal/terminal/library.go`): the library is `<config>/lich/library/` (`skills/`,
+  `mcp.json`), shared by every profile, and each switch is a settings key in lich.db; a switch never stored is off,
+  so an item reaches only the providers it was moved in from. Skills reach Claude Code and Cursor CLI as a second
+  `--plugin-dir` (a plugin named `lich-library`, so a skill shows as `lich-library:<name>`), opencode through
+  `skills.paths` in its inline config, oh-my-pi through a `--config` overlay, and Crush through a composed
+  `CRUSH_SKILLS_DIR` that links Crush's four global folders beside the library's copies, since the variable
+  replaces its whole search (measured 109 skills to 110); that composition needs symlinks, so on Windows Crush gets
+  none. Codex, Antigravity and Kiro CLI take no skill per session, so lich copies each one on into their skills
+  folder before a spawn, marked with a `.lich-library` file, and removes only marked copies when it is turned off;
+  a folder of that name the person made stays theirs. MCP servers reach Claude Code (a second `--mcp-config`
+  document), Codex (`-c mcp_servers.*`; a name with a dot is left out) and opencode per session, and oh-my-pi and
+  Cursor CLI by an entry lich writes into their `mcp.json` and tracks by name; Antigravity, Crush and Kiro CLI get
+  none yet, and each one's row says so. A built folder is named by its content and never rewritten, so a session
+  keeps what it started with; old ones are not removed yet. Moving in copies the item and turns it off where it
+  was, never deleting: a skill folder's `SKILL.md` becomes `SKILL.md.lich-moved` (a link is renamed instead), and an
+  MCP entry moves under a `lichMoved_<key>` key beside the provider's own. Claude Code's MCP servers in
+  `~/.claude.json`, which it rewrites while it runs, and Codex's in `config.toml` are not offered. What the
+  providers hold is read again every 30 seconds (go.mod carries no file watcher). A provider with profiles (Claude
+  Code, Codex and oh-my-pi, and opencode, Cursor CLI and Kiro CLI where `internal/xdgprofile` gives them some) gets
+  one switch per profile; a move in turns the item on for all of them at once, and a profile's own switch wins once
+  set. Where lich writes one file or folder that every profile of a provider reads, a split could not be kept, so
+  that provider gets one switch saying why: Codex's and Kiro CLI's skills (Codex's profiles link Personal's
+  `skills/`, and Kiro CLI's read one `~/.kiro/skills`), and oh-my-pi's and Cursor CLI's MCP servers (one `mcp.json`
+  each).
 - **A plugin install is pinned, so the harness never updates it on its own** (`internal/agentplugin/compat.go`,
-  `claude.go` `claudePinMarketplace`, `codex.go` `codexPinMarketplace`): lich installs the newest plugin release inside the range it
-  speaks and declares Claude Code's and Codex's marketplace at that release's tag, so a plugin release this lich
-  would not parse never arrives behind its back. The price is that a newer compatible release only lands through
-  lich's own update prompt, and a marketplace the user pointed somewhere else is re-pointed on the next install.
-  Neither CLI can change a declared ref, so an install removes the marketplace and adds it back; on Claude Code the
-  remove also uninstalls the plugin, and an add that fails there (offline mid-install) leaves it uninstalled until
-  the next attempt, which the install prompt then offers. An install that was already outside the range, from
-  before the pin or by hand, is caught at startup from its installed version, and again by the `X-Lich-Plugin`
-  header its hooks send (docs/hooks/README.md) once a session reports. A report whose payload lich refuses never
-  reaches that check, so a plugin old enough to send one only shows up in the startup prompt and the log.
-- **One opencode module serves both generations, from the directory both read** (`internal/agentplugin/opencode.go`):
-  lich writes it to `~/.config/opencode/plugins/`, the only global plugin directory opencode 2 reads, and
-  removes the copy an older lich left in `plugin/` when it carries lich's marker, since 1.x reads both and would
-  report every event twice. A copy there without the marker is someone else's and stays, with the same double
-  report. 1.x runs the module through its default export's `server()` (measured on 1.18.23 and 1.19.4) and 2.x
-  through its `setup()`; an opencode older than 1.18.23 is not measured with that export.
+  `codex.go` `codexPinMarketplace`): for the providers that still install it (Codex, Antigravity, Crush, Kiro CLI),
+  lich installs the newest plugin release inside the range it speaks and declares Codex's marketplace at that
+  release's tag, so a plugin release this lich would not parse never arrives behind its back. The price is that a
+  newer compatible release lands at lich's next pass rather than when the harness refreshes, and a marketplace the
+  user pointed somewhere else is re-pointed on the next install. Codex cannot change a declared ref, so an install removes the marketplace
+  and adds it back. An install that was already outside the range, from before the pin or by hand, is caught at
+  startup from its installed version, and again by the `X-Lich-Plugin` header its hooks send (docs/hooks/README.md)
+  once a session reports. A report whose payload lich refuses never reaches that check, so a plugin old enough to
+  send one only shows up in the log, until the next pass reinstalls it.
 - **The `extension` skill stays out of Kiro CLI, and on Antigravity and Cursor CLI the agent sees it every turn**
   (`internal/agentplugin/skill.go`): the plugin's `extension` skill is manual only, kept out of the agent's context
   by its frontmatter on Claude Code, oh-my-pi, Crush and opencode 2 and by `agents/openai.yaml` on Codex, because
@@ -1546,8 +1599,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   that frontmatter and lists every skill that has a description, so lich's opencode copy goes without one
   (`installOpencodeSkills`); opencode 2 hides it either way. Kiro CLI has no such setting, so lich's Kiro install
   copies only the theme skill, and a Kiro user writes an extension from `docs/extensions.md`. Antigravity and
-  Cursor CLI have none either and read the skill from the plugin themselves (Cursor through Claude Code's
-  install, listing every skill a plugin ships), so there it is listed to the agent like any other and the agent
+  Cursor CLI have none either and read the skill from the plugin themselves (Cursor from lich's release,
+  listing every skill a plugin ships), so there it is listed to the agent like any other and the agent
   may load it on its own. lich copies it into opencode, oh-my-pi and Crush from plugin 0.21.1 on, the first
   release that ships it (`ExtensionSkillRelease`).
 - **A `lich` upgraded under a running lich is refused by a call the backend does not have**
@@ -2395,11 +2448,35 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
 - **A page in lich-browser has no pause for the agent to hear** (`internal/browser/webkit*.go`,
-  `docs/lich-browser.md`): on Linux with an X display and `lich-browser` beside `lich`, every page lives there,
-  and DevTools is WebKit's inspector, a tab of the pane's. Nothing on the wire says the page stopped in its
+  `docs/lich-browser.md`): on Linux with an X or Wayland display and `lich-browser` beside `lich`, on macOS with
+  `lich-browser` beside `lich`, and on Windows with `lich-browser.exe` beside `lich.exe`, every page lives there,
+  and DevTools is the engine's inspector, a tab of the pane's. Nothing on the wire says the page stopped in its
   debugger, so the agent's tools do not fail naming the pause as they do on a Chrome page: a read answers with the
   document as it stood, and a click or a key waits on the paused page until the person resumes it or the call
   times out.
+- **A page in lich-browser on macOS stands on private API and on input lich makes up**
+  (`native/cmd/lich-browser/*_darwin.m`, `native/internal/webview/host_darwin.m`): each tab exports its layer through
+  QuartzCore's `CAContext`, which the window shows in a `CALayerHost`, and WebKit's private calls keep the page
+  awake off screen (`_setWindowOcclusionDetectionEnabled:`), draw it a point to a device pixel whatever screen it
+  is on (`_setOverrideDeviceScaleFactor:`), tell its requests (`_setResourceLoadDelegate:`), hold a wheel until the page's layers are in
+  (`_doAfterNextPresentationUpdate:`) and open its inspector (`_inspector`). A macOS or WebKit that drops one degrades instead of crashing, and says which in
+  `lich-browser.log`: no page in the pane, a throttled page, a Settle that waits on no request, no inspector. The
+  pane's pointer, keys and text reach the page as NSEvents handed to its view: the page sees them trusted, but
+  `MouseEvent.buttons` reads the real mouse (0 during the pane's drag), and Command with a letter reaches the page
+  as its keydown alone, since lich-browser has no Edit menu to select all or undo with. A wheel's NSEvent is made
+  from a mouse event of the tab's window, the only kind AppKit gives a window, and scaled back from the
+  acceleration AppKit puts on it. A popped-out page's window has no Dock tile (lich-browser is an accessory app),
+  and the favicon is fetched apart from the page's cookies. WKDownload refuses a file that exists, so the name Go
+  reserves is freed just before WebKit takes it: two downloads of one name at once may race for it.
+- **A page in lich-browser on Wayland without X is drawn from frames, with three gaps against X11**
+  (`native/cmd/lich-browser/frames_linux.go`, `docs/lich-browser.md`): with no X display each tab draws in a
+  `GtkOffscreenWindow`, and the pane shows it the way it showed Chrome's screencast, so every frame crosses the
+  backend's `/events` as a base64 JPEG: 130 KiB a frame at 1280x720 and 353 KiB at 2x, about 65 a second while
+  the wheel scrolls, 2 ms and 8 ms to encode (KWin headless, 2026-11-26), and a PNG once the page holds still.
+  The pane's pointer, keys and committed text reach the page over the wire, trusted, and the clipboard goes
+  through the window, as with Chrome. The gaps: (1) the pane shows the window's arrow over the page, never its
+  I-beam or hand; (2) a file dragged from the desktop does not drop into the page; (3) a page just loaded may
+  show GTK's dark background for one frame, about 50 ms, before WebKit's first paint.
 - **A layer the window floats over the content shows over a page it draws itself only where it says so**
   (`coverPages` in `native/cmd/lich-native/browser_native.go`): the page is a native child window over the pane,
   above anything the window draws, so a layer that floats over the content (a dock or sidebar sliding in, and later
@@ -2407,11 +2484,24 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   cut there and keeps going around it. On X11 the cut is the page window's X SHAPE, set in one request before the
   frame reaches the window: set after it, a layer sliding onto the page showed a band of the window's background
   for a frame on 20 of 288 frames over four 180 ms slides, and none set before (Xvfb, 60 fps, 2026-11-19). A
-  layer that forgets to name its rectangle draws under the page. macOS will need the window's drawing for such
-  layers in an overlay view above the WKWebView (Sikemux's overlay plane in its GPUI fork) and a `hitTest:` that
-  falls through it; Windows will need a region cut out of the WebView2's child window (`SetWindowRgn`, its
-  rectangles combined with `RGN_DIFF`) set before the frame is presented, or a composition controller that lets
-  the window's drawing stand over the page.
+  layer that forgets to name its rectangle draws under the page. On macOS the page is a CALayerHost the window
+  adds over its own drawing, masked to the page less those rectangles; the mask lands on AppKit's next commit
+  rather than in the frame Gio presents, so a sliding layer may trail by a frame there (not measured: no Mac
+  here). On Windows the cut is a region cut out of the page's child window (`SetWindowRgn`, its
+  rectangles combined with `RGN_DIFF`), set from the window's goroutine as on X11; whether it lands before the
+  frame is presented has not been measured on a Windows machine.
+- **A page in lich-browser on Windows is WebView2 driven over the DevTools protocol, with four gaps against
+  Linux** (`native/cmd/lich-browser/*_windows.*`, `cdp.go`, `docs/lich-browser.md`). Input is the protocol's
+  (`Input.dispatchMouseEvent`, `.dispatchKeyEvent`, `.insertText`): the page sees it trusted, as Chrome's DevTools
+  send it, and the window's own keys reach an embedded page by Windows focus, not the wire. The gaps: (1) the
+  inspector is Edge's DevTools window, found by its "DevTools" title among the browser process's windows after
+  `OpenDevToolsWindow` and made a child of a tab window; a DevTools whose title is translated, or that takes
+  over 10 seconds to open, stays a window of its own and the pane gets no tab for it. (2) The page script that
+  reports console errors posts through `chrome.webview`, which a cross-origin iframe does not have, so those
+  iframes' errors go untold. (3) `request` events come from the page target's Network domain: a cross-site
+  iframe in a process of its own is not in it, and Settle does not wait on its requests. (4) A window that
+  crashes takes the pages it holds with it: Windows has no save-set, and a child window dies with its parent,
+  where X hands the page back to the root; a window that closes normally hands them back first.
 - **Select on a page lich-browser shows in the window shows the window's drawing through cuts in the page**
   (`native/internal/webview`, `docs/browser-tab.md`): on X11 the page is lich-browser's X window, reparented into
   the window over the pane, and the window's drawing over it shows only where that window is cut away (X SHAPE).
@@ -2423,12 +2513,12 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   compositor whole and the cuts stay dark (measured on Umbriel with the NVIDIA GPU, 2026-11-19). The sketch's
   strokes and the eraser are drawn in that layer too, and while strokes stand on the page the layer keeps the wheel
   from scrolling it; keys (arrows, Page Down) still scroll a page whose strokes then point at the wrong place. The
-  sketch's picture is a shot of the page (`browser.Snapshot`) with the layer hidden for it. macOS will need the overlay plane on top of the WKWebView, a `hitTest:` that lets clicks fall
-  through where the window draws (as Sikemux's `hit_test_outside_holes` does) and the scripts run in the page's
-  own content world (`WKContentWorld.pageWorld`), since they read React's fiber on the element. Windows will need
-  `ExecuteScript` for the scripts and either a window region cut out of the WebView2's child window
-  (`SetWindowRgn`) or a composition controller for anything drawn over the page, which Sikemux has not done:
-  its pages cover its menus.
+  sketch's picture is a shot of the page (`browser.Snapshot`) with the layer hidden for it. On macOS the page
+  takes no input of its own, so Select and Draw read the pane's pointer as the screencast's do, and the scripts
+  run in the page's own content world (`WKContentWorld.pageWorld`), since they read React's fiber on the element.
+  Windows runs the scripts with `ExecuteScript`, in the page's world, and cuts the page's child window with
+  `SetWindowRgn`; a disabled child window (`EnableWindow`) is how the pointer goes through the page while a tool
+  is on.
 - **The new-tab page is the backend's page in the window's colors and words, as of the last time the window sent
   them** (`internal/newtab`, `docs/browser-tab.md`): a tab already open keeps its look until it is opened again, and
   before the window has sent any it is the dark theme in English. It has a listener of its own from port 27000,
@@ -2664,8 +2754,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   init.lua where there is none, and saving any file under that folder restarts Neovim, as Restart Neovim in the
   palette does;
   a click moves Vim's cursor and a drag starts a characterwise Visual selection, but
-  the wheel only sets the top line, and with wrap off a long line never scrolls sideways to the cursor. A key
-  typed while Neovim is still starting is lost.
+  the wheel only sets the top line, and with wrap off a long line never scrolls sideways to the cursor; a smooth
+  scroll of the config (snacks.nvim's, mini.animate's) is off in lich's buffers, since the editor follows every top
+  line Neovim reports. A click, a wheel or a save that reaches Neovim while it waits for the rest of a typed
+  command (a count, an operator's motion, the character of an `f`) cancels that command with Esc, as a click does
+  in Vim: Neovim answers no other call until the command ends. A key typed while Neovim is still starting is lost.
 
 ## Languages
 

@@ -60,6 +60,7 @@ func TestHandleAppServicesCoverEveryMethod(t *testing.T) {
 		"patchnotes.":  func(d *rpc.Handler) { PatchNotes(d, nil) },
 		"appupdate.":   func(d *rpc.Handler) { AppUpdate(d, nil) },
 		"agentplugin.": func(d *rpc.Handler) { AgentPlugin(d, nil) },
+		"library.":     func(d *rpc.Handler) { Library(d, nil) },
 		"providers.":   func(d *rpc.Handler) { Providers(d, nil) },
 		"terminal.":    func(d *rpc.Handler) { Terminal(d, nil) },
 		"chat.":        func(d *rpc.Handler) { Chat(d, nil) },

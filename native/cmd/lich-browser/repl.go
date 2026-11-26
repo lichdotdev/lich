@@ -29,10 +29,11 @@ const replValue = "globalThis.__lichConsoleValue"
 // awaitValue is the body that answers what a program left in replValue.
 const awaitValue = "try { return await " + replValue + "; } finally { delete " + replValue + "; }"
 
-// settled is the program's last expression, expr, answered as program says.
+// settled is the program's last expression, expr, answered as program says,
+// its value as consoleValue has it.
 func settled(expr string) string {
 	return "((v) => v !== null && (typeof v === 'object' || typeof v === 'function') && typeof v.then === 'function' ? (" +
-		replValue + " = v, [1]) : [0, v])((" + expr + "\n))"
+		replValue + " = v, [1]) : [0, " + consoleValue + "])((" + expr + "\n))"
 }
 
 // consoleForm is script as the console runs it, parses saying whether code

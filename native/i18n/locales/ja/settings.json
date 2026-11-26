@@ -32,7 +32,10 @@
       "help": "ヘルプ",
       "services": "サービス",
       "extensions": "拡張機能",
-      "chat": "チャット"
+      "chat": "チャット",
+      "skills": "スキル",
+      "mcp": "MCP サーバー",
+      "plugins": "プラグイン"
     },
     "notYet": "まだありません"
   },
@@ -410,16 +413,7 @@
   "pluginSetting": {
     "title": "lich プラグイン",
     "searchWords": "フック インストール",
-    "installed": "プラグインをインストールしました。適用するにはセッションを再起動してください。",
-    "updated": "プラグインを更新しました。適用するにはセッションを再起動してください。",
-    "cliMissing": "CLI がインストールされていません",
-    "notInstalled": "プラグインがインストールされていません",
-    "unsupported": "v{version}、この lich ではサポートされていません",
-    "install": "インストール",
-    "updateTo": "v{version} に更新",
-    "updateAll": "すべて更新",
-    "reregister": "フックを登録し直す",
-    "installVersion": "v{version} をインストール"
+    "notInstalled": "プラグインがインストールされていません"
   },
   "helpSettings": {
     "bugTitle": "バグを報告",
@@ -526,18 +520,6 @@
   },
   "settingsVcs": {
     "pathReread": "PATH を再読み込みできませんでした。lich を再起動してください。"
-  },
-  "settingsUpdatesPlugin": {
-    "hint": {
-      "codex": "プラグインのフックを信頼するには、Codex セッションで /hooks を実行してください。",
-      "crush": "状態、名前、git の変更を報告します。0.99.0 より前の Crush にはターン終了イベントがないため、セッション ID の報告と git の状態の更新だけを行います。",
-      "omp": "状態、名前、git の変更を報告します。承認イベントが確認されていないため、権限の確認を待っているセッションにはベルではなくスピナーが表示されます。",
-      "antigravity": "状態、名前、git の変更を報告します。承認イベントが確認されていないため、権限の確認を待っているセッションにはベルではなくスピナーが表示されます。",
-      "cursor": "Claude Code にインストールされたプラグインを実行するため、報告内容と更新はそのバージョンに従います。ここで lich が追加するのは独自のツールだけです。こちらも承認イベントを出さないため、権限の確認を待っているセッションにはベルではなくスピナーが表示されます。"
-    },
-    "installFailed": "インストールに失敗しました: {error}",
-    "updateFailed": "更新に失敗しました: {error}",
-    "profileFailed": "{pass} のプロファイル {profile} で lich プラグインが更新されていません: {error}"
   },
   "settingsProfiles": {
     "title": "プロファイル",
@@ -834,5 +816,24 @@
     "newChats": "新しいチャット",
     "sessions": "セッション",
     "advanced": "詳細"
+  },
+  "librarySettings": {
+    "skillsSearchWords": "スキル ライブラリ 移動",
+    "mcpSearchWords": "mcp サーバー ライブラリ 移動",
+    "pluginsSearchWords": "プラグイン フック lich",
+    "found": "プロバイダーで見つかったもの",
+    "library": "lich のライブラリ",
+    "moveIn": "lich に移す",
+    "moveInAll": "すべて移す",
+    "noSkills": "lich のライブラリにはまだスキルがありません。",
+    "noMCP": "lich のライブラリにはまだ MCP サーバーがありません。",
+    "reason": {
+      "notWritten": "lich はまだ {provider} に MCP サーバーを書き込みません",
+      "sharedFile": "{provider} のプロファイルはすべて同じファイルを読むため、スイッチは 1 つで全プロファイルに効きます"
+    },
+    "pluginBrings": "フック: {hooks} · スキル: {skills} · MCP サーバー: {mcp}",
+    "pluginLocked": "lich が開くすべてのセッションで動きます。オフにはできません。",
+    "moveFailed": "{name} を移せませんでした: {error}",
+    "setFailed": "変更できませんでした: {error}"
   }
 }

@@ -11,46 +11,52 @@ import (
 	"github.com/lichdotdev/lich/internal/semver"
 )
 
-// The Claude Code side: `claude plugin ...` for every mutation, and the CLI's
-// own installed_plugins.json for what is installed.
+// The Claude Code side. Its sessions load lich's own copy of the plugin with
+// `--plugin-dir` (bundle.go), which Cursor CLI's take too, so nothing is
+// installed in Claude Code any more: an install of the past is removed from
+// Personal and every profile (migrateClaude), and Claude Code's own CLI is
+// called for that alone.
 
-// claudeInstallIn installs the plugin with env as the CLI's environment: nil
-// for lich's own, which is Personal, or a profile's (InstallInClaudeProfile).
-func (s *Service) claudeInstallIn(env []string) error {
-	if err := s.claudePinMarketplace(env); err != nil {
+// claudeInstallIn unpacks the plugin and removes the install of the past from
+// the Claude Code home env names: nil for Personal, or a profile's.
+func (s *Service) claudeInstallIn(env []string, dir string) error {
+	if err := s.installBundle(); err != nil {
 		return err
 	}
-	return s.runIn(env, providers.Claude, "plugin", "install", pluginKey)
+	return s.uninstallClaudeIn(env, dir)
 }
 
 // PluginKey is how Claude Code names the lich plugin, the key a port of a
 // profile's plugins leaves to InstallInClaudeProfile.
 const PluginKey = pluginKey
 
-// InstallInClaudeProfile installs the plugin into one Claude Code profile, run
-// as that profile so its account's plugin policy applies. It is the install and
-// the update both, as Install is for Personal.
+// InstallInClaudeProfile readies the plugin for one Claude Code profile, which
+// is the release every session loads, and takes the install of the past out of
+// the profile's own plugin set.
 func (s *Service) InstallInClaudeProfile(slug string) error {
 	env, err := claudeProfileEnv(slug)
 	if err != nil {
 		return err
 	}
-	s.installMu.Lock()
-	defer s.installMu.Unlock()
-	return s.claudeInstallIn(env)
-}
-
-// ClaudeProfileStatus is Status's Claude Code row for one profile: a profile
-// has a plugin set of its own.
-func (s *Service) ClaudeProfileStatus(slug string) (Status, error) {
 	dir, err := claudeprofile.ConfigDir(slug)
 	if err != nil {
+		return err
+	}
+	s.installMu.Lock()
+	defer s.installMu.Unlock()
+	return s.claudeInstallIn(env, claudeprofile.PluginsDir(slug, dir))
+}
+
+// ClaudeProfileStatus is Status's Claude Code row for one profile, which runs
+// the same release Personal does.
+func (s *Service) ClaudeProfileStatus(slug string) (Status, error) {
+	if _, err := claudeprofile.ConfigDir(slug); err != nil {
 		return Status{}, err
 	}
 	available := s.available(providers.Claude)
 	version, installed := "", false
 	if available {
-		version, installed = claudeInstalledVersionAt(dir, claudeprofile.PluginsDir(slug, dir))
+		version, installed = bundleVersion()
 	}
 	return computeStatus(providers.Claude, available, installed, version, s.latestVersion()), nil
 }
@@ -68,34 +74,61 @@ func claudeProfileEnv(slug string) ([]string, error) {
 	return claudeprofile.Env(os.Environ(), dir), nil
 }
 
-// claudePinMarketplace declares the marketplace at the tag of the newest release
-// this lich is compatible with, so neither an install nor Claude Code's own
-// marketplace refresh can move the plugin past it.
-//
-// The declaration is removed first because Claude Code refuses an add whose ref
-// differs from the one already declared, and has no command to change a ref.
-// The remove also uninstalls the plugin, which is why Update is this same path
-// and not `plugin update`: the install right after puts it back at the pinned
-// release, a downgrade included. A remove with nothing declared fails, which is
-// the first install and not an error. All measured on Claude Code 2.1.270.
-func (s *Service) claudePinMarketplace(env []string) error {
-	version, err := s.releaseVersion()
+// uninstallClaudeIn removes the plugin a lich of the past installed into the
+// plugin set in plugins, and its marketplace. Without it Cursor CLI, which
+// loads every plugin installed in Claude Code beside its own --plugin-dir,
+// would run each hook twice (measured on 2026.11.19). The uninstall keeps the
+// release's files in Claude Code's cache, so a session started on them runs
+// on until it restarts (measured on 2.1.332).
+func (s *Service) uninstallClaudeIn(env []string, plugins string) error {
+	data, err := os.ReadFile(filepath.Join(plugins, "installed_plugins.json"))
 	if err != nil {
+		return nil
+	}
+	if _, installed := parseInstalledVersion(data, pluginKey); !installed {
+		return nil
+	}
+	if err := s.runIn(env, providers.Claude, "plugin", "uninstall", pluginKey); err != nil {
 		return err
 	}
 	if err := s.runIn(env, providers.Claude, "plugin", "marketplace", "remove", marketplaceName); err != nil {
 		slog.Debug("agentplugin: claude marketplace remove", "err", err)
 	}
-	return s.runIn(env, providers.Claude, "plugin", "marketplace", "add", gitURL+"#v"+version)
+	return nil
+}
+
+// migrateClaude takes the install of the past out of Personal and every
+// profile. A profile it cannot reach keeps its copy and is logged: its
+// sessions load lich's copy over it, as every one does.
+func (s *Service) migrateClaude() {
+	if !s.available(providers.Claude) {
+		return
+	}
+	profiles, err := claudeprofile.List()
+	if err != nil {
+		slog.Warn("agentplugin: list Claude Code profiles", "err", err)
+		return
+	}
+	s.installMu.Lock()
+	defer s.installMu.Unlock()
+	for _, p := range profiles {
+		env, err := claudeProfileEnv(p.Slug)
+		if err == nil {
+			err = s.uninstallClaudeIn(env, claudeprofile.PluginsDir(p.Slug, p.Dir))
+		}
+		if err != nil {
+			slog.Warn("agentplugin: remove the Claude Code install", "profile", p.Slug, "err", err)
+		}
+	}
 }
 
 // SubagentCardsRelease is the first lich-plugin release whose Claude Code mod
 // runs a general-purpose subagent as a lich session (hooks/agent-cards.js).
 const SubagentCardsRelease = "0.15.0"
 
-// ClaudeRunsSubagentCards reports whether the Claude Code plugin installed in
-// profileDir ("" for Personal) is a release whose mod turns subagents into lich
-// sessions. It reads Claude Code's plugin state on each call.
+// ClaudeRunsSubagentCards reports whether the release Claude Code sessions load,
+// in any profile (profileDir, "" for Personal), is one whose mod turns
+// subagents into lich sessions. It reads the disk on each call.
 func ClaudeRunsSubagentCards(profileDir string) bool {
 	version, ok := claudeInstalledVersionFor(profileDir)
 	return ok && runsSubagentCards(version)
@@ -112,9 +145,9 @@ func runsSubagentCards(version string) bool {
 // session that answers nothing.
 const NestedSubagentCardsRelease = "0.19.0"
 
-// ClaudeNestsSubagentCards reports whether the Claude Code plugin installed in
-// profileDir ("" for Personal) is a release a worker can open cards from. It
-// reads Claude Code's plugin state on each call.
+// ClaudeNestsSubagentCards reports whether the release Claude Code sessions
+// load, in any profile, is one a worker can open cards from. It reads the disk
+// on each call.
 func ClaudeNestsSubagentCards(profileDir string) bool {
 	version, ok := claudeInstalledVersionFor(profileDir)
 	return ok && nestsSubagentCards(version)
@@ -129,9 +162,8 @@ func nestsSubagentCards(version string) bool {
 // subagents itself, so LICH_SUBAGENT_CARDS no longer means anything to it.
 const SubagentHookRelease = "0.22.0"
 
-// ClaudeAsksSubagentHook reports whether the Claude Code plugin installed in
-// profileDir ("" for Personal) is a release whose hook asks lich. It reads
-// Claude Code's plugin state on each call.
+// ClaudeAsksSubagentHook reports whether the release Claude Code sessions load,
+// in any profile, is one whose hook asks lich. It reads the disk on each call.
 func ClaudeAsksSubagentHook(profileDir string) bool {
 	version, ok := claudeInstalledVersionFor(profileDir)
 	return ok && asksSubagentHook(version)
@@ -155,62 +187,17 @@ func notesEdits(version string) bool {
 // conversation-id.sh, which every one of them already ships.
 const vetoScript = "hooks/veto-subagent.sh"
 
-// claudeInstalledVersionFor is the installed version in profileDir, or in
-// Personal's plugin state when profileDir is "".
-func claudeInstalledVersionFor(profileDir string) (string, bool) {
-	if profileDir == "" {
-		return claudeInstalledVersion()
-	}
-	return claudeInstalledVersionIn(profileDir)
+// claudeInstalledVersionFor is the release a Claude Code session loads, which
+// is lich's own whatever the profile.
+func claudeInstalledVersionFor(string) (string, bool) {
+	return bundleVersion()
 }
 
-// claudeInstalledVersion reads the plugin's installed version from Claude
-// Code's plugin state in Personal, or ("", false) when absent or unreadable.
-func claudeInstalledVersion() (string, bool) {
-	dir := claudeConfigDir()
-	if dir == "" {
-		return "", false
-	}
-	return claudeInstalledVersionAt(dir, claudeprofile.PluginsDir(claudeprofile.Personal, dir))
-}
-
-// ClaudeInstalledIn reports whether the plugin is installed in the Claude Code
-// config directory dir, a profile's own plugin state.
-func ClaudeInstalledIn(dir string) bool {
-	_, ok := claudeInstalledVersionIn(dir)
+// ClaudeInstalledIn reports whether a Claude Code session started in the
+// config directory dir loads the plugin, which it does whenever lich has one.
+func ClaudeInstalledIn(string) bool {
+	_, ok := bundleVersion()
 	return ok
-}
-
-func claudeInstalledVersionIn(dir string) (string, bool) {
-	return claudeInstalledVersionAt(dir, filepath.Join(dir, "plugins"))
-}
-
-// claudeInstalledVersionAt is the version installed in plugins for the config
-// directory dir, and only while dir's settings enable it: a disabled plugin
-// stays in installed_plugins.json and runs none of its hooks, so it reads as
-// missing and Install, which reinstalls, enables it again.
-func claudeInstalledVersionAt(dir, plugins string) (string, bool) {
-	if !claudeEnabledIn(dir) {
-		return "", false
-	}
-	data, err := os.ReadFile(filepath.Join(plugins, "installed_plugins.json"))
-	if err != nil {
-		return "", false
-	}
-	return parseInstalledVersion(data, pluginKey)
-}
-
-// claudeEnabledIn is whether dir's user settings enable the plugin. Claude
-// Code reads a key that is absent as disabled (`claude plugin list`, 2.1.332).
-func claudeEnabledIn(dir string) bool {
-	data, err := os.ReadFile(filepath.Join(dir, "settings.json"))
-	if err != nil {
-		return false
-	}
-	var doc struct {
-		EnabledPlugins map[string]json.RawMessage `json:"enabledPlugins"`
-	}
-	return json.Unmarshal(data, &doc) == nil && string(doc.EnabledPlugins[pluginKey]) == "true"
 }
 
 // parseInstalledVersion pulls the plugin's version out of installed_plugins.json.
@@ -234,15 +221,12 @@ func parseInstalledVersion(data []byte, key string) (string, bool) {
 	return "", false
 }
 
-// claudeConfigDir resolves Claude Code's config directory: the CLAUDE_CONFIG_DIR
-// override, else ~/.claude.
-func claudeConfigDir() string {
-	if d := os.Getenv("CLAUDE_CONFIG_DIR"); d != "" {
-		return d
+// claudeInstall readies the plugin for every Claude Code session and takes the
+// install of the past out of Personal and every profile.
+func (s *Service) claudeInstall() error {
+	if err := s.installBundle(); err != nil {
+		return err
 	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		return ""
-	}
-	return filepath.Join(home, ".claude")
+	s.migrateClaude()
+	return nil
 }

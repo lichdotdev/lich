@@ -4,15 +4,12 @@ import (
 	"log/slog"
 	"sync"
 
-	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/agentplugin"
 )
 
 // pluginVersionHeader names the plugin release a hook report comes from
 // (docs/hooks/README.md, Shared transport).
 const pluginVersionHeader = "X-Lich-Plugin"
-
-type pluginEvent = api.PluginIncompatible
 
 // hookBody is what every hook request carries: the session it reports on.
 type hookBody interface {

@@ -174,6 +174,9 @@ The installer is not code-signed, so SmartScreen will warn on first run —
 (see below).
 
 lich runs windowless on Windows; diagnostics live in `%AppData%\lich\lich.log`.
+The browser's pages run in `lich-browser.exe` on Microsoft's WebView2 Runtime,
+which Windows 10 and 11 already have; its log is `lich-browser.log` beside
+lich's.
 
 Scoop installs the portable zip from the manifest every release publishes
 beside them, no bucket to add:
@@ -188,9 +191,9 @@ the manifest from that URL, which is always the latest release's. The workspace 
 `scoop uninstall lich` leaves your projects and sessions alone.
 
 `lich-*-windows-amd64.zip` is the portable package, for a no-install run:
-`lich.exe` with `lich-native.exe` beside it. Unzip it anywhere you can
-write and run `lich.exe`; keep the two together, since `lich.exe` alone does
-not open. The update button runs the installer into that folder, which also
+`lich.exe` with `lich-native.exe`, `lich-browser.exe` and `WebView2Loader.dll`
+beside it. Unzip it anywhere you can write and run `lich.exe`; keep the four
+together, since `lich.exe` alone does not open. The update button runs the installer into that folder, which also
 adds lich to Installed apps.
 
 ## Verifying checksums

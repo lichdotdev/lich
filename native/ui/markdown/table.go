@@ -5,11 +5,14 @@ import (
 	"strings"
 
 	"gioui.org/font"
+	"gioui.org/gesture"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
 	"gioui.org/op/paint"
 	"gioui.org/unit"
+	"gioui.org/widget"
 	"gioui.org/x/richtext"
 	extast "github.com/yuin/goldmark/extension/ast"
 
@@ -23,6 +26,11 @@ type markdownTable struct {
 	// longest word, padding included, measured at metric.
 	natural, minimum []int
 	metric           unit.Metric
+	// A table whose words alone overflow the column scrolls sideways under
+	// a bar of its own; offset is how far.
+	scroll gesture.Scroll
+	bar    widget.Scrollbar
+	offset int
 }
 
 // renderTable renders each cell as Markdown, a short row padded to the
@@ -59,8 +67,46 @@ const markdownUnbounded = 1 << 20
 
 // layout is mdProse's table: w-max up to the column's width, px-2 py-1
 // cells, a 1px border around each. A table wider than the column shares the
-// room out by each column's natural width, and its cells wrap.
+// room out by each column's natural width, and its cells wrap; one whose
+// words alone do not fit is clipped to the column and scrolls sideways.
 func (t *markdownTable) layout(gtx C, th *ui.Theme, l Links) D {
+	room := gtx.Constraints.Max.X
+	macro := op.Record(gtx.Ops)
+	grid := t.layoutGrid(gtx, th, l)
+	call := macro.Stop()
+	if grid.Size.X <= room {
+		t.offset = 0
+		call.Add(gtx.Ops)
+		return grid
+	}
+	t.offset += t.scroll.Update(gtx.Metric, gtx.Source, gtx.Now, gesture.Horizontal,
+		pointer.ScrollRange{Min: -t.offset, Max: grid.Size.X - room - t.offset}, pointer.ScrollRange{})
+	if d := t.bar.ScrollDistance(); d != 0 {
+		t.offset += int(d * float32(grid.Size.X))
+	}
+	t.offset = min(max(t.offset, 0), grid.Size.X-room)
+	view := image.Pt(room, grid.Size.Y)
+	area := clip.Rect{Max: view}.Push(gtx.Ops)
+	t.scroll.Add(gtx.Ops)
+	shift := op.Offset(image.Pt(-t.offset, 0)).Push(gtx.Ops)
+	call.Add(gtx.Ops)
+	shift.Pop()
+	area.Pop()
+	bar := th.ThinScrollbar(&t.bar)
+	under := gtx
+	under.Constraints = layout.Exact(image.Pt(room, gtx.Dp(bar.Width())))
+	defer op.Offset(image.Pt(0, view.Y+gtx.Dp(tableBarGap))).Push(gtx.Ops).Pop()
+	start := float32(t.offset) / float32(grid.Size.X)
+	d := bar.Layout(under, layout.Horizontal, start, start+float32(room)/float32(grid.Size.X))
+	return D{Size: image.Pt(room, view.Y+gtx.Dp(tableBarGap)+d.Size.Y)}
+}
+
+// tableBarGap keeps a scrolling table's bar off its bottom border.
+var tableBarGap = ui.Space(1)
+
+// layoutGrid draws the table at its columns' widths, which may be wider than
+// the column it is in.
+func (t *markdownTable) layoutGrid(gtx C, th *ui.Theme, l Links) D {
 	padX, padY, line := gtx.Dp(ui.Space(2)), gtx.Dp(ui.Space(1)), gtx.Dp(1)
 	columns := len(t.rows[0])
 	t.measure(gtx, th, padX)

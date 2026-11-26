@@ -1,22 +1,8 @@
 {
-  "agentPluginGate": {
-    "updateAvailable": "lich 플러그인 {version} 버전을 사용할 수 있습니다",
-    "update": "업데이트",
-    "later": "나중에",
-    "reregisterNeeded": "lich가 {names}용으로 작성하는 훅을 설치한 새 버전에 맞게 다시 등록해야 합니다.",
-    "reregister": "다시 등록",
-    "installVersion": "v{version} 설치",
-    "updated": "플러그인을 업데이트했습니다. 적용하려면 세션을 다시 시작하세요.",
-    "installed": "플러그인을 설치했습니다. 적용하려면 세션을 다시 시작하세요.",
-    "codexTrust": "Codex: 플러그인의 hook을 신뢰하려면 Codex 세션에서 /hooks를 실행하세요.",
-    "installFailed": "설치 실패: {error}",
-    "title": "에이전트 연동 켜기",
-    "description": "lich 플러그인은 세션의 상태와 제목을 앱에 알리고, git 상태를 새로 고치며, 복원된 세션이 대화를 이어 갈 수 있게 합니다. 사용하는 CLI에 설치하세요.",
-    "needsHooks": "신뢰하려면 /hooks 필요",
-    "dontAskAgain": "다시 묻지 않기",
-    "notNow": "나중에",
-    "installing": "설치 중…",
-    "install": "설치"
+  "pluginProblem": {
+    "release": "lich가 플러그인을 내려받지 못해 새 세션이 훅 없이 시작됩니다.",
+    "providers": "lich가 {names}에 플러그인을 준비하지 못해 해당 세션이 훅 없이 시작됩니다.",
+    "retry": "다시 시도"
   },
   "appUpdateGate": {
     "available": "lich {version} 버전을 사용할 수 있습니다",

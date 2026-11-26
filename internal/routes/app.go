@@ -35,11 +35,12 @@ func AppUpdate(d *rpc.Handler, s *appupdate.Service) {
 	rpc.Handle(d, api.AppUpdateApply, s.Apply)
 }
 
-// AgentPlugin exposes the lich plugin's install state as api declares it.
+// AgentPlugin exposes the lich plugin's state, and a retry of what failed, as
+// api declares it.
 func AgentPlugin(d *rpc.Handler, s *agentplugin.Service) {
 	rpc.Handle(d, api.AgentPluginStatus, s.Status)
-	rpc.Handle(d, api.AgentPluginInstall, s.Install)
-	rpc.Handle(d, api.AgentPluginUpdate, s.Update)
+	rpc.Handle(d, api.AgentPluginProblem, s.Problem)
+	rpc.Handle(d, api.AgentPluginRetry, s.Retry)
 }
 
 // Providers exposes provider detection as api declares it.

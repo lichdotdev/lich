@@ -38,7 +38,7 @@ tasks:
       - cmd: CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" -o ../{{.BIN_DIR}}/lich-native ./cmd/lich-native
 
   build:browser:
-    desc: Build lich-browser, which holds every page, into bin/lich-browser (cgo; WebKitGTK, Linux)
+    desc: Build lich-browser, which holds every page, into bin/lich-browser (cgo; WebKitGTK on Linux, WKWebView on macOS)
     # Built in native/ beside the window, shipped beside lich, which starts
     # it (docs/lich-browser.md).
     dir: native
@@ -46,7 +46,7 @@ tasks:
       - cmd: CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" -o ../{{.BIN_DIR}}/lich-browser ./cmd/lich-browser
 
   build:native:windows:
-    desc: Cross-build bin/lich-native.exe from Linux with Zig (native/build-windows.sh)
+    desc: Cross-build bin/lich-native.exe and bin/lich-browser.exe (with WebView2Loader.dll) from Linux with Zig (native/build-windows.sh)
     cmds:
       - cmd: sh native/build-windows.sh ../{{.BIN_DIR}}/lich-native.exe
 
@@ -81,16 +81,18 @@ tasks:
       - cmd: CGO_ENABLED=0 GOOS=darwin GOARCH=amd64 go build {{.GO_BUILD_FLAGS}} -o {{.BIN_DIR}}/{{.APP_NAME}}-darwin-amd64 .
 
   bundle:mac:
-    desc: Wrap the macOS binary and the window in bin/Lich.app (macOS host only)
+    desc: Wrap the macOS binary, the window and lich-browser in bin/Lich.app (macOS host only)
     deps: [build:mac]
     # The native window builds apart (cgo, libghostty-vt), as for package.
     preconditions:
       - sh: test -x {{.BIN_DIR}}/lich-native
         msg: "bin/lich-native is missing: task build:native puts it there"
+      - sh: test -x {{.BIN_DIR}}/lich-browser
+        msg: "bin/lich-browser is missing: task build:browser puts it there"
     cmds:
       # The binary cross-compiles from anywhere; the bundle needs Apple's sips
       # and iconutil for the icon, so this task only runs on a Mac.
-      - cmd: build/darwin/bundle.sh {{.BIN_DIR}}/{{.APP_NAME}}-darwin-{{ARCH}} {{.VERSION}} {{.BIN_DIR}} {{.BIN_DIR}}/lich-native
+      - cmd: build/darwin/bundle.sh {{.BIN_DIR}}/{{.APP_NAME}}-darwin-{{ARCH}} {{.VERSION}} {{.BIN_DIR}} {{.BIN_DIR}}/lich-native {{.BIN_DIR}}/lich-browser
 
   run:
     desc: Build and run
@@ -189,8 +191,8 @@ tasks:
     preconditions:
       - sh: command -v iscc
         msg: "iscc (Inno Setup 6) is required — on Windows: choco install innosetup"
-      - sh: test -f {{.BIN_DIR}}/lich-native.exe
-        msg: "bin/lich-native.exe is missing: task build:native:windows cross-builds it from Linux"
+      - sh: test -f {{.BIN_DIR}}/lich-native.exe && test -f {{.BIN_DIR}}/lich-browser.exe && test -f {{.BIN_DIR}}/WebView2Loader.dll
+        msg: "bin/lich-native.exe, lich-browser.exe or WebView2Loader.dll is missing: task build:native:windows cross-builds them from Linux"
     env:
       VERSION: '{{.VERSION}}'
     cmds:

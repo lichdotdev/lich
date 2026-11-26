@@ -262,7 +262,7 @@ func (f *fileEditor) vimKey(_ layout.Context, ev event.Event) bool {
 		return false
 	}
 	if keys != "" {
-		f.vimFeed("lich_editor.feed(...)", keys)
+		f.env.vim.keys(f.vimBufOf, keys)
 	}
 	return true
 }
@@ -270,14 +270,22 @@ func (f *fileEditor) vimKey(_ layout.Context, ev event.Event) bool {
 // vimFeed calls fn of vim.lua with the buffer first, once it is open.
 func (f *fileEditor) vimFeed(fn string, args ...any) {
 	f.env.vim.do(func(v *nvim.Nvim, gen int) error {
-		f.vim.mu.Lock()
-		buf, live := f.vim.buf, f.vim.gen == gen
-		f.vim.mu.Unlock()
-		if !live || buf == 0 {
+		buf := f.vimBufOf(gen)
+		if buf == 0 {
 			return nil
 		}
 		return v.ExecLua(fn, nil, append([]any{buf}, args...)...)
 	})
+}
+
+// vimBufOf is the editor's buffer when it lives in process gen, else 0.
+func (f *fileEditor) vimBufOf(gen int) int {
+	f.vim.mu.Lock()
+	defer f.vim.mu.Unlock()
+	if f.vim.gen != gen {
+		return 0
+	}
+	return f.vim.buf
 }
 
 // vimPointer hands Neovim a click or a drag in the editor: its cursor

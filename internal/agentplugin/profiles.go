@@ -1,32 +1,26 @@
 package agentplugin
 
 import (
+	"errors"
+	"fmt"
 	"log/slog"
 	"os"
 
-	"github.com/lichdotdev/lich/api"
-	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/codexprofile"
 	"github.com/lichdotdev/lich/internal/profilestore"
 	"github.com/lichdotdev/lich/internal/providers"
-
-	"github.com/lichdotdev/lich/internal/events"
 )
 
-// Claude Code and Codex keep a plugin set per profile, so the lich plugin
-// Personal runs is not the one a profile runs. A profile follows Personal: once
+// Codex keeps a plugin set per profile, so the lich plugin Personal runs is not
+// the one a profile runs. A profile follows Personal: once
 // Personal's plugin is installed or updated, every other profile of that
 // provider gets the same pinned install, run as the profile, one after the
-// other. oh-my-pi needs none of this: its extension lives in the `extensions/`
-// directory every profile links to Personal's (internal/ompprofile).
+// other. Claude Code and oh-my-pi need none of this: every session of theirs
+// loads lich's own copy of the plugin (bundle.go).
 //
-// A profile needs no login for it: `claude plugin install` and `codex plugin
-// add` both install into a logged-out home (measured on Claude Code 2.1.296 and
-// codex-cli 0.162.1), and the install after a login runs again anyway.
-
-type ProfilesEvent = api.PluginProfiles
-
-type ProfileFailure = api.PluginProfileFailure
+// A profile needs no login for it: `codex plugin add` installs into a
+// logged-out home (measured on codex-cli 0.162.1), and the install after a
+// login runs again anyway.
 
 // profileProvider is what a provider with profiles brings to the pass.
 // ensureShared brings a profile to the layout a spawn would before its plugins
@@ -42,15 +36,6 @@ type profileProvider struct {
 }
 
 var profileProviders = map[string]profileProvider{
-	providers.Claude: {
-		list:         claudeprofile.List,
-		ensureShared: claudeprofile.EnsureShared,
-		env:          claudeprofile.Env,
-		version: func(_ *Service, _ []string, dir string) (string, bool) {
-			return claudeInstalledVersionIn(dir)
-		},
-		install: (*Service).claudeInstallIn,
-	},
 	providers.Codex: {
 		list:         codexprofile.List,
 		ensureShared: codexprofile.EnsureShared,
@@ -66,57 +51,36 @@ var profileProviders = map[string]profileProvider{
 	},
 }
 
-// SetEmit wires where a pass over the profiles reports (api.PluginProfilesEvent).
-// Startup wiring; without it Install reaches Personal alone.
-func (s *Service) SetEmit(emit func(name string, data any)) { s.emit = emit }
-
-// SyncProfiles brings every profile of every provider that has them to the
-// release Personal's plugin is at, installing it where it is missing: a
-// profile logged in before it got the plugin at login has none. It runs at
-// backend start, off the request path, and reports like an update does.
-func (s *Service) SyncProfiles() {
-	for provider := range profileProviders {
-		s.followPersonal(provider)
-	}
-}
-
 // followPersonal is one pass over a provider's profiles. A profile already at
 // the release is left alone, and so is one that has the plugin while Personal
-// itself is behind the release: Personal's own update brings both.
-func (s *Service) followPersonal(provider string) {
+// itself is behind the release: Personal's own update brings both. The error
+// names each profile whose install failed.
+func (s *Service) followPersonal(provider string) error {
 	kind := profileProviders[provider]
 	profiles, err := kind.list()
 	if err != nil {
-		slog.Warn("agentplugin: list profiles", "provider", provider, "err", err)
-		return
+		return fmt.Errorf("list %s profiles: %w", providerName(provider), err)
 	}
 	profiles = profilesBesidePersonal(profiles)
 	if len(profiles) == 0 {
-		return
+		return nil
 	}
 	personal, ok := s.installedVersion(provider)
 	if !ok {
-		return
+		return nil
 	}
 	target, err := s.releaseVersion()
 	if err != nil {
 		slog.Warn("agentplugin: profiles keep their plugin", "provider", provider, "err", err)
-		return
+		return nil
 	}
-	ev := ProfilesEvent{Provider: provider, Name: providerName(provider), Version: target, Failures: []ProfileFailure{}}
-	installed := 0
+	var failed []error
 	for _, p := range profiles {
-		tried, err := s.follow(kind, p, personal == target, target)
-		if tried {
-			installed++
-		}
-		if err != nil {
-			ev.Failures = append(ev.Failures, ProfileFailure{Profile: p.Slug, Name: p.Name, Error: err.Error()})
+		if _, err := s.follow(kind, p, personal == target, target); err != nil {
+			failed = append(failed, fmt.Errorf("profile %s: %w", p.Name, err))
 		}
 	}
-	if installed > 0 && s.emit != nil {
-		events.Send(s.emit, api.PluginProfilesEvent, ev)
-	}
+	return errors.Join(failed...)
 }
 
 // follow installs the release into one profile when it should have it, and

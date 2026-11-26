@@ -613,3 +613,28 @@ func vimCloseNow(h *vimHost) {
 		_ = v.Close()
 	}
 }
+
+func TestVimTakesACommandTypedAKeyAtATime(t *testing.T) {
+	f, _ := vimEditor(t, strings.Repeat("line\n", 60))
+	for _, k := range []string{"3", "0", "j"} {
+		vimType(f, k)
+		time.Sleep(50 * time.Millisecond)
+	}
+	vimUntil(t, f, "30j reach row 31", func() bool { return f.vim.state.row == 31 })
+	for _, k := range []string{"3", "J"} {
+		vimType(f, k)
+		time.Sleep(50 * time.Millisecond)
+	}
+	vimUntil(t, f, "3J join three lines", func() bool { return strings.Count(f.ed.State().Doc(), "\n") == 58 })
+}
+
+func TestVimClickWhileACommandWaitsForItsRest(t *testing.T) {
+	f, _ := vimEditor(t, strings.Repeat("line\n", 60))
+	vimType(f, "3")
+	time.Sleep(50 * time.Millisecond)
+	f.vim.sent++
+	f.vimFeed("lich_editor.click(...)", f.vim.sent, 10, 0)
+	vimUntil(t, f, "the click move the cursor", func() bool { return f.vim.state.row == 10 })
+	vimType(f, "j")
+	vimUntil(t, f, "j after the click move one row", func() bool { return f.vim.state.row == 11 })
+}

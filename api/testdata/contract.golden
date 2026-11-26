@@ -1,6 +1,6 @@
-agentplugin.Install(PluginProviderOptions) None
+agentplugin.Problem(None) PluginProblem
+agentplugin.Retry(None) None
 agentplugin.Status(None) []PluginStatus
-agentplugin.Update(PluginProviderOptions) None
 appupdate.Apply(None) None
 appupdate.Status(None) AppUpdateStatus
 artifact.Attach(AttachArtifactOptions) DropAttachment
@@ -122,6 +122,10 @@ kiroprofile.DeleteProfile(ProfileSlugOptions) None
 kiroprofile.LoginCommand(ProfileSlugOptions) string
 kiroprofile.Profiles(None) []ProfileInfo
 kiroprofile.UpdateProfile(UpdateProfileOptions) Profile
+library.List(None) Library
+library.MoveIn(LibraryItemOptions) None
+library.Seen(LibrarySeenOptions) None
+library.Set(LibrarySwitchOptions) None
 ompprofile.CreateProfile(CreateProfileOptions) Profile
 ompprofile.DeleteProfile(ProfileSlugOptions) None
 ompprofile.LoginCommand(ProfileSlugOptions) string
@@ -375,8 +379,8 @@ event extension-removed ExtensionIDOptions
 event extension-status Extension
 event extension-update ExtensionUpdate
 event forge ForgeChange
-event lich-plugin-profiles PluginProfiles
-event plugin-incompatible PluginIncompatible
+event library.changed None
+event lich-plugin-problem PluginProblem
 event profile-changed ProfileChanged
 event project-added ProjectAdded
 event project-closed ProjectClosed
@@ -426,11 +430,13 @@ event thread-fixes []ThreadFix
 event window-close None
 event window-raise None
 
-PluginProviderOptions {
-	provider string
+None {
 }
 
-None {
+PluginProblem {
+	bundle bool
+	providers []string
+	error string
 }
 
 PluginStatus {
@@ -1012,6 +1018,31 @@ ExtensionGitInstallOptions {
 ExtensionSendOptions {
 	id string
 	message json
+}
+
+Library {
+	skills []LibraryItem
+	mcp []LibraryItem
+	found []LibraryFound
+	plugin LibraryPlugin
+	providers []LibraryProvider
+}
+
+LibraryItemOptions {
+	kind string
+	name string
+}
+
+LibrarySeenOptions {
+	kind string
+}
+
+LibrarySwitchOptions {
+	kind string
+	name string
+	provider string
+	profile string
+	on bool
 }
 
 PatchNotesOptions {
@@ -2477,18 +2508,6 @@ ForgeChange {
 	forge string
 }
 
-PluginProfiles {
-	provider string
-	name string
-	version string
-	failures []PluginProfileFailure
-}
-
-PluginIncompatible {
-	id string
-	version string
-}
-
 ProfileChanged {
 	provider string
 	profile Profile
@@ -2930,6 +2949,43 @@ ExtensionText {
 	surfaces,omitempty map[string]string
 }
 
+LibraryItem {
+	kind string
+	name string
+	description string
+	origin string
+	command string
+	transport string
+	switches []LibrarySwitch
+}
+
+LibraryFound {
+	kind string
+	name string
+	description string
+	transport string
+	providers []string
+	paths []string
+	new bool
+}
+
+LibraryPlugin {
+	version string
+	hooks int
+	skills int
+	mcp int
+}
+
+LibraryProvider {
+	id string
+	name string
+	profiles []Profile
+	noSkills string
+	noMCP string
+	oneSkills string
+	oneMCP string
+}
+
 PatchNotesHighlight {
 	kind string
 	text string
@@ -3230,12 +3286,6 @@ ChatTurnChanges {
 	removed int
 }
 
-PluginProfileFailure {
-	profile string
-	name string
-	error string
-}
-
 SessionCache {
 	read int
 	write int
@@ -3286,6 +3336,12 @@ ChatPluginParts {
 ChatAskAnswer {
 	picked,omitempty []string
 	other,omitempty string
+}
+
+LibrarySwitch {
+	provider string
+	profile string
+	on bool
 }
 
 StepLog {

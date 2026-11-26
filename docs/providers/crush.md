@@ -54,9 +54,8 @@ Below 0.99.0 `PreToolUse` is the only event, and the block lich writes there is 
 session id rides every tool call, and the card carries no state. A waiting card would send no reason, keep-awake
 has nothing to listen to, and a turn that calls no tool reaches lich not at all. The block lich wrote for an older
 Crush stays until the plugin is installed again, so a Crush upgraded to 0.99.0 reports state from the next install
-or update, not before. Once `crush --version` reads 0.99.0 or newer, the Crush row in Settings › Updates offers
-Re-register hooks and the window says so on start, with or without a newer plugin release (`crushBlockBehind`,
-`PluginStatus.Reregister`).
+or update, not before. Once `crush --version` reads 0.99.0 or newer, lich's next pass writes the block again,
+with or without a newer plugin release (`crushBlockBehind`).
 
 ## Transcript & cost
 

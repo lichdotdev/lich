@@ -37,26 +37,20 @@ func TestRunsSubagentCardsFromTheFirstCardRelease(t *testing.T) {
 	}
 }
 
-// A profile has a plugin set of its own, so a worker may open cards only if the
-// plugin in the profile the session runs in is a release that tells it by depth,
-// whatever Personal's is.
-func TestClaudeNestsSubagentCardsAnswersForTheProfile(t *testing.T) {
-	state := func(version string) string {
-		return `{"plugins":{"lich@lich-plugin":[{"scope":"user","version":"` + version + `"}]}}`
+// Every Claude Code session loads lich's release, whatever profile it runs in,
+// so a worker opens cards by that release alone.
+func TestClaudeNestsSubagentCardsFollowsTheRelease(t *testing.T) {
+	root := bundleHome(t)
+	if ClaudeNestsSubagentCards("") {
+		t.Error("no release unpacked: want cards not to nest")
 	}
-	personal := writeClaudeState(t, state("0.19.0"))
-	t.Setenv("CLAUDE_CONFIG_DIR", personal)
-	older := writeClaudeState(t, state("0.18.4"))
-	t.Setenv("CLAUDE_CONFIG_DIR", personal)
-
-	if !ClaudeNestsSubagentCards("") {
-		t.Error("Personal on 0.19.0: want cards to nest")
-	}
-	if ClaudeNestsSubagentCards(older) {
-		t.Error("a profile on 0.18.4 beside a Personal on 0.19.0: want cards not to nest")
-	}
+	plantRelease(t, root, "0.18.4")
 	if ClaudeNestsSubagentCards(t.TempDir()) {
-		t.Error("a profile with no plugin: want cards not to nest")
+		t.Error("on 0.18.4: want cards not to nest")
+	}
+	plantRelease(t, root, "0.19.0")
+	if !ClaudeNestsSubagentCards("") || !ClaudeNestsSubagentCards(t.TempDir()) {
+		t.Error("on 0.19.0: want cards to nest in Personal and in a profile alike")
 	}
 }
 

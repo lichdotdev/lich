@@ -1,7 +1,7 @@
-//go:build !linux
+//go:build !linux && !windows && !darwin
 
 // Command lich-browser holds every page lich shows (docs/lich-browser.md); it
-// runs on Linux only so far, and the backend keeps Chrome elsewhere.
+// has no web engine on this system, and the backend keeps Chrome here.
 package main
 
 import "log"
