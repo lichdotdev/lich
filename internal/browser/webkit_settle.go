@@ -24,6 +24,12 @@ type loadTrack struct {
 }
 
 func (l *loadTrack) note(ev browserwire.LoadEvent, heard time.Time) {
+	// The blank page open and newTab start on their own loads after they
+	// answered, so it landed after the navigation that followed was sent,
+	// and ending first stood for it: open answered about:blank, untitled.
+	if ev.URL == blankURL {
+		return
+	}
 	l.mu.Lock()
 	defer l.mu.Unlock()
 	switch ev.Step {
@@ -40,6 +46,8 @@ func (l *loadTrack) note(ev browserwire.LoadEvent, heard time.Time) {
 	close(l.wake)
 	l.wake = make(chan struct{})
 }
+
+const blankURL = "about:blank"
 
 // mark is the loads started so far, which await counts from.
 func (l *loadTrack) mark() int {

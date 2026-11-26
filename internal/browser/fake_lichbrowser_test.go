@@ -33,6 +33,13 @@ type fakeLichBrowser struct {
 	snapScale    float64
 	// icon is every tab's icon.
 	icon []byte
+	// lateLoads sends a load after the answer to the request that started
+	// it, as lich-browser does, the blank one open starts included.
+	lateLoads bool
+	// later is what goes out after the answer being written; held what
+	// goes out once the next request came, as open's blank load starts in
+	// WebKit after the backend sent its navigation.
+	later, held []func()
 
 	mu     sync.Mutex
 	spawns int
@@ -50,6 +57,10 @@ type fakeWirePage struct {
 	// out: the page is in a window of its own, its tabs embedded nowhere.
 	out bool
 }
+
+// lateLoad is how long after its answer a lateLoads navigation loads: well
+// past an eval's round trip, well within the backend's wait for a load.
+const lateLoad = 100 * time.Millisecond
 
 func newFakeLichBrowser(t *testing.T) *fakeLichBrowser {
 	return &fakeLichBrowser{t: t, version: browserwire.Version, pages: map[string]*fakeWirePage{}, snapW: 800, snapH: 600, snapScale: 1}
@@ -105,7 +116,12 @@ func (f *fakeLichBrowser) serve(in io.Reader, out io.WriteCloser) {
 		}
 		f.mu.Lock()
 		f.calls = append(f.calls, req)
+		held := f.held
+		f.held = nil
 		f.mu.Unlock()
+		for _, send := range held {
+			send()
+		}
 		result, errText := f.answer(out, req)
 		reply := map[string]any{"id": req.ID}
 		if errText != "" {
@@ -114,6 +130,18 @@ func (f *fakeLichBrowser) serve(in io.Reader, out io.WriteCloser) {
 			reply["result"] = result
 		}
 		f.write(out, reply)
+		f.mu.Lock()
+		later := f.later
+		f.later = nil
+		f.mu.Unlock()
+		if len(later) > 0 {
+			// The page loads from the network after the answer.
+			time.AfterFunc(lateLoad, func() {
+				for _, send := range later {
+					send()
+				}
+			})
+		}
 	}
 }
 
@@ -158,7 +186,14 @@ func (f *fakeLichBrowser) answer(out io.Writer, req browserwire.Request) (any, s
 	case browserwire.Snapshot:
 		return f.snapshot(), ""
 	case browserwire.Open, browserwire.NewTab, browserwire.SelectTab, browserwire.CloseTab, browserwire.Close, browserwire.PopOut:
-		return nil, f.tabRequest(out, req.Method, pp.Page, pp.URL, pp.Tab)
+		errText := f.tabRequest(out, req.Method, pp.Page, pp.URL, pp.Tab)
+		if req.Method == browserwire.Open && f.lateLoads {
+			f.loadPage(out, pp.Page, pp.URL)
+			f.mu.Lock()
+			f.held, f.later = f.later, nil
+			f.mu.Unlock()
+		}
+		return nil, errText
 	case browserwire.Navigate, browserwire.Reload, browserwire.Back, browserwire.Forward:
 		f.loadPage(out, pp.Page, pp.URL)
 	case browserwire.Dialog:
@@ -268,9 +303,18 @@ func (f *fakeLichBrowser) loadPage(out io.Writer, id, url string) {
 	at := f.clock
 	f.mu.Unlock()
 	ev := browserwire.LoadEvent{Page: id, Tab: tab, URL: url, At: at}
+	write := func(msg any) {
+		if !f.lateLoads {
+			f.write(out, msg)
+			return
+		}
+		f.mu.Lock()
+		f.later = append(f.later, func() { f.write(out, msg) })
+		f.mu.Unlock()
+	}
 	load := func(step string) {
 		ev.Step = step
-		f.write(out, map[string]any{"event": browserwire.EventLoad, "params": ev})
+		write(map[string]any{"event": browserwire.EventLoad, "params": ev})
 	}
 	load(browserwire.LoadStarted)
 	switch {
@@ -288,10 +332,13 @@ func (f *fakeLichBrowser) loadPage(out io.Writer, id, url string) {
 	if url != "" {
 		p.tabs[p.front].URL, p.tabs[p.front].Title = url, "Title of "+url
 	}
+	if url == "about:blank" {
+		p.tabs[p.front].Title = ""
+	}
 	tabs := f.tabsLocked(id, p)
 	f.mu.Unlock()
 	load(browserwire.LoadCommitted)
-	f.write(out, map[string]any{"event": browserwire.EventTabs, "params": tabs})
+	write(map[string]any{"event": browserwire.EventTabs, "params": tabs})
 	load(browserwire.LoadFinished)
 }
 

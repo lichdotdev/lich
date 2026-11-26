@@ -49,6 +49,29 @@ func TestWebkitOpenLoadsThePageAndReportsItsTabs(t *testing.T) {
 	}
 }
 
+// lich-browser answers open and navigate at once and loads after, open's
+// own blank load included: an answer read before the load came back with
+// about:blank and no title.
+func TestWebkitOpenAndNavigateAnswerWithTheLoadedPage(t *testing.T) {
+	f := newFakeLichBrowser(t)
+	f.lateLoads = true
+	s, _ := wkService(t, f)
+	h, err := s.Open("s", "https://example.com/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if h.URL != "https://example.com/" || h.Title != "Title of https://example.com/" {
+		t.Fatalf("open answered %q %q, want the loaded page's URL and title", h.URL, h.Title)
+	}
+	h, err = s.Navigate(h.ID, "https://example.org/b")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if h.URL != "https://example.org/b" || h.Title != "Title of https://example.org/b" {
+		t.Fatalf("navigate answered %q %q, want the loaded page's URL and title", h.URL, h.Title)
+	}
+}
+
 func TestWebkitHelloRefusesAnotherWire(t *testing.T) {
 	f := newFakeLichBrowser(t)
 	f.version = browserwire.Version + 1

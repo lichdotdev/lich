@@ -266,9 +266,14 @@ func (s *Service) loadURL(sess *session, u string) error {
 	}); err != nil {
 		return s.failed(sess, err)
 	}
-	if download {
+	_, own := sess.page.(*webkitPage)
+	switch {
+	case download, own:
+		// lich-browser told the page's URL and title (infoSink) before its
+		// load answered; Chrome's come after, and the old title meanwhile
+		// is the last page's.
 		s.touch(sess)
-	} else {
+	default:
 		s.remember(sess, u, "")
 	}
 	return nil
