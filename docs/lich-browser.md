@@ -60,11 +60,19 @@ only for sitting under the pointer.
 the same.
 
 - **Windows** (WebView2): each tab is an HWND of `lich-browser.exe`'s, a
-  hidden toplevel off screen with no window to sit in. The window makes it a
+  shown toplevel off screen with no window to sit in (Chromium's occlusion
+  tracking is off, so the page runs as one in sight). The window makes it a
   child of its own with `SetParent` and places, shows, hides and clips it
-  (`SetWindowRgn`) as the X11 path does. `lich-browser.exe` loads WebView2
-  through the official `WebView2Loader.dll`, shipped beside it; its header
-  `WebView2.h` is vendored.
+  (`SetWindowRgn`) as the X11 path does; giving it back, the window makes it
+  a toplevel off screen again, since Windows tells `lich-browser.exe` nothing.
+  `lich-browser.exe` loads WebView2 through the official `WebView2Loader.dll`,
+  shipped beside it; its header `WebView2.h` is vendored
+  (`native/third_party/webview2`). Each page is an InPrivate profile of its
+  own. Eval, input, `request` events and the file chooser go over the
+  DevTools protocol (`CallDevToolsProtocolMethod`); input sent that way is
+  trusted. The inspector is Edge's DevTools window, made a child of a tab
+  window. `window` is kept and unused: an embedded page takes keys by
+  Windows focus.
 - **macOS** (WKWebView): one process cannot put a view in another's window,
   so each tab's WKWebView draws in an off-screen window of `lich-browser`'s
   and exports its layer as a `CAContext`; `xid` is that context's id. The
@@ -142,6 +150,7 @@ import; this table is what each one does.
 
 ## What stays Chrome's until the end
 
-Windows and macOS keep the Chromium page until their engine lands here.
+macOS keeps the Chromium page until its engine lands here.
 `internal/browser` picks the launcher at start: `lich-browser` found beside
-the backend and an X display, or Chrome.
+the backend and an X display on Linux, `lich-browser.exe` beside `lich.exe`
+on Windows, or Chrome.

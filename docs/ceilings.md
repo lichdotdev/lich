@@ -2395,8 +2395,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
 - **A page in lich-browser has no pause for the agent to hear** (`internal/browser/webkit*.go`,
-  `docs/lich-browser.md`): on Linux with an X display and `lich-browser` beside `lich`, every page lives there,
-  and DevTools is WebKit's inspector, a tab of the pane's. Nothing on the wire says the page stopped in its
+  `docs/lich-browser.md`): on Linux with an X display and `lich-browser` beside `lich`, and on Windows with
+  `lich-browser.exe` beside `lich.exe`, every page lives there, and DevTools is the engine's inspector, a tab of
+  the pane's. Nothing on the wire says the page stopped in its
   debugger, so the agent's tools do not fail naming the pause as they do on a Chrome page: a read answers with the
   document as it stood, and a click or a key waits on the paused page until the person resumes it or the call
   times out.
@@ -2409,9 +2410,21 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   for a frame on 20 of 288 frames over four 180 ms slides, and none set before (Xvfb, 60 fps, 2026-11-19). A
   layer that forgets to name its rectangle draws under the page. macOS will need the window's drawing for such
   layers in an overlay view above the WKWebView (Sikemux's overlay plane in its GPUI fork) and a `hitTest:` that
-  falls through it; Windows will need a region cut out of the WebView2's child window (`SetWindowRgn`, its
-  rectangles combined with `RGN_DIFF`) set before the frame is presented, or a composition controller that lets
-  the window's drawing stand over the page.
+  falls through it. On Windows the cut is a region cut out of the page's child window (`SetWindowRgn`, its
+  rectangles combined with `RGN_DIFF`), set from the window's goroutine as on X11; whether it lands before the
+  frame is presented has not been measured on a Windows machine.
+- **A page in lich-browser on Windows is WebView2 driven over the DevTools protocol, with four gaps against
+  Linux** (`native/cmd/lich-browser/*_windows.*`, `cdp.go`, `docs/lich-browser.md`). Input is the protocol's
+  (`Input.dispatchMouseEvent`, `.dispatchKeyEvent`, `.insertText`): the page sees it trusted, as Chrome's DevTools
+  send it, and the window's own keys reach an embedded page by Windows focus, not the wire. The gaps: (1) the
+  inspector is Edge's DevTools window, found by its "DevTools" title among the browser process's windows after
+  `OpenDevToolsWindow` and made a child of a tab window; a DevTools whose title is translated, or that takes
+  over 10 seconds to open, stays a window of its own and the pane gets no tab for it. (2) The page script that
+  reports console errors posts through `chrome.webview`, which a cross-origin iframe does not have, so those
+  iframes' errors go untold. (3) `request` events come from the page target's Network domain: a cross-site
+  iframe in a process of its own is not in it, and Settle does not wait on its requests. (4) A window that
+  crashes takes the pages it holds with it: Windows has no save-set, and a child window dies with its parent,
+  where X hands the page back to the root; a window that closes normally hands them back first.
 - **Select on a page lich-browser shows in the window shows the window's drawing through cuts in the page**
   (`native/internal/webview`, `docs/browser-tab.md`): on X11 the page is lich-browser's X window, reparented into
   the window over the pane, and the window's drawing over it shows only where that window is cut away (X SHAPE).
@@ -2425,10 +2438,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   from scrolling it; keys (arrows, Page Down) still scroll a page whose strokes then point at the wrong place. The
   sketch's picture is a shot of the page (`browser.Snapshot`) with the layer hidden for it. macOS will need the overlay plane on top of the WKWebView, a `hitTest:` that lets clicks fall
   through where the window draws (as Sikemux's `hit_test_outside_holes` does) and the scripts run in the page's
-  own content world (`WKContentWorld.pageWorld`), since they read React's fiber on the element. Windows will need
-  `ExecuteScript` for the scripts and either a window region cut out of the WebView2's child window
-  (`SetWindowRgn`) or a composition controller for anything drawn over the page, which Sikemux has not done:
-  its pages cover its menus.
+  own content world (`WKContentWorld.pageWorld`), since they read React's fiber on the element. Windows runs
+  the scripts with `ExecuteScript`, in the page's world, and cuts the page's child window with `SetWindowRgn`;
+  a disabled child window (`EnableWindow`) is how the pointer goes through the page while a tool is on.
 - **The new-tab page is the backend's page in the window's colors and words, as of the last time the window sent
   them** (`internal/newtab`, `docs/browser-tab.md`): a tab already open keeps its look until it is opened again, and
   before the window has sent any it is the dark theme in English. It has a listener of its own from port 27000,
