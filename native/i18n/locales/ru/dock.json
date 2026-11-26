@@ -57,12 +57,13 @@
     "blame": "{author}, {age} · {summary}",
     "blameUncommitted": "Вы · Незакоммиченные изменения",
     "artifactReadOnly": "От агента · только чтение",
+    "readOnly": "Только чтение",
     "vimFailed": "Neovim не запустился, поэтому редактор работает со своими клавишами",
-    "vimLspMissing": "{name} не найден",
+    "lspMissing": "{name} не найден",
     "vimConfigFailed": "Не удалось открыть конфиг Neovim",
-    "vimLspFailed": "{name} не запустился",
-    "vimLspInstall": "Установить",
-    "vimLspInstalling": "Устанавливается {name}…",
-    "vimLspInstallFailed": "Не удалось установить {name}"
+    "lspFailed": "{name} не запустился",
+    "lspInstall": "Установить",
+    "lspInstalling": "Устанавливается {name}…",
+    "lspInstallFailed": "Не удалось установить {name}"
   }
 }

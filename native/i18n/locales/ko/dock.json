@@ -55,12 +55,13 @@
     "blame": "{author}, {age} · {summary}",
     "blameUncommitted": "나 · 커밋하지 않은 변경 사항",
     "artifactReadOnly": "에이전트 파일 · 읽기 전용",
+    "readOnly": "읽기 전용",
     "vimFailed": "Neovim이 시작되지 않아 편집기가 자체 키를 사용합니다",
-    "vimLspMissing": "{name}을(를) 찾을 수 없음",
+    "lspMissing": "{name}을(를) 찾을 수 없음",
     "vimConfigFailed": "Neovim 설정을 열 수 없습니다",
-    "vimLspFailed": "{name}을(를) 시작하지 못함",
-    "vimLspInstall": "설치",
-    "vimLspInstalling": "{name} 설치 중…",
-    "vimLspInstallFailed": "{name} 설치 실패"
+    "lspFailed": "{name}을(를) 시작하지 못함",
+    "lspInstall": "설치",
+    "lspInstalling": "{name} 설치 중…",
+    "lspInstallFailed": "{name} 설치 실패"
   }
 }
