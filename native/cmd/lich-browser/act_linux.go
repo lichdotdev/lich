@@ -18,6 +18,34 @@ import (
 	"github.com/lichdotdev/lich/browserwire"
 )
 
+// osBrowser is what the Linux engine adds to the browser.
+type osBrowser struct {
+	// inputs are the input requests not answered yet, the first one acting.
+	inputs []func(next func())
+}
+
+// osPage is what the Linux engine adds to a page.
+type osPage struct {
+	// chooser is the file chooser the page waits on an answer for.
+	chooser *C.WebKitFileChooserRequest
+	// buttons are the mouse buttons held down, GDK's state bits.
+	buttons uint32
+	// waiting are the wire's input events the page has yet to get.
+	waiting []*waiter
+}
+
+// postToHandler posts a message to one of the page's WebKit message handlers.
+const postToHandler = "(handler, message) => webkit.messageHandlers[handler].postMessage(message)"
+
+var osHandlers = map[string]handler{
+	browserwire.Mouse:    awaited((*browser).mouse),
+	browserwire.Key:      awaited((*browser).key),
+	browserwire.Text:     awaited((*browser).text),
+	browserwire.Files:    now((*browser).answerFiles),
+	browserwire.Eval:     later((*browser).eval),
+	browserwire.Snapshot: later((*browser).snapshot),
+}
+
 var mouseKinds = map[string]C.int{browserwire.MouseMove: 0, browserwire.MouseDown: 1, browserwire.MouseUp: 2, browserwire.MouseWheel: 3}
 
 // mouseEvents and keyEvents are the DOM events a mouse or key event from the
@@ -173,43 +201,6 @@ type shot struct {
 	pixels              []byte
 	width, height, step int
 	err                 error
-}
-
-func (b *browser) draw(o browserwire.DrawParams) (any, error) {
-	p, err := b.page(o.Page)
-	if err != nil {
-		return nil, err
-	}
-	if p.drawing.offer(o.Script) {
-		p.sendDrawing(o.Script)
-	}
-	return nil, nil
-}
-
-func (p *page) sendDrawing(script string) {
-	s := C.CString(script)
-	defer C.free(unsafe.Pointer(s))
-	C.lich_tab_draw(p.front.c, s, C.uintptr_t(p.key))
-}
-
-//export lichDrawn
-func lichDrawn(key C.uintptr_t) {
-	p := the.byKey[uintptr(key)]
-	if p == nil {
-		return
-	}
-	if script, ok := p.drawing.done(); ok {
-		p.sendDrawing(script)
-	}
-}
-
-// layerVisibility shows or hides the window's layer.
-const layerVisibility = `(h => h && (h.style.visibility = %q))(document.getElementById(%q))`
-
-func (t *tab) run(script string) {
-	s := C.CString(script)
-	defer C.free(unsafe.Pointer(s))
-	C.lich_tab_run(t.c, s)
 }
 
 func (b *browser) snapshot(o browserwire.SnapshotParams, done func(any, error)) {

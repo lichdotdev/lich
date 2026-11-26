@@ -38,10 +38,10 @@ func main() {
 	}
 	the = newBrowser(newWire(out))
 	go func() {
-		if err := the.wire.read(os.Stdin, func(req browserwire.Request) { onGTK(func() { the.handle(req) }) }); err != nil {
+		if err := the.wire.read(os.Stdin, func(req browserwire.Request) { onMain(func() { the.handle(req) }) }); err != nil {
 			log.Printf("stdin: %v", err)
 		}
-		onGTK(func() { C.lich_browser_quit() })
+		onMain(func() { C.lich_browser_quit() })
 	}()
 	C.lich_browser_main()
 }
@@ -60,8 +60,8 @@ func wireOut() (*os.File, error) {
 	return os.NewFile(uintptr(fd), "wire"), nil
 }
 
-// onGTK runs work on GTK's thread, after the work queued before it.
-func onGTK(work func()) {
+// onMain runs work on GTK's thread, after the work queued before it.
+func onMain(work func()) {
 	C.lich_browser_invoke(C.uintptr_t(cgo.NewHandle(work)))
 }
 

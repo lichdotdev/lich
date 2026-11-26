@@ -1,7 +1,9 @@
+//go:build linux || windows
+
 package main
 
 /*
-#include "browser_linux.h"
+#include "browser.h"
 */
 import "C"
 

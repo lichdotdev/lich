@@ -6,6 +6,9 @@
 #include <stdint.h>
 #include <webkit2/webkit2.h>
 
+// LichDialog is a JavaScript dialog the page waits on, held until answered.
+typedef WebKitScriptDialog LichDialog;
+
 // LichPage is what a page's tabs share: cookies and storage, its scripts, its
 // downloads. key is the Go page's, which a callback names it by.
 typedef struct LichTab LichTab;
@@ -46,9 +49,12 @@ void lich_browser_set_app(unsigned long xid);
 
 LichPage *lich_page_new(uintptr_t key, const char *script);
 void lich_page_free(LichPage *page);
+int lich_page_popped(LichPage *page);
+void lich_free(void *p);
 
 LichTab *lich_tab_new(LichPage *page, WebKitWebView *related, uintptr_t key, int width, int height);
 void lich_tab_close(LichTab *tab);
+uint64_t lich_tab_xid(LichTab *tab);
 void lich_tab_close_inspector(LichTab *tab);
 void lich_tab_resize(LichTab *tab, int width, int height);
 void lich_tab_zoom(LichTab *tab, double scale);
@@ -79,6 +85,6 @@ void lich_page_show(LichPage *page, LichTab *tab);
 void lich_page_pop_in(LichPage *page);
 void lich_page_raise(LichPage *page);
 
-void lich_dialog_answer(WebKitScriptDialog *dialog, int accept, const char *text);
+void lich_dialog_answer(LichDialog *dialog, int accept, const char *text);
 void lich_files_answer(WebKitFileChooserRequest *request, const char **paths, int n);
 #endif
