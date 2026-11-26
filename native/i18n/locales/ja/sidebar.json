@@ -52,6 +52,7 @@
     "prUnreadable": "読み込めませんでした: {error}",
     "prAlsoLinked": "このセッションのほかの関連: {numbers}",
     "closeSession": "セッションを閉じる",
+    "closeChildSessions": "子セッションを閉じる",
     "fork": "フォーク",
     "forkHere": "ここで",
     "forkWorktree": "ワークツリー…",

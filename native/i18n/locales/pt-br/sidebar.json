@@ -52,6 +52,7 @@
     "prUnreadable": "Não foi possível ler: {error}",
     "prAlsoLinked": "Também nesta sessão: {numbers}",
     "closeSession": "Fechar sessão",
+    "closeChildSessions": "Fechar as sessões filhas",
     "fork": "Fork",
     "forkHere": "Aqui",
     "forkWorktree": "Worktree…",

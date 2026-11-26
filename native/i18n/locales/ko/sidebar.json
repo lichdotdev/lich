@@ -51,6 +51,7 @@
     "prUnreadable": "읽을 수 없습니다: {error}",
     "prAlsoLinked": "이 세션의 다른 항목: {numbers}",
     "closeSession": "세션 닫기",
+    "closeChildSessions": "하위 세션 닫기",
     "fork": "포크",
     "forkHere": "여기서",
     "forkWorktree": "worktree…",

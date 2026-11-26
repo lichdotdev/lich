@@ -54,6 +54,7 @@
     "prUnreadable": "Не удалось прочитать: {error}",
     "prAlsoLinked": "Ещё в этой сессии: {numbers}",
     "closeSession": "Закрыть сессию",
+    "closeChildSessions": "Закрыть дочерние сессии",
     "fork": "Форк",
     "forkHere": "Здесь",
     "forkWorktree": "Worktree…",

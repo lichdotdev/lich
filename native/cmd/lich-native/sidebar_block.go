@@ -356,6 +356,8 @@ func (s *sidebar) blockRow(gtx C, th *ui.Theme, st *blockState, b blockView, r s
 	sv.place.cut, sv.place.loose = st.drag.cut(sv.ID, gtx.Now), st.drag.loose(sv.ID, gtx.Now)
 	if b.ofLayout {
 		sv.place.kids = 0
+	} else {
+		sv.place.descendants = descendantsOf(b.sessions, sv.ID)
 	}
 	folders := slices.DeleteFunc(slices.Clone(f.view.folders), func(name string) bool { return name == sv.Folder })
 	face := func(gtx C) D {
