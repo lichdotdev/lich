@@ -111,6 +111,18 @@ func (b *browser) answerFiles(o browserwire.FilesParams) (any, error) {
 	return nil, nil
 }
 
+func (b *browser) text(o browserwire.TextParams) (*page, string, error) {
+	p, err := b.page(o.Page)
+	if err != nil {
+		return nil, "", err
+	}
+	text := C.CString(o.Text)
+	defer C.free(unsafe.Pointer(text))
+	C.lich_tab_focus(p.front.c)
+	C.lich_tab_text(p.front.c, text)
+	return p, "", nil
+}
+
 type evaluated struct {
 	json string
 	err  error

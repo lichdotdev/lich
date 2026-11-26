@@ -8,7 +8,6 @@ import "C"
 
 import (
 	"fmt"
-	"unsafe"
 
 	"github.com/lichdotdev/lich/browserwire"
 )
@@ -76,16 +75,4 @@ func (b *browser) key(o browserwire.KeyParams) (*page, string, error) {
 	C.lich_tab_focus(p.front.c)
 	C.lich_tab_key(p.front.c, press, C.guint(v), C.guint(modState(o.Mods)))
 	return p, event, nil
-}
-
-func (b *browser) text(o browserwire.TextParams) (*page, string, error) {
-	p, err := b.page(o.Page)
-	if err != nil {
-		return nil, "", err
-	}
-	text := C.CString(o.Text)
-	defer C.free(unsafe.Pointer(text))
-	C.lich_tab_focus(p.front.c)
-	C.lich_tab_text(p.front.c, text)
-	return p, "", nil
 }
