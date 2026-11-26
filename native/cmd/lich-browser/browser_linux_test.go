@@ -464,6 +464,45 @@ func TestTheWindowsLayerDrawsTheLatestAndABareSnapshotLeavesItOut(t *testing.T) 
 	}
 }
 
+// tabsWhere waits for the page's tabs to match ok, from index from on.
+func (c *client) tabsWhere(from int, ok func([]browserwire.Tab) bool) []browserwire.Tab {
+	c.t.Helper()
+	var ev browserwire.TabsEvent
+	c.event(from, browserwire.EventTabs, func(raw json.RawMessage) bool {
+		return json.Unmarshal(raw, &ev) == nil && ok(ev.Tabs)
+	})
+	return ev.Tabs
+}
+
+// WebKit's inspector is a tab of the page's, as Chrome's DevTools are in the
+// pane, never a window of its own; every request still acts on the page.
+func TestTheInspectorIsATabAfterThePage(t *testing.T) {
+	c := start(t)
+	c.open("b1", "data:text/html,<title>Inspected</title>", 400, 300, 1)
+	from := c.mark()
+	c.must(browserwire.Inspect, browserwire.PageParams{Page: "b1"}, nil)
+	tabs := c.tabsWhere(from, func(tabs []browserwire.Tab) bool { return len(tabs) == 2 })
+	page, tools := tabs[0], tabs[1]
+	if !tools.DevTools || !tools.Front || page.Front || tools.XID == 0 || tools.XID == page.XID {
+		t.Fatalf("tabs %+v: want the inspector after the page, in front, in an X window of its own", tabs)
+	}
+	if got := c.eval("b1", "document.title"); got != `"Inspected"` {
+		t.Fatalf("with the inspector in front eval read %s, want the page's title", got)
+	}
+	from = c.mark()
+	c.must(browserwire.SelectTab, browserwire.TabParams{Page: "b1", Tab: page.ID}, nil)
+	c.tabsWhere(from, func(tabs []browserwire.Tab) bool { return len(tabs) == 2 && tabs[0].Front && !tabs[1].Front })
+	from = c.mark()
+	c.must(browserwire.Inspect, browserwire.PageParams{Page: "b1"}, nil)
+	c.tabsWhere(from, func(tabs []browserwire.Tab) bool { return len(tabs) == 2 && tabs[1].Front })
+	from = c.mark()
+	c.must(browserwire.CloseTab, browserwire.TabParams{Page: "b1", Tab: tools.ID}, nil)
+	tabs = c.tabsWhere(from, func(tabs []browserwire.Tab) bool { return len(tabs) == 1 })
+	if !tabs[0].Front || tabs[0].DevTools {
+		t.Fatalf("after closing the inspector, tabs %+v: want the page alone in front", tabs)
+	}
+}
+
 func TestARequestForAPageNotOpenFails(t *testing.T) {
 	c := start(t)
 	if err := c.call(browserwire.Eval, browserwire.EvalParams{Page: "b9", Script: "1"}, nil); err == nil || !strings.Contains(err.Error(), "b9") {

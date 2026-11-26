@@ -125,10 +125,16 @@ func (p *webkitPage) isFront(tab string) bool {
 func (p *webkitPage) setTabs(tabs []browserwire.Tab) {
 	out := make([]api.BrowserTab, 0, len(tabs))
 	var front *browserwire.Tab
+	page := -1
 	for i, t := range tabs {
-		out = append(out, api.BrowserTab{ID: t.ID, URL: t.URL, Title: t.Title, Front: t.Front, Loading: t.Loading, Icon: tabIcon(t), XID: t.XID})
-		if t.Front {
-			front = &tabs[i]
+		out = append(out, api.BrowserTab{ID: t.ID, URL: t.URL, Title: t.Title, Front: t.Front, Loading: t.Loading, Icon: tabIcon(t), XID: t.XID, DevTools: t.DevTools})
+		if !t.DevTools {
+			page = i
+		}
+		// A shown inspector stands for the page tab before it, which the
+		// agent and every request still act on.
+		if t.Front && page >= 0 {
+			front = &tabs[page]
 		}
 	}
 	p.mu.Lock()

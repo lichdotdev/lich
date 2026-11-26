@@ -101,7 +101,7 @@ import; this table is what each one does.
 | `size` | `page`, `w`, `h` | | the layout size while no window shows it |
 | `dialog` | `page`, `accept`, `text` | | answers the open JavaScript dialog |
 | `files` | `page`, `paths` | | answers the open file chooser; none cancels it |
-| `inspect` | `page` | | WebKit's inspector on the front tab, in a window of its own |
+| `inspect` | `page` | | WebKit's inspector of the front tab, as a `devtools` tab right after it, brought to the front; the same tab when it is open already |
 | `popOut` | `page` | | the page in a window of its own, as Open in a window: same page, nothing reloads; its tabs' `xid` go 0 while it is out |
 | `popIn` | `page` | | the page back out of its own window, for the pane to embed again |
 | `raise` | `page` | | brings a popped-out page's window to the front |
@@ -111,7 +111,7 @@ import; this table is what each one does.
 
 | event | params | when |
 |---|---|---|
-| `tabs` | `page`, `tabs` (`id`, `url`, `title`, `loading`, `front`, `xid`, `icon`) | a tab opens, closes, comes to the front, or changes URL, title, icon or loading |
+| `tabs` | `page`, `tabs` (`id`, `url`, `title`, `loading`, `front`, `xid`, `icon`, `devtools`) | a tab opens, closes, comes to the front, or changes URL, title, icon or loading. A `devtools` tab is the inspector of the tab before it, with an X window of its own; while it is `front` every request still acts on the tab it inspects. `selectTab` on it shows it, `closeTab` closes the inspector |
 | `load` | `page`, `tab`, `step` (`started`, `committed`, `finished`, `failed`), `url`, `at`, `error`, `download` | each main-frame load step; `failed` carries WebKit's error text in `error`, and `download` when the navigation turned into a download instead |
 | `request` | `page`, `tab`, `id`, `type` (`fetch`, `xhr`, `document`, `script`, `stylesheet`, `image`, `font`, `media`, `other`), `started` or `finished`, `at` | each request of the front tab, for `Settle`: `finished` names the `id` that started, however it ended |
 | `console` | `page`, `text` | an error the page's console shows, or one it did not catch |

@@ -12,7 +12,8 @@ window the window embeds over the pane (`docs/lich-browser.md`,
 the pane's input, relaunching at another scale and Chrome's DevTools is the
 Chrome page's, which Windows, macOS and Linux without either keep. With
 lich-browser a scale or zoom change reaches the page as its zoom, DevTools is
-WebKit's inspector in a window of its own, and Open in a window moves the
+WebKit's inspector as a tab of the pane's (an X window of its own the window
+embeds as it does the page's), and Open in a window moves the
 same page out (`popOut`), nothing reloaded or lost.
 
 ## Why frames and not a webview

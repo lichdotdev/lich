@@ -105,7 +105,7 @@ var handlers = map[string]handler{
 	browserwire.Reload:    now(onFront(func(t *tab) { C.lich_tab_reload(t.c) })),
 	browserwire.Back:      now(onFront(func(t *tab) { C.lich_tab_back(t.c) })),
 	browserwire.Forward:   now(onFront(func(t *tab) { C.lich_tab_forward(t.c) })),
-	browserwire.Inspect:   now(onFront(func(t *tab) { C.lich_tab_inspect(t.c) })),
+	browserwire.Inspect:   now((*browser).inspect),
 	browserwire.Zoom:      now((*browser).zoom),
 	browserwire.Size:      now((*browser).size),
 	browserwire.Mouse:     awaited((*browser).mouse),

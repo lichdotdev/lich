@@ -2396,7 +2396,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   sandbox!", which the agent reads as the browser's error.
 - **A page in lich-browser has no pause for the agent to hear** (`internal/browser/webkit*.go`,
   `docs/lich-browser.md`): on Linux with an X display and `lich-browser` beside `lich`, every page lives there,
-  and DevTools is WebKit's inspector in a window of its own. Nothing on the wire says the page stopped in its
+  and DevTools is WebKit's inspector, a tab of the pane's. Nothing on the wire says the page stopped in its
   debugger, so the agent's tools do not fail naming the pause as they do on a Chrome page: a read answers with the
   document as it stood, and a click or a key waits on the paused page until the person resumes it or the call
   times out.

@@ -261,7 +261,7 @@ func (p *webkitPage) tabCount(id string) (int, error) {
 	return len(p.tabs), nil
 }
 
-// DevTools is WebKit's inspector on the front tab, in a window of its own.
+// DevTools is WebKit's inspector of the front tab, as a tab of the pane's.
 func (p *webkitPage) DevTools(ctx context.Context) error {
 	return p.do(ctx, browserwire.Inspect, browserwire.PageParams{Page: p.id}, nil)
 }

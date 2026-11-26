@@ -127,6 +127,38 @@ func TestWebkitAgentScreenshotLeavesTheWindowsLayerOut(t *testing.T) {
 	}
 }
 
+// lich-browser's inspector is a tab of the pane's after the page it
+// inspects; the agent never sees it, and the page stays where the agent is.
+func TestWebkitInspectorIsThePanesTabNeverTheAgents(t *testing.T) {
+	f := newFakeLichBrowser(t)
+	s, out := wkService(t, f)
+	h, err := s.Open("s", "https://example.com/")
+	if err != nil {
+		t.Fatal(err)
+	}
+	page := f.onlyPage()
+	f.send(browserwire.EventTabs, browserwire.TabsEvent{Page: page, Tabs: []browserwire.Tab{
+		{ID: "t1", URL: "https://example.com/", Title: "Title of https://example.com/", XID: 0x400001},
+		{ID: "t9", Title: "Web Inspector", DevTools: true, Front: true, XID: 0x400009},
+	}})
+	waitFor(t, "the inspector's tab in the pane", func() bool {
+		st := out.states()
+		tabs := st[len(st)-1].Tabs
+		return len(tabs) == 2 && tabs[1].DevTools && tabs[1].Front && tabs[1].XID == 0x400009
+	})
+	tabs, err := s.Tabs("s")
+	if err != nil || len(tabs) != 1 || tabs[0].ID != "t1" || !tabs[0].Front {
+		t.Fatalf("agent's tabs %+v, %v: want the page alone, in front", tabs, err)
+	}
+	if h, _ := s.Info(h.ID, ""); h.Title == "Web Inspector" {
+		t.Fatal("the inspector's title became the page's")
+	}
+	st := out.states()
+	if last := st[len(st)-1]; last.Title != "Title of https://example.com/" || last.URL != "https://example.com/" {
+		t.Fatalf("state %q %q: want the inspected page's", last.URL, last.Title)
+	}
+}
+
 func TestWebkitHelloRefusesAnotherWire(t *testing.T) {
 	f := newFakeLichBrowser(t)
 	f.version = browserwire.Version + 1
