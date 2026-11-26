@@ -7,10 +7,6 @@ import (
 	"github.com/lichdotdev/lich/internal/restart"
 )
 
-// BrowserEnv pins the lich-browser to start, by path, as restart.NativeEnv
-// pins the window.
-const BrowserEnv = "LICH_BROWSER"
-
 // findLichBrowser is the lich-browser beside this lich, when there is an X
 // display for its pages: the window embeds them as X windows, so Wayland
 // without XWayland keeps Chrome (docs/lich-browser.md).

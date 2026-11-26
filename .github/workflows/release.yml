@@ -116,7 +116,8 @@ jobs:
           name: lich-native
           path: |
             ${{ runner.temp }}/out/lich-native*
-            ${{ runner.temp }}/out/lich-browser
+            ${{ runner.temp }}/out/lich-browser*
+            ${{ runner.temp }}/out/WebView2Loader.dll
 
   # linux and windows build in parallel once the native window is built;
   # release fans in and publishes.
@@ -169,7 +170,7 @@ jobs:
       - name: Build Linux packages
         run: |
           chmod +x bin/lich-native bin/lich-browser
-          rm bin/lich-native.exe
+          rm bin/lich-native.exe bin/lich-browser.exe bin/WebView2Loader.dll
           task package
 
       - name: Assemble Linux assets
@@ -245,7 +246,7 @@ jobs:
         run: |
           bin/lich-setup.exe /VERYSILENT /SUPPRESSMSGBOXES /NORESTART /LOG="$RUNNER_TEMP/setup.log"
           app="$LOCALAPPDATA/Programs/lich"
-          test -f "$app/lich.exe" && test -f "$app/lich-native.exe"
+          test -f "$app/lich.exe" && test -f "$app/lich-native.exe" && test -f "$app/lich-browser.exe" && test -f "$app/WebView2Loader.dll"
           export APPDATA="$RUNNER_TEMP/appdata" LICH_LISTEN_PORT=47899
           config="$APPDATA/lich"
           mkdir -p "$APPDATA"
@@ -299,9 +300,9 @@ jobs:
           cd bin
           tag="${GITHUB_REF_NAME//\//-}"
           mv lich-setup.exe "lich-${tag}-windows-amd64-setup.exe"
-          # The portable package: lich.exe with lich-native.exe beside it, the
-          # layout the installer lays down.
-          7z a -bso0 -bsp0 "lich-${tag}-windows-amd64.zip" lich.exe lich-native.exe
+          # The portable package: lich.exe with lich-native.exe, lich-browser.exe
+          # and its WebView2Loader.dll beside it, the layout the installer lays down.
+          7z a -bso0 -bsp0 "lich-${tag}-windows-amd64.zip" lich.exe lich-native.exe lich-browser.exe WebView2Loader.dll
           ls -la lich-${tag}-*
 
       - name: Upload Windows assets
