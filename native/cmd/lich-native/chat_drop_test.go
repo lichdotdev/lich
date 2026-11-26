@@ -4,14 +4,16 @@ import (
 	"image"
 	"net/url"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/lichdotdev/lich/api"
 )
 
-// fileURI is path as a file manager lists it in a drag's text/uri-list.
+// fileURI is path as a file manager lists it in a drag's text/uri-list:
+// file:///C:/x on Windows, as Gio's drop target writes it, not file://C:/x.
 func fileURI(path string) string {
-	return (&url.URL{Scheme: "file", Path: filepath.ToSlash(path)}).String() + "\r\n"
+	return (&url.URL{Scheme: "file", Path: "/" + strings.TrimPrefix(filepath.ToSlash(path), "/")}).String() + "\r\n"
 }
 
 // A file and an image dropped on a session drawn as a chat land in its
