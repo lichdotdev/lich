@@ -71,7 +71,7 @@ func chatArgs(a spawnArgs, l ChatLaunch) []string {
 	switch a.kind {
 	case providers.Claude:
 		return slices.Concat(claudeChatArgs, claudeLaunchArgs(l), providerArgs(
-			a.kind, a.name, a.resume, a.model, a.effort, a.lichBin, a.agent, a.plugin, false, a.skipPermissions, a.ultracode, a.route, a.lang,
+			a.kind, a.name, a.resume, a.model, a.effort, a.lichBin, a.agent, a.plugin, a.lib, false, a.skipPermissions, a.ultracode, a.route, a.lang,
 		))
 	case providers.Kiro:
 		model := modelArgs(a.kind, a.model, a.resume)
@@ -87,7 +87,7 @@ func chatArgs(a spawnArgs, l ChatLaunch) []string {
 		// app-server takes neither --model nor the skip-permissions flag, which
 		// the protocol sets (0.170.0).
 		return slices.Concat(confinedTrustArgs(a.kind, a.cwd, a.confined), codexBriefingArgs(a.kind, a.resume, a.route, a.lang),
-			mcpArgs(a.kind, a.lichBin), []string{codexAppServerSubcmd})
+			libraryMCPArgs(a.kind, mcpArgs(a.kind, a.lichBin), a.lib.MCP), []string{codexAppServerSubcmd})
 	}
 	if srv := openCodeServer(a.kind, a.oc2, l); srv != nil {
 		return []string{acpSubcmd, openCodePortFlag, strconv.Itoa(srv.Port)}
@@ -95,7 +95,7 @@ func chatArgs(a spawnArgs, l ChatLaunch) []string {
 	// oh-my-pi's root takes -e before the subcommand (measured on 19.1.1).
 	// Cursor's ACP server runs no plugin hooks, so it is handed none.
 	if a.kind == providers.OMP {
-		return slices.Concat(pluginArgs(a.kind, a.plugin), []string{acpSubcmd})
+		return slices.Concat(pluginArgs(a.kind, a.plugin), librarySkillArgs(a.kind, a.lib), []string{acpSubcmd})
 	}
 	return []string{acpSubcmd}
 }

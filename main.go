@@ -30,6 +30,7 @@ import (
 	"github.com/lichdotdev/lich/internal/drop"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/extensions"
+	"github.com/lichdotdev/lich/internal/library"
 	"github.com/lichdotdev/lich/internal/logging"
 	"github.com/lichdotdev/lich/internal/newtab"
 	"github.com/lichdotdev/lich/internal/ompprofile"
@@ -391,6 +392,15 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 	// Codex's profiles included (agentplugin.Ensure).
 	plugins.SetInUse(term.PluginReleasesInUse)
 	go plugins.Watch()
+	// lich's library of skills and MCP servers, shared by every profile, and
+	// what each provider holds beside it, watched for the screens.
+	lib := library.New(db, hub.Emit, libraryProfiles, func() string {
+		dir, _, _ := agentplugin.BundleDir()
+		return dir
+	})
+	routes.Library(dispatcher, lib)
+	term.SetLibrary(lib)
+	go lib.Watch(context.Background())
 	term.SetPluginEnsure(plugins.EnsureFor)
 	// Every Claude Code profile gets the lich plugin once it is logged in, run as
 	// that profile so its account's plugin policy applies; a profile with a
@@ -960,4 +970,26 @@ func wireNewTab(db *store.Service, term *terminal.Service, svcs *services.Servic
 	previews.SetNewTab(pages.Handler())
 	brows.SetNewTab(browser.NewTab{URL: previews.NewTabURL, Is: previews.IsNewTab, Visit: pages.Visit, Look: pages.Look})
 	return pages.Forget
+}
+
+// libraryProfiles are a provider's profiles for the library's switches,
+// Personal first, nil for a provider without any.
+func libraryProfiles(provider string) []api.Profile {
+	var list func() ([]api.Profile, error)
+	switch provider {
+	case providers.Claude:
+		list = claudeprofile.List
+	case providers.Codex:
+		list = codexprofile.List
+	case providers.OMP:
+		list = ompprofile.List
+	default:
+		return nil
+	}
+	profiles, err := list()
+	if err != nil {
+		slog.Warn("list profiles for the library", "provider", provider, "err", err)
+		return nil
+	}
+	return profiles
 }

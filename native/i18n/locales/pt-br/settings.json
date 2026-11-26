@@ -32,7 +32,10 @@
       "help": "Ajuda",
       "services": "Serviços",
       "extensions": "Extensões",
-      "chat": "Chat"
+      "chat": "Chat",
+      "skills": "Skills",
+      "mcp": "Servidores MCP",
+      "plugins": "Plugins"
     },
     "notYet": "Ainda não está aqui"
   },
@@ -813,5 +816,22 @@
     "newChats": "Novos chats",
     "sessions": "Sessões",
     "advanced": "Avançado"
+  },
+  "librarySettings": {
+    "skillsSearchWords": "skill biblioteca mover",
+    "mcpSearchWords": "mcp servidor biblioteca mover",
+    "pluginsSearchWords": "plugin hooks lich",
+    "found": "Encontrados nos seus provedores",
+    "moveIn": "Mover para o lich",
+    "moveInAll": "Mover todos",
+    "noSkills": "Ainda não há skills na biblioteca do lich.",
+    "noMCP": "Ainda não há servidores MCP na biblioteca do lich.",
+    "reason": {
+      "notWritten": "O lich ainda não grava servidores MCP no {provider}"
+    },
+    "pluginBrings": "Hooks: {hooks} · skills: {skills} · servidores MCP: {mcp}",
+    "pluginLocked": "Toda sessão que o lich abre usa este plugin. Ele não pode ser desligado.",
+    "moveFailed": "Não foi possível mover {name}: {error}",
+    "setFailed": "Não foi possível mudar: {error}"
   }
 }

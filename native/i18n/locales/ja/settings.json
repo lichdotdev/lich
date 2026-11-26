@@ -32,7 +32,10 @@
       "help": "ヘルプ",
       "services": "サービス",
       "extensions": "拡張機能",
-      "chat": "チャット"
+      "chat": "チャット",
+      "skills": "スキル",
+      "mcp": "MCP サーバー",
+      "plugins": "プラグイン"
     },
     "notYet": "まだありません"
   },
@@ -813,5 +816,22 @@
     "newChats": "新しいチャット",
     "sessions": "セッション",
     "advanced": "詳細"
+  },
+  "librarySettings": {
+    "skillsSearchWords": "スキル ライブラリ 移動",
+    "mcpSearchWords": "mcp サーバー ライブラリ 移動",
+    "pluginsSearchWords": "プラグイン フック lich",
+    "found": "プロバイダーで見つかったもの",
+    "moveIn": "lich に移す",
+    "moveInAll": "すべて移す",
+    "noSkills": "lich のライブラリにはまだスキルがありません。",
+    "noMCP": "lich のライブラリにはまだ MCP サーバーがありません。",
+    "reason": {
+      "notWritten": "lich はまだ {provider} に MCP サーバーを書き込みません"
+    },
+    "pluginBrings": "フック: {hooks} · スキル: {skills} · MCP サーバー: {mcp}",
+    "pluginLocked": "lich が開くすべてのセッションで動きます。オフにはできません。",
+    "moveFailed": "{name} を移せませんでした: {error}",
+    "setFailed": "変更できませんでした: {error}"
   }
 }

@@ -31,7 +31,10 @@
       "help": "도움말",
       "services": "서비스",
       "extensions": "확장 프로그램",
-      "chat": "채팅"
+      "chat": "채팅",
+      "skills": "스킬",
+      "mcp": "MCP 서버",
+      "plugins": "플러그인"
     },
     "notYet": "아직 여기에 없습니다"
   },
@@ -805,5 +808,22 @@
     "newChats": "새 채팅",
     "sessions": "세션",
     "advanced": "고급"
+  },
+  "librarySettings": {
+    "skillsSearchWords": "스킬 라이브러리 옮기기",
+    "mcpSearchWords": "mcp 서버 라이브러리 옮기기",
+    "pluginsSearchWords": "플러그인 훅 lich",
+    "found": "프로바이더에서 찾은 항목",
+    "moveIn": "lich로 옮기기",
+    "moveInAll": "모두 옮기기",
+    "noSkills": "lich 라이브러리에 아직 스킬이 없습니다.",
+    "noMCP": "lich 라이브러리에 아직 MCP 서버가 없습니다.",
+    "reason": {
+      "notWritten": "lich는 아직 {provider}에 MCP 서버를 쓰지 않습니다"
+    },
+    "pluginBrings": "훅: {hooks} · 스킬: {skills} · MCP 서버: {mcp}",
+    "pluginLocked": "lich가 여는 모든 세션에서 동작합니다. 끌 수 없습니다.",
+    "moveFailed": "{name}을(를) 옮기지 못했습니다: {error}",
+    "setFailed": "바꾸지 못했습니다: {error}"
   }
 }

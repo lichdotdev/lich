@@ -32,7 +32,10 @@
       "help": "Help",
       "services": "Services",
       "extensions": "Extensions",
-      "chat": "Chat"
+      "chat": "Chat",
+      "skills": "Skills",
+      "mcp": "MCP servers",
+      "plugins": "Plugins"
     },
     "notYet": "Not here yet"
   },
@@ -813,5 +816,22 @@
     "newChats": "New chats",
     "sessions": "Sessions",
     "advanced": "Advanced"
+  },
+  "librarySettings": {
+    "skillsSearchWords": "skill library move in",
+    "mcpSearchWords": "mcp server library move in",
+    "pluginsSearchWords": "plugin hooks lich",
+    "found": "Found in your providers",
+    "moveIn": "Move in",
+    "moveInAll": "Move in all",
+    "noSkills": "No skills in lich's library yet.",
+    "noMCP": "No MCP servers in lich's library yet.",
+    "reason": {
+      "notWritten": "lich does not write MCP servers into {provider} yet"
+    },
+    "pluginBrings": "Hooks: {hooks} · skills: {skills} · MCP servers: {mcp}",
+    "pluginLocked": "Every session lich starts runs it. It cannot be turned off.",
+    "moveFailed": "Could not move {name} in: {error}",
+    "setFailed": "Could not change it: {error}"
   }
 }

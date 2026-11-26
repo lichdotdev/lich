@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/lichdotdev/lich/internal/codexprofile"
+	"github.com/lichdotdev/lich/internal/library"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
@@ -320,14 +321,15 @@ func flagValue(value string) (string, bool) {
 // come last. Kiro's subcommand opens the session rather than a conversation, so
 // it comes before every flag.
 func providerArgs(
-	kind, name, resume, model, effort, lichBin, agent, plugin string, fork, skipPermissions, ultracode bool,
+	kind, name, resume, model, effort, lichBin, agent, plugin string, lib library.Delivery, fork, skipPermissions, ultracode bool,
 	route relay.SubagentRoute, lang prompt.Lang,
 ) []string {
-	mcp := mcpArgs(kind, lichBin)
+	mcp := libraryMCPArgs(kind, mcpArgs(kind, lichBin), lib.MCP)
 	args := append([]string{}, subcommandArgs(kind)...)
 	args = append(args, nameArgs(kind, name, resume, fork)...)
 	args = append(args, agentArgs(kind, agent)...)
 	args = append(args, pluginArgs(kind, plugin)...)
+	args = append(args, librarySkillArgs(kind, lib)...)
 	args = append(args, resumeArgs(kind, resume, fork)...)
 	args = append(args, skipPermissionArgs(kind, skipPermissions)...)
 	args = append(args, modelArgs(kind, model, resume)...)

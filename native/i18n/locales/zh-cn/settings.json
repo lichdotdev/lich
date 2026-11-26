@@ -32,7 +32,10 @@
       "help": "帮助",
       "services": "服务",
       "extensions": "扩展",
-      "chat": "聊天"
+      "chat": "聊天",
+      "skills": "技能",
+      "mcp": "MCP 服务器",
+      "plugins": "插件"
     },
     "notYet": "这里还没有"
   },
@@ -812,5 +815,22 @@
     "newChats": "新聊天",
     "sessions": "会话",
     "advanced": "高级"
+  },
+  "librarySettings": {
+    "skillsSearchWords": "技能 库 移入",
+    "mcpSearchWords": "mcp 服务器 库 移入",
+    "pluginsSearchWords": "插件 钩子 lich",
+    "found": "在你的提供方中找到",
+    "moveIn": "移入 lich",
+    "moveInAll": "全部移入",
+    "noSkills": "lich 的库里还没有技能。",
+    "noMCP": "lich 的库里还没有 MCP 服务器。",
+    "reason": {
+      "notWritten": "lich 还不会把 MCP 服务器写入 {provider}"
+    },
+    "pluginBrings": "钩子：{hooks} · 技能：{skills} · MCP 服务器：{mcp}",
+    "pluginLocked": "lich 打开的每个会话都会运行它，无法关闭。",
+    "moveFailed": "无法移入 {name}：{error}",
+    "setFailed": "无法更改：{error}"
   }
 }

@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/library"
 	"os"
 	"path/filepath"
 	"slices"
@@ -112,8 +113,8 @@ func TestSubagentRouteWithoutTheCardPlugin(t *testing.T) {
 // own subagent tool; every other spawn keeps the line against it.
 func TestBriefingFollowsSubagentCards(t *testing.T) {
 	t.Parallel()
-	cards := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", "", false, false, false, relay.RouteCards, prompt.English)
-	plain := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", "", false, false, false, relay.RouteSessions, prompt.English)
+	cards := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", "", library.Delivery{}, false, false, false, relay.RouteCards, prompt.English)
+	plain := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", "", library.Delivery{}, false, false, false, relay.RouteSessions, prompt.English)
 	briefing := func(args []string) string {
 		at := slices.Index(args, "--append-system-prompt")
 		if at < 0 || at+1 >= len(args) {

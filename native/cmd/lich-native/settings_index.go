@@ -145,6 +145,15 @@ var settingsSections = []settingsSection{
 	}},
 	{id: sectionProviders, labelKey: "settings.settings.section.providers", icon: icons.Lucide("blocks"), navGroupKey: navGroupAgents,
 		rows: providerEntries(), unported: append(providerBinEntries(), providerChatPrefEntries()...)},
+	{id: sectionSkills, labelKey: "settings.settings.section.skills", icon: icons.Lucide("sparkles"), navGroupKey: navGroupAgents, rows: []settingEntry{
+		{titleKey: "settings.settings.section.skills", alsoKey: "settings.librarySettings.skillsSearchWords", key: librarySkillsKey},
+	}},
+	{id: sectionMCP, labelKey: "settings.settings.section.mcp", icon: icons.Lucide("plug"), navGroupKey: navGroupAgents, rows: []settingEntry{
+		{titleKey: "settings.settings.section.mcp", alsoKey: "settings.librarySettings.mcpSearchWords", key: libraryMCPKey},
+	}},
+	{id: sectionPlugins, labelKey: "settings.settings.section.plugins", icon: icons.Lucide("package"), navGroupKey: navGroupAgents, rows: []settingEntry{
+		{titleKey: "settings.settings.section.plugins", alsoKey: "settings.librarySettings.pluginsSearchWords", key: libraryPluginsKey},
+	}},
 	{id: sectionSandbox, labelKey: "settings.settings.section.sandbox", icon: icons.Lucide("shield-check"), navGroupKey: navGroupAgents, rows: []settingEntry{
 		{titleKey: "settings.sandboxSettings.confinedTitle", alsoKey: "settings.sandboxSettings.confinedSearchWords", key: sandboxLadderKey},
 		{titleKey: "settings.sandboxSettings.sshTitle", alsoKey: "settings.sandboxSettings.sshSearchWords", key: sshAgentKey, scope: scopeOverridable, groupKey: "settings.sandboxSettings.carryTitle"},
