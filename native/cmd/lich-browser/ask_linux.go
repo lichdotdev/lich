@@ -8,90 +8,17 @@ import "C"
 
 import (
 	"context"
-	"errors"
 	"log"
 	"net/http"
 	"net/url"
 	"unsafe"
-
-	"github.com/lichdotdev/lich/browserwire"
 )
 
-var (
-	errNoDialog  = errors.New("no dialog is open")
-	errNoChooser = errors.New("no file chooser is open")
-)
-
-// WebKitScriptDialogType's values, in its order.
-var dialogTypes = [...]string{browserwire.DialogAlert, browserwire.DialogConfirm, browserwire.DialogPrompt, browserwire.DialogBeforeUnload}
-
-// lichDialog holds a dialog until the wire answers it. A page shows one at a
-// time; another of its tabs asking meanwhile is dismissed.
-//
-//export lichDialog
-func lichDialog(key C.uintptr_t, d *C.WebKitScriptDialog, kind C.int, message, text *C.char) C.int {
-	C.webkit_script_dialog_ref(d)
-	t := the.tabs[uintptr(key)]
-	if t == nil || t.page.dialog != nil || int(kind) >= len(dialogTypes) {
-		C.lich_dialog_answer(d, 0, nil)
-		return 1
-	}
-	t.page.dialog = d
-	the.wire.event(browserwire.EventDialog, browserwire.DialogEvent{Page: t.page.id, Dialog: &browserwire.JSDialog{
-		Type: dialogTypes[kind], Message: C.GoString(message), Default: C.GoString(text),
-	}})
-	return 1
-}
-
-func (b *browser) answerDialog(o browserwire.DialogParams) (any, error) {
-	p, err := b.page(o.Page)
-	if err != nil {
-		return nil, err
-	}
-	if p.dialog == nil {
-		return nil, errNoDialog
-	}
-	text := C.CString(o.Text)
-	defer C.free(unsafe.Pointer(text))
-	accept := C.int(0)
-	if o.Accept {
-		accept = 1
-	}
-	C.lich_dialog_answer(p.dialog, accept, text)
-	p.dialog = nil
-	b.wire.event(browserwire.EventDialog, browserwire.DialogEvent{Page: p.id})
-	return nil, nil
-}
-
-//export lichFiles
-func lichFiles(key C.uintptr_t, r *C.WebKitFileChooserRequest, multiple C.int) {
-	C.g_object_ref(C.gpointer(r))
-	t := the.tabs[uintptr(key)]
-	if t == nil || t.page.chooser != nil {
-		C.lich_files_answer(r, nil, 0)
-		return
-	}
-	t.page.chooser = r
-	the.wire.event(browserwire.EventFiles, browserwire.FilesEvent{Page: t.page.id, Multiple: multiple != 0})
-}
-
-func (b *browser) answerFiles(o browserwire.FilesParams) (any, error) {
-	p, err := b.page(o.Page)
-	if err != nil {
-		return nil, err
-	}
-	if p.chooser == nil {
-		return nil, errNoChooser
-	}
-	// NULL-terminated, as WebKit reads it.
-	paths := make([]*C.char, len(o.Paths)+1)
-	for i, path := range o.Paths {
-		paths[i] = C.CString(path)
-		defer C.free(unsafe.Pointer(paths[i]))
-	}
-	C.lich_files_answer(p.chooser, (**C.char)(unsafe.Pointer(&paths[0])), C.int(len(o.Paths)))
-	p.chooser = nil
-	return nil, nil
+// osTab is what the Linux engine adds to a tab.
+type osTab struct {
+	// repaired is the hosts whose chain the tab completed: a host failing
+	// again after it is not fetched for again.
+	repaired map[string]bool
 }
 
 //export lichTLS
@@ -116,7 +43,7 @@ func (t *tab) completeChain(u *url.URL, chain []byte) {
 		log.Printf("%s: certificate chain: %v", host, err)
 		return
 	}
-	onGTK(func() {
+	onMain(func() {
 		if the.tabs[t.key] != t || t.repaired[host] {
 			return
 		}

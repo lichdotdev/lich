@@ -11,16 +11,16 @@ extern void lichTabChanged(uintptr_t key, int icon);
 extern uintptr_t lichTabCreate(uintptr_t parent);
 extern void lichTabCreated(uintptr_t key, LichTab *tab);
 extern void lichTabClosing(uintptr_t key);
-extern int lichRequestStarted(uintptr_t key, char *uri, char *accept, int document);
+extern int lichRequestStarted(uintptr_t key, char *uri, char *accept, char *kind);
 extern void lichRequestFinished(uintptr_t key, int id);
 extern void lichCrashed(uintptr_t key);
-extern int lichDialog(uintptr_t key, WebKitScriptDialog *dialog, int type, char *message, char *text);
-extern void lichFiles(uintptr_t key, WebKitFileChooserRequest *request, int multiple);
+extern int lichDialog(uintptr_t key, LichDialog *dialog, int type, char *message, char *text);
+extern void lichFiles(uintptr_t key, LichChooser *request, int multiple);
 extern void lichConsole(uintptr_t page, char *text);
 extern void lichInputSeen(uintptr_t page, char *type);
 extern char *lichDownloadPath(uintptr_t page, char *suggested);
-extern void lichDownload(uintptr_t page, int guid, char *url, char *name, char *path, int state, gint64 received,
-                         gint64 total);
+extern void lichDownload(uintptr_t page, int guid, char *url, char *name, char *path, int state, int64_t received,
+                         int64_t total);
 
 static void load_changed(WebKitWebView *view, WebKitLoadEvent step, gpointer tab) {
 	lichLoad(((LichTab *)tab)->key, step, (char *)webkit_web_view_get_uri(view));
@@ -94,8 +94,8 @@ static void resource_started(WebKitWebView *view, WebKitWebResource *resource, W
 	LichTab *tab = data;
 	SoupMessageHeaders *headers = webkit_uri_request_get_http_headers(request);
 	const char *accept = headers ? soup_message_headers_get_one(headers, "Accept") : NULL;
-	int document = resource == webkit_web_view_get_main_resource(view);
-	int id = lichRequestStarted(tab->key, (char *)webkit_uri_request_get_uri(request), (char *)(accept ? accept : ""), document);
+	char *kind = resource == webkit_web_view_get_main_resource(view) ? "document" : "";
+	int id = lichRequestStarted(tab->key, (char *)webkit_uri_request_get_uri(request), (char *)(accept ? accept : ""), kind);
 	if (!id) {
 		return;
 	}
@@ -113,11 +113,13 @@ static void terminated(WebKitWebView *view, WebKitWebProcessTerminationReason re
 static gboolean script_dialog(WebKitWebView *view, WebKitScriptDialog *dialog, gpointer tab) {
 	int type = webkit_script_dialog_get_dialog_type(dialog);
 	const char *text = type == WEBKIT_SCRIPT_DIALOG_PROMPT ? webkit_script_dialog_prompt_get_default_text(dialog) : "";
+	webkit_script_dialog_ref(dialog);
 	lichDialog(((LichTab *)tab)->key, dialog, type, (char *)webkit_script_dialog_get_message(dialog), (char *)text);
 	return TRUE;
 }
 
 static gboolean file_chooser(WebKitWebView *view, WebKitFileChooserRequest *request, gpointer tab) {
+	g_object_ref(request);
 	lichFiles(((LichTab *)tab)->key, request, webkit_file_chooser_request_get_select_multiple(request));
 	return TRUE;
 }

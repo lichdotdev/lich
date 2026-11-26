@@ -3,13 +3,7 @@ package browser
 import (
 	"log/slog"
 	"os"
-
-	"github.com/lichdotdev/lich/internal/restart"
 )
-
-// BrowserEnv pins the lich-browser to start, by path, as restart.NativeEnv
-// pins the window.
-const BrowserEnv = "LICH_BROWSER"
 
 // findLichBrowser is the lich-browser beside this lich, when there is an X
 // display for its pages: the window embeds them as X windows, so Wayland
@@ -19,10 +13,5 @@ func findLichBrowser(logDir string) *lichBrowser {
 		slog.Info("browser: pages run in Chrome, no X display for lich-browser's")
 		return nil
 	}
-	path, err := restart.Companion(os.Getenv, BrowserEnv, "lich-browser", "build it from native/")
-	if err != nil {
-		slog.Info("browser: pages run in Chrome", "why", err)
-		return nil
-	}
-	return &lichBrowser{spawn: func() (*wireConn, error) { return spawnProcess(path, logDir) }}
+	return lichBrowserBeside(logDir, "build it from native/")
 }

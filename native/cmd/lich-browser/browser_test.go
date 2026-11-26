@@ -1,3 +1,5 @@
+//go:build linux || windows || darwin
+
 package main
 
 import (

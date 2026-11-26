@@ -1,7 +1,9 @@
+//go:build linux || windows || darwin
+
 package main
 
 /*
-#include "browser_linux.h"
+#include "browser.h"
 */
 import "C"
 

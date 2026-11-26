@@ -80,6 +80,12 @@ LichPage *lich_page_new(uintptr_t key, const char *script) {
 	return page;
 }
 
+int lich_page_popped(LichPage *page) { return page->popped != NULL; }
+
+void lich_free(void *p) { g_free(p); }
+
+uint64_t lich_tab_xid(LichTab *tab) { return tab->xid; }
+
 void lich_page_free(LichPage *page) {
 	g_signal_handlers_disconnect_by_data(page->context, page);
 	g_signal_handlers_disconnect_by_data(page->content, page);

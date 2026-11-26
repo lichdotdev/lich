@@ -387,7 +387,7 @@ func (u *window) browserPage(gtx C, p *browserPaneUI, session string, st api.Bro
 		// is cut out of it.
 		p.notes.cuts = append(p.notes.cuts, ui.RoundedCorners(image.Rectangle{Max: size}, gtx.Dp(ui.RadiusLG))...)
 		defer clip.Rect{Max: size}.Push(gtx.Ops).Pop()
-		u.nativeNotesInput(gtx, p, session, scale)
+		u.nativePageInput(gtx, p, session, scale, focused)
 		event.Op(gtx.Ops, &p.tag)
 		return
 	}

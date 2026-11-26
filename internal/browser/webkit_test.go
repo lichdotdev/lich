@@ -599,28 +599,7 @@ func TestWebkitPaneCalls(t *testing.T) {
 	if b, err := s.Icon(t.Context(), api.BrowserIconOptions{Key: key}); err != nil || len(b) == 0 {
 		t.Fatalf("icon %q = %v: want the tab's PNG", key, err)
 	}
-	for _, input := range []error{
-		mustNil(s.MouseInput(t.Context(), api.BrowserMouseOptions{ID: "s", Type: "move"})),
-		mustNil(s.KeyInput(t.Context(), api.BrowserKeyOptions{ID: "s", Type: "down"})),
-		mustNil(s.TextInput(t.Context(), api.BrowserTextOptions{ID: "s", Text: "x"})),
-	} {
-		if input != nil {
-			t.Fatal(input)
-		}
-	}
-	if n := len(f.called(browserwire.Mouse)) + len(f.called(browserwire.Key)) + len(f.called(browserwire.Text)); n != 0 {
-		t.Fatalf("%d pane inputs reached lich-browser, which takes them from the X server", n)
-	}
-	if _, err := s.MouseInput(t.Context(), api.BrowserMouseOptions{ID: "s", Type: "wheel", X: 5, Y: 6, DY: 120}); err != nil {
-		t.Fatal(err)
-	}
-	wheel := f.called(browserwire.Mouse)
-	if len(wheel) != 1 {
-		t.Fatalf("%d wheels reached lich-browser, want the one Select sends, which X gives the page none of", len(wheel))
-	}
-	if m := decodeParams[browserwire.MouseParams](t, wheel[0]); m.Kind != browserwire.MouseWheel || m.X != 5 || m.Y != 6 || m.DY != 120 {
-		t.Fatalf("wheel %+v, want the pane's at 5,6 by 120", m)
-	}
+	paneInputReachesThePage(t, s, f)
 }
 
 func TestWebkitWindowLayerIsNeverTheAgents(t *testing.T) {
@@ -664,3 +643,21 @@ func TestChromePageHasNoWindowLayer(t *testing.T) {
 }
 
 func mustNil(_ api.None, err error) error { return err }
+
+// A tabs event the engine sent before it heard the page's title arrives after
+// the read that told it: the page's title stays, as the navigation answered
+// it, and the event's empty one is no change.
+func TestWebkitATitleTheEngineHasNotHeardYetIsNoChange(t *testing.T) {
+	p := newWebkitPage(nil, "b1", 1, nil)
+	var told []string
+	p.onInfo = func(url, title string) { told = append(told, url+" "+title) }
+	p.url, p.title = "https://example.org/b", "Title of b"
+	p.setTabs([]browserwire.Tab{{ID: "t1", URL: "https://example.org/b", Front: true}})
+	if p.title != "Title of b" || len(told) != 0 {
+		t.Fatalf("title %q, told %v: want the title the page told kept", p.title, told)
+	}
+	p.setTabs([]browserwire.Tab{{ID: "t1", URL: "https://example.org/c", Front: true}})
+	if p.url != "https://example.org/c" || p.title != "" || len(told) != 1 {
+		t.Fatalf("url %q title %q, told %v: want another page's untitled tab told", p.url, p.title, told)
+	}
+}

@@ -17,7 +17,7 @@ static int injecting;
 static LichTab *keyed;
 static unsigned long app;
 
-void lich_browser_set_app(unsigned long xid) {
+void lich_browser_set_app(uint64_t xid) {
 	app = xid;
 	keyed = NULL;
 }

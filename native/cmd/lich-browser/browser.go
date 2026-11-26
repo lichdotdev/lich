@@ -1,14 +1,18 @@
+//go:build linux || windows || darwin
+
 package main
 
 /*
 #include <stdlib.h>
-#include "browser_linux.h"
+#include "browser.h"
 */
 import "C"
 
 import (
 	"encoding/json"
 	"fmt"
+	"maps"
+	"runtime/cgo"
 	"time"
 
 	"github.com/lichdotdev/lich/browserwire"
@@ -29,8 +33,7 @@ type browser struct {
 	keys  uintptr
 	// requests counts the requests told, each one's id.
 	requests int
-	// inputs are the input requests not answered yet, the first one acting.
-	inputs []func(next func())
+	osBrowser
 }
 
 func newBrowser(w *wire) *browser {
@@ -85,12 +88,14 @@ func later[P any](do func(b *browser, p P, done func(any, error))) handler {
 	}
 }
 
+// handlers are the requests every engine answers alike; each system's own
+// add the rest (osHandlers).
 var handlers = map[string]handler{
 	browserwire.Hello: now(func(*browser, struct{}) (any, error) {
 		return browserwire.HelloResult{Version: browserwire.Version}, nil
 	}),
 	browserwire.Window: now(func(_ *browser, p browserwire.WindowParams) (any, error) {
-		C.lich_browser_set_app(C.ulong(p.XID))
+		C.lich_browser_set_app(C.uint64_t(p.XID))
 		return nil, nil
 	}),
 	browserwire.Clock: now(func(b *browser, _ struct{}) (any, error) {
@@ -108,18 +113,14 @@ var handlers = map[string]handler{
 	browserwire.Inspect:   now((*browser).inspect),
 	browserwire.Zoom:      now((*browser).zoom),
 	browserwire.Size:      now((*browser).size),
-	browserwire.Mouse:     awaited((*browser).mouse),
-	browserwire.Key:       awaited((*browser).key),
-	browserwire.Text:      awaited((*browser).text),
 	browserwire.Dialog:    now((*browser).answerDialog),
-	browserwire.Files:     now((*browser).answerFiles),
 	browserwire.PopOut:    now((*browser).popOut),
 	browserwire.PopIn:     now((*browser).popIn),
 	browserwire.Raise:     now((*browser).raise),
 	browserwire.Draw:      now((*browser).draw),
-	browserwire.Eval:      later((*browser).eval),
-	browserwire.Snapshot:  later((*browser).snapshot),
 }
+
+func init() { maps.Copy(handlers, osHandlers) }
 
 // onFront is a request that does act on the page's front tab.
 func onFront(act func(*tab)) func(*browser, browserwire.PageParams) (any, error) {
@@ -131,4 +132,18 @@ func onFront(act func(*tab)) func(*browser, browserwire.PageParams) (any, error)
 		act(pg.front)
 		return nil, nil
 	}
+}
+
+// onMain runs work on the engine's thread, the one main runs its loop on,
+// after the work queued before it.
+func onMain(work func()) {
+	C.lich_browser_invoke(C.uintptr_t(cgo.NewHandle(work)))
+}
+
+//export lichBrowserRun
+func lichBrowserRun(handle C.uintptr_t) {
+	h := cgo.Handle(handle)
+	work := h.Value().(func())
+	h.Delete()
+	work()
 }

@@ -13,7 +13,24 @@ import (
 
 	"github.com/lichdotdev/lich/browserwire"
 	"github.com/lichdotdev/lich/internal/logging"
+	"github.com/lichdotdev/lich/internal/restart"
 )
+
+// BrowserEnv pins the lich-browser to start, by path, as restart.NativeEnv
+// pins the window.
+const BrowserEnv = "LICH_BROWSER"
+
+// lichBrowserBeside is the lich-browser beside this lich, or the one
+// BrowserEnv pins; nil when there is none, howToBuild ending the sentence the
+// log says so with, and the pages run in Chrome.
+func lichBrowserBeside(logDir, howToBuild string) *lichBrowser {
+	path, err := restart.Companion(os.Getenv, BrowserEnv, "lich-browser", howToBuild)
+	if err != nil {
+		slog.Info("browser: pages run in Chrome", "why", err)
+		return nil
+	}
+	return &lichBrowser{spawn: func() (*wireConn, error) { return spawnProcess(path, logDir) }}
+}
 
 // helloWait bounds lich-browser's start, up to its answer to hello: a GTK
 // and WebKit cold off the disk, well under pageWait.

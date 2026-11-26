@@ -1,8 +1,10 @@
+//go:build linux || windows || darwin
+
 package main
 
 /*
 #include <stdlib.h>
-#include "browser_linux.h"
+#include "browser.h"
 */
 import "C"
 
@@ -37,17 +39,13 @@ type page struct {
 	w, h  int
 	// downloads is the directory its downloads land in.
 	downloads string
-	// dialog and chooser are what the page waits on an answer for.
-	dialog  *C.WebKitScriptDialog
-	chooser *C.WebKitFileChooserRequest
-	// buttons are the mouse buttons held down, GDK's state bits.
-	buttons uint32
-	// waiting are the wire's input events the page has yet to get.
-	waiting []*waiter
+	// dialog is the JavaScript dialog the page waits on an answer for.
+	dialog *C.LichDialog
 	// drawing is the window's layer, one script in the page at a time.
 	drawing latest
 	// inspecting: the pane shows the front tab's inspector in its place.
 	inspecting bool
+	osPage
 }
 
 type tab struct {
@@ -60,12 +58,10 @@ type tab struct {
 	// failed is whether the load under way failed, so its finish is not
 	// told as well.
 	failed bool
-	// repaired is the hosts whose chain the tab completed: a host failing
-	// again after it is not fetched for again.
-	repaired map[string]bool
 	// devtools is the tab this tab's inspector is in, nil while closed;
 	// inspects is the tab an inspector's tab inspects.
 	devtools, inspects *tab
+	osTab
 }
 
 func (b *browser) page(id string) (*page, error) {
@@ -163,10 +159,7 @@ func (b *browser) settle(p *page) {
 		C.lich_dialog_answer(p.dialog, 0, nil)
 		p.dialog = nil
 	}
-	if p.chooser != nil {
-		C.lich_files_answer(p.chooser, nil, 0)
-		p.chooser = nil
-	}
+	p.cancelChooser()
 }
 
 func (b *browser) dropTab(t *tab) {
@@ -290,7 +283,7 @@ func (b *browser) relayout(p *page) {
 func (b *browser) sendTabs(p *page) {
 	ev := browserwire.TabsEvent{Page: p.id, Tabs: make([]browserwire.Tab, 0, len(p.tabs))}
 	for _, t := range p.tabs {
-		xid := uint64(t.c.xid)
+		xid := uint64(C.lich_tab_xid(t.c))
 		if p.poppedOut() {
 			xid = 0
 		}
@@ -299,7 +292,7 @@ func (b *browser) sendTabs(p *page) {
 			Loading: C.lich_tab_loading(t.c) != 0, Front: t == p.front && !p.inspecting, XID: xid, Icon: t.icon,
 		})
 		if t.devtools != nil {
-			dx := uint64(t.devtools.c.xid)
+			dx := uint64(C.lich_tab_xid(t.devtools.c))
 			if p.poppedOut() {
 				dx = 0
 			}

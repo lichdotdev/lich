@@ -1,7 +1,9 @@
+//go:build linux || windows || darwin
+
 package main
 
 /*
-#include "browser_linux.h"
+#include "browser.h"
 */
 import "C"
 
@@ -16,7 +18,7 @@ var (
 	errNotPopped = errors.New("the page is not in a window of its own")
 )
 
-func (p *page) poppedOut() bool { return p.c.popped != nil }
+func (p *page) poppedOut() bool { return C.lich_page_popped(p.c) != 0 }
 
 func (b *browser) popOut(o browserwire.PageParams) (any, error) {
 	p, err := b.page(o.Page)
@@ -72,5 +74,5 @@ func lichClosed(key C.uintptr_t) {
 	}
 	the.wire.event(browserwire.EventClosed, browserwire.PageParams{Page: p.id})
 	// Out of the window's own delete-event, which closing destroys.
-	onGTK(func() { _, _ = the.close(browserwire.PageParams{Page: p.id}) })
+	onMain(func() { _, _ = the.close(browserwire.PageParams{Page: p.id}) })
 }

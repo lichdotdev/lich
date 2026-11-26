@@ -145,7 +145,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends cmake nasm
 
-      - name: Build lich-native.exe
+      # lich-browser.exe and its WebView2Loader.dll land beside it.
+      - name: Build lich-native.exe and lich-browser.exe
         run: |
           LIBGHOSTTY_VT_WINDOWS="$HOME/libghostty-vt-windows" LIBJPEG_TURBO_WINDOWS="$HOME/libjpeg-turbo-windows" \
             ./build-windows.sh "$RUNNER_TEMP/out/lich-native.exe"
@@ -195,11 +196,14 @@ jobs:
           path: ${{ runner.temp }}/out
 
       # Like the Linux job, a render test that skips for want of a GPU fails
-      # the job: Windows always has one, WARP's software one at least.
+      # the job: Windows always has one, WARP's software one at least. The
+      # lich-browser wire tests drive the lich-browser.exe windows-build made,
+      # on the runner's own WebView2.
       - name: go test
         working-directory: native
         run: |
           out="$(cygpath -u "$RUNNER_TEMP")/out"
+          export LICH_BROWSER_TEST_BIN="$(cygpath -w "$out/lich-browser.exe")"
           status=0
           for exe in $(cd "$out/tests" && find . -name pkg.test.exe); do
             rel="$(dirname "$exe")"
@@ -303,8 +307,13 @@ jobs:
       - name: Build lich-native
         run: go build -trimpath -ldflags "-s -w" -o "$RUNNER_TEMP/lich-native" ./cmd/lich-native
 
-      - name: Check what lich-native asks of a machine
-        run: bash ../.github/scripts/mac-native-floor.sh "$RUNNER_TEMP/lich-native"
+      - name: Build lich-browser
+        run: go build -trimpath -ldflags "-s -w" -o "$RUNNER_TEMP/lich-browser" ./cmd/lich-browser
+
+      - name: Check what lich-native and lich-browser ask of a machine
+        run: |
+          bash ../.github/scripts/mac-native-floor.sh "$RUNNER_TEMP/lich-native"
+          bash ../.github/scripts/mac-native-floor.sh "$RUNNER_TEMP/lich-browser"
 
       - name: Build the backend
         working-directory: .
