@@ -24,15 +24,15 @@ type Elevation struct {
 
 var (
 	ElevationLow = Elevation{
-		dark:  []BoxShadow{{Y: 2, Blur: 6, Alpha: 0.3}},
+		dark:  []BoxShadow{{Y: 2, Blur: 6, Alpha: 0.16}},
 		light: []BoxShadow{{Y: 2, Blur: 6, Alpha: 0.08}},
 	}
 	ElevationMid = Elevation{
-		dark:  []BoxShadow{{Y: 12, Blur: 32, Alpha: 0.45}, {Y: 2, Blur: 6, Alpha: 0.3}},
+		dark:  []BoxShadow{{Y: 8, Blur: 24, Alpha: 0.22}, {Y: 1, Blur: 3, Alpha: 0.14}},
 		light: []BoxShadow{{Y: 10, Blur: 28, Alpha: 0.14}, {Y: 2, Blur: 6, Alpha: 0.08}},
 	}
 	ElevationHigh = Elevation{
-		dark:  []BoxShadow{{Y: 24, Blur: 56, Alpha: 0.55}, {Y: 4, Blur: 12, Alpha: 0.35}},
+		dark:  []BoxShadow{{Y: 16, Blur: 40, Alpha: 0.3}, {Y: 2, Blur: 8, Alpha: 0.18}},
 		light: []BoxShadow{{Y: 20, Blur: 48, Alpha: 0.2}, {Y: 4, Blur: 12, Alpha: 0.1}},
 	}
 )

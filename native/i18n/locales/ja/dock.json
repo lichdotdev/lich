@@ -58,6 +58,7 @@
     "vimFailed": "Neovim が起動しなかったため、エディタは自身のキー操作を使います",
     "vimLspMissing": "{name} が見つかりません",
     "vimConfigFailed": "Neovim の設定を開けませんでした",
-    "vimLspFailed": "{name} を起動できませんでした"
+    "vimLspFailed": "{name} を起動できませんでした",
+    "vimLspInstall": "インストール"
   }
 }

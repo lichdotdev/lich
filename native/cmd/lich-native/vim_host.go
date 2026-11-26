@@ -99,6 +99,10 @@ type vimState struct {
 	failed string
 	// seen is the last click or wheel of lich's Neovim had carried out.
 	seen int
+	// install is the command that installs the missing or failed server,
+	// "" when lich knows none or its tool is not on the PATH; reason is the
+	// first line of the failed server's error.
+	install, reason string
 }
 
 // vimPreview is the buffer lines first..last, 0-based and last excluded, as
@@ -257,7 +261,7 @@ func (h *vimHost) onLines(buf int, tick, first, last int, lines []string) {
 
 func (h *vimHost) onState(buf int, mode string, row, col, top int, regions, matches [][]int, preview []any, parens [][]int, lsp []any, seen int) {
 	st := &vimState{mode: mode, row: row, col: col, top: top, preview: vimPreviewOf(preview), parens: vimTriples(parens)}
-	st.lsp, st.missing, st.failed = vimLspOf(lsp)
+	st.lsp, st.missing, st.failed, st.install, st.reason = vimLspOf(lsp)
 	st.seen = seen
 	for _, r := range regions {
 		if len(r) == 4 {
@@ -360,10 +364,10 @@ func (h *vimHost) onYank(buf int, kind string, regions [][]int) {
 	}
 }
 
-// vimLspOf reads vim.lua's {names, missing, failed}.
-func vimLspOf(raw []any) (names []string, missing, failed string) {
-	if len(raw) != 3 {
-		return nil, "", ""
+// vimLspOf reads vim.lua's {names, missing, failed, install, reason}.
+func vimLspOf(raw []any) (names []string, missing, failed, install, reason string) {
+	if len(raw) != 5 {
+		return nil, "", "", "", ""
 	}
 	list, _ := raw[0].([]any)
 	for _, n := range list {
@@ -373,7 +377,9 @@ func vimLspOf(raw []any) (names []string, missing, failed string) {
 	}
 	missing, _ = raw[1].(string)
 	failed, _ = raw[2].(string)
-	return names, missing, failed
+	install, _ = raw[3].(string)
+	reason, _ = raw[4].(string)
+	return names, missing, failed, install, reason
 }
 
 // restart ends the running Neovim and starts another at once, which reads
