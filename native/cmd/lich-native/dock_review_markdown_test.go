@@ -61,7 +61,7 @@ func TestRouteChatLink(t *testing.T) {
 	for _, tt := range []struct {
 		name, session, url, want string
 	}{
-		{name: "absolute path", session: "s1", url: filepath.Join(string(filepath.Separator), "artifacts", "report.html"), want: "browser"},
+		{name: "absolute path", session: "s1", url: filepath.Join(t.TempDir(), "artifacts", "report.html"), want: "browser"},
 		{name: "web URL", session: "s1", url: "https://example.com", want: "external"},
 	} {
 		t.Run(tt.name, func(t *testing.T) {
