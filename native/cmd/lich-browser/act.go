@@ -50,4 +50,3 @@ func (t *tab) run(script string) {
 	defer C.free(unsafe.Pointer(s))
 	C.lich_tab_run(t.c, s)
 }
-

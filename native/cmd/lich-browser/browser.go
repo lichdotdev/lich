@@ -12,6 +12,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"maps"
+	"runtime/cgo"
 	"time"
 
 	"github.com/lichdotdev/lich/browserwire"
@@ -94,7 +95,7 @@ var handlers = map[string]handler{
 		return browserwire.HelloResult{Version: browserwire.Version}, nil
 	}),
 	browserwire.Window: now(func(_ *browser, p browserwire.WindowParams) (any, error) {
-		C.lich_browser_set_app(C.ulong(p.XID))
+		C.lich_browser_set_app(C.uint64_t(p.XID))
 		return nil, nil
 	}),
 	browserwire.Clock: now(func(b *browser, _ struct{}) (any, error) {
@@ -131,4 +132,18 @@ func onFront(act func(*tab)) func(*browser, browserwire.PageParams) (any, error)
 		act(pg.front)
 		return nil, nil
 	}
+}
+
+// onMain runs work on the engine's thread, the one main runs its loop on,
+// after the work queued before it.
+func onMain(work func()) {
+	C.lich_browser_invoke(C.uintptr_t(cgo.NewHandle(work)))
+}
+
+//export lichBrowserRun
+func lichBrowserRun(handle C.uintptr_t) {
+	h := cgo.Handle(handle)
+	work := h.Value().(func())
+	h.Delete()
+	work()
 }

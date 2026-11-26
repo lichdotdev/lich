@@ -16,7 +16,6 @@ import (
 	"log"
 	"os"
 	"runtime"
-	"runtime/cgo"
 	"syscall"
 
 	"github.com/lichdotdev/lich/browserwire"
@@ -58,17 +57,4 @@ func wireOut() (*os.File, error) {
 		return nil, err
 	}
 	return os.NewFile(uintptr(fd), "wire"), nil
-}
-
-// onMain runs work on GTK's thread, after the work queued before it.
-func onMain(work func()) {
-	C.lich_browser_invoke(C.uintptr_t(cgo.NewHandle(work)))
-}
-
-//export lichBrowserRun
-func lichBrowserRun(handle C.uintptr_t) {
-	h := cgo.Handle(handle)
-	work := h.Value().(func())
-	h.Delete()
-	work()
 }
