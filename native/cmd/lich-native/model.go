@@ -134,6 +134,8 @@ type model struct {
 	closed *closedProjects
 	// services is every project service and its state.
 	services servicesStore
+	// library is lich's library of skills and MCP servers.
+	library libraryStore
 	// threadFixes is the review threads waiting for a push.
 	threadFixes threadFixStore
 	// vetoes is the provider subagent calls lich opened as cards.
@@ -417,6 +419,13 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			if err := m.applyStatus(ctx, ev); err != nil {
 				log.Printf("%s: %v", ev.Name, err)
 			}
+		case api.LibraryChangedEvent.Name:
+			go func() {
+				if err := m.library.load(ctx, m.client); err != nil {
+					log.Printf("%s: %v", ev.Name, err)
+				}
+				m.invalidate()
+			}()
 		case api.ServicesEvent.Name:
 			if list, err := backend.Decode(ev, api.ServicesEvent); err == nil {
 				m.services.set(list)

@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"encoding/json"
+	"github.com/lichdotdev/lich/internal/library"
 	"path/filepath"
 	"slices"
 	"strings"
@@ -45,7 +46,7 @@ func TestPluginArgsForEveryProvider(t *testing.T) {
 // Claude Code's --mcp-config takes a list and stays last; the plugin rides
 // in one token before it, so neither swallows the other.
 func TestProviderArgsLoadsThePluginBeforeTheMCPConfig(t *testing.T) {
-	args := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", "/p/0.23.0", false, false, false, relay.RouteCards, prompt.English)
+	args := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", "/p/0.23.0", library.Delivery{}, false, false, false, relay.RouteCards, prompt.English)
 	plugin := slices.Index(args, "--plugin-dir=/p/0.23.0")
 	mcp := slices.Index(args, claudeMCPFlag)
 	if plugin < 0 || mcp < 0 || plugin > mcp || mcp != len(args)-2 {

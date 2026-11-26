@@ -368,6 +368,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.settings = newSettingsScreen(ctx, client, &u.root, invalidate)
 	u.settings.notify = u.notifier
 	u.settings.services.store = &u.model.services
+	u.settings.library.store = &u.model.library
 	u.settings.services.home = u.model.homeProject
 	u.settings.extensions.store = &u.model.extensions
 	u.settings.extensions.catalog = u.model.catalog
@@ -528,6 +529,9 @@ func (u *window) connect() error {
 	// lands on top of what this read.
 	if err := u.model.services.load(u.ctx, u.client); err != nil {
 		return err
+	}
+	if err := u.model.library.load(u.ctx, u.client); err != nil {
+		log.Printf("load the library: %v", err)
 	}
 	if err := u.model.vetoes.load(u.ctx, u.client); err != nil {
 		log.Printf("load subagent vetoes: %v", err)

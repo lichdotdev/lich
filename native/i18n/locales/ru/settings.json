@@ -34,7 +34,10 @@
       "help": "Справка",
       "services": "Сервисы",
       "extensions": "Расширения",
-      "chat": "Чат"
+      "chat": "Чат",
+      "skills": "Навыки",
+      "mcp": "Серверы MCP",
+      "plugins": "Плагины"
     },
     "notYet": "Пока нет"
   },
@@ -829,5 +832,24 @@
     "newChats": "Новые чаты",
     "sessions": "Сессии",
     "advanced": "Дополнительно"
+  },
+  "librarySettings": {
+    "skillsSearchWords": "навык библиотека перенести",
+    "mcpSearchWords": "mcp сервер библиотека перенести",
+    "pluginsSearchWords": "плагин хуки lich",
+    "found": "Найдено у ваших провайдеров",
+    "library": "В библиотеке lich",
+    "moveIn": "Перенести в lich",
+    "moveInAll": "Перенести все",
+    "noSkills": "В библиотеке lich пока нет навыков.",
+    "noMCP": "В библиотеке lich пока нет серверов MCP.",
+    "reason": {
+      "notWritten": "lich пока не записывает серверы MCP в {provider}",
+      "sharedFile": "Все профили {provider} читают один и тот же файл, поэтому один переключатель действует для всех"
+    },
+    "pluginBrings": "Хуки: {hooks} · навыки: {skills} · серверы MCP: {mcp}",
+    "pluginLocked": "Работает в каждой сессии, которую открывает lich. Выключить его нельзя.",
+    "moveFailed": "Не удалось перенести {name}: {error}",
+    "setFailed": "Не удалось изменить: {error}"
   }
 }

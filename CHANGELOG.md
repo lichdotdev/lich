@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Keep your skills and MCP servers in lich, and choose which agent and which profile gets each one.** Settings › Skills and MCP servers list what your agents have installed, to move in with one click, then each item's switches; Plugins shows lich's own. MCP servers do not reach Antigravity, Crush or Kiro CLI yet.
 - **Number the editor's lines from the cursor's, as Vim's relativenumber does.** Turn it on in Settings › Editor › Relative line numbers; the cursor's own line keeps its number.
 - **A Homebrew install follows the beta channel through the `lich@beta` cask.** Pick Beta in Settings › Updates › Channel, and the update command swaps the cask for you.
 - **See the diff of one commit, or of a run of commits, of a pull request.** In Pulls, the chip over Files picks them, Shift+click extends the pick, and View changes on a row of Commits opens that commit; comments and Viewed are off while a pick is shown. On GitLab, only commits your clone holds.

@@ -11,6 +11,7 @@ import (
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/agentplugin"
 	"github.com/lichdotdev/lich/internal/artifact"
+	"github.com/lichdotdev/lich/internal/library"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
@@ -206,6 +207,7 @@ type spawnLaunch struct {
 // spawnArgs is everything a spawn's argv is decided from.
 type spawnArgs struct {
 	kind, cwd, name, resume, model, effort, lichBin, agent, plugin string
+	lib                                                            library.Delivery
 	fork, skipPermissions, ultracode, oc2, confined                bool
 	route                                                          relay.SubagentRoute
 	lang                                                           prompt.Lang
@@ -214,7 +216,7 @@ type spawnArgs struct {
 // ptyArgs is the argv of a session's terminal.
 func ptyArgs(a spawnArgs) []string {
 	return slices.Concat(confinedTrustArgs(a.kind, a.cwd, a.confined), codexBriefingArgs(a.kind, a.resume, a.route, a.lang), opencode2Args(a.oc2, providerArgs(
-		a.kind, a.name, a.resume, a.model, a.effort, a.lichBin, a.agent, a.plugin, a.fork, a.skipPermissions, a.ultracode, a.route, a.lang,
+		a.kind, a.name, a.resume, a.model, a.effort, a.lichBin, a.agent, a.plugin, a.lib, a.fork, a.skipPermissions, a.ultracode, a.route, a.lang,
 	)))
 }
 
@@ -250,6 +252,8 @@ func (s *Service) prepareSpawnLocked(opts api.StartOptions, profileDir, name str
 	env = mcpEnv(env, opts.Kind, mcpBin)
 	plugin, _, _ := agentplugin.BundleDir()
 	env = pluginEnv(env, opts.Kind, plugin)
+	lib := s.libraryFor(opts.Kind, profileSlug(opts.Kind, profileDir), profileDir)
+	env = libraryEnv(env, opts.Kind, lib)
 	env = todoToolsEnv(env, opts.Kind)
 	filesKey := s.store.SessionFilesKey(opts.ID)
 	artifacts := sessionArtifactDir(s.artifactDir, filesKey)
@@ -281,7 +285,7 @@ func (s *Service) prepareSpawnLocked(opts api.StartOptions, profileDir, name str
 		bin: resolveCommand(opts.Kind, s.store.ProviderBin(opts.Kind, opts.ProjectID), userShell()),
 		args: argv(spawnArgs{
 			kind: opts.Kind, cwd: opts.Cwd, name: name, resume: opts.Resume, model: model,
-			effort: s.store.SessionEffort(opts.ID), lichBin: mcpBin, agent: kiroPluginAgent(opts.Kind), plugin: plugin,
+			effort: s.store.SessionEffort(opts.ID), lichBin: mcpBin, agent: kiroPluginAgent(opts.Kind), plugin: plugin, lib: lib,
 			fork: opts.Fork, skipPermissions: skipPermissions, ultracode: ultracode, oc2: oc2,
 			confined: inSandbox, route: route, lang: lang,
 		}),
