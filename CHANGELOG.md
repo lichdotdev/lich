@@ -77,6 +77,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Buttons are one size across lich.** Dialogs, Pulls threads and comments, and every screen's actions now share the same height; only the small buttons inside dense rows stay smaller.
+- **Shortcut hints read as real keys, one per key, and a button's shortcut follows its word.** Reply in Pulls now reads Reply, then Ctrl and ↵ as two small faded keys, and every button with a shortcut does the same.
 - **lich installs and updates its own plugin by itself, and it runs in every session lich starts, even after you turned it off or removed it in the agent's own config.** Settings › Updates shows the version your sessions run; a notice with Retry appears only when lich could not set it up.
 - **Menus, dialogs, tooltips and the panels over the message box float on a shadow and grow in from where you opened them.** Across the window, parts are set apart by space instead of lines, states are their glyphs, and the key that does something sits in its button. Toasts stand a little higher, so their shadow clears the footer.
 - **In a project's scope, Settings shows only what that project can change.** The settings every project shares give way to one line at the page's foot, whose Open Global takes you to them.

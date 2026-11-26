@@ -92,7 +92,7 @@ var buttonColumns = []struct {
 	width unit.Dp
 	icon  bool
 }{
-	{"default", ui.SizeDefault, 84, false},
+	{"md", ui.SizeMD, 84, false},
 	{"xs", ui.SizeXS, 64, false},
 	{"sm", ui.SizeSM, 76, false},
 	{"lg", ui.SizeLG, 88, false},
@@ -123,7 +123,18 @@ func (g *gallery) buttonsSection(gtx C, th *ui.Theme) D {
 		}
 		rows = append(rows, ui.Row(1.5, cells...))
 	}
-	return ui.Stack(2.5, append(rows, g.disabledButtons(th), g.litButtons(th))...)(gtx)
+	return ui.Stack(2.5, append(rows, g.disabledButtons(th), g.litButtons(th), g.keyButtons(th))...)(gtx)
+}
+
+// keyButtons wear the key that presses them, as Pulls' Reply wears Ctrl+Enter.
+func (g *gallery) keyButtons(th *ui.Theme) layout.Widget {
+	cells := []layout.Widget{minWidth(buttonLabelWidth, th.Text(ui.TextXS, "keys").Muted().Mono().Layout)}
+	for _, variant := range buttonVariants {
+		b := th.Button(&g.inert, "Reply")
+		b.Variant, b.Size, b.Keys = variant.variant, ui.SizeXS, "Ctrl+Enter"
+		cells = append(cells, b.Layout)
+	}
+	return ui.Row(2, cells...)
 }
 
 // litButtons are drawn hovered with no pointer on them, as the browser pane

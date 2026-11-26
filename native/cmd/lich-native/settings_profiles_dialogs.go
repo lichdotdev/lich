@@ -420,7 +420,7 @@ func (s *settingsScreen) addressBlock(gtx C, th *ui.Theme, f *profileFlow, url s
 
 func (s *settingsScreen) codeBlock(gtx C, th *ui.Theme, f *profileFlow) D {
 	submit := th.Button(&f.submitCode, i18n.T("settings.settingsProfilesDialogs.submitCode"))
-	submit.Variant, submit.Size = ui.VariantOutline, ui.SizeDefault
+	submit.Variant, submit.Size = ui.VariantOutline, ui.SizeMD
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(th.Label(i18n.T("settings.settingsProfilesDialogs.pasteCode")).Layout),
 		ui.VGap(1.5),

@@ -47,6 +47,8 @@ type frameRig struct {
 	// asked is an invalidate call since the last frame, for a screen that
 	// asks for frames through the window rather than through gtx.
 	asked atomic.Bool
+	// allowMixed lets a test draw a mixed row on purpose.
+	allowMixed bool
 }
 
 func newFrameRig(size image.Point, draw func(C, *ui.Theme)) *frameRig {
@@ -61,6 +63,11 @@ func (r *frameRig) frame() (drawn string, redraw bool) {
 	gtx := layout.Context{Ops: &r.ops, Metric: unit.Metric{PxPerDp: 1, PxPerSp: 1}, Constraints: layout.Exact(r.size), Source: r.router.Source(), Now: r.now}
 	r.draw(gtx, r.theme)
 	r.router.Frame(&r.ops)
+	// Every screen a test draws answers to native/DESIGN.md › Buttons; the
+	// rig has no *testing.T, and a panic fails the test that drew it.
+	if m := mixedButtonRows(r.nodes()); len(m) > 0 && !r.allowMixed {
+		panic("buttons side by side mix heights:\n" + describeMixed(m))
+	}
 	at, wake := r.router.WakeupTime()
 	asked := r.asked.Swap(false)
 	return r.drawn(), asked || wake && !at.After(r.now)

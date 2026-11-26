@@ -152,9 +152,9 @@ func (v *pullView) editBox(gtx C, th *ui.Theme, t commentTarget, act *pullsActio
 		label = i18n.T("pulls.reviewThread.saving")
 	}
 	saveB := th.Button(save, label)
-	saveB.Size, saveB.Disabled, saveB.Keys = ui.SizeXS, body == "" || busy, ctrlEnterCap()
+	saveB.Size, saveB.Disabled, saveB.Keys = ui.SizeSM, body == "" || busy, ctrlEnterCap()
 	cancelB := th.Button(cancel, i18n.T("common.action.cancel"))
-	cancelB.Size, cancelB.Variant = ui.SizeXS, ui.VariantGhost
+	cancelB.Size, cancelB.Variant = ui.SizeSM, ui.VariantGhost
 	var buttons []layout.FlexChild
 	if t.kind == reviewSummary {
 		buttons = append(buttons, layout.Rigid(th.Text(ui.TextXS, i18n.T("pulls.reviewThread.verdictStays")).Muted().Layout))

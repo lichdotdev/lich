@@ -195,12 +195,12 @@ draws by the same rules: its `separator` and `railHairline` leave space, no rule
 
 | Size | Height | Use |
 | --- | --- | --- |
-| `SizeSM` / `SizeIconSM` | 32 | **the default for actions on a screen**: headers, thread and comment actions, dialogs |
-| `SizeDefault` / `SizeIcon` | 36 | a form's main row, beside a 36px input |
+| `SizeSM` / `SizeIconSM` | 32 | **the default for actions on a screen**: headers, thread and comment actions, dialogs; a button with no size set is this one |
+| `SizeMD` / `SizeIcon` | 36 | a form's main row, beside a 36px input |
 | `SizeXS` / `SizeIconXS` | 24 | inline inside dense rows (a file row, a binary preview, a folder header's `⋯`), and the × that closes a floating surface |
 | `SizeLG` | 40 | rare; a lone call to action |
 
-Buttons side by side share one size. A row that mixes 24px and 32px buttons is a bug.
+Buttons side by side share one size. A row that mixes 24px and 32px buttons is a bug, and every frame a `lich-native` test draws fails on one (`mixedButtonRows`).
 
 Variants: `VariantDefault` (primary fill) for the one action a view exists for, `VariantSecondary` for the
 next most likely, `VariantOutline` for an action that should stand out from ghost ones, `VariantGhost` for
