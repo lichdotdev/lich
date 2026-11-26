@@ -18,20 +18,28 @@ import (
 )
 
 // The tests drive a built lich-browser over its wire, as the backend does,
-// on the display they run on (CI's Xvfb, the macOS runner's own).
+// on the screen they run on (CI's Xvfb on Linux, the runner's own on macOS). builtEnv names one built
+// already, which the Windows CI job runs, having no Go toolchain to build
+// one: there WebView2Loader.dll lies beside it.
+
+const builtEnv = "LICH_BROWSER_TEST_BIN"
 
 var built string
 
 func TestMain(m *testing.M) {
-	if noDisplay() {
-		fmt.Println("lich-browser: no display, the wire tests skip")
+	if bin := os.Getenv(builtEnv); bin != "" {
+		built = bin
+		os.Exit(m.Run())
+	}
+	if why := noScreen(); why != "" {
+		fmt.Printf("lich-browser: %s, the wire tests skip\n", why)
 		os.Exit(m.Run())
 	}
 	dir, err := os.MkdirTemp("", "lich-browser-test-")
 	if err != nil {
 		panic(err)
 	}
-	built = filepath.Join(dir, "lich-browser")
+	built = filepath.Join(dir, binaryName)
 	if out, err := exec.Command("go", "build", "-o", built, ".").CombinedOutput(); err != nil {
 		fmt.Printf("build lich-browser: %v\n%s", err, out)
 		os.Exit(1)
@@ -58,7 +66,7 @@ type client struct {
 func start(t *testing.T) *client {
 	t.Helper()
 	if built == "" {
-		t.Skip("no display")
+		t.Skip(noScreen())
 	}
 	cmd := exec.Command(built)
 	cmd.Env = append(os.Environ(), "WAYLAND_DISPLAY=/nonexistent/wl-none")

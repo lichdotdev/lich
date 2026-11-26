@@ -1,7 +1,7 @@
-//go:build !linux && !darwin
+//go:build !linux && !windows && !darwin
 
 package browser
 
-// findLichBrowser is none: lich-browser holds pages on Linux and macOS until
-// WebView2 lands on the same wire (docs/lich-browser.md).
+// findLichBrowser is none: lich-browser has no web engine on this system
+// (docs/lich-browser.md).
 func findLichBrowser(string) *lichBrowser { return nil }

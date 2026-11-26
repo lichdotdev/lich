@@ -48,7 +48,7 @@ void lich_browser_invoke(uintptr_t handle);
 int lich_browser_init(void);
 void lich_browser_main(void);
 void lich_browser_quit(void);
-void lich_browser_set_app(unsigned long xid);
+void lich_browser_set_app(uint64_t xid);
 
 LichPage *lich_page_new(uintptr_t key, const char *script);
 void lich_page_free(LichPage *page);

@@ -17,6 +17,7 @@ func TestADownloadTakesTheNextFreeNameAsChromeDoes(t *testing.T) {
 		{"README", "README"},
 		{"README", "README (1)"},
 		{"../../etc/passwd", "passwd"},
+		{`..\..\evil.exe`, "evil.exe"},
 		{"", "download"},
 	} {
 		path, err := reserve(dir, tc.suggested)

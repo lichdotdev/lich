@@ -3,8 +3,6 @@ package browser
 import (
 	"log/slog"
 	"os"
-
-	"github.com/lichdotdev/lich/internal/restart"
 )
 
 // findLichBrowser is the lich-browser beside this lich, when there is an X
@@ -15,10 +13,5 @@ func findLichBrowser(logDir string) *lichBrowser {
 		slog.Info("browser: pages run in Chrome, no X display for lich-browser's")
 		return nil
 	}
-	path, err := restart.Companion(os.Getenv, BrowserEnv, browserBinary, buildBrowser)
-	if err != nil {
-		slog.Info("browser: pages run in Chrome", "why", err)
-		return nil
-	}
-	return &lichBrowser{spawn: func() (*wireConn, error) { return spawnProcess(path, logDir) }}
+	return lichBrowserBeside(logDir, "build it from native/")
 }

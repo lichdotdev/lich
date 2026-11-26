@@ -46,7 +46,7 @@ tasks:
       - cmd: CGO_ENABLED=1 go build -trimpath -ldflags "-s -w" -o ../{{.BIN_DIR}}/lich-browser ./cmd/lich-browser
 
   build:native:windows:
-    desc: Cross-build bin/lich-native.exe from Linux with Zig (native/build-windows.sh)
+    desc: Cross-build bin/lich-native.exe and bin/lich-browser.exe (with WebView2Loader.dll) from Linux with Zig (native/build-windows.sh)
     cmds:
       - cmd: sh native/build-windows.sh ../{{.BIN_DIR}}/lich-native.exe
 
@@ -191,8 +191,8 @@ tasks:
     preconditions:
       - sh: command -v iscc
         msg: "iscc (Inno Setup 6) is required — on Windows: choco install innosetup"
-      - sh: test -f {{.BIN_DIR}}/lich-native.exe
-        msg: "bin/lich-native.exe is missing: task build:native:windows cross-builds it from Linux"
+      - sh: test -f {{.BIN_DIR}}/lich-native.exe && test -f {{.BIN_DIR}}/lich-browser.exe && test -f {{.BIN_DIR}}/WebView2Loader.dll
+        msg: "bin/lich-native.exe, lich-browser.exe or WebView2Loader.dll is missing: task build:native:windows cross-builds them from Linux"
     env:
       VERSION: '{{.VERSION}}'
     cmds:

@@ -22,8 +22,6 @@ type osPage struct {
 	waiting []*waiter
 }
 
-var mouseKinds = map[string]C.int{browserwire.MouseMove: 0, browserwire.MouseDown: 1, browserwire.MouseUp: 2, browserwire.MouseWheel: 3}
-
 func (b *browser) mouse(o browserwire.MouseParams) (*page, string, error) {
 	p, err := b.page(o.Page)
 	if err != nil {

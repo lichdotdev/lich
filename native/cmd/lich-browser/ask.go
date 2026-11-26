@@ -15,7 +15,10 @@ import (
 	"github.com/lichdotdev/lich/browserwire"
 )
 
-var errNoDialog = errors.New("no dialog is open")
+var (
+	errNoDialog  = errors.New("no dialog is open")
+	errNoChooser = errors.New("no file chooser is open")
+)
 
 // The dialog types the engine's C side numbers, in its order.
 var dialogTypes = [...]string{browserwire.DialogAlert, browserwire.DialogConfirm, browserwire.DialogPrompt, browserwire.DialogBeforeUnload}

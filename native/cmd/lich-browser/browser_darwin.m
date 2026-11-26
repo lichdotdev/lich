@@ -76,7 +76,7 @@ void lich_browser_quit(void) {
 
 // The window's own NSWindow number goes unused: keys reach a page over the
 // wire here, never past a window.
-void lich_browser_set_app(unsigned long window) {}
+void lich_browser_set_app(uint64_t window) {}
 
 void lich_free(void *p) { free(p); }
 

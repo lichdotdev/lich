@@ -26,8 +26,6 @@ type osPage struct {
 
 type osTab struct{}
 
-var mouseKinds = map[string]C.int{browserwire.MouseMove: 0, browserwire.MouseDown: 1, browserwire.MouseUp: 2, browserwire.MouseWheel: 3}
-
 // held is the button a move drags with, the lowest held; -1 for none.
 func (p *page) held() int {
 	if p.buttons == 0 {

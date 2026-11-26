@@ -44,6 +44,10 @@ Source: "..\..\bin\{#AppExe}"; DestDir: "{app}"; Flags: ignoreversion
 ; The window, beside lich.exe where lich looks for it. Cross-built from
 ; Linux (native/build-windows.sh).
 Source: "..\..\bin\lich-native.exe"; DestDir: "{app}"; Flags: ignoreversion
+; The pages, on WebView2 through Microsoft's loader beside it, both from
+; native/build-windows.sh (docs/lich-browser.md).
+Source: "..\..\bin\lich-browser.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\bin\WebView2Loader.dll"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 ; The AppUserModelID is the one the native window's toasts are sent under

@@ -42,6 +42,9 @@ var osHandlers = map[string]handler{
 	browserwire.Snapshot: later((*browser).snapshot),
 }
 
+// mouseKinds are the C side's numbers of the wire's mouse kinds.
+var mouseKinds = map[string]C.int{browserwire.MouseMove: 0, browserwire.MouseDown: 1, browserwire.MouseUp: 2, browserwire.MouseWheel: 3}
+
 // mouseEvents and keyEvents are the DOM events a mouse or key event from the
 // wire waits for, none for a move. WebKit queues mouse events apart from keys,
 // each until the page took the one before, so a key sent just after a click
@@ -71,8 +74,6 @@ func awaited[P any](act func(b *browser, o P) (*page, string, error)) handler {
 		})
 	})
 }
-
-var errNoChooser = errors.New("no file chooser is open")
 
 func (p *page) cancelChooser() {
 	if p.chooser != nil {

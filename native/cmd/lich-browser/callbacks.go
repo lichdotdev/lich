@@ -49,14 +49,19 @@ func lichLoad(key C.uintptr_t, step C.int, uri *C.char) {
 
 //export lichLoadFailed
 func lichLoadFailed(key C.uintptr_t, uri, message *C.char, download C.int) {
-	t := the.tabs[uintptr(key)]
-	if t == nil || t.failed {
+	if t := the.tabs[uintptr(key)]; t != nil {
+		the.loadFailed(t, C.GoString(uri), C.GoString(message), download != 0)
+	}
+}
+
+// loadFailed tells t's load under way failing, once: its finish is not told.
+func (b *browser) loadFailed(t *tab, uri, message string, download bool) {
+	if t.failed {
 		return
 	}
 	t.failed = true
-	the.wire.event(browserwire.EventLoad, browserwire.LoadEvent{
-		Page: t.page.id, Tab: t.id, Step: browserwire.LoadFailed, URL: C.GoString(uri), At: the.at(),
-		Error: C.GoString(message), Download: download != 0,
+	b.wire.event(browserwire.EventLoad, browserwire.LoadEvent{
+		Page: t.page.id, Tab: t.id, Step: browserwire.LoadFailed, URL: uri, At: b.at(), Error: message, Download: download,
 	})
 }
 
