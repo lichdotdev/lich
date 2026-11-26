@@ -311,6 +311,8 @@ func (s *sidebar) panel(gtx C, th *ui.Theme, m *model, active string) (D, sideba
 	s.header.leaveField(gtx)
 	s.header.clicks(gtx)
 	view := m.sidebarBlocks(s.header.filter())
+	live, _ := m.storedSessions()
+	s.selection.keep(live)
 	s.launchProviders = m.launchProviders()
 	splitID, splitName, groups, split := m.splitSidebar(gtx.Now)
 	if !split {

@@ -3,6 +3,7 @@ package main
 import (
 	"slices"
 
+	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/ui"
 )
 
@@ -21,6 +22,14 @@ func (c *cardSelection) toggle(id string) {
 }
 
 func (c *cardSelection) clear() { c.ids = nil }
+
+// keep drops the picked cards live no longer holds: a session closed from
+// anywhere, or one of a project no longer shown.
+func (c *cardSelection) keep(live []backend.Session) {
+	c.ids = slices.DeleteFunc(c.ids, func(id string) bool {
+		return !slices.ContainsFunc(live, func(s backend.Session) bool { return s.ID == id })
+	})
+}
 
 // menu is the menu a selected card opens while more than one is selected:
 // what acts on all of them at once. nil for the card's own menu.
