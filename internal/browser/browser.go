@@ -13,6 +13,7 @@ import (
 
 	"github.com/chromedp/cdproto/network"
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/winretry"
 )
 
 // idleAfter is how long a headless browser no pane shows sits unused before
@@ -302,7 +303,7 @@ func (s *Service) handOver(sess *session) (launchSpec, error) {
 	}
 	if err := sess.page.Close(); err != nil {
 		s.emitState(sess, false)
-		return launchSpec{}, errors.Join(err, os.RemoveAll(sess.dir))
+		return launchSpec{}, errors.Join(err, removeProfile(sess.dir))
 	}
 	return spec, nil
 }
@@ -397,7 +398,7 @@ func (s *Service) start(spec launchSpec) (Handle, error) {
 	s.mu.Unlock()
 	page, err := s.launch(spec.dir, spec.headed, scale)
 	if err != nil {
-		return Handle{}, errors.Join(err, os.RemoveAll(spec.dir))
+		return Handle{}, errors.Join(err, removeProfile(spec.dir))
 	}
 	sess := &session{
 		id: spec.id, owner: spec.owner, dir: spec.dir, url: spec.url, headed: spec.headed,
@@ -415,7 +416,7 @@ func (s *Service) start(spec launchSpec) (Handle, error) {
 	page.Listen(s.frameSink(sess), s.infoSink(sess), s.downloadSink(sess), s.consoleSink(sess), s.dialogSink(sess), s.tabsSink(sess))
 	page.OnReload(s.reloadSink(sess))
 	if err := runPage(func(ctx context.Context) error { return s.load(ctx, sess, spec) }); err != nil {
-		return Handle{}, errors.Join(err, page.Close(), os.RemoveAll(spec.dir))
+		return Handle{}, errors.Join(err, page.Close(), removeProfile(spec.dir))
 	}
 	s.mu.Lock()
 	if s.stopped {
@@ -539,8 +540,15 @@ func (s *Service) unlock() {
 	}
 }
 
+// removeProfile deletes a profile Chrome just let go of. On Windows a helper
+// process of Chrome's can hold a file in it (its cache's journal.baj) for a
+// moment after Chrome closed.
+func removeProfile(dir string) error {
+	return winretry.Do(func() error { return os.RemoveAll(dir) })
+}
+
 func (s *session) destroy() error {
-	return errors.Join(s.page.Close(), os.RemoveAll(s.dir))
+	return errors.Join(s.page.Close(), removeProfile(s.dir))
 }
 
 func (s *session) alive() bool {

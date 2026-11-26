@@ -25,6 +25,7 @@ import (
 	exti18n "github.com/lichdotdev/lich/extension/i18n"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/ghrelease"
+	"github.com/lichdotdev/lich/internal/winretry"
 )
 
 const (
@@ -408,7 +409,7 @@ func (s *Service) Remove(ctx context.Context, opts api.ExtensionIDOptions) (api.
 			return api.None{}, ctx.Err()
 		}
 	}
-	if err := afterExit(func() error { return os.RemoveAll(x.root) }); err != nil {
+	if err := winretry.Do(func() error { return os.RemoveAll(x.root) }); err != nil {
 		return api.None{}, fmt.Errorf("delete %s: %w; delete it by hand", x.root, err)
 	}
 	s.mu.Lock()

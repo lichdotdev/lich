@@ -15,6 +15,7 @@ import (
 	"github.com/lichdotdev/lich/extension"
 	"github.com/lichdotdev/lich/internal/events"
 	"github.com/lichdotdev/lich/internal/semver"
+	"github.com/lichdotdev/lich/internal/winretry"
 )
 
 const (
@@ -190,7 +191,7 @@ func (s *Service) replace(ctx context.Context, st stagedInstall) (api.Extension,
 	old, stranded := st.replaces, false
 	defer func() {
 		if !stranded {
-			_ = afterExit(func() error { return os.RemoveAll(st.work) })
+			_ = winretry.Do(func() error { return os.RemoveAll(st.work) })
 		}
 	}()
 	old.restartMu.Lock()
@@ -211,7 +212,7 @@ func (s *Service) replace(ctx context.Context, st stagedInstall) (api.Extension,
 		}
 	}
 	kept := filepath.Join(st.work, replacedDir)
-	if err := afterExit(func() error { return os.Rename(old.root, kept) }); err != nil {
+	if err := winretry.Do(func() error { return os.Rename(old.root, kept) }); err != nil {
 		s.relaunch(old)
 		return api.Extension{}, fmt.Errorf("move the installed version out of %s: %w", old.root, err)
 	}
