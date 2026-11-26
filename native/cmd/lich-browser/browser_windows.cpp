@@ -128,7 +128,11 @@ struct LichTab {
 	double scale;
 	std::string uri, title;
 	std::vector<unsigned char> icon;
-	bool loading, navigating;
+	bool loading;
+	// pending is the main-frame navigation not committed yet, the one a
+	// download may turn out to be; downloaded: it did.
+	std::string pending;
+	bool downloaded;
 	// inspector: this tab holds inspected's DevTools window, devtools.
 	bool inspector;
 	LichTab *inspected;
@@ -402,7 +406,9 @@ static void connect_loads(LichTab *tab) {
 		    LPWSTR u = NULL;
 		    a->get_Uri(&u);
 		    std::string uri = taken(u);
-		    tab->loading = tab->navigating = true;
+		    tab->loading = true;
+		    tab->pending = uri;
+		    tab->downloaded = false;
 		    lichLoad(tab->key, 0, (char *)uri.c_str());
 		    changed(tab);
 		    return S_OK;
@@ -411,6 +417,7 @@ static void connect_loads(LichTab *tab) {
 	starting->Release();
 	auto content = on<ICoreWebView2ContentLoadingEventHandler>(
 	    [tab](ICoreWebView2 *, ICoreWebView2ContentLoadingEventArgs *) -> HRESULT {
+		    tab->pending.clear();
 		    refresh_uri(tab);
 		    lichLoad(tab->key, 2, (char *)tab->uri.c_str());
 		    return S_OK;
@@ -424,8 +431,12 @@ static void connect_loads(LichTab *tab) {
 		    COREWEBVIEW2_WEB_ERROR_STATUS status = COREWEBVIEW2_WEB_ERROR_STATUS_UNKNOWN;
 		    a->get_WebErrorStatus(&status);
 		    refresh_uri(tab);
-		    tab->loading = tab->navigating = false;
-		    if (ok) {
+		    tab->loading = false;
+		    fprintf(stderr, "lich-browser: navigation completed ok=%d status=%d download=%d\n", ok, (int)status,
+		            tab->downloaded);
+		    if (tab->downloaded) {
+			    // Told as a download already (connect_downloads).
+		    } else if (ok) {
 			    lichLoad(tab->key, 3, (char *)tab->uri.c_str());
 		    } else {
 			    lichNavigationFailed(tab->key, (char *)tab->uri.c_str(), (int)status);
@@ -546,8 +557,18 @@ static void connect_downloads(LichTab *tab) {
 	auto h = on<ICoreWebView2DownloadStartingEventHandler>(
 	    [tab](ICoreWebView2 *, ICoreWebView2DownloadStartingEventArgs *a) -> HRESULT {
 		    uintptr_t page = tab->page->key;
-		    if (tab->navigating) {
-			    lichLoadFailed(tab->key, (char *)tab->uri.c_str(), (char *)"the navigation turned into a download", 1);
+		    ICoreWebView2DownloadOperation *started = NULL;
+		    a->get_DownloadOperation(&started);
+		    LPWSTR du = NULL;
+		    if (started) {
+			    started->get_Uri(&du);
+			    started->Release();
+		    }
+		    std::string uri = taken(du);
+		    fprintf(stderr, "lich-browser: download starting, navigation pending=%d\n", uri == tab->pending);
+		    if (!tab->pending.empty() && uri == tab->pending) {
+			    tab->downloaded = true;
+			    lichLoadFailed(tab->key, (char *)uri.c_str(), (char *)"the navigation turned into a download", 1);
 		    }
 		    LPWSTR def = NULL;
 		    a->get_ResultFilePath(&def);

@@ -27,12 +27,39 @@ func cdpError(answer string) error {
 	return fmt.Errorf("devtools protocol: %s", answer)
 }
 
+// evalGroup holds the objects an eval refers to, released once it answered.
+const evalGroup = "lich-eval"
+
 // evaluate is Runtime.evaluate's params for a script run as the DevTools
 // console runs it: REPL mode has its value, top-level await and a let or
 // const declared again. Its class declarations are made redeclarable as
-// WebKit's are, which REPL mode allows only across scripts.
+// WebKit's are, which REPL mode allows only across scripts. The value comes
+// back by reference: REPL mode awaits its own promise but not one the script
+// ends on, which by value is {} (evalNext).
 func evaluate(script string) map[string]any {
-	return map[string]any{"expression": redeclarable(script), "replMode": true, "awaitPromise": true, "returnByValue": true}
+	return map[string]any{"expression": redeclarable(script), "replMode": true, "awaitPromise": true, "objectGroup": evalGroup}
+}
+
+// evalNext is the call that reads an eval's value once Runtime.evaluate
+// answered raw: a promise awaited, an object read by value; none for a value
+// raw holds, or a throw, which evalAnswer reads from raw.
+func evalNext(raw json.RawMessage) (method string, params map[string]any) {
+	var r struct {
+		Result struct {
+			Subtype  string `json:"subtype"`
+			ObjectID string `json:"objectId"`
+		} `json:"result"`
+		Exception json.RawMessage `json:"exceptionDetails"`
+	}
+	if json.Unmarshal(raw, &r) != nil || len(r.Exception) > 0 || r.Result.ObjectID == "" {
+		return "", nil
+	}
+	if r.Result.Subtype == "promise" {
+		return "Runtime.awaitPromise", map[string]any{"promiseObjectId": r.Result.ObjectID, "returnByValue": true}
+	}
+	return "Runtime.callFunctionOn", map[string]any{
+		"functionDeclaration": "function () { return this; }", "objectId": r.Result.ObjectID, "returnByValue": true,
+	}
 }
 
 // evalAnswer is Runtime.evaluate's answer as the wire's: the value as JSON,

@@ -32,6 +32,22 @@ func TestEvalAnswerAsTheWireDoes(t *testing.T) {
 	}
 }
 
+func TestEvalNextAwaitsAPromiseAndReadsAnObject(t *testing.T) {
+	for _, tc := range []struct{ name, answer, method string }{
+		{"a promise", `{"result":{"type":"object","subtype":"promise","objectId":"7"}}`, "Runtime.awaitPromise"},
+		{"an object", `{"result":{"type":"object","objectId":"7"}}`, "Runtime.callFunctionOn"},
+		{"a number", `{"result":{"type":"number","value":2}}`, ""},
+		{"a throw", `{"result":{"type":"object","objectId":"7"},"exceptionDetails":{"text":"Uncaught"}}`, ""},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			method, params := evalNext(json.RawMessage(tc.answer))
+			if method != tc.method || (method != "" && params["returnByValue"] != true) {
+				t.Fatalf("evalNext = %q %v, want %q by value", method, params, tc.method)
+			}
+		})
+	}
+}
+
 func TestEvaluateMakesClassesRedeclarable(t *testing.T) {
 	if got := evaluate("class K {}; K")["expression"]; got != "var K = class K {}; K" {
 		t.Fatalf("expression %q", got)

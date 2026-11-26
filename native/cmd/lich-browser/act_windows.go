@@ -131,17 +131,24 @@ func (b *browser) eval(o browserwire.EvalParams, done func(any, error)) {
 		done(nil, err)
 		return
 	}
-	p.front.cdp("Runtime.evaluate", evaluate(o.Script), func(raw json.RawMessage, err error) {
-		if err != nil {
-			done(nil, err)
+	t := p.front
+	answer := func(raw json.RawMessage, err error) {
+		t.cdp("Runtime.releaseObjectGroup", map[string]any{"objectGroup": evalGroup}, func(json.RawMessage, error) {})
+		if err == nil {
+			var value string
+			if value, err = evalAnswer(raw); err == nil {
+				done(browserwire.EvalResult{JSON: value}, nil)
+				return
+			}
+		}
+		done(nil, err)
+	}
+	t.cdp("Runtime.evaluate", evaluate(o.Script), func(raw json.RawMessage, err error) {
+		if method, params := evalNext(raw); err == nil && method != "" {
+			t.cdp(method, params, answer)
 			return
 		}
-		value, err := evalAnswer(raw)
-		if err != nil {
-			done(nil, err)
-			return
-		}
-		done(browserwire.EvalResult{JSON: value}, nil)
+		answer(raw, err)
 	})
 }
 

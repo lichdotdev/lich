@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 )
@@ -17,7 +18,9 @@ const maxSameName = 100
 // suggested, under that name or Chrome's "name (1).ext" where it is taken,
 // and answers its path. A name with a path in it keeps only its last part.
 func reserve(dir, suggested string) (string, error) {
-	name := filepath.Base(filepath.Clean("/" + suggested))
+	// A name's path is cut at either separator: a server's name is no
+	// path of this system's.
+	name := path.Base(path.Clean("/" + strings.ReplaceAll(suggested, `\`, "/")))
 	if name == "/" || name == "." {
 		name = "download"
 	}
