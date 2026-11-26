@@ -23,13 +23,13 @@ func artifactWindow(t *testing.T) (*window, *model) {
 
 func TestAMarkdownArtifactOpensOnTheStageRenderedInTheSessionsCheckoutEditor(t *testing.T) {
 	u, m := artifactWindow(t)
-	u.openArtifactInEditor("a2", backend.Artifact{Name: "notes.md", Path: "/art/notes.md"})
+	u.openArtifactInEditor("a2", backend.Artifact{Name: "notes.md", Path: osPath("/art/notes.md")})
 	if m.editorShown() != "/repo" {
 		t.Fatalf("stage shows %q's editor, want /repo's", m.editorShown())
 	}
 	n, _ := m.editorOf("/repo")
 	f := u.editors.byCheckout["/repo"]
-	if n.name() != "notes.md" || f.dir != "/art" || f.rel != "notes.md" || f.md.mode != mdRendered {
+	if n.name() != "notes.md" || f.dir != osPath("/art") || f.rel != "notes.md" || f.md.mode != mdRendered {
 		t.Fatalf("node %q, editor %q in %q mode %d; want notes.md of /art, rendered", n.name(), f.rel, f.dir, f.md.mode)
 	}
 }
