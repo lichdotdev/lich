@@ -508,7 +508,7 @@ never makes the Latest pill show.
   is underlined in its color and takes the hand, and a click with it opens a file in the stage editor
   (`followCodeRef`) and a folder in the dock's Code tab, unfolded down to it (`chat_paths.go`). A path it does not
   hold stays text. Anything else in code is plain. An answer has no header: who wrote it is the
-  foot's (see A message's time); the provider's avatar marks no row of the chat: no answer, call, notification of lich's or closing line, the harness's own notes about its background work alone excepted (see A harness's background note). A thought is a muted fold, closed, with the
+  foot's (see A message's time); the provider's avatar marks no row of the chat: no answer, call, notice of lich's or closing line. Two kinds of row are excepted: the harness's own notes about its background work (see A harness's background note) and what another session sent this one (see A message from another session). A thought is a muted fold, closed, with the
   sparkles before its label.
 - **A turn's tool calls** fold by run: the calls between two of the agent's texts (or the person's message and
   the first text) fold into one muted line where the first of them came. One line for the whole turn stood where
@@ -661,11 +661,29 @@ never makes the Latest pill show.
 - **A harness's background note** (`chat_tasknote.go`), a `<task-notification>` Claude Code writes into the
   conversation when a subagent, a background command or a Monitor moves, is a row of its own: the provider's
   pixel mark (`Space(3.5)`), the note's summary in `TextSM` medium in the harness's own words, untranslated,
-  `Destructive` when its status is failed, and nothing after it. The mark is the one exception
+  `Destructive` when its status is failed, and nothing after it. The mark is an exception
   to the chat's rule against provider avatars: without it the row reads as a worker's note lich wrote. A note
   that carries text (a subagent's result as Markdown, a Monitor's event muted) ends in a muted chevron and
   opens closed, its text unfolding under the summary; a command's note has neither. Notes under each other
   start no turn.
+- **A message from another session** (`chat_envelope_draw.go`) wears the provider mark of the session that sent
+  it, so the person tells another agent's words from their own and from this agent's at a glance, across
+  providers.
+  A worker's outcome (finished, failed, stopped, waiting, expired) reaches the session that opened the worker as
+  one shut line, the shape of a background note: the mark (`Space(3.5)`), a glyph of how it ended (check in
+  `TonePass`, cross in `Destructive`, stop square muted, clock in `ToneWait` while it waits and muted once it
+  expired), the title in `TextSM` medium, then, muted and cut on one line, the first line of its text with
+  Markdown's code and bold marks dropped. A note with text ends in a chevron, and a click on the line unfolds
+  the text under it, indented past the mark, the preview leaving the line while it is open; it opens shut,
+  since the agent reads the report and the person seldom needs it. A muted `arrow-up-right` at the far right,
+  lit on hover, opens the worker's card while it is still open. The line's own click folds, never opens the
+  card.
+  A task reaches the worker at the column's left, as the other side of a conversation in a messaging app: the
+  sender's mark, then over the box its name in `TextXS` medium and the same arrow opening the sender, then the
+  prompt in a `Card` balloon with a `Border` hairline, `RadiusXL` but for the corner by the mark, `RadiusSM`.
+  The right side is the person's alone, so a message they send the worker mid-task reads as theirs. The task
+  stays open: it is what the turn answers. Its time and copy button stand under the box at its left edge.
+  A session that is gone draws the generic mark and no arrow.
 - **An empty chat** (its conversation read and holding nothing: a new session, or after `/new`) draws its start
   screen (`chat_start.go`): lich's mark in pixel art, the Welcome screen's still frame (48x68, pixels of 1.5dp,
   its five tones from the tokens: `Foreground`, a mix of it and `MutedForeground`, `MutedForeground`, and two
