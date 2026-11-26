@@ -47,7 +47,7 @@ func vimEditorOf(t *testing.T, dir, rel, text string) (*fileEditor, *fakeDisk) {
 	}
 	h := newVimHost(func() {})
 	h.args = []string{"--embed", "--clean"}
-	t.Cleanup(h.close)
+	t.Cleanup(func() { vimCloseNow(h) })
 	f.env.vim = h
 	layOut(t, f)
 	vimUntil(t, f, "the buffer to open", func() bool { return f.vim.state != nil })
@@ -600,4 +600,16 @@ func TestVimCompletionMenuLaysOutItsWordsInLineWithTheWord(t *testing.T) {
 	u, _ := f.env.vim.status(buf)
 	layOut(t, f)
 	f.paintVimPum(frameCtx(), u)
+}
+
+// vimCloseNow ends h's Neovim and waits for it, so it writes nothing more in
+// a test's folders once they are being removed; close does not wait.
+func vimCloseNow(h *vimHost) {
+	h.mu.Lock()
+	v := h.nv
+	h.nv = nil
+	h.mu.Unlock()
+	if v != nil {
+		_ = v.Close()
+	}
 }
