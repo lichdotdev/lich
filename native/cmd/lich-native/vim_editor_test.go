@@ -11,9 +11,11 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/f32"
 	"gioui.org/font/gofont"
 	"gioui.org/io/input"
 	"gioui.org/io/key"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/text"
@@ -555,14 +557,30 @@ func TestVimClickMovesVimsCursor(t *testing.T) {
 
 func TestVimWheelScrollsVimsWindow(t *testing.T) {
 	f, _ := vimEditor(t, strings.Repeat("line\n", 200))
-	vimResized(t, f)
+	r := newFrameRig(image.Pt(400, 300), func(gtx C, _ *ui.Theme) {
+		if d, err := f.ed.Layout(gtx); err == nil {
+			f.vimResize(d.Size)
+		}
+	})
+	r.frame()
 	top, _ := f.ed.LineBlockAt(f.ed.State().Line(51).From)
-	f.ed.SetScrollTop(top)
-	layOut(t, f)
-	vimUntil(t, f, "the wheel move Vim's top line", func() bool { return f.vim.state.top == 51 })
+	r.router.Queue(pointer.Event{Kind: pointer.Scroll, Source: pointer.Mouse, Position: f32.Pt(200, 150), Scroll: f32.Pt(0, float32(top))})
+	r.frame()
+	until := func(what string, ok func() bool) {
+		t.Helper()
+		for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(5 * time.Millisecond) {
+			f.syncVim()
+			r.frame()
+			if ok() {
+				return
+			}
+		}
+		t.Fatalf("never saw %s; Neovim at %+v", what, f.vim.state)
+	}
+	until("the wheel move Vim's top line", func() bool { return f.vim.state.top == 51 })
 	for range 20 {
 		f.syncVim()
-		layOut(t, f)
+		r.frame()
 		time.Sleep(5 * time.Millisecond)
 	}
 	if got := f.ed.LineBlockAtHeight(f.ed.ScrollTop()).Number; got != 51 {

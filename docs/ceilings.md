@@ -2715,6 +2715,18 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   opened, saved or reloaded, never on a timer, so a commit made meanwhile shows at the next of those. Its
   room counts the line's runes as cells, so a line with tabs or wide characters cuts it at the code area's
   edge without the "…".
+- **The editor's language servers come from godemirror's catalog, one per server and project folder**
+  (`native/cmd/lich-native/lsp_*.go`, `stage_editor_lsp.go`, off while Vim mode is on, where the person's
+  Neovim runs its own): a file gets the first server of `servers.Lookup` whose program is on the PATH or among
+  those lich installed, started at the nearest folder holding one of its root markers up to the checkout, and
+  kept for the window's life; a server whose lspconfig command is computed in Lua (no `Command` in the catalog)
+  is never started, a file outside the checkout gets none, and a server that exits is not restarted until the
+  file is opened again. Install runs mason-registry's recipe in the background into lich's cache folder
+  (`lich/lsp/<server>`), for Go, npm, PyPI and Cargo packages when go, npm, python3 or cargo is on the PATH; a
+  GitHub release (rust-analyzer, lua-language-server, clangd and most others) gets no Install yet. A definition
+  in another file of the checkout opens in the editor, one outside it read only; a rename's or a code action's
+  edits to other files are written to disk as they stand there, so an unsaved change in an editor of another
+  checkout is not seen. Find references, the outline and formatting have no place in the window yet.
 - **Vim mode is the person's own Neovim behind the editor, not an emulation** (`native/cmd/lich-native/vim*.go`,
   Settings › Editor › Vim mode, off by default): the window starts one `nvim --embed` with the person's config at
   the first key, every editor holds a buffer in it named as its file (so the filetype and its settings apply,

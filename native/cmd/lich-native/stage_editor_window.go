@@ -281,7 +281,7 @@ func (u *window) editorIsland(gtx C, v stageView) error {
 	if id := u.model.referenceTarget(v.editor); id != "" {
 		inject = u.injector(id)
 	}
-	return f.layout(gtx, th, editorEnv{root: &u.root, code: code, inject: inject, comments: &u.comments, notify: func(t ui.Toast) { u.toaster.Show(t) }, vim: u.vimHost(),
+	return f.layout(gtx, th, editorEnv{root: &u.root, code: code, inject: inject, comments: &u.comments, notify: func(t ui.Toast) { u.toaster.Show(t) }, vim: u.vimHost(), lsp: u.lspHost(),
 		relative: u.settings.editor.prefs.relative})
 }
 
@@ -294,6 +294,13 @@ func (u *window) vimHost() *vimHost {
 		u.vim = newVimHost(u.editors.invalidate)
 	}
 	return u.vim
+}
+
+func (u *window) lspHost() *lspHost {
+	if u.lsp == nil {
+		u.lsp = newLspHost(u.editors.invalidate)
+	}
+	return u.lsp
 }
 
 // editorWouldAsk is whether opening t would ask about unsaved changes to

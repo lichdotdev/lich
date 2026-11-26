@@ -191,7 +191,8 @@ func (f *fileEditor) header(gtx C, th *ui.Theme) D {
 	return layout.Inset{Left: ui.Space(3), Right: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 		return layout.W.Layout(gtx, func(gtx C) D {
 			gtx.Constraints.Min.X = gtx.Constraints.Max.X
-			children := []layout.FlexChild{layout.Flexed(1, func(gtx C) D { return f.title(gtx, th) })}
+			children := []layout.FlexChild{layout.Flexed(1, func(gtx C) D { return f.title(gtx, th) }),
+				layout.Rigid(func(gtx C) D { return f.lspStatus(gtx, th) }), ui.Gap(2)}
 			if isMarkdown(f.rel) && f.kind == blobNone {
 				children = append(children, layout.Rigid(func(gtx C) D { return f.markdownToggles(gtx, th, f.env.root) }), ui.Gap(1.5))
 			}
@@ -214,9 +215,13 @@ func (f *fileEditor) title(gtx C, th *ui.Theme) D {
 		children = append(children, ui.Gap(2), layout.Rigid(func(gtx C) D { return ui.Dot(gtx, th.ToneWait, editorDirtyDot) }))
 	}
 	if f.readOnly() {
+		word := i18n.T("dock.editor.artifactReadOnly")
+		if f.reference {
+			word = i18n.T("dock.editor.readOnly")
+		}
 		// a lock says it; its word is for screen readers
 		children = append(children, ui.Gap(3), layout.Rigid(func(gtx C) D {
-			return labeledGlyph(gtx, i18n.T("dock.editor.artifactReadOnly"), func(gtx C) D { return icEditorLock.Layout(gtx, ui.Space(3.5), th.MutedForeground) })
+			return labeledGlyph(gtx, word, func(gtx C) D { return icEditorLock.Layout(gtx, ui.Space(3.5), th.MutedForeground) })
 		}))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)

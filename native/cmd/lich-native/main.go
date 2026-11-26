@@ -125,7 +125,9 @@ type window struct {
 	comments commentStore
 	// vim is the Neovim the editors run in while Settings › Editor › Vim
 	// is on, started at the first key.
-	vim         *vimHost
+	vim *vimHost
+	// lsp runs the editors' language servers while Vim is off.
+	lsp         *lspHost
 	editors     stageEditors
 	commentEdit commentEditDialog
 	dock        *dock

@@ -47,6 +47,8 @@ type fileEditor struct {
 	// subagent file of the chat's /memory and /agents panels.
 	dir      string
 	writable bool
+	// reference is set on a file outside the checkout a definition led to.
+	reference bool
 	// onDirty hears the editor start or stop holding unsaved changes, onSaved
 	// a save that landed, and onQuit Vim's :q, discard set when its changes
 	// are to be dropped.
@@ -83,6 +85,8 @@ type fileEditor struct {
 	disk    diskWatch
 	saving  editorSaving
 	vim     vimBuffer
+	// lsp is the editor's language server while Vim is off.
+	lsp editorLsp
 	// editedAt is the last edit, which autoSave counts from on now's clock.
 	editedAt time.Time
 	now      func() time.Time
@@ -104,6 +108,8 @@ type editorEnv struct {
 	comments *commentStore
 	notify   func(ui.Toast)
 	vim      *vimHost
+	// lsp runs the language servers while Vim is off.
+	lsp *lspHost
 	// relative numbers the lines by their distance from the cursor's.
 	relative bool
 }
@@ -130,6 +136,13 @@ func (f *fileEditor) openArtifact(dir, name string) {
 	f.openFrom(dir, name, 0, 0, agentNote{})
 }
 
+// openReference shows file name of dir, outside the checkout, read only and
+// on line: where the language server found a definition.
+func (f *fileEditor) openReference(dir, name string, line int) {
+	f.openFrom(dir, name, line, line, agentNote{})
+	f.reference = true
+}
+
 // openOutside shows file name of dir, outside the checkout, to edit and save
 // in place.
 func (f *fileEditor) openOutside(dir, name string) {
@@ -144,7 +157,7 @@ func (f *fileEditor) readOnly() bool { return f.dir != "" && !f.writable }
 func (f *fileEditor) holds(dir, rel string) bool { return f.rel == rel && f.dir == dir }
 
 func (f *fileEditor) openFrom(dir, rel string, line, end int, note agentNote) {
-	f.writable = false
+	f.writable, f.reference = false, false
 	if !f.holds(dir, rel) {
 		f.dir, f.rel, f.kind = dir, rel, previewKindOf(rel)
 		f.opens++
@@ -324,6 +337,7 @@ func (f *fileEditor) layout(gtx C, th *ui.Theme, env editorEnv) error {
 	}
 	f.takeSave()
 	f.syncVim()
+	f.syncLSP()
 	f.actions(gtx)
 	f.autoSave(gtx)
 	f.watchDisk(gtx)
