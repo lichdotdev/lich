@@ -59,7 +59,7 @@ func TestMemoryOpensTheFilesInsteadOfSending(t *testing.T) {
 	u, r, f, _ := memoryFrames(t, "/memory")
 	// Group labels are uppercase since the composer panels share the palette's
 	// group heading (contract changed).
-	if !r.showsAll("Memory", "User instructions", "not created yet", "Project instructions", "docs/rules.md", "Auto-memory", "SAVED MEMORIES", "lich-uses-pnpm", "frontend is pnpm") {
+	if !r.showsAll("Memory", "User instructions", "not created yet", "Project instructions", filepath.FromSlash("docs/rules.md"), "Auto-memory", "SAVED MEMORIES", "lich-uses-pnpm", "frontend is pnpm") {
 		t.Errorf("the memory is not drawn:\n%s", r.drawn())
 	}
 	if u.model.chat.isRunning("s1") || f.callsOf(api.ChatPrompt.Name) != 0 {
@@ -124,7 +124,7 @@ func TestAgentsListOpenAndAdd(t *testing.T) {
 	}
 	toolsSettle(r)
 	u.takeCodeAsk()
-	if ed := u.editors.byCheckout[nativeTestPath("/repo")]; ed.rel != filepath.FromSlash(".claude/agents/scout.md") || ed.dir != "" {
+	if ed := u.editors.byCheckout[nativeTestPath("/repo")]; ed.rel != ".claude/agents/scout.md" || ed.dir != "" {
 		t.Errorf("the new agent opened as %q in %q", ed.rel, ed.dir)
 	}
 }

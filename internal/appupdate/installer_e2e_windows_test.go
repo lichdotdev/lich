@@ -45,6 +45,8 @@ func TestWindowsInstallerE2E(t *testing.T) {
 	runFixture(t, root, "go", "build", "-overlay", overlay, "-ldflags=-H=windowsgui -X main.version=0.8.0", "-o", filepath.Join(bin, "lich.exe"), ".")
 	writeFixture(t, filepath.Join(install, "lich-native.exe"), []byte("0.7.0"))
 	writeFixture(t, filepath.Join(bin, "lich-native.exe"), []byte("0.8.0"))
+	writeFixture(t, filepath.Join(bin, "lich-browser.exe"), []byte("placeholder"))
+	writeFixture(t, filepath.Join(bin, "WebView2Loader.dll"), []byte("placeholder"))
 	t.Setenv("VERSION", "0.8.0")
 	iscc := filepath.Join(os.Getenv("ProgramFiles(x86)"), "Inno Setup 6", "ISCC.exe")
 	runFixture(t, root, iscc, "/Qp", filepath.Join(build, "lich.iss"))
