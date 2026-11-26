@@ -2,7 +2,7 @@
 
 **Status: contract, Linux first.** This replaces the headless Chromium of
 `docs/browser-tab.md`. Windows (WebView2) and macOS (WKWebView) follow on the
-same contract; Chrome, chromedp and the screencast go once all three run.
+same contract; Chrome and chromedp go once all three run.
 
 ## Why a process of its own
 
@@ -21,6 +21,7 @@ the window closed. So the pages live in `lich-browser`, a cgo binary built in
 
 ```
 backend ──stdin/stdout, JSON lines──▶ lich-browser ◀──X11── lich-native
+                                     (Wayland: frames go through the backend)
    ▲                                                         │
    └──────────── RPC, /events (api) ─────────────────────────┘
 ```
@@ -81,9 +82,26 @@ the same.
   (`browser.Mouse`, `.Key`, `.Text`, as the screencast does). `CALayerHost`
   is private API.
 
-Wayland without XWayland: a later step draws pages off screen and hands the
-window their frames by shared memory. Until then the window opens on
-XWayland (`app.PreferX11`) as it does today.
+## Showing a page in the window (Wayland without XWayland)
+
+With no X display (`DISPLAY` unset), `lich-browser` runs GTK on Wayland and
+each tab draws in a `GtkOffscreenWindow`: no surface on screen, but mapped,
+so WebKit runs it as a page in sight, as the X11 path's off-screen window
+does. `hello` answers `frames`, and every tab carries `xid` 0, so the window
+draws the page the way it drew Chrome's screencast: the backend asks for
+frames with `screencast` while a pane shows the page, `lich-browser` sends a
+`frame` each time the shown tab draws, and the pane's pointer, wheel, keys
+and committed text come back as `mouse`, `key` and `text`, which WebKit
+takes as native input (`isTrusted`).
+
+A frame is a JPEG (libjpeg-turbo, quality 85, as Chrome's screencast was), base64 on the wire and on to
+the window as `browser:frame` unchanged: 2 ms to encode a 1280x720 page and
+8 ms at 2560x1440, where PNG took 18 and 57 ms and raw pixels (19 MiB at
+2560x1440) do not fit an `/events` message (measured 2026-11-26). One frame
+is encoded at a time; a tab that draws meanwhile is captured again once it
+is done, so a page that draws faster than that sends its newest frame. Once
+the page is still, the backend sends the window one PNG of it from
+`snapshot`, as it did with Chrome's.
 
 ## The wire
 
@@ -108,7 +126,7 @@ import; this table is what each one does.
 
 | method | params | result | does |
 |---|---|---|---|
-| `hello` | | `version` | first request; a version the backend does not know ends the process |
+| `hello` | | `version`, `frames` | first request; a version the backend does not know ends the process. `frames`: pages draw off screen and the window draws their frames (Wayland without XWayland) |
 | `window` | `xid` | | the window's X window, 0 once it closed |
 | `open` | `page`, `url`, `scale`, `w`, `h`, `downloads` | | a page with one tab on `url`, laid out at `w`×`h` CSS pixels drawn at `scale` while no window shows it. Its cookies and storage are its own and end with it. Downloads land in the `downloads` directory under the name the server suggests, made unique there as Chrome makes it (`name (1).ext`) |
 | `close` | `page` | | ends the page and its tabs |
@@ -133,6 +151,8 @@ import; this table is what each one does.
 | `popIn` | `page` | | the page back out of its own window, for the pane to embed again |
 | `raise` | `page` | | brings a popped-out page's window to the front |
 | `clock` | | `ns` | the monotonic clock every event's `at` reads |
+| `screencast` | `page`, `w`, `h`, `scale` | | where `hello` answered `frames`: lays the page out as `size` and `zoom` do, sends a `frame` of its shown tab now and each time it draws again |
+| `stopScreencast` | `page` | | no more frames |
 
 ### Events
 
@@ -147,12 +167,12 @@ import; this table is what each one does.
 | `download` | `page`, `guid`, `url`, `name`, `path`, `state`, `received`, `total` | each step of a download |
 | `crashed` | `page` | the page's web process died |
 | `closed` | `page` | the person closed a popped-out page's window, which ends the page |
+| `frame` | `page`, `tab`, `data` | while a `screencast` runs, what the shown tab drew, `data` a base64 JPEG at `scale`; `tab` is the inspector's while it is shown |
 
 ## What stays Chrome's until the end
 
 All three systems hold their pages here. `internal/browser` picks the
-launcher at start: `lich-browser` beside the backend and an X display on
-Linux, `lich-browser` beside `lich` in Lich.app's `Contents/MacOS` on macOS,
-`lich-browser.exe` beside `lich.exe` on Windows. Chrome stays only where none
-is found, and for Wayland without XWayland, until pages are drawn off screen
-there (above); then Chrome, chromedp and the screencast go.
+launcher at start: `lich-browser` beside the backend and an X or Wayland
+display on Linux, `lich-browser` beside `lich` in Lich.app's
+`Contents/MacOS` on macOS, `lich-browser.exe` beside `lich.exe` on Windows.
+Chrome stays only where none is found; then Chrome and chromedp go.
