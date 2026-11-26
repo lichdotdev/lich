@@ -130,6 +130,65 @@ func TestSnapshotIsTheViewportAtTheScale(t *testing.T) {
 	}
 }
 
+// keysPage is a form with two fields, the first holding "ab", which records
+// each key event it gets and its submit.
+const keysPage = `data:text/html,<form id=f onsubmit="event.preventDefault(); window.submitted = true">
+<input id=a value=ab><input id=b><button>Go</button></form>
+<script>window.keys = []; for (const t of ['keydown', 'keyup']) document.addEventListener(t, e => keys.push(t + ':' + e.key), true);</script>`
+
+// A named key does what it does on Chrome, with the page's input method
+// whatever the desktop runs: the person's fcitx5 swallowed every key the
+// wire sent, so no Enter, Tab or Backspace reached the page (rc.4).
+func TestNamedKeysActOnThePage(t *testing.T) {
+	pressNamedKeys(t, false)
+}
+
+// An embedded page knows the window's X window, where keys the person types
+// over the page go on to. An input method that hands a key back later
+// (fcitx5) had the wire's keys sent there too, so they never reached the
+// page. The window here is another lich-browser's tab, which takes keys as a
+// page. Measured under fcitx5 on its own D-Bus and Xvfb; with no input
+// method, it guards the path every key takes.
+func TestNamedKeysActOnAnEmbeddedPage(t *testing.T) {
+	pressNamedKeys(t, true)
+}
+
+func pressNamedKeys(t *testing.T, embedded bool) {
+	for _, tc := range []struct{ key, check, want string }{
+		{"Backspace", "a.value", `"a"`},
+		{"Enter", "!!window.submitted", "true"},
+		{"Tab", "document.activeElement.id", `"b"`},
+	} {
+		t.Run(tc.key, func(t *testing.T) {
+			c := start(t)
+			if embedded {
+				c.must(browserwire.Window, browserwire.WindowParams{XID: otherWindow(t)}, nil)
+			}
+			c.open("b1", keysPage, 400, 300, 1)
+			c.eval("b1", "a.focus(), a.setSelectionRange(2, 2), 0")
+			for _, kind := range []string{browserwire.KeyDown, browserwire.KeyUp} {
+				c.must(browserwire.Key, browserwire.KeyParams{Page: "b1", Kind: kind, Key: tc.key, Code: tc.key}, nil)
+			}
+			if got := c.eval("b1", tc.check); got != tc.want {
+				t.Fatalf("after %s, %s is %s, want %s; keys %s", tc.key, tc.check, got, tc.want, c.eval("b1", "keys"))
+			}
+		})
+	}
+}
+
+// otherWindow is the X window of another lich-browser's tab.
+func otherWindow(t *testing.T) uint64 {
+	t.Helper()
+	other := start(t)
+	other.open("w", "data:text/html,", 200, 100, 1)
+	raw, _ := other.event(0, browserwire.EventTabs, nil)
+	var tabs browserwire.TabsEvent
+	if err := json.Unmarshal(raw, &tabs); err != nil || len(tabs.Tabs) == 0 || tabs.Tabs[0].XID == 0 {
+		t.Fatalf("the other window's tabs %s", raw)
+	}
+	return tabs.Tabs[0].XID
+}
+
 func TestNativeInputTypesIntoAnInputAndIsTrusted(t *testing.T) {
 	c := start(t)
 	s := site(t)
