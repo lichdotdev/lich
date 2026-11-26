@@ -1,6 +1,6 @@
-agentplugin.Install(PluginProviderOptions) None
+agentplugin.Problem(None) PluginProblem
+agentplugin.Retry(None) None
 agentplugin.Status(None) []PluginStatus
-agentplugin.Update(PluginProviderOptions) None
 appupdate.Apply(None) None
 appupdate.Status(None) AppUpdateStatus
 artifact.Attach(AttachArtifactOptions) DropAttachment
@@ -375,8 +375,7 @@ event extension-removed ExtensionIDOptions
 event extension-status Extension
 event extension-update ExtensionUpdate
 event forge ForgeChange
-event lich-plugin-profiles PluginProfiles
-event plugin-incompatible PluginIncompatible
+event lich-plugin-problem PluginProblem
 event profile-changed ProfileChanged
 event project-added ProjectAdded
 event project-closed ProjectClosed
@@ -426,11 +425,13 @@ event thread-fixes []ThreadFix
 event window-close None
 event window-raise None
 
-PluginProviderOptions {
-	provider string
+None {
 }
 
-None {
+PluginProblem {
+	bundle bool
+	providers []string
+	error string
 }
 
 PluginStatus {
@@ -2477,18 +2478,6 @@ ForgeChange {
 	forge string
 }
 
-PluginProfiles {
-	provider string
-	name string
-	version string
-	failures []PluginProfileFailure
-}
-
-PluginIncompatible {
-	id string
-	version string
-}
-
 ProfileChanged {
 	provider string
 	profile Profile
@@ -3228,12 +3217,6 @@ ChatTurnChanges {
 	files int
 	added int
 	removed int
-}
-
-PluginProfileFailure {
-	profile string
-	name string
-	error string
 }
 
 SessionCache {

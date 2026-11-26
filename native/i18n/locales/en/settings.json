@@ -410,16 +410,7 @@
   "pluginSetting": {
     "title": "lich plugin",
     "searchWords": "hooks install",
-    "installed": "Plugin installed. Restart your sessions to apply.",
-    "updated": "Plugin updated. Restart your sessions to apply.",
-    "cliMissing": "CLI not installed",
-    "notInstalled": "Plugin not installed",
-    "unsupported": "v{version}, not supported by this lich",
-    "install": "Install",
-    "updateTo": "Update to v{version}",
-    "updateAll": "Update all",
-    "reregister": "Re-register hooks",
-    "installVersion": "Install v{version}"
+    "notInstalled": "Plugin not installed"
   },
   "helpSettings": {
     "bugTitle": "Report a bug",
@@ -526,18 +517,6 @@
   },
   "settingsVcs": {
     "pathReread": "PATH could not be re-read; relaunch lich."
-  },
-  "settingsUpdatesPlugin": {
-    "hint": {
-      "codex": "Run /hooks in a Codex session to trust the plugin's hooks.",
-      "crush": "Reports its status, name and git changes. A Crush older than 0.99.0 has no end-of-turn event, so there it only reports its session id and refreshes git status.",
-      "omp": "Reports its status, name and git changes. It has no observed approval event, so a session waiting on your permission shows a spinner rather than a bell.",
-      "antigravity": "Reports its status, name and git changes. It has no observed approval event, so a session waiting on your permission shows a spinner rather than a bell.",
-      "cursor": "Runs the same plugin as Claude Code, so it reports what that version reports and updates with it. lich adds only its own tools here. It raises no approval event either, so a session waiting on your permission shows a spinner rather than a bell."
-    },
-    "installFailed": "Install failed: {error}",
-    "updateFailed": "Update failed: {error}",
-    "profileFailed": "The lich plugin is not updated in the {pass} profile {profile}: {error}"
   },
   "settingsProfiles": {
     "title": "Profile",

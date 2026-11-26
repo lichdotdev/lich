@@ -75,36 +75,3 @@ func TestViewPatchNotesOpensThemInTheFrameAfterTheClick(t *testing.T) {
 		t.Errorf("the patch notes never came up:\n%s", next)
 	}
 }
-
-func pluginGateFrames(t *testing.T, offer ...backend.PluginStatus) (*window, *frameRig) {
-	t.Helper()
-	u, _ := newGateWindow(t)
-	u.plugin.started, u.plugin.offer = true, offer
-	r := newFrameRig(rigWindow, func(gtx C, th *ui.Theme) {
-		u.root.Layout(gtx, func(gtx C) D {
-			u.layoutPluginGate(gtx, th)
-			return D{Size: gtx.Constraints.Max}
-		})
-	})
-	return u, r
-}
-
-func TestPluginGateClosesInTheFrameAfterTheClick(t *testing.T) {
-	for _, button := range []string{"shell.agentPluginGate.notNow", "shell.agentPluginGate.dontAskAgain"} {
-		t.Run(button, func(t *testing.T) {
-			_, r := pluginGateFrames(t, backend.PluginStatus{Provider: "claude", Name: "Claude Code"})
-			_, next := r.clickLabel(t, i18n.T(button))
-			if strings.Contains(r.settle(t), i18n.T(button)) {
-				t.Errorf("the gate stayed up:\n%s", next)
-			}
-		})
-	}
-}
-
-func TestPluginGateDisablesInstallInTheFrameThatUntickedTheLastCLI(t *testing.T) {
-	_, r := pluginGateFrames(t, backend.PluginStatus{Provider: "claude", Name: "Claude Code"})
-	r.settle(t)
-	label := r.at(t, "Claude Code")
-	box := r.smallestClickIn(t, image.Rect(0, int(label.Y)-20, int(label.X), int(label.Y)+20))
-	r.click(t, box)
-}

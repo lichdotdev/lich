@@ -10,7 +10,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
 )
@@ -297,7 +296,7 @@ func TestKiroInstallWritesTheSourcedConversationIDParser(t *testing.T) {
 	s.bins = stubBin(mustExecutable(t))
 	configDir, _ := kiroTestHome(t)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Kiro}); err != nil {
+	if err := s.install(providers.Kiro); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -318,7 +317,7 @@ func TestKiroInstallWritesTheToolDetailFilter(t *testing.T) {
 	s.bins = stubBin(mustExecutable(t))
 	configDir, _ := kiroTestHome(t)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Kiro}); err != nil {
+	if err := s.install(providers.Kiro); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -356,7 +355,7 @@ func TestKiroInstallWritesTheAgentAndTheScripts(t *testing.T) {
 	s.bins = stubBin(self)
 	configDir, home := kiroTestHome(t)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Kiro}); err != nil {
+	if err := s.install(providers.Kiro); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -421,7 +420,7 @@ func TestKiroInstallRegistersTheServerInItsOwnAgent(t *testing.T) {
 	s.bins = stubBin(self)
 	kiroTestHome(t)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Kiro}); err != nil {
+	if err := s.install(providers.Kiro); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -446,7 +445,7 @@ func TestKiroInstallStopsOnAMissingScript(t *testing.T) {
 	s, _ := fileServer(t, files)
 	_, home := kiroTestHome(t)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Kiro}); err == nil {
+	if err := s.install(providers.Kiro); err == nil {
 		t.Fatalf("Install = nil, want an error for a release missing a script")
 	}
 	if _, err := os.Stat(filepath.Join(home, ".kiro", "agents", "lich.json")); err == nil {

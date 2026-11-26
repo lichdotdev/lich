@@ -109,9 +109,6 @@ type model struct {
 	// once its tab is already gone: the window stops the terminals and moves
 	// the screen.
 	projectClosed func(closedProject)
-	// pluginProfiles hears a pass that put Personal's lich plugin into the
-	// other profiles of a provider.
-	pluginProfiles func(backend.PluginProfiles)
 	// prChanged hears a pull request write land (PRChangedEvent).
 	prChanged func()
 	// themeSelection hears the stored theme selection change
@@ -128,9 +125,9 @@ type model struct {
 	// profileOffer hears another profile offered to a session
 	// (api.SessionProfileOfferEvent).
 	profileOffer func(api.SessionProfileOffer)
-	// pluginIncompatible hears a session report from a lich plugin outside
-	// the range this lich speaks (PluginIncompatibleEvent).
-	pluginIncompatible func()
+	// pluginProblem hears what lich could not do to give its sessions their
+	// plugin, or that the failure is over (api.PluginProblemEvent).
+	pluginProblem func(backend.PluginProblem)
 	// appUpdateProgress hears a step of an update being applied.
 	appUpdateProgress func(backend.AppUpdateProgress)
 	// closed is the closed projects, which the menu and the palette read.
@@ -495,9 +492,9 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			if step, err := backend.Decode(ev, api.ProviderInstallEvent); err == nil {
 				m.installEvent(ctx, step)
 			}
-		case api.PluginProfilesEvent.Name:
-			if pass, err := backend.Decode(ev, api.PluginProfilesEvent); err == nil && m.pluginProfiles != nil {
-				m.pluginProfiles(pass)
+		case api.PluginProblemEvent.Name:
+			if p, err := backend.Decode(ev, api.PluginProblemEvent); err == nil && m.pluginProblem != nil {
+				m.pluginProblem(p)
 			}
 		case api.ThemeSelectionEvent.Name:
 			if sel, err := backend.Decode(ev, api.ThemeSelectionEvent); err == nil && m.themeSelection != nil {
@@ -530,10 +527,6 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 		case api.SessionDuplicateEvent.Name:
 			if d, err := backend.Decode(ev, api.SessionDuplicateEvent); err == nil && m.duplicate != nil {
 				m.duplicate(d)
-			}
-		case api.PluginIncompatibleEvent.Name:
-			if m.pluginIncompatible != nil {
-				m.pluginIncompatible()
 			}
 		case api.SessionTouchedEvent.Name:
 			m.sessionTouched(ctx, ev)

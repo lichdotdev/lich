@@ -158,6 +158,10 @@ type pathBins struct{}
 
 func (pathBins) ProviderBin(_, _ string) string { return "" }
 
+// ProviderEnabled answers false: the report only reads the plugin's state, and a
+// pass that installs it never runs from here.
+func (pathBins) ProviderEnabled(string) (bool, error) { return false, nil }
+
 // Bundle writes the gzipped tar to w and returns the report it carries. root is
 // the directory every entry sits under, so extracting two bundles side by side
 // does not merge them.

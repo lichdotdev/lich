@@ -177,6 +177,9 @@ type Store interface {
 
 // Service manages PTY-backed shell sessions keyed by session ID.
 type Service struct {
+	// ensurePlugin sets the plugin up when a spawn finds it missing
+	// (SetPluginEnsure); nil does nothing.
+	ensurePlugin func(kind string)
 	// codexHookChecked is whether a Codex session already read whether Codex
 	// runs lich-plugin's PreToolUse hook (codexhook.go): once per run.
 	codexHookChecked atomic.Bool
@@ -340,6 +343,16 @@ func (s *Service) SetArtifactDir(dir string) {
 	s.artifactDir = dir
 }
 
+// SetPluginEnsure wires what a spawn, and a report from a plugin release this
+// lich does not speak, call to set the plugin up when it is missing
+// (agentplugin.Service.EnsureFor). Startup wiring, before any spawn.
+func (s *Service) SetPluginEnsure(fn func(kind string)) {
+	s.ensurePlugin = fn
+	if s.ws != nil {
+		s.ws.plugins.setOnIncompatible(func(string, string) { fn("") })
+	}
+}
+
 // readySettle is how long a session's PTY must stay quiet before lich hands it
 // work: long enough that a provider drawing its opening screen is not mistaken
 // for one waiting at a prompt, short enough to sit inside the wait an agent
@@ -410,9 +423,6 @@ func New(store Store, env []string, hub *events.Hub) *Service {
 		// The transport is built before the service that owns the bridge, so the
 		// path output takes when the socket cannot carry it is wired here.
 		ws.setFallback(s.emitData)
-		ws.plugins.setOnIncompatible(func(id, version string) {
-			events.Send(s.hub.Emit, api.PluginIncompatibleEvent, pluginEvent{ID: id, Version: version})
-		})
 		ws.setTyped(s.programTyped)
 	}
 	return s

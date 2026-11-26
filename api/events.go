@@ -167,12 +167,10 @@ var (
 	// count it was abandoned at, until it writes another one.
 	SessionTodoEvent = defineEvent[SessionTodo]("session-todo")
 
-	// PluginIncompatibleEvent carries a session whose hooks report from a plugin
-	// release outside the range this lich speaks ({id, version}). The window
-	// answers it by asking for the plugin status again, which is where the fix is
-	// offered: an install moved by the harness's own marketplace shows up here
-	// first.
-	PluginIncompatibleEvent = defineEvent[PluginIncompatible]("plugin-incompatible")
+	// PluginProblemEvent carries what lich could not do to give its sessions
+	// their plugin, emitted after each pass that sets it up (agentplugin.Ensure);
+	// the zero value says the last failure is over.
+	PluginProblemEvent = defineEvent[PluginProblem]("lich-plugin-problem")
 
 	// TerminalDataEvents carries base64-encoded PTY output. Output is
 	// base64-encoded because raw PTY bytes may split a multi-byte UTF-8 sequence
@@ -284,10 +282,6 @@ var (
 	// ProfileChangedEvent is the event a profile's update emits once it is
 	// written: its name, color or image changed.
 	ProfileChangedEvent = defineEvent[ProfileChanged]("profile-changed")
-
-	// PluginProfilesEvent is the event a pass over a provider's profiles reports
-	// on, once it has installed into at least one.
-	PluginProfilesEvent = defineEvent[PluginProfiles]("lich-plugin-profiles")
 
 	// AppUpdateProgressEvent is the hub event Apply's phases ride on, for the
 	// toast.

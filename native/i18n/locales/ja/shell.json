@@ -1,22 +1,8 @@
 {
-  "agentPluginGate": {
-    "updateAvailable": "lich プラグイン {version} が利用可能です",
-    "update": "更新",
-    "later": "後で",
-    "reregisterNeeded": "lich が {names} 用に書き込むフックを、インストールした新しいバージョン向けに登録し直す必要があります。",
-    "reregister": "登録し直す",
-    "installVersion": "v{version} をインストール",
-    "updated": "プラグインを更新しました。反映するにはセッションを再起動してください。",
-    "installed": "プラグインをインストールしました。反映するにはセッションを再起動してください。",
-    "codexTrust": "Codex: Codex のセッションで /hooks を実行し、プラグインのフックを信頼してください。",
-    "installFailed": "インストールに失敗しました: {error}",
-    "title": "エージェント連携を有効にする",
-    "description": "lich プラグインはセッションの状態とタイトルをアプリに伝え、git の状態を更新し、復元したセッションが会話を再開できるようにします。使っている CLI にインストールしてください。",
-    "needsHooks": "信頼するには /hooks が必要です",
-    "dontAskAgain": "今後表示しない",
-    "notNow": "今はしない",
-    "installing": "インストール中…",
-    "install": "インストール"
+  "pluginProblem": {
+    "release": "lich がプラグインをダウンロードできなかったため、新しいセッションはフックなしで起動します。",
+    "providers": "lich が {names} のプラグインを用意できなかったため、それらのセッションはフックなしで起動します。",
+    "retry": "再試行"
   },
   "appUpdateGate": {
     "available": "lich {version} が利用可能です",

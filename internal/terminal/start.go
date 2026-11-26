@@ -89,6 +89,7 @@ func (s *Service) Start(_ context.Context, opts api.StartOptions) (api.None, err
 	inheritCursorTrust(opts.Kind, opts.Cwd)
 	markCrushInitialized(opts.Kind, opts.Cwd)
 	s.reenablePlugin(opts.Kind, opts.ProjectID, profileDir)
+	s.ensurePluginFor(opts.Kind)
 	reports := s.awaitsStart(opts.Kind, profileDir)
 	awaits := reports && !trustAnswered(opts.Kind, opts.Cwd, profileDir)
 	sess, cwd, err := s.spawnSession(opts, profileDir, name, oc2)

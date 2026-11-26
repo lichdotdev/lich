@@ -92,11 +92,13 @@ var supported = []string{
 	providers.Kiro,
 }
 
-// BinResolver supplies the binary to shell out to for a provider. The store
-// implements it; the empty project id asks for the global value, and an empty
-// return means "the provider's default name on PATH".
+// BinResolver supplies the binary to shell out to for a provider, and whether
+// the person turned it on. The store implements it; the empty project id asks
+// for the global value, and an empty return means "the provider's default name
+// on PATH".
 type BinResolver interface {
 	ProviderBin(providerID, projectID string) string
+	ProviderEnabled(providerID string) (bool, error)
 }
 
 // Service reports and manages the lich plugin's install state per provider.
@@ -120,12 +122,16 @@ type Service struct {
 	// say "this binary cannot be resolved", which is the branch that decides
 	// whether a session is promised tools it does not have.
 	lichBin func() string
-	// emit reports a pass over a provider's profiles (profiles.go); nil keeps
-	// an install to Personal alone. installMu keeps one plugin CLI install
-	// running at a time: a profile's marketplace clone is linked to Personal's
-	// for Claude Code, and a login's install can land in the middle of a pass.
+	// emit reports what a pass could not do (ensure.go); nil reports nothing.
+	// installMu keeps one plugin CLI install running at a time: a login's
+	// install can land in the middle of a pass.
 	emit      func(name string, data any)
 	installMu sync.Mutex
+	// ensureMu keeps one pass running at a time, problem is what the last one
+	// could not do.
+	ensureMu  sync.Mutex
+	problemMu sync.Mutex
+	problem   Problem
 }
 
 // New returns a service that shells out through bins.
@@ -260,33 +266,35 @@ func computeStatus(id string, available, installed bool, installedVer, latestVer
 	}
 }
 
-// Install puts the plugin into a provider: through its plugin CLI where there
-// is one, by writing the released files where there is not.
-func (s *Service) Install(_ context.Context, opts api.PluginProviderOptions) (api.None, error) {
-	switch opts.Provider {
+// install puts the plugin into a provider, the same write whether it is there
+// or not: through its plugin CLI where there is one, by writing the released
+// files where there is not, and for the providers whose sessions load lich's
+// own copy, by unpacking it.
+func (s *Service) install(provider string) error {
+	switch provider {
 	case providers.Claude:
-		return api.None{}, s.claudeInstall()
+		return s.claudeInstall()
 	case providers.Codex:
-		return api.None{}, s.installAndFollow(opts.Provider)
+		return s.installAndFollow(provider)
 	case providers.Antigravity:
-		return api.None{}, s.antigravityInstall()
+		return s.antigravityInstall()
 	case providers.OpenCode:
-		return api.None{}, s.opencodeInstall()
+		return s.opencodeInstall()
 	case providers.OMP:
-		return api.None{}, s.ompInstall()
+		return s.ompInstall()
 	case providers.Crush:
-		return api.None{}, s.crushInstall()
+		return s.crushInstall()
 	case providers.Cursor:
-		return api.None{}, s.cursorInstall()
+		return s.cursorInstall()
 	case providers.Kiro:
-		return api.None{}, s.kiroInstall()
+		return s.kiroInstall()
 	}
-	return api.None{}, fmt.Errorf("no lich plugin for provider %q", opts.Provider)
+	return fmt.Errorf("no lich plugin for provider %q", provider)
 }
 
 // installAndFollow installs into Personal, then into every other profile of
-// the provider in the background (followPersonal), so a profile never stays on
-// a release Personal left.
+// the provider (followPersonal), so a profile never stays on a release
+// Personal left.
 func (s *Service) installAndFollow(provider string) error {
 	s.installMu.Lock()
 	err := profileProviders[provider].install(s, nil)
@@ -294,19 +302,7 @@ func (s *Service) installAndFollow(provider string) error {
 	if err != nil {
 		return err
 	}
-	if s.emit != nil {
-		go s.followPersonal(provider)
-	}
-	return nil
-}
-
-// Update pulls the newest compatible release into a provider, which is the
-// same write as an install for every harness: the file-shipped ones replace
-// their files wholesale, and Claude Code and Codex re-pin the marketplace
-// (claudePinMarketplace). Every one applies it on the next session (a restart
-// is required, which the UI signals).
-func (s *Service) Update(ctx context.Context, opts api.PluginProviderOptions) (api.None, error) {
-	return s.Install(ctx, opts)
+	return s.followPersonal(provider)
 }
 
 // installedVersion reads the plugin's installed version from a provider's own

@@ -1,8 +1,4 @@
 {
-  "plugin": {
-    "incompatibleInstall": "{installs} にある lich プラグインは、この lich ではサポートされていません。この lich が対応しているリリース v{version} をインストールしてください。",
-    "incompatibleUpdate": "{installs} にある lich プラグインは、この lich ではサポートされていません。lich をアップデートするか、この lich に対応するリリースを探せるよう、ネットワークに接続されているか確認してください。"
-  },
   "progress": {
     "updateFailed": "アップデートに失敗しました: {error}",
     "installFailed": "インストールに失敗しました: {error}",

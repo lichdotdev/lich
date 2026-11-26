@@ -15,7 +15,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
 	"github.com/lichdotdev/lich/internal/semver"
@@ -185,7 +184,7 @@ func TestOpencodeInstallUnpacksThePluginAndCopiesTheSkill(t *testing.T) {
 	config := opencodeConfig(t)
 	s, asked := fileServer(t, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err != nil {
+	if err := s.install(providers.OpenCode); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	if _, version, ok := BundleDir(); !ok || version != testVersion {
@@ -230,7 +229,7 @@ func TestOpencodeInstallRemovesTheModulesLichWrote(t *testing.T) {
 	}
 	s, _ := fileServer(t, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err != nil {
+	if err := s.install(providers.OpenCode); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	for _, path := range paths {
@@ -251,7 +250,7 @@ func TestOpencodeInstallLeavesAModuleLichDidNotWrite(t *testing.T) {
 	}
 	s, _ := fileServer(t, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err != nil {
+	if err := s.install(providers.OpenCode); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	for _, path := range paths {
@@ -267,7 +266,7 @@ func TestOpencodeInstallWritesNothingWhenTheFetchFails(t *testing.T) {
 	s, _ := fileServer(t, nil)
 	s.tarballBase += "/missing"
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err == nil {
+	if err := s.install(providers.OpenCode); err == nil {
 		t.Fatal("Install: want an error when the release does not arrive, got nil")
 	}
 	if _, err := os.Stat(filepath.Join(config, "opencode", "skills")); !os.IsNotExist(err) {
@@ -309,7 +308,7 @@ func TestOMPInstallFollowsTheProfileOverTheOverride(t *testing.T) {
 	t.Setenv("OMP_PROFILE", "work")
 	s, _ := fileServer(t, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OMP}); err != nil {
+	if err := s.install(providers.OMP); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -337,7 +336,7 @@ func TestOMPInstallRegistersTheServerAndRemovesTheExtension(t *testing.T) {
 	writeModule(t, extension, markedModule("0.20.0", "export default () => {}\n"))
 	s, asked := fileServer(t, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OMP}); err != nil {
+	if err := s.install(providers.OMP); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -391,7 +390,7 @@ func TestOMPInstallLeavesAnExtensionLichDidNotWrite(t *testing.T) {
 	writeModule(t, extension, "export default () => {}\n")
 	s, _ := fileServer(t, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OMP}); err != nil {
+	if err := s.install(providers.OMP); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	if _, err := os.Stat(extension); err != nil {
@@ -415,7 +414,7 @@ func TestOMPInstallKeepsEveryOtherServer(t *testing.T) {
 	}
 	s, _ := fileServer(t, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OMP}); err != nil {
+	if err := s.install(providers.OMP); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -446,7 +445,7 @@ func TestOMPInstallRefusesAnUnreadableDocument(t *testing.T) {
 	}
 	s, _ := fileServer(t, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OMP}); err == nil {
+	if err := s.install(providers.OMP); err == nil {
 		t.Fatal("Install: want an error for a document lich cannot merge into, got nil")
 	}
 	data, err := os.ReadFile(path)
@@ -465,7 +464,7 @@ func TestOMPInstallWritesNothingWhenTheFetchFails(t *testing.T) {
 	s, _ := fileServer(t, nil)
 	s.tarballBase += "/missing"
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OMP}); err == nil {
+	if err := s.install(providers.OMP); err == nil {
 		t.Fatal("Install: want an error when the release does not arrive, got nil")
 	}
 	if _, err := os.Stat(filepath.Join(agent, ompMCPFile)); !os.IsNotExist(err) {
@@ -554,7 +553,7 @@ func installCrush(t *testing.T, s *Service, existingRC string) (string, string) 
 			t.Fatal(err)
 		}
 	}
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Crush}); err != nil {
+	if err := s.install(providers.Crush); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	data, err := os.ReadFile(rc)
@@ -679,7 +678,7 @@ func TestCrushInstallRefusesAnOldCrush(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	crushCLI(t, s, configDir, "0.77.0")
 
-	_, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Crush})
+	err := s.install(providers.Crush)
 	if err == nil {
 		t.Fatal("Install: want an error on a Crush without crushrc hooks, got nil")
 	}
@@ -704,7 +703,7 @@ func TestCrushInstallProceedsOnAnUnreadableVersion(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", t.TempDir())
 	crushCLI(t, s, configDir, "")
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Crush}); err != nil {
+	if err := s.install(providers.Crush); err != nil {
 		t.Fatalf("Install with an unreadable crush version: %v", err)
 	}
 }
@@ -1028,7 +1027,7 @@ func TestAntigravityInstallWritesTheCustomization(t *testing.T) {
 	s, _ := fileServer(t, antigravityFiles())
 	antigravityCLI(t, s)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err != nil {
+	if err := s.install(providers.Antigravity); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -1075,7 +1074,7 @@ func TestAntigravityInstallWritesTheSourcedConversationIDParser(t *testing.T) {
 	s, _ := fileServer(t, files)
 	antigravityCLI(t, s)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err != nil {
+	if err := s.install(providers.Antigravity); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -1092,7 +1091,7 @@ func TestAntigravityInstalledVersionRoundTrips(t *testing.T) {
 	s, _ := fileServer(t, antigravityFiles())
 	antigravityCLI(t, s)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err != nil {
+	if err := s.install(providers.Antigravity); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	var manifest struct {
@@ -1121,7 +1120,7 @@ func TestAntigravityDisabledReadsAsMissingUntilInstallEnablesIt(t *testing.T) {
 	dir := antigravityHome(t)
 	s, _ := fileServer(t, antigravityFiles())
 	calls := antigravityCLI(t, s)
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err != nil {
+	if err := s.install(providers.Antigravity); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	if got := calls(); !slices.Contains(got, "plugin enable "+pluginName) {
@@ -1172,7 +1171,7 @@ func TestAntigravityInstallRegistersLichsMCPServer(t *testing.T) {
 	calls := antigravityCLI(t, s)
 	s.lichBin = func() string { return "/opt/lich/lich" }
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err != nil {
+	if err := s.install(providers.Antigravity); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	want := "mcp add " + relay.MCPServerName + " /opt/lich/lich " + relay.MCPSubcommand
@@ -1190,7 +1189,7 @@ func TestAntigravityInstallWithoutABinaryStillWritesTheHooks(t *testing.T) {
 	calls := antigravityCLI(t, s)
 	s.lichBin = func() string { return "" }
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err != nil {
+	if err := s.install(providers.Antigravity); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(dir, antigravityHooksFile)); err != nil {
@@ -1211,7 +1210,7 @@ func TestAntigravityInstallWritesNothingWhenTheFetchFails(t *testing.T) {
 	s, _ := fileServer(t, files)
 	antigravityCLI(t, s)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err == nil {
+	if err := s.install(providers.Antigravity); err == nil {
 		t.Fatal("Install: want an error when the release is missing a script, got nil")
 	}
 	if _, err := os.Stat(filepath.Join(dir, antigravityHooksFile)); !os.IsNotExist(err) {
@@ -1234,7 +1233,7 @@ func TestAntigravityInstallClaimsNothingWhenTheRegistrationFails(t *testing.T) {
 	t.Setenv(fakeCLIFail, "mcp add")
 	s.lichBin = func() string { return "/opt/lich/lich" }
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err == nil {
+	if err := s.install(providers.Antigravity); err == nil {
 		t.Fatal("Install: want an error when the registration is refused, got nil")
 	}
 	// The hooks stay: they are written and they work, and the next install
@@ -1301,7 +1300,7 @@ func TestCursorInstallRegistersTheServer(t *testing.T) {
 	s := cursorService(t)
 	s.lichBin = func() string { return "/usr/bin/lich" }
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Cursor}); err != nil {
+	if err := s.install(providers.Cursor); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -1328,7 +1327,7 @@ func TestCursorInstalledVersionIsTheRelease(t *testing.T) {
 	if got, ok := s.installedVersion(providers.Cursor); ok {
 		t.Errorf("installedVersion = (%q,%v) before the install, want not installed", got, ok)
 	}
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Cursor}); err != nil {
+	if err := s.install(providers.Cursor); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	if got, ok := s.installedVersion(providers.Cursor); !ok || got != testVersion {
@@ -1354,7 +1353,7 @@ func TestCursorInstallKeepsEveryOtherServer(t *testing.T) {
 	s := cursorService(t)
 	s.lichBin = func() string { return "/usr/bin/lich" }
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Cursor}); err != nil {
+	if err := s.install(providers.Cursor); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 
@@ -1390,7 +1389,7 @@ func TestCursorInstallRefusesAnUnreadableDocument(t *testing.T) {
 	s := cursorService(t)
 	s.lichBin = func() string { return "/usr/bin/lich" }
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Cursor}); err == nil {
+	if err := s.install(providers.Cursor); err == nil {
 		t.Fatal("Install = nil over a document lich cannot merge into")
 	}
 	data, err := os.ReadFile(path)
@@ -1406,7 +1405,7 @@ func TestCursorInstallWritesNothingWithoutABinary(t *testing.T) {
 	s := cursorService(t)
 	s.lichBin = func() string { return "" }
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Cursor}); err == nil {
+	if err := s.install(providers.Cursor); err == nil {
 		t.Fatal("Install = nil with no lich binary to register")
 	}
 	if _, err := os.Stat(filepath.Join(home, ".cursor", cursorMCPFile)); !os.IsNotExist(err) {
@@ -1426,7 +1425,7 @@ func TestHasToolsForCursor(t *testing.T) {
 	if s.HasTools(providers.Cursor) {
 		t.Error("HasTools(cursor) = true before lich's server was registered")
 	}
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Cursor}); err != nil {
+	if err := s.install(providers.Cursor); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	if !s.HasTools(providers.Cursor) {

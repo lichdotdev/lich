@@ -692,8 +692,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   ticket if the agent never calls `reply_to_session`, and its card is never named after the conversation. The
   install reads `crush --version` and writes the lifecycle hooks only when it answers 0.99.0 or newer, and a block
   is rewritten only by an install or a plugin update: a Crush upgraded past 0.99.0 under an existing block keeps
-  reporting nothing until then, though its Settings › Updates row offers Re-register hooks at once (`crushBlockBehind`
-  asks `crush --version` on every read of the rows), and the relay reads it that way (`Installed` asks whether lich's block registers
+  reporting nothing until lich's next pass writes the block again (at start and every hour, `crushBlockBehind`
+  asks `crush --version`), and the relay reads it that way (`Installed` asks whether lich's block registers
   `TurnEnd`). A Crush downgraded under a block written for 0.99.0 is the other way round: the events it does not
   know are recorded and never fire (0.98.1's `hook add` takes any name), so the relay waits for a `done` that does
   not come until the ticket's deadline. A conversation picked in Crush's own session list is bound by
@@ -1191,10 +1191,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   becomes `true`, and Antigravity runs `agy plugin enable lich` when `plugins.lich.enabled` in
   `~/.gemini/config/config.json` is false. A Codex session already open does not pick it up: Codex reads the switch
   when a conversation starts, so it reaches the next conversation of the same process, a `/new` in its terminal
-  included (measured on 0.170.0). Settings › Updates › lich plugin still reads a turned-off Codex or Antigravity
-  plugin as not installed and offers Install, and a Codex chat's `/plugin` detail offers Turn on. Crush and Kiro
+  included (measured on 0.170.0). A Codex chat's `/plugin` detail also offers Turn on. Crush and Kiro
   CLI have no switch for the files lich writes, beyond removing them, which costs their sessions the plugin until
-  the next install.
+  lich's next pass writes them again.
 - **Codex runs every lich MCP tool without asking** (`internal/terminal/command.go`, `mcpArgs`): a Codex session
   is spawned with `-c mcp_servers.lich.default_tools_approval_mode="approve"`, so the `open_session` a vetoed or
   sealed subagent call is sent to never waits on an approval, and neither does any other lich tool. The tools only
@@ -1530,7 +1529,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   for opencode, the person's own list kept. That one module serves both opencode generations: 1.x runs its
   default export's `server()` (measured on 1.18.23 and 1.19.4), 2.x its `setup()`. A release is never written again once unpacked, so a session runs on
   the files it started with while a newer one lands beside it, and old releases are never deleted. A newer
-  compatible release lands only through lich's update prompt, as before. Each of those loads its own config's
+  compatible release is unpacked by lich's next pass (agentplugin.Ensure: at start, every hour, and on a spawn
+  that finds the plugin missing), with no prompt. Each of those loads its own config's
   plugins beside lich's, so lich takes out the install a lich of the past put there once a release is unpacked:
   `claude plugin uninstall lich@lich-plugin` and its marketplace in Personal and every Claude Code profile (Cursor
   runs every plugin installed in Claude Code beside `--plugin-dir`, which would report every event twice, measured
@@ -1539,20 +1539,30 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Claude Code plugin named `lich` from `--plugin-dir` replaces an installed one of that name rather than loading
   beside it (measured on 2.1.332). What it costs: an agent started by hand, outside lich or typed into a lich shell
   session, runs without lich's hooks and skills, so a `claude` typed into a shell card reports nothing to it; a
-  first start offline leaves those four on the install of the past until the release arrives; opencode 2 is
-  handed the module the same way, not measured on 2.x; Cursor's chat (its ACP server) runs no plugin hooks either
-  way (measured on 2026.11.19). opencode and oh-my-pi still get the theme skill copied into their own skills
-  directory, and oh-my-pi its MCP registration, by the install, which their row in Settings › Updates waits for.
+  first start offline leaves those four on the install of the past, or with no plugin at all, until the release
+  arrives; opencode 2 is handed the module the same way, not measured on 2.x; Cursor's chat (its ACP server) runs
+  no plugin hooks either way (measured on 2026.11.19). opencode and oh-my-pi still get the theme skill copied into
+  their own skills directory, and oh-my-pi its MCP registration, by lich's pass.
+- **The plugin sets itself up for the providers you turned on, and says so only when it cannot**
+  (`internal/agentplugin/ensure.go`): a pass at start, every hour and on a spawn or report that finds the plugin
+  missing unpacks the newest compatible release, takes out the install of the past, installs or updates the plugin
+  in each provider that still takes an install, and trusts lich's own Codex hooks at their current hash (the
+  `hooks.state` write a Codex chat's /hooks makes), so Codex needs no /hooks step. A provider turned off in
+  Settings › Providers, or whose CLI is not on PATH, is never written to; turning one on reaches it at its first
+  spawn. There is nothing to press: Settings › Updates shows the release sessions run. What a pass could not do (no
+  release unpacked, or a provider whose install failed) is one warning toast with the failure's text and Retry,
+  and the next start or spawn retries on its own; a session spawned meanwhile starts without the hooks. A failed
+  update leaves the release that is there in use and is only logged.
 - **A plugin install is pinned, so the harness never updates it on its own** (`internal/agentplugin/compat.go`,
   `codex.go` `codexPinMarketplace`): for the providers that still install it (Codex, Antigravity, Crush, Kiro CLI),
   lich installs the newest plugin release inside the range it speaks and declares Codex's marketplace at that
   release's tag, so a plugin release this lich would not parse never arrives behind its back. The price is that a
-  newer compatible release only lands through lich's own update prompt, and a marketplace the user pointed somewhere
-  else is re-pointed on the next install. Codex cannot change a declared ref, so an install removes the marketplace
+  newer compatible release lands at lich's next pass rather than when the harness refreshes, and a marketplace the
+  user pointed somewhere else is re-pointed on the next install. Codex cannot change a declared ref, so an install removes the marketplace
   and adds it back. An install that was already outside the range, from before the pin or by hand, is caught at
   startup from its installed version, and again by the `X-Lich-Plugin` header its hooks send (docs/hooks/README.md)
   once a session reports. A report whose payload lich refuses never reaches that check, so a plugin old enough to
-  send one only shows up in the startup prompt and the log.
+  send one only shows up in the log, until the next pass reinstalls it.
 - **The `extension` skill stays out of Kiro CLI, and on Antigravity and Cursor CLI the agent sees it every turn**
   (`internal/agentplugin/skill.go`): the plugin's `extension` skill is manual only, kept out of the agent's context
   by its frontmatter on Claude Code, oh-my-pi, Crush and opencode 2 and by `agents/openai.yaml` on Codex, because

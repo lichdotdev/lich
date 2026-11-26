@@ -380,20 +380,17 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 	plugins := agentplugin.New(db)
 	routes.AgentPlugin(dispatcher, plugins)
 	go plugins.RepairRegistrations()
-	// The release Claude Code, Cursor CLI, opencode and oh-my-pi sessions load,
-	// unpacked on a first start, and the install a lich of the past left in
-	// their config taken out once it is.
-	go plugins.EnsureBundle()
-	// A profile follows Personal's lich plugin: an install or update there
-	// reaches every Codex profile, and a start brings in the ones left behind or
-	// logged in before they got it.
 	plugins.SetEmit(hub.Emit)
 	// Before the pass and before any spawn, so no session of this lich runs a
 	// version the sweep takes (claudeprofile.SweepPluginStore).
 	if err := claudeprofile.SweepPluginStore(); err != nil {
 		slog.Warn("sweep the Claude Code plugin store", "err", err)
 	}
-	go plugins.SyncProfiles()
+	// The plugin sets itself up with no click: the release sessions load, and
+	// the install of every provider that still takes one, now and every hour,
+	// Codex's profiles included (agentplugin.Ensure).
+	go plugins.Watch()
+	term.SetPluginEnsure(plugins.EnsureFor)
 	// Every Claude Code profile gets the lich plugin once it is logged in, run as
 	// that profile so its account's plugin policy applies; a profile with a
 	// session running in it is never deleted, and deleting one clears the

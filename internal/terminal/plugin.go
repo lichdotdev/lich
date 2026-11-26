@@ -71,6 +71,14 @@ func fileURL(path string) string {
 	return "file://" + slashed
 }
 
+// ensurePluginFor asks for the plugin to be set up when kind's spawn finds it
+// missing; it never holds the spawn, which starts without it meanwhile.
+func (s *Service) ensurePluginFor(kind string) {
+	if s.ensurePlugin != nil {
+		s.ensurePlugin(kind)
+	}
+}
+
 // reenablePlugin turns lich's plugin back on for a Codex or Antigravity spawn
 // when the person turned it off (agentplugin.Reenable). A failure costs the
 // session its hooks, never its spawn.

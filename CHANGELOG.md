@@ -76,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **lich's own plugin runs in every session lich starts, even after you turned it off or removed it in the agent's own config.** Each session picks it up as it starts; on Kiro CLI and Crush it still comes from the install in Settings › Updates › lich plugin.
+- **lich installs and updates its own plugin by itself, and it runs in every session lich starts, even after you turned it off or removed it in the agent's own config.** Settings › Updates shows the version your sessions run; a notice with Retry appears only when lich could not set it up.
 - **Menus, dialogs, tooltips and the panels over the message box float on a shadow and grow in from where you opened them.** Across the window, parts are set apart by space instead of lines, states are their glyphs, and the key that does something sits in its button. Toasts stand a little higher, so their shadow clears the footer.
 - **In a project's scope, Settings shows only what that project can change.** The settings every project shares give way to one line at the page's foot, whose Open Global takes you to them.
 - **A chat's message box keeps its files in a strip of their own over the text, and shows where a file you drag will land.** The strip ends with a square that opens the file picker, as does the "+" that now always starts the box's controls. Drag a file over the chat and a dashed card waits at the end of the strip until you drop it.
@@ -106,7 +106,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Files show the icons of Material Icon Theme, drawn for dark backgrounds.** The Files tree, search, the chat's @ list and file names in Markdown code pick one by the file's name, then its extension, as VS Code's Material Icon Theme does, with its light variants in a light theme.
 - **A subagent your agent starts becomes a lich card on every agent, and the setting that turned it off is gone.** Cursor CLI's chat is the exception, since it runs no hooks; in the chat the call names the card, with its state, and a click on it opens the card; a toast says when Codex is skipping lich's hook.
 - **What a button asks a session for shows in its chat as a compact box.** Resolve conflicts, Fix CI errors, review threads and comments, browser notes and an issue each draw their title, facts and list in your own message box; the chevron opens the full text the agent read.
-- **lich installs lich-plugin 0.23.0, whose texts teach your agents the notification envelope and whose hook turns their subagents into cards.** lich offers it with its plugin update prompt; an older lich keeps the plugin it has.
+- **lich installs lich-plugin 0.23.0, whose texts teach your agents the notification envelope and whose hook turns their subagents into cards.** lich puts it in place by itself; an older lich keeps the plugin it has.
 - **A session's pull request shows whether it is open, a draft, merged or closed, and where it lives.** It sits under a chat's message box, where a click opens it, and in the session's tooltip in the sidebar, no longer on the row. It shows the GitHub logo, the state's glyph and the number in the state's color, and a merged or closed one stays while the checkout is on its branch.
 - **A task you hand another session comes back by itself when that session's turn ends.** The worker's final message is the answer, on every agent in the chat and in a terminal on all but Cursor CLI and Crush, which still answer with reply_to_session.
 - **What lich hands a chat, a task, a worker's result or a notice, shows as a row instead of raw text.** A worker's outcome is a line with its agent's mark and its result under it, a click opens that worker's card, and a task opens the chat with the session that sent it.
@@ -143,7 +143,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
-- **A lich plugin left disabled in Claude Code, Codex or Antigravity shows as not installed, instead of letting subagents run outside lich without a word.** Install it again from Settings › Updates › lich plugin, or press Turn on on lich in a Claude Code or Codex chat's /plugin.
 - **Continue in moves a session drawn as a chat to another profile, as it does a terminal.** It refused with "switch this session to its terminal"; the chat now closes, its conversation moves and it opens again in the profile you picked, on the same model, effort and mode.
 - **lich no longer keeps a CPU core busy listing your sessions when dozens are open.** The tray, `lich sessions` and the agents' list of sessions read only what each transcript added since the last look, so opening a session or a worktree no longer waits behind them.
 - **Switching between stable and beta on Arch is an ordinary package upgrade, with no removal by hand.** The update keeps the name of the package you installed, `lich` from install.sh or `lich-bin` from the AUR.

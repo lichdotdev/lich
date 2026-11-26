@@ -35,9 +35,6 @@ func TestEverySettingsKeyBuiltAtRuntimeIsInEveryLocale(t *testing.T) {
 		add(r.labelKey, r.consequenceKey)
 	}
 	add(vcsGit.without, vcsGh.without, vcsGlab.without)
-	for _, k := range pluginHints {
-		add(k)
-	}
 	for _, rung := range sandboxRungs {
 		add("settings.sandboxSettings.rung." + rung)
 		if rung != rungEverywhere {

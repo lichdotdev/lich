@@ -410,16 +410,7 @@
   "pluginSetting": {
     "title": "Plugin de lich",
     "searchWords": "hooks instalar install",
-    "installed": "Plugin instalado. Reinicia tus sesiones para aplicarlo.",
-    "updated": "Plugin actualizado. Reinicia tus sesiones para aplicarlo.",
-    "cliMissing": "La CLI no está instalada",
-    "notInstalled": "Plugin no instalado",
-    "unsupported": "v{version}, no compatible con este lich",
-    "install": "Instalar",
-    "updateTo": "Actualizar a la v{version}",
-    "updateAll": "Actualizar todos",
-    "reregister": "Registrar los hooks de nuevo",
-    "installVersion": "Instalar la v{version}"
+    "notInstalled": "Plugin no instalado"
   },
   "helpSettings": {
     "bugTitle": "Informar de un error",
@@ -526,18 +517,6 @@
   },
   "settingsVcs": {
     "pathReread": "No se pudo volver a leer el PATH. Reinicia lich."
-  },
-  "settingsUpdatesPlugin": {
-    "hint": {
-      "codex": "Ejecuta /hooks en una sesión de Codex para confiar en los hooks del plugin.",
-      "crush": "Informa de su estado, su nombre y los cambios de git. Un Crush anterior a 0.99.0 no tiene evento de fin de turno, así que ahí solo informa del id de su sesión y actualiza el estado de git.",
-      "omp": "Informa de su estado, su nombre y los cambios de git. No se ha observado que emita un evento de aprobación, así que una sesión que espera tu permiso muestra un spinner y no una campana.",
-      "antigravity": "Informa de su estado, su nombre y los cambios de git. No se ha observado que emita un evento de aprobación, así que una sesión que espera tu permiso muestra un spinner y no una campana.",
-      "cursor": "Usa el mismo plugin que Claude Code, así que informa de lo mismo que esa versión y se actualiza con ella. Aquí lich solo añade sus propias herramientas. Tampoco emite un evento de aprobación, así que una sesión que espera tu permiso muestra un spinner y no una campana."
-    },
-    "installFailed": "Error al instalar: {error}",
-    "updateFailed": "Error al actualizar: {error}",
-    "profileFailed": "El plugin de lich no se actualizó en el perfil {profile} de {pass}: {error}"
   },
   "settingsProfiles": {
     "title": "Perfil",

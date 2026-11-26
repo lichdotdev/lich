@@ -222,7 +222,6 @@ type window struct {
 	gitMissing  gitMissing
 	welcome     welcome
 	tour        windowTour
-	plugin      pluginGate
 	appUpdate   appUpdateGate
 	themeUpdate themeUpdateGate
 	drop        terminalDrop
@@ -343,7 +342,8 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.model.browserDownloaded = u.tellDownload
 	u.model.showCode = u.tellShowCode
 	u.terms.followCode = u.followCodeRef
-	u.model.pluginIncompatible = func() { go u.checkPlugin() }
+	u.model.pluginProblem = u.showPluginProblem
+	go u.checkPluginProblem()
 	u.model.appUpdateProgress = u.updateProgressed
 	u.palette.closed = u.model.closed
 	u.topbar = newTopbar(&u.root)
@@ -415,7 +415,6 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.bindWelcome()
 	u.settings.providers.book = u.model.providers
 	u.model.projectClosed = u.projectClosed
-	u.model.pluginProfiles = u.pluginProfilesFailed
 	u.settings.theme = newThemePicker(ctx, client, u.appearance, &u.toaster, &u.root)
 	u.settings.theme.catalog = u.model.themeCatalog
 	u.footer.dock = u.dock
@@ -754,7 +753,6 @@ func (u *window) layout(gtx C) error {
 		u.settings.layoutExtensionDialogs(gtx, u.theme)
 		u.settings.layoutFontReplication(gtx, u.theme)
 		u.layoutWelcome(gtx, u.theme)
-		u.layoutPluginGate(gtx, u.theme)
 		u.settings.layoutSandboxDialog(gtx, u.theme)
 		u.settings.layoutProviderDialog(gtx, u.theme)
 		u.settings.layoutProfileDialogs(gtx, u.theme)

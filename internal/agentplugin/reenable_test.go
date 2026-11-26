@@ -109,7 +109,7 @@ func TestEnsureBundleUnpacksThenTakesTheInstallsOut(t *testing.T) {
 	for _, path := range []string{module, extension} {
 		writeModule(t, path, markedModule("0.20.0", "export default 1\n"))
 	}
-	s.EnsureBundle()
+	s.Ensure()
 	for _, path := range []string{module, extension} {
 		if _, err := os.Stat(path); err != nil {
 			t.Errorf("with no release to load instead, %s was taken out: %v", path, err)
@@ -117,7 +117,7 @@ func TestEnsureBundleUnpacksThenTakesTheInstallsOut(t *testing.T) {
 	}
 
 	s.tarballBase = s.tarballBase[:len(s.tarballBase)-len("/missing")]
-	s.EnsureBundle()
+	s.Ensure()
 	if _, version, ok := BundleDir(); !ok || version != testVersion {
 		t.Fatalf("BundleDir version = (%q,%v), want the release unpacked", version, ok)
 	}

@@ -58,6 +58,11 @@ func (f *sidebarBackend) answer(method string, args []json.RawMessage) any {
 		return nil
 	case "providers.Detect":
 		return f.detected
+	case "agentplugin.Status":
+		return []backend.PluginStatus{
+			{Provider: "claude", Name: "Claude Code", Available: true, Installed: true, InstalledVersion: "0.23.0", Compatible: true},
+			{Provider: "codex", Name: "Codex", Available: true, Installed: true, InstalledVersion: "0.23.0", Compatible: true},
+		}
 	case "project.DiffText":
 		return f.diff
 	case "themes.List":

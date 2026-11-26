@@ -220,3 +220,8 @@ func updateFailureText(last *backend.AppUpdateProgress, err string) string {
 	}
 	return i18n.T("update.progress.downloadFailed", i18n.Args{"error": err})
 }
+
+// writePref stores a global setting off the frame, logging a failure.
+func (u *window) writePref(key, value string) {
+	go func() { u.logErr("write "+key, u.client.SetSetting(u.ctx, key, "", value)) }()
+}

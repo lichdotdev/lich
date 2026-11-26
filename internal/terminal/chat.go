@@ -251,6 +251,7 @@ func (s *Service) StartChat(_ context.Context, opts api.StartOptions, launch Cha
 	inheritClaudeTrust(opts.Kind, opts.Cwd, profileDir)
 	inheritCursorTrust(opts.Kind, opts.Cwd)
 	s.reenablePlugin(opts.Kind, opts.ProjectID, profileDir)
+	s.ensurePluginFor(opts.Kind)
 	p, l, err := s.spawnChat(opts, launch, profileDir, name, oc2)
 	if err != nil {
 		return nil, err

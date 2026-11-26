@@ -101,6 +101,11 @@ func (s *Service) installBundle() error {
 	if err != nil {
 		return err
 	}
+	return s.installRelease(version)
+}
+
+// installRelease unpacks version, unless it already is.
+func (s *Service) installRelease(version string) error {
 	root, err := bundleRoot()
 	if err != nil {
 		return err
@@ -109,20 +114,6 @@ func (s *Service) installBundle() error {
 		return nil
 	}
 	return s.unpackRelease(root, version)
-}
-
-// EnsureBundle unpacks a release when lich has none, so the plugin needs no
-// action from the person on a first start. A newer release waits for the update
-// the window offers, as the plugin always has. Then it moves every provider off
-// the plugin it installed there before (migrateInstalls).
-func (s *Service) EnsureBundle() {
-	if _, ok := bundleVersion(); !ok {
-		if err := s.installBundle(); err != nil {
-			slog.Warn("agentplugin: unpack the plugin", "err", err)
-			return
-		}
-	}
-	s.migrateInstalls()
 }
 
 // unpackRelease downloads version's tarball and unpacks it into root/version

@@ -7,9 +7,7 @@ import (
 	"bufio"
 	"context"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"io"
 	"os/exec"
 	"time"
 
@@ -71,38 +69,92 @@ const probeLimit = 10 * time.Second
 // started, and ends it: the app-server's stdio JSON-RPC, initialize then
 // hooks/list, nothing written to Codex's config.
 func Probe(ctx context.Context, cmd *exec.Cmd, cwd string) (List, error) {
+	var list List
+	err := session(ctx, cmd, cwd, func(_ *json.Encoder, _ *bufio.Scanner, l List) error {
+		list = l
+		return nil
+	})
+	return list, err
+}
+
+// TrustLich trusts every lich-plugin hook Codex holds as untrusted or modified
+// (LichTrust's states), through cmd, a `codex app-server` not yet started: the
+// same hooks.state write a Codex chat's /hooks makes, for lich's own hooks
+// alone, so a session runs them with no /hooks step. It reports how many it
+// trusted.
+func TrustLich(ctx context.Context, cmd *exec.Cmd, cwd string) (int, error) {
+	trusted := 0
+	err := session(ctx, cmd, cwd, func(in *json.Encoder, out *bufio.Scanner, list List) error {
+		state := map[string]any{}
+		for _, entry := range list.Data {
+			for _, h := range entry.Hooks {
+				if h.Plugin == lichPluginID && h.Hash != "" && (h.Trust == api.HookModified || h.Trust == api.HookUntrusted) {
+					state[h.Key] = map[string]any{"trusted_hash": h.Hash}
+				}
+			}
+		}
+		if len(state) == 0 {
+			return nil
+		}
+		write := map[string]any{"id": 3, "method": "config/batchWrite", "params": map[string]any{
+			"edits": []any{map[string]any{"keyPath": "hooks.state", "mergeStrategy": "upsert", "value": state}},
+		}}
+		if err := in.Encode(write); err != nil {
+			return err
+		}
+		if _, err := answer(out, 3, "config/batchWrite"); err != nil {
+			return err
+		}
+		trusted = len(state)
+		return nil
+	})
+	return trusted, err
+}
+
+// session starts cmd, reads hooks/list for cwd and hands it to then with the
+// app-server's stdin and stdout, ending the server once then returns.
+func session(ctx context.Context, cmd *exec.Cmd, cwd string, then func(*json.Encoder, *bufio.Scanner, List) error) error {
 	ctx, cancel := context.WithTimeout(ctx, probeLimit)
 	defer cancel()
-	in, err := cmd.StdinPipe()
+	stdin, err := cmd.StdinPipe()
 	if err != nil {
-		return List{}, err
+		return err
 	}
-	out, err := cmd.StdoutPipe()
+	stdout, err := cmd.StdoutPipe()
 	if err != nil {
-		return List{}, err
+		return err
 	}
 	if err := cmd.Start(); err != nil {
-		return List{}, err
+		return err
 	}
-	defer func() { _ = in.Close(); _ = cmd.Process.Kill(); _ = cmd.Wait() }()
+	defer func() { _ = stdin.Close(); _ = cmd.Process.Kill(); _ = cmd.Wait() }()
 	go func() { <-ctx.Done(); _ = cmd.Process.Kill() }()
+	in := json.NewEncoder(stdin)
 	for _, m := range []any{
 		map[string]any{"id": 1, "method": "initialize", "params": map[string]any{"clientInfo": map[string]any{"name": "lich", "version": "1"}}},
 		map[string]any{"method": "initialized"},
 		map[string]any{"id": 2, "method": "hooks/list", "params": map[string]any{"cwds": []string{cwd}}},
 	} {
-		if err := json.NewEncoder(in).Encode(m); err != nil {
-			return List{}, err
+		if err := in.Encode(m); err != nil {
+			return err
 		}
 	}
-	return readList(out)
+	out := bufio.NewScanner(stdout)
+	out.Buffer(make([]byte, 0, 1<<20), 8<<20)
+	raw, err := answer(out, 2, "hooks/list")
+	if err != nil {
+		return err
+	}
+	var list List
+	if err := json.Unmarshal(raw, &list); err != nil {
+		return err
+	}
+	return then(in, out, list)
 }
 
-// readList reads app-server lines until the answer to request 2.
-func readList(out io.Reader) (List, error) {
-	scanner := bufio.NewScanner(out)
-	scanner.Buffer(make([]byte, 0, 1<<20), 8<<20)
-	for scanner.Scan() {
+// answer reads app-server lines until the answer to request id.
+func answer(out *bufio.Scanner, id int, method string) (json.RawMessage, error) {
+	for out.Scan() {
 		var msg struct {
 			ID     *int            `json:"id"`
 			Result json.RawMessage `json:"result"`
@@ -110,18 +162,16 @@ func readList(out io.Reader) (List, error) {
 				Message string `json:"message"`
 			} `json:"error"`
 		}
-		if json.Unmarshal(scanner.Bytes(), &msg) != nil || msg.ID == nil || *msg.ID != 2 {
+		if json.Unmarshal(out.Bytes(), &msg) != nil || msg.ID == nil || *msg.ID != id {
 			continue
 		}
 		if msg.Error != nil {
-			return List{}, fmt.Errorf("hooks/list: %s", msg.Error.Message)
+			return nil, fmt.Errorf("%s: %s", method, msg.Error.Message)
 		}
-		var list List
-		err := json.Unmarshal(msg.Result, &list)
-		return list, err
+		return msg.Result, nil
 	}
-	if err := scanner.Err(); err != nil {
-		return List{}, err
+	if err := out.Err(); err != nil {
+		return nil, err
 	}
-	return List{}, errors.New("app-server ended before answering hooks/list")
+	return nil, fmt.Errorf("app-server ended before answering %s", method)
 }

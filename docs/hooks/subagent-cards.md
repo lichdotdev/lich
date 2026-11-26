@@ -280,8 +280,10 @@ exporting `LICH_SUBAGENT_CARDS` to such a plugin until its floor moves to
   once the plugin's `PreToolUse` entry changes, `codex exec` and the app-server
   run without it, with no warning, no event and no error, so Codex subagents run
   natively (measured on 0.170.0). The app-server's `hooks/list` reports the
-  entry as `trustStatus: "modified"`; lich reads it and tells the user to trust
-  the hook again.
+  entry as `trustStatus: "modified"`, and lich trusts its own hooks again at
+  their current hash on every pass that sets the plugin up (`codexhooks.TrustLich`),
+  so a session started after it runs them; a session it finds still skipping one
+  raises a toast.
 - **Codex's default multi-agent (v2) encrypts the task**: on gpt-5.6-terra the
   tool is `collaborationspawn_agent` and its `message` arrives as ciphertext in
   the hook and in the rollout, so lich cannot read what the worker should do.

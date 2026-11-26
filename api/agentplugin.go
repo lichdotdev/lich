@@ -2,14 +2,19 @@ package api
 
 var (
 	AgentPluginStatus  = define[None, []PluginStatus]("agentplugin.Status")
-	AgentPluginInstall = define[PluginProviderOptions, None]("agentplugin.Install")
-	AgentPluginUpdate  = define[PluginProviderOptions, None]("agentplugin.Update")
+	AgentPluginProblem = define[None, PluginProblem]("agentplugin.Problem")
+	AgentPluginRetry   = define[None, None]("agentplugin.Retry")
 )
 
-// PluginProviderOptions names the provider whose lich plugin is installed or
-// updated.
-type PluginProviderOptions struct {
-	Provider string `json:"provider"`
+// PluginProblem is what lich could not do to give its sessions their plugin,
+// the zero value when nothing failed. Bundle is the release lich could not
+// unpack, which leaves Claude Code, Cursor CLI, opencode and oh-my-pi sessions
+// without its hooks; Providers names each provider whose install failed. Error
+// is the first failure's text.
+type PluginProblem struct {
+	Bundle    bool     `json:"bundle"`
+	Providers []string `json:"providers"`
+	Error     string   `json:"error"`
 }
 
 // PluginStatus is one provider's plugin state, reported to the window.

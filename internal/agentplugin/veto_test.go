@@ -7,7 +7,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/shquote"
 )
@@ -79,7 +78,7 @@ func TestAntigravityInstallShipsTheVetoFromTheHookRelease(t *testing.T) {
 	}
 	s, _ := fileServerAt(t, SubagentHookRelease, files)
 	antigravityCLI(t, s)
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Antigravity}); err != nil {
+	if err := s.install(providers.Antigravity); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	if _, err := os.Stat(filepath.Join(dir, antigravityScriptDir, "veto-subagent.sh")); err != nil {

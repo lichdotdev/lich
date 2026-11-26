@@ -8,7 +8,6 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
@@ -41,7 +40,7 @@ func TestOpencodeInstallWritesTheThemeSkill(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", config)
 	s, _ := fileServer(t, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err != nil {
+	if err := s.install(providers.OpenCode); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	assertThemeSkill(t, filepath.Join(config, "opencode", "skills"))
@@ -51,7 +50,7 @@ func TestOMPInstallWritesTheThemeSkill(t *testing.T) {
 	agent := ompHome(t)
 	s, _ := fileServer(t, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OMP}); err != nil {
+	if err := s.install(providers.OMP); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	assertThemeSkill(t, filepath.Join(agent, "skills"))
@@ -74,7 +73,7 @@ func TestCrushInstallWritesTheThemeSkill(t *testing.T) {
 			crushCLI(t, s, configDir, "0.88.1")
 			t.Setenv("CRUSH_SKILLS_DIR", tc.skillsDir)
 
-			if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Crush}); err != nil {
+			if err := s.install(providers.Crush); err != nil {
 				t.Fatalf("Install: %v", err)
 			}
 			want := tc.skillsDir
@@ -97,7 +96,7 @@ func TestKiroInstallWritesTheThemeSkill(t *testing.T) {
 	s.bins = stubBin(self)
 	_, home := kiroTestHome(t)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Kiro}); err != nil {
+	if err := s.install(providers.Kiro); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	assertThemeSkill(t, filepath.Join(providers.KiroHome(home), "skills"))
@@ -111,7 +110,7 @@ func TestInstallWithoutTheThemeSkillLeavesNothingInstalled(t *testing.T) {
 		tagged(themeSkill.source + "/" + "validate.mjs"): "",
 	})
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err == nil {
+	if err := s.install(providers.OpenCode); err == nil {
 		t.Fatal("Install succeeded on a release without the whole skill")
 	}
 	if version, ok := s.installedVersion(providers.OpenCode); ok {
@@ -174,7 +173,7 @@ func TestKiroInstallLeavesTheExtensionSkillOut(t *testing.T) {
 	s.bins = stubBin(self)
 	_, home := kiroTestHome(t)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.Kiro}); err != nil {
+	if err := s.install(providers.Kiro); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	skills := filepath.Join(providers.KiroHome(home), "skills")
@@ -191,7 +190,7 @@ func TestOpencodeInstallDropsTheExtensionSkillsDescription(t *testing.T) {
 	t.Setenv("XDG_CONFIG_HOME", config)
 	s, _ := fileServerAt(t, ExtensionSkillRelease, nil)
 
-	if _, err := s.Install(t.Context(), api.PluginProviderOptions{Provider: providers.OpenCode}); err != nil {
+	if err := s.install(providers.OpenCode); err != nil {
 		t.Fatalf("Install: %v", err)
 	}
 	skills := filepath.Join(config, "opencode", "skills")

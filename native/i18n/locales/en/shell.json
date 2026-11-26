@@ -1,22 +1,8 @@
 {
-  "agentPluginGate": {
-    "updateAvailable": "lich plugin {version} is available",
-    "update": "Update",
-    "later": "Later",
-    "reregisterNeeded": "The hooks lich writes for {names} need re-registering for the newer version you installed.",
-    "reregister": "Re-register",
-    "installVersion": "Install v{version}",
-    "updated": "Plugin updated. Restart your sessions to apply.",
-    "installed": "Plugin installed. Restart your sessions to apply.",
-    "codexTrust": "Codex: run /hooks in a Codex session to trust the plugin's hooks.",
-    "installFailed": "Install failed: {error}",
-    "title": "Enable the agent integration",
-    "description": "The lich plugin reports your sessions' status and titles to the app, refreshes their git status, and lets a restored session resume its conversation. Install it into the CLIs you use.",
-    "needsHooks": "needs /hooks to trust it",
-    "dontAskAgain": "Don't ask again",
-    "notNow": "Not now",
-    "installing": "Installing…",
-    "install": "Install"
+  "pluginProblem": {
+    "release": "lich could not download its plugin, so new sessions start without its hooks.",
+    "providers": "lich could not set up its plugin for {names}, so their sessions start without its hooks.",
+    "retry": "Retry"
   },
   "appUpdateGate": {
     "available": "lich {version} is available",

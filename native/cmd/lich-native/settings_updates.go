@@ -34,14 +34,12 @@ type updatesSettings struct {
 	startupNotes  bool // startupPatchNotes found a release to show
 	plugins       []backend.PluginStatus
 	pluginsFailed bool
-	busy          bool // a plugin action is in flight
 	checkingApp   bool
 	appResult     string
 	channel       string // "" until read
 
 	checkApp, viewNotes ui.Clickable
 	channelPick         ui.Enum
-	plugin              pluginControls
 	patch               patchNotesView
 }
 
@@ -149,7 +147,7 @@ func (s *settingsScreen) updatesRow(gtx C, th *ui.Theme, e settingEntry, r setti
 		return r.layout(gtx, th, first, func(gtx C, th *ui.Theme) D { return u.channelControl(gtx, th, s) }), true
 	case updatesPluginKey:
 		u.ensure(s)
-		return u.pluginBlock(gtx, th, s, r, first), true
+		return u.pluginBlock(gtx, th, r, first), true
 	}
 	return D{}, false
 }

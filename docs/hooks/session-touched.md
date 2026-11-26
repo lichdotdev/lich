@@ -209,5 +209,5 @@ it gets the refresh and never a note.
   no note.** `PreToolUse` is its only event, so the report fires before the
   write lands and the immediate fetch sees the tree as it was. A Crush updated
   past v0.99.0 after the install keeps that registration until an update or a
-  reinstall rewrites `crushrc`, which Settings › Updates offers as Re-register
-  hooks; a repair keeps the registrations the block already has.
+  reinstall rewrites `crushrc`, which lich's next pass does on its own; a repair
+  keeps the registrations the block already has.

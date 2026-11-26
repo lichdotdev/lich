@@ -238,61 +238,6 @@ func TestGitMissingInstallOpensTheDownloadPage(t *testing.T) {
 	}
 }
 
-func pluginDialog(u *window) *dialogDriver {
-	u.plugin.started = true
-	u.plugin.offer = []backend.PluginStatus{{Provider: "claude", Name: "Claude Code"}, {Provider: "codex", Name: "Codex"}}
-	return &dialogDriver{now: time.Unix(0, 0), draw: func(gtx C) { u.layoutPluginGate(gtx, u.theme) }}
-}
-
-func pluginOffered(u *window) bool {
-	u.plugin.mu.Lock()
-	defer u.plugin.mu.Unlock()
-	return len(u.plugin.offer) > 0
-}
-
-func TestPluginGateDontAskRemembersAndCloses(t *testing.T) {
-	u, b := newGateWindow(t)
-	d := pluginDialog(u)
-	d.open()
-	d.press(t, &u.plugin.dontAsk)
-	if args := b.await(t, "store.SetSetting"); args != `[{"key":"`+pluginInstallDismissedKey+`","projectId":"","value":"1"}]` {
-		t.Errorf("wrote %s, want the install dismissed", args)
-	}
-	if pluginOffered(u) {
-		t.Error("Don't ask again left the dialog up")
-	}
-}
-
-func TestPluginGateNotNowClosesWithoutRemembering(t *testing.T) {
-	u, b := newGateWindow(t)
-	d := pluginDialog(u)
-	d.open()
-	d.press(t, &u.plugin.notNow)
-	if pluginOffered(u) {
-		t.Error("Not now left the dialog up")
-	}
-	select {
-	case call := <-b.calls:
-		t.Errorf("Not now called %s", call)
-	default:
-	}
-}
-
-func TestPluginGateInstallInstallsEveryTickedCLI(t *testing.T) {
-	u, b := newGateWindow(t)
-	d := pluginDialog(u)
-	d.open()
-	d.press(t, &u.plugin.install)
-	for _, want := range []string{`[{"provider":"claude"}]`, `[{"provider":"codex"}]`} {
-		if args := b.await(t, "agentplugin.Install"); args != want {
-			t.Errorf("installed %s, want %s", args, want)
-		}
-	}
-	for pluginOffered(u) {
-		time.Sleep(time.Millisecond)
-	}
-}
-
 func TestUpdateToastLaterRemembersTheRelease(t *testing.T) {
 	u, b := newGateWindow(t)
 	toast := u.appUpdateToast(backend.AppUpdateStatus{UpdateAvailable: true, LatestVersion: "1.4.0", ReleaseURL: "https://r"})
@@ -335,20 +280,6 @@ func TestUpdateToastUpdateAndInstallRunsTheInstaller(t *testing.T) {
 	b.await(t, "appupdate.Apply")
 }
 
-func TestPluginUpdateToastButtons(t *testing.T) {
-	u, b := newGateWindow(t)
-	toast := u.pluginUpdateToast(pluginGateAction{kind: pluginActionUpdate, version: "0.9.0",
-		providers: []backend.PluginStatus{{Provider: "claude"}}})
-	toast.Action.OnClick()
-	if args := b.await(t, "agentplugin.Update"); args != `[{"provider":"claude"}]` {
-		t.Errorf("updated %s, want claude", args)
-	}
-	toast.Cancel.OnClick()
-	if args := b.await(t, "store.SetSetting"); args != `[{"key":"`+pluginUpdateDismissedKey+`","projectId":"","value":"0.9.0"}]` {
-		t.Errorf("wrote %s, want 0.9.0 dismissed", args)
-	}
-}
-
 func TestUncleanExitOpenLogRevealsTheLog(t *testing.T) {
 	u, b := newGateWindow(t)
 	toast := uncleanExitToast(u.settings.revealLog)
@@ -356,17 +287,6 @@ func TestUncleanExitOpenLogRevealsTheLog(t *testing.T) {
 	b.await(t, "system.RevealLog")
 	if toast.Cancel == nil || toast.Cancel.OnClick != nil {
 		t.Error("Dismiss should only take the toast down")
-	}
-}
-
-func TestPluginGateUntickedCLIIsLeftOut(t *testing.T) {
-	u, b := newGateWindow(t)
-	d := pluginDialog(u)
-	d.open()
-	d.press(t, u.plugin.rows["claude"])
-	d.press(t, &u.plugin.install)
-	if args := b.await(t, "agentplugin.Install"); args != `[{"provider":"codex"}]` {
-		t.Errorf("installed %s, want only the CLI still ticked", args)
 	}
 }
 
