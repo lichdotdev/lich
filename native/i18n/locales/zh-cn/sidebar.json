@@ -52,6 +52,7 @@
     "prUnreadable": "无法读取：{error}",
     "prAlsoLinked": "此会话中的其他项：{numbers}",
     "closeSession": "关闭会话",
+    "closeChildSessions": "关闭子会话",
     "fork": "分叉",
     "forkHere": "在此处",
     "forkWorktree": "工作树…",

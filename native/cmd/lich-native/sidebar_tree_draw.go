@@ -29,10 +29,13 @@ type treePlace struct {
 	// sidebar, which its ring is mixed over whatever the row paints.
 	ground color.NRGBA
 	sessionRowLinks
-	kids   int
-	folded bool
-	mark   string
-	entry  treeEntry
+	kids int
+	// descendants is every session under the card's, what its menu closes
+	// with Close child sessions.
+	descendants []string
+	folded      bool
+	mark        string
+	entry       treeEntry
 	// branchSaid is sessionRow's: the card leaves its branch out.
 	branchSaid bool
 }

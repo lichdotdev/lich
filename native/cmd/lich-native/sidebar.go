@@ -31,6 +31,9 @@ type sidebar struct {
 	// renamed is the label a rename committed during this frame's layout.
 	renamed sessionRename
 	cards   map[string]*ui.Clickable
+	// selection is the cards picked with the shortcut modifier, which their
+	// menu acts on together.
+	selection cardSelection
 	// moreClicks and moreMenus are the … of each card's corner and its menu.
 	moreClicks map[string]*ui.Clickable
 	moreMenus  map[string]*ui.MenuState
@@ -128,7 +131,7 @@ func (s *sidebar) holdsKeys() bool {
 type sidebarAction struct {
 	activate string   // session id
 	close    string   // session id
-	closeAll []string // every session of a checkout's block
+	closeAll []string // every session of a block, or the cards selected
 	pin      string   // session id
 	pinTo    bool     // the pin the click asked for
 	openPR   int      // a pull request to show on the Pulls screen
@@ -246,6 +249,9 @@ func (a *sidebarAction) takeCard(c sidebarAction) {
 	}
 	if c.file.ids != nil {
 		a.file = c.file
+	}
+	if c.closeAll != nil {
+		a.closeAll = c.closeAll
 	}
 	if c.continueIn.id != "" {
 		a.continueIn = c.continueIn
