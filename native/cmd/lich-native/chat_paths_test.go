@@ -50,7 +50,18 @@ func pathFrames(t *testing.T, text string) (*window, *frameRig, *chatBackend) {
 	u.model.projects[0].Path = pathsCheckout
 	u.model.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "a1", Kind: api.ItemAgent, Turn: 1, Text: text}})
 	r.frame()
-	f.waitCall(t, api.ProjectTree.Name)
+	// The call made is not the listing read: an answer the listing does not
+	// change settles before it lands.
+	p := u.chats.pane("s1")
+	for deadline := time.Now().Add(5 * time.Second); ; time.Sleep(time.Millisecond) {
+		if files, _, _ := p.files.get(); files != nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("the checkout's listing never landed")
+		}
+		r.frame()
+	}
 	r.settle(t)
 	return u, r, f
 }
