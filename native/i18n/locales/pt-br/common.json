@@ -20,5 +20,19 @@
   },
   "stepper": {
     "default": "Padrão"
+  },
+  "markdown": {
+    "alert": {
+      "note": "Nota",
+      "tip": "Dica",
+      "important": "Importante",
+      "warning": "Atenção",
+      "caution": "Cuidado"
+    },
+    "moreLines": {
+      "one": "Mostrar mais {count} linha",
+      "other": "Mostrar mais {count} linhas"
+    },
+    "showLess": "Mostrar menos"
   }
 }

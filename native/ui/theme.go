@@ -28,11 +28,14 @@ type Palette struct {
 	Sidebar, SidebarForeground             color.NRGBA
 	SidebarAccent, SidebarAccentForeground color.NRGBA
 	SidebarBorder                          color.NRGBA
-	// GraphLanes, ToneMerged and FileIcons follow the scheme, not a theme file:
-	// a new required token would refuse every theme already published.
+	// GraphLanes, the tones below and FileIcons follow the scheme, not a theme
+	// file: a new required token would refuse every theme already published.
 	GraphLanes [6]color.NRGBA
 	ToneMerged color.NRGBA
-	FileIcons  icons.FileIcons
+	// ToneNote and ToneImportant are the bars of a Markdown note and important
+	// alert, the two GitHub alerts no state tone stands for.
+	ToneNote, ToneImportant color.NRGBA
+	FileIcons               icons.FileIcons
 }
 
 var graphLanesDark = [6]color.NRGBA{
@@ -58,6 +61,23 @@ func ToneMergedFor(light bool) color.NRGBA {
 		return toneMergedLight
 	}
 	return toneMergedDark
+}
+
+// toneNote* and toneImportant* are Tailwind's blue and violet at the steps
+// the merged tone takes, violet so an important alert does not read as a merge.
+var (
+	toneNoteDark       = OKLCH(0.707, 0.165, 254.624, 1)
+	toneNoteLight      = OKLCH(0.546, 0.245, 262.881, 1)
+	toneImportantDark  = OKLCH(0.702, 0.183, 293.541, 1)
+	toneImportantLight = OKLCH(0.541, 0.281, 293.009, 1)
+)
+
+// AlertTonesFor is the note and important tones of a theme's scheme.
+func AlertTonesFor(light bool) (note, important color.NRGBA) {
+	if light {
+		return toneNoteLight, toneImportantLight
+	}
+	return toneNoteDark, toneImportantDark
 }
 
 // GraphLanesFor is the graph colors of a theme's scheme.
@@ -107,6 +127,8 @@ var Dark = Palette{
 	SidebarBorder:           OKLCH(1, 0, 0, 0.10),
 	GraphLanes:              graphLanesDark,
 	ToneMerged:              toneMergedDark,
+	ToneNote:                toneNoteDark,
+	ToneImportant:           toneImportantDark,
 }
 
 // Light is the light theme (themes/light.json).
@@ -140,6 +162,8 @@ var Light = Palette{
 	SidebarBorder:           OKLCH(0.888, 0.004, 286.32, 1),
 	GraphLanes:              graphLanesLight,
 	ToneMerged:              toneMergedLight,
+	ToneNote:                toneNoteLight,
+	ToneImportant:           toneImportantLight,
 	FileIcons:               icons.LightFileIcons,
 }
 

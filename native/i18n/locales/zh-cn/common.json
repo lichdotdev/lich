@@ -20,5 +20,18 @@
   },
   "stepper": {
     "default": "默认"
+  },
+  "markdown": {
+    "alert": {
+      "note": "注意",
+      "tip": "提示",
+      "important": "重要",
+      "warning": "警告",
+      "caution": "小心"
+    },
+    "moreLines": {
+      "other": "再显示 {count} 行"
+    },
+    "showLess": "收起"
   }
 }

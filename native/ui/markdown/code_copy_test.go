@@ -42,8 +42,8 @@ func (r *copyRig) pointer(kind pointer.Kind, at f32.Point) {
 	r.frame()
 }
 
-func (r *copyRig) button() *codeCopy {
-	var found *codeCopy
+func (r *copyRig) button() *codePanel {
+	var found *codePanel
 	eachPanel(r.cache["k"].blocks, func(b *markdownBlock) { found = b.copy })
 	return found
 }
