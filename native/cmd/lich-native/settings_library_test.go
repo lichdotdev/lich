@@ -65,6 +65,30 @@ func libraryFixture() backend.Library {
 	}
 }
 
+// libraryFixtureIn is libraryFixture in project's scope: the providers'
+// plugins of a project like sop_logistica and, in a project, the servers its
+// .mcp.json and .codex/config.toml declare.
+func libraryFixtureIn(project string) backend.Library {
+	lib := libraryFixture()
+	claude := []api.LibrarySwitch{{Provider: "claude", Profile: "personal", On: true}, {Provider: "claude", Profile: "work"}}
+	if project != "" {
+		claude = []api.LibrarySwitch{{Provider: "claude", On: true}}
+	}
+	codex := []api.LibrarySwitch{{Provider: "codex", Profile: "personal", On: true}, {Provider: "codex", Profile: "work", On: true}}
+	lib.Plugins = []backend.LibraryItem{
+		{Kind: api.LibraryPluginKind, Name: "@dietrichgebert/ponytail", Switches: []api.LibrarySwitch{{Provider: "opencode", On: true, Reason: api.LibraryNoSwitch}}},
+		{Kind: api.LibraryPluginKind, Name: "addon-studio@snk-devcenter", Description: "3.5.5", Switches: append(slices.Clone(claude), codex...)},
+		{Kind: api.LibraryPluginKind, Name: "claude-code-wakatime@wakatime", Description: "4.1.2", Switches: claude},
+	}
+	if project != "" {
+		lib.Project = []backend.LibraryFound{
+			{Kind: api.LibraryMCP, Name: "sankhya-schema", Transport: "stdio", Providers: []string{"claude"}, Paths: []string{".mcp.json"}},
+			{Kind: api.LibraryMCP, Name: "youtrack-snk", Transport: "http", Providers: []string{"claude", "codex"}, Paths: []string{".mcp.json", ".codex/config.toml"}},
+		}
+	}
+	return lib
+}
+
 // libraryFrames is Settings open on a library section, its store loaded.
 func libraryFrames(t *testing.T, section string) (*settingsScreen, *frameRig, *sidebarBackend) {
 	t.Helper()
@@ -252,14 +276,87 @@ func TestMCPScreenAndDetail(t *testing.T) {
 	shootBothThemes(t, r, "settings-mcp-detail")
 }
 
-// Plugins holds lich's own plugin, locked, with what it brings.
+// Plugins holds lich's own plugin first, locked, with what it brings, then
+// the providers' plugins, each with the marks of the providers it is on in.
 func TestPluginsScreen(t *testing.T) {
 	_, r, _ := libraryFrames(t, sectionPlugins)
 	brings := i18n.T("settings.librarySettings.pluginBrings", i18n.Args{"hooks": 9, "skills": 2, "mcp": 1})
-	if !r.showsAll("lich", "v0.23.0", brings) {
+	if !r.showsAll("lich", "v0.23.0", brings, "addon-studio@snk-devcenter", "3.5.5", "@dietrichgebert/ponytail", "claude-code-wakatime@wakatime") {
 		t.Fatalf("drawn: %s", r.drawn())
 	}
+	if lich, first := labelBox(t, r, "lich"), labelBox(t, r, "@dietrichgebert/ponytail"); lich.Min.Y >= first.Min.Y {
+		t.Error("lich's own plugin is not the first row")
+	}
 	shootBothThemes(t, r, "settings-plugins")
+}
+
+// A plugin's page is a switch per provider that loads it: Claude Code and
+// Codex one per profile, each profile having its own config; opencode none,
+// saying why. Pressing one asks the backend to flip it.
+func TestPluginDetail(t *testing.T) {
+	_, r, f := libraryFrames(t, sectionPlugins)
+	r.clickLabel(t, "addon-studio@snk-devcenter")
+	r.settle(t)
+	for _, name := range []string{"Claude Code", "Codex"} {
+		if switchBeside(t, r, name, 0) {
+			t.Errorf("%s: a switch beside its name, want a heading over its profiles", name)
+		}
+	}
+	for nth := range 2 {
+		for _, profile := range []string{"Personal", "Work"} {
+			if !switchBeside(t, r, profile, nth) {
+				t.Errorf("no switch beside %s under provider %d", profile, nth)
+			}
+		}
+	}
+	shootBothThemes(t, r, "settings-plugin-detail")
+	r.click(t, r.controlOf(t, "Work"))
+	if got := calledWith(t, f, "library.Set"); !strings.Contains(got, `"kind":"plugin"`) || !strings.Contains(got, `"profile":"work"`) || !strings.Contains(got, `"on":true`) {
+		t.Errorf("set %s, want Claude Code's Work profile turned on", got)
+	}
+	r.clickLabel(t, i18n.T("settings.settings.section.plugins"))
+	r.settle(t)
+	r.clickLabel(t, "@dietrichgebert/ponytail")
+	r.settle(t)
+	if !r.shows(i18n.T("settings.librarySettings.reason.noSwitch", i18n.Args{"provider": "opencode"})) || switchBeside(t, r, "opencode", 0) {
+		t.Errorf("opencode's plugin: drawn %s, want its reason and no switch", r.drawn())
+	}
+}
+
+// In a project's scope, MCP servers adds the ones its own files declare,
+// with the files and no Move in, and Plugins gives Claude Code one switch,
+// which flips it in that project.
+func TestLibraryInAProjectsScope(t *testing.T) {
+	s, r, f := libraryFrames(t, sectionMCP)
+	s.scope = "pg"
+	r.frames(2)
+	eventually(t, "the project's scope loaded", func() bool { r.frames(1); return r.shows("sankhya-schema") })
+	r.settle(t)
+	if !r.showsAll(strings.ToUpper(i18n.T("settings.librarySettings.project")), "youtrack-snk", ".mcp.json, .codex/config.toml", "chrome-devtools") {
+		t.Fatalf("drawn: %s", r.drawn())
+	}
+	box := labelBox(t, r, "sankhya-schema")
+	r.hover(f32.Pt(float32(box.Min.X+2), float32(box.Min.Y+2)))
+	r.frames(2)
+	if r.shows(i18n.T("settings.librarySettings.moveIn")) {
+		t.Error("a project's server offers Move in")
+	}
+	shootBothThemes(t, r, "settings-mcp-project")
+
+	s.section, s.page = parseSettingsSection(sectionPlugins), settingsPageOf(sectionPlugins)
+	r.hover(f32.Pt(1, 1))
+	r.frames(2)
+	r.settle(t)
+	shootBothThemes(t, r, "settings-plugins-project")
+	r.clickLabel(t, "claude-code-wakatime@wakatime")
+	r.settle(t)
+	if !switchBeside(t, r, "Claude Code", 0) {
+		t.Fatalf("no switch beside Claude Code in the project: %s", r.drawn())
+	}
+	r.click(t, r.controlOf(t, "Claude Code"))
+	if got := calledWith(t, f, "library.Set"); !strings.Contains(got, `"project":"/work/lich-playground"`) || !strings.Contains(got, `"on":false`) {
+		t.Errorf("set %s, want it off in the project", got)
+	}
 }
 
 // shootBothThemes writes r's frame in the light theme and the dark one, back

@@ -12,10 +12,19 @@ import (
 	"github.com/lichdotdev/lich/internal/providers"
 )
 
-// List answers the library, what the providers hold beside it and lich's own
-// plugin, over RPC.
-func (s *Service) List(_ context.Context, _ api.None) (api.Library, error) {
-	out := api.Library{Skills: []api.LibraryItem{}, MCP: []api.LibraryItem{}, Found: s.found(), Plugin: s.plugin()}
+// List answers the library, what the providers hold beside it, lich's own
+// plugin and theirs, in opts.Project's scope, over RPC.
+func (s *Service) List(_ context.Context, opts api.LibraryListOptions) (api.Library, error) {
+	out := api.Library{
+		Skills: []api.LibraryItem{}, MCP: []api.LibraryItem{}, Found: s.found(), Plugin: s.plugin(),
+		Project: []api.LibraryFound{}, Plugins: s.plugins(opts.Project),
+	}
+	if opts.Project != "" {
+		out.Project = s.projectServers(opts.Project)
+		s.projectsMu.Lock()
+		s.projects[opts.Project] = true
+		s.projectsMu.Unlock()
+	}
 	for _, p := range providers.Registry {
 		out.Providers = append(out.Providers, api.LibraryProvider{
 			ID: p.ID, Name: p.Name, Profiles: s.profilesOf(p.ID), NoSkills: noSkills(p.ID), NoMCP: noMCP(p.ID),
@@ -83,6 +92,16 @@ func (s *Service) profilesOf(provider string) []api.Profile {
 func (s *Service) Set(_ context.Context, opts api.LibrarySwitchOptions) (api.None, error) {
 	if !providers.Known(opts.Provider) {
 		return api.None{}, fmt.Errorf("no provider %q", opts.Provider)
+	}
+	if opts.Kind == api.LibraryPluginKind {
+		s.mu.Lock()
+		err := s.setPlugin(opts)
+		s.mu.Unlock()
+		if err != nil {
+			return api.None{}, err
+		}
+		s.changed()
+		return api.None{}, nil
 	}
 	if opts.Kind != api.LibrarySkill && opts.Kind != api.LibraryMCP {
 		return api.None{}, fmt.Errorf("no library item of kind %q", opts.Kind)

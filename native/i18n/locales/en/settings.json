@@ -827,9 +827,12 @@
     "moveInAll": "Move in all",
     "noSkills": "No skills in lich's library yet.",
     "noMCP": "No MCP servers in lich's library yet.",
+    "project": "In this project",
     "reason": {
       "notWritten": "lich does not write MCP servers into {provider} yet",
-      "sharedFile": "Every {provider} profile reads the same file, so one switch serves them all"
+      "sharedFile": "Every {provider} profile reads the same file, so one switch serves them all",
+      "committed": "This repository commits the file {provider} keeps this switch in",
+      "noSwitch": "{provider} turns a plugin off only by removing it"
     },
     "pluginBrings": "Hooks: {hooks} · skills: {skills} · MCP servers: {mcp}",
     "pluginLocked": "Every session lich starts runs it. It cannot be turned off.",

@@ -827,9 +827,12 @@
     "moveInAll": "すべて移す",
     "noSkills": "lich のライブラリにはまだスキルがありません。",
     "noMCP": "lich のライブラリにはまだ MCP サーバーがありません。",
+    "project": "このプロジェクト内",
     "reason": {
       "notWritten": "lich はまだ {provider} に MCP サーバーを書き込みません",
-      "sharedFile": "{provider} のプロファイルはすべて同じファイルを読むため、スイッチは 1 つで全プロファイルに効きます"
+      "sharedFile": "{provider} のプロファイルはすべて同じファイルを読むため、スイッチは 1 つで全プロファイルに効きます",
+      "committed": "{provider} がこのスイッチを保存するファイルはこのリポジトリにコミットされています",
+      "noSwitch": "{provider} はプラグインを削除しないと無効にできません"
     },
     "pluginBrings": "フック: {hooks} · スキル: {skills} · MCP サーバー: {mcp}",
     "pluginLocked": "lich が開くすべてのセッションで動きます。オフにはできません。",

@@ -13,7 +13,7 @@ var (
 	overridable = settingEntry{key: "sandbox.ssh-agent", scope: scopeOverridable}
 	globalOnly  = settingEntry{key: diffLayoutKey}
 	projectOnly = settingEntry{key: "vcs.account", scope: scopeProjectOnly}
-	openTabs    = []settingsProject{{id: "lich", name: "lich"}, {id: "pg", name: "lich-playground"}, {id: "ij", name: "lich-intellij"}}
+	openTabs    = []settingsProject{{id: "lich", name: "lich"}, {id: "pg", name: "lich-playground", path: "/work/lich-playground"}, {id: "ij", name: "lich-intellij"}}
 )
 
 func TestRowStateFollowsTheScope(t *testing.T) {
@@ -80,7 +80,7 @@ func TestOnlyProjectScopedSectionsStayLitInAProject(t *testing.T) {
 			lit = append(lit, s.id)
 		}
 	}
-	if !slices.Equal(lit, []string{sectionProviders, sectionSandbox, sectionVersionControl, sectionServices}) {
+	if !slices.Equal(lit, []string{sectionProviders, sectionMCP, sectionPlugins, sectionSandbox, sectionVersionControl, sectionServices}) {
 		t.Fatalf("lit in a project: %v", lit)
 	}
 }

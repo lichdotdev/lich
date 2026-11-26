@@ -74,6 +74,7 @@ tool.
 | `internal/quota/` | plan usage in Settings and the footer | a `<provider>.go` reader and its place in `Service.read`, only if the provider exposes plan limits; a gap is a `docs/ceilings.md` line |
 | `internal/sandbox/sandbox.go` | what a confined session can still reach | a `stateDirs` case — a provider missing here confines to a home with no credentials, which is a session that opens and cannot log in |
 | `internal/agentplugin/` | the companion plugin | a `<provider>.go` with install / installed-version, plus the two switches (`Install`, `installedVersion`), `registersServerAtInstall` and the `supported` list in `agentplugin.go`, and a `registrations` entry in `repair.go` if the install writes an MCP server |
+| `internal/library/` | lich's library and the Plugins screen | arms in `providers.go` (its global skill folders and user MCP documents), `deliver.go` (how a library item reaches its sessions), `project.go` (the project files it reads MCP servers from), `plugins.go` (where it records its plugins and how its CLI turns one on or off), and `oneSkills`/`oneMCP`/`noMCP` in `list.go` for what it cannot split or take |
 | `internal/subagent/rules.go` | which subagent calls stay native at `/subagent` | a `nativeTypes` entry naming the provider's read-only exploration type, if it has one (docs/hooks/subagent-cards.md, Types kept native); absent keeps none native |
 | `internal/cli/mcp.go`, `internal/cli/handoff.go` | the `open_session` and `handoff_session` tool schemas | the new id in each `kind` description |
 

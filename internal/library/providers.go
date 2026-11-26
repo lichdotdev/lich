@@ -68,6 +68,13 @@ type mcpDoc struct {
 	shape     docShape
 }
 
+// cliOwned are the providers whose MCP servers lich reads but only their own
+// CLI removes: Claude Code rewrites ~/.claude.json while it runs, and Codex
+// keeps them in TOML (removeServer).
+func cliOwned(provider string) bool {
+	return provider == providers.Claude || provider == providers.Codex
+}
+
 type docShape int
 
 const (
@@ -79,21 +86,30 @@ const (
 	shapeOpencode
 	// shapeCrush is Crush's {"type", "command", "args", "env", "url"}.
 	shapeCrush
+	// shapeCodex is a config.toml's [mcp_servers.<name>] tables.
+	shapeCodex
 )
 
-// mcpDocs are the documents provider keeps its own MCP servers in. Claude Code
-// keeps them in ~/.claude.json, which it rewrites while it runs, and Codex in
-// config.toml: neither is read or written here (docs/ceilings.md).
+// mcpDocs are the documents provider keeps its own user MCP servers in,
+// Personal's.
 func (s *Service) mcpDocs(provider string) []mcpDoc {
 	home, err := s.home()
 	if err != nil {
 		return nil
 	}
 	switch provider {
+	case providers.Claude:
+		if path, err := claudeprofile.GlobalFile(""); err == nil {
+			return []mcpDoc{{path: path, key: mcpServers}}
+		}
+	case providers.Codex:
+		if dir, err := codexprofile.PersonalDir(); err == nil {
+			return []mcpDoc{{path: filepath.Join(dir, "config.toml"), shape: shapeCodex}}
+		}
 	case providers.Antigravity:
 		return []mcpDoc{{path: filepath.Join(home, ".gemini", "config", "mcp_config.json"), key: mcpServers}}
 	case providers.OpenCode:
-		return []mcpDoc{{path: filepath.Join(xdgConfig(home), "opencode", "opencode.json"), key: "mcp", shape: shapeOpencode}}
+		return opencodeDocs(filepath.Join(xdgConfig(home), "opencode"))
 	case providers.OMP:
 		if dir, err := ompprofile.PersonalDir(); err == nil {
 			return []mcpDoc{{path: filepath.Join(dir, "mcp.json"), key: mcpServers}}
@@ -106,6 +122,14 @@ func (s *Service) mcpDocs(provider string) []mcpDoc {
 		return []mcpDoc{{path: filepath.Join(providers.KiroHome(home), "settings", "mcp.json"), key: mcpServers}}
 	}
 	return nil
+}
+
+// opencodeDocs are the two names opencode reads its config under in dir.
+func opencodeDocs(dir string) []mcpDoc {
+	return []mcpDoc{
+		{path: filepath.Join(dir, "opencode.json"), key: "mcp", shape: shapeOpencode},
+		{path: filepath.Join(dir, "opencode.jsonc"), key: "mcp", shape: shapeOpencode},
+	}
 }
 
 // xdgConfig is $XDG_CONFIG_HOME, else ~/.config: the base opencode reads on

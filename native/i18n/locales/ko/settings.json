@@ -819,9 +819,12 @@
     "moveInAll": "모두 옮기기",
     "noSkills": "lich 라이브러리에 아직 스킬이 없습니다.",
     "noMCP": "lich 라이브러리에 아직 MCP 서버가 없습니다.",
+    "project": "이 프로젝트에",
     "reason": {
       "notWritten": "lich는 아직 {provider}에 MCP 서버를 쓰지 않습니다",
-      "sharedFile": "{provider}의 모든 프로필이 같은 파일을 읽으므로 스위치 하나가 모두에 적용됩니다"
+      "sharedFile": "{provider}의 모든 프로필이 같은 파일을 읽으므로 스위치 하나가 모두에 적용됩니다",
+      "committed": "{provider}가 이 스위치를 저장하는 파일이 이 저장소에 커밋되어 있습니다",
+      "noSwitch": "{provider}는 플러그인을 제거해야만 끌 수 있습니다"
     },
     "pluginBrings": "훅: {hooks} · 스킬: {skills} · MCP 서버: {mcp}",
     "pluginLocked": "lich가 여는 모든 세션에서 동작합니다. 끌 수 없습니다.",

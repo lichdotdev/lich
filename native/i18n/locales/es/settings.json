@@ -827,9 +827,12 @@
     "moveInAll": "Mover todos",
     "noSkills": "Todavía no hay skills en la biblioteca de lich.",
     "noMCP": "Todavía no hay servidores MCP en la biblioteca de lich.",
+    "project": "En este proyecto",
     "reason": {
       "notWritten": "lich todavía no escribe servidores MCP en {provider}",
-      "sharedFile": "Todos los perfiles de {provider} leen el mismo archivo, así que un interruptor sirve para todos"
+      "sharedFile": "Todos los perfiles de {provider} leen el mismo archivo, así que un interruptor sirve para todos",
+      "committed": "Este repositorio versiona el archivo donde {provider} guarda este interruptor",
+      "noSwitch": "{provider} solo desactiva un plugin quitándolo"
     },
     "pluginBrings": "Hooks: {hooks} · skills: {skills} · servidores MCP: {mcp}",
     "pluginLocked": "Todas las sesiones que abre lich lo usan. No se puede desactivar.",

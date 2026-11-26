@@ -13,6 +13,7 @@ import (
 	"strings"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/internal/codexprofile"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
 )
@@ -71,29 +72,24 @@ func (s *Service) foundSkills() []foundSkill {
 	return out
 }
 
-// foundServer is one MCP server in a provider's document.
+// foundServer is one MCP server in a provider's document; headers is whether
+// it sends headers of its own, which the library cannot keep yet.
 type foundServer struct {
 	name     string
 	server   Server
 	provider string
 	doc      mcpDoc
+	headers  bool
 }
 
 func (s *Service) foundServers() []foundServer {
 	var out []foundServer
 	for _, p := range providers.Registry {
 		for _, doc := range s.mcpDocs(p.ID) {
-			config, err := readDoc(doc.path)
-			if err != nil {
-				continue
-			}
-			entries, _ := config[doc.key].(map[string]any)
-			for name, raw := range entries {
-				if lichName(name) {
-					continue
-				}
-				if sv, ok := serverOf(raw, doc.shape); ok {
-					out = append(out, foundServer{name: name, server: sv, provider: p.ID, doc: doc})
+			for _, f := range docServers(doc) {
+				if !lichName(f.name) {
+					f.provider = p.ID
+					out = append(out, f)
 				}
 			}
 		}
@@ -101,7 +97,32 @@ func (s *Service) foundServers() []foundServer {
 	return out
 }
 
-// readDoc reads a JSON document as an object; a missing one is empty.
+// docServers are the servers doc declares, a missing or unreadable one none.
+func docServers(doc mcpDoc) []foundServer {
+	var out []foundServer
+	if doc.shape == shapeCodex {
+		servers, _ := codexprofile.MCPServers(filepath.Dir(doc.path))
+		for name, sv := range servers {
+			out = append(out, foundServer{name: name, server: Server{Command: sv.Command, URL: sv.URL}, doc: doc})
+		}
+		return out
+	}
+	config, err := readDoc(doc.path)
+	if err != nil {
+		return nil
+	}
+	entries, _ := config[doc.key].(map[string]any)
+	for name, raw := range entries {
+		if sv, ok := serverOf(raw, doc.shape); ok {
+			m, _ := raw.(map[string]any)
+			out = append(out, foundServer{name: name, server: sv, doc: doc, headers: m["headers"] != nil})
+		}
+	}
+	return out
+}
+
+// readDoc reads a JSON document as an object; a missing one is empty. A
+// .jsonc one has its comments cut first.
 func readDoc(path string) (map[string]any, error) {
 	data, err := os.ReadFile(path)
 	if errors.Is(err, os.ErrNotExist) {
@@ -110,11 +131,54 @@ func readDoc(path string) (map[string]any, error) {
 	if err != nil {
 		return nil, err
 	}
+	if strings.HasSuffix(path, ".jsonc") {
+		data, _ = cutComments(data)
+	}
 	config := map[string]any{}
 	if err := json.Unmarshal(data, &config); err != nil {
 		return nil, fmt.Errorf("%s is not a JSON object lich can read: %w", path, err)
 	}
 	return config, nil
+}
+
+// cutComments blanks the // and /* */ comments of a JSONC document outside
+// its strings, and reports whether it had any.
+func cutComments(data []byte) ([]byte, bool) {
+	out := make([]byte, 0, len(data))
+	had := false
+	for i := 0; i < len(data); i++ {
+		switch {
+		case data[i] == '"':
+			end := i + 1
+			for end < len(data) && data[end] != '"' {
+				if data[end] == '\\' {
+					end++
+				}
+				end++
+			}
+			end = min(end, len(data)-1)
+			out = append(out, data[i:end+1]...)
+			i = end
+		case data[i] == '/' && i+1 < len(data) && data[i+1] == '/':
+			had = true
+			for i < len(data) && data[i] != '\n' {
+				i++
+			}
+			if i < len(data) {
+				out = append(out, '\n')
+			}
+		case data[i] == '/' && i+1 < len(data) && data[i+1] == '*':
+			had = true
+			end := strings.Index(string(data[i+2:]), "*/")
+			if end < 0 {
+				return out, had
+			}
+			i += end + 3
+		default:
+			out = append(out, data[i])
+		}
+	}
+	return out, had
 }
 
 // serverOf normalizes one entry of a provider's document.
@@ -317,6 +381,15 @@ func (s *Service) moveServer(name string) ([]string, error) {
 	if len(copies) == 0 {
 		return nil, fmt.Errorf("no provider has an MCP server named %q", name)
 	}
+	for _, f := range copies {
+		if f.headers {
+			return nil, fmt.Errorf("%s sends headers of its own in %s, which lich's library cannot keep yet", name, f.doc.path)
+		}
+	}
+	whole, err := s.wholeServer(copies[0])
+	if err != nil {
+		return nil, err
+	}
 	servers, err := s.libraryServers()
 	if err != nil {
 		return nil, err
@@ -324,14 +397,14 @@ func (s *Service) moveServer(name string) ([]string, error) {
 	if _, ok := servers[name]; ok {
 		return nil, fmt.Errorf("the library already has an MCP server named %q", name)
 	}
-	servers[name] = copies[0].server
+	servers[name] = whole
 	if err := s.writeServers(servers); err != nil {
 		return nil, err
 	}
 	var origins []string
 	for _, f := range copies {
 		// turnOffServer leaves a document already set aside as it is.
-		if err := turnOffServer(f.doc, name); err != nil {
+		if err := s.turnOffServer(f, name); err != nil {
 			return origins, fmt.Errorf("turn %s off in %s: %w", name, f.doc.path, err)
 		}
 		if !slices.Contains(origins, f.provider) {
@@ -344,8 +417,23 @@ func (s *Service) moveServer(name string) ([]string, error) {
 // movedKey is where a moved entry goes, beside the key the provider reads.
 func movedKey(key string) string { return "lichMoved_" + key }
 
-// turnOffServer moves name's entry from doc's key to movedKey.
-func turnOffServer(doc mcpDoc, name string) error {
+// turnOffServer stops f's provider loading name: its own CLI removes it from
+// a file the provider rewrites, else the entry moves from doc's key to
+// movedKey.
+func (s *Service) turnOffServer(f foundServer, name string) error {
+	if cliOwned(f.provider) {
+		return s.removeServer(f.provider, name)
+	}
+	doc := f.doc
+	if strings.HasSuffix(doc.path, ".jsonc") {
+		data, err := os.ReadFile(doc.path)
+		if err != nil {
+			return err
+		}
+		if _, had := cutComments(data); had {
+			return fmt.Errorf("%s has comments lich would lose rewriting it; move %s out of it by hand", doc.path, name)
+		}
+	}
 	config, err := readDoc(doc.path)
 	if err != nil {
 		return err

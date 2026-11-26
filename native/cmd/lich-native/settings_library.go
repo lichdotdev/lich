@@ -21,7 +21,8 @@ import (
 // kind (internal/library). A screen lists what the providers hold that lich
 // does not yet, to move in, then the library's own items; an item opens to
 // one switch per provider and, under a provider with profiles, one per
-// profile. Plugins holds lich's own plugin alone this round.
+// profile. MCP servers also lists, in a project's scope, the ones its own
+// files declare. Plugins lists lich's own first, then the providers' (settings_plugins.go).
 
 const (
 	sectionSkills  = "skills"
@@ -85,7 +86,8 @@ func (s *settingsScreen) libraryBadge(section string) int {
 	return s.library.store.newCount(kind)
 }
 
-// libraryPaneRows is a library screen under its title, or an item's detail.
+// libraryPaneRows is a library screen under its title, or an item's detail,
+// in the scope's project when it has one.
 func (s *settingsScreen) libraryPaneRows(th *ui.Theme, sec settingsSection) []layout.Widget {
 	l := &s.library
 	if l.rows == nil {
@@ -94,9 +96,10 @@ func (s *settingsScreen) libraryPaneRows(th *ui.Theme, sec settingsSection) []la
 	if l.store == nil {
 		return nil
 	}
-	lib, _ := l.store.snapshot()
+	project := s.scopePath()
+	lib, _ := l.store.snapshot(s.ctx, s.client, project, s.invalidate)
 	if sec.id == sectionPlugins {
-		return []layout.Widget{s.pageTitle(th, sec), func(gtx C) D { return s.lichPluginRow(gtx, th, lib.Plugin) }}
+		return s.pluginsPaneRows(th, sec, lib, project)
 	}
 	kind := libraryKind(sec.id)
 	s.markLibrarySeen(kind)
@@ -119,12 +122,20 @@ func (s *settingsScreen) libraryPaneRows(th *ui.Theme, sec settingsSection) []la
 			found = append(found, f)
 		}
 	}
+	gap := func(gtx C) D { return layout.Spacer{Height: ui.Space(5)}.Layout(gtx) }
 	if len(found) > 0 {
 		rows = append(rows, s.foundHeading(th, found))
 		for _, f := range found {
 			rows = append(rows, func(gtx C) D { return s.foundRow(gtx, th, f) })
 		}
-		rows = append(rows, func(gtx C) D { return layout.Spacer{Height: ui.Space(5)}.Layout(gtx) })
+		rows = append(rows, gap)
+	}
+	if kind == api.LibraryMCP && len(lib.Project) > 0 {
+		rows = append(rows, libraryHeading(th, i18n.T("settings.librarySettings.project"), nil))
+		for _, f := range lib.Project {
+			rows = append(rows, func(gtx C) D { return projectServerRow(gtx, th, f) })
+		}
+		rows = append(rows, gap)
 	}
 	rows = append(rows, libraryHeading(th, i18n.T("settings.librarySettings.library"), nil))
 	if len(items) == 0 {
@@ -138,6 +149,35 @@ func (s *settingsScreen) libraryPaneRows(th *ui.Theme, sec settingsSection) []la
 		rows = append(rows, func(gtx C) D { return s.libraryRow(gtx, th, it) })
 	}
 	return rows
+}
+
+// scopePath is the folder of the project the scope names, "" in Global.
+func (s *settingsScreen) scopePath() string {
+	for _, p := range s.projects {
+		if p.id == s.scope {
+			return p.path
+		}
+	}
+	return ""
+}
+
+// projectServerRow is one MCP server the project's own files declare: its
+// name, what it is, the marks of the providers that load it and the files it
+// is in, with nothing to press, since lich never edits them.
+func projectServerRow(gtx C, th *ui.Theme, f backend.LibraryFound) D {
+	gtx.Constraints.Min.X = gtx.Constraints.Max.X
+	return layout.Inset{Left: ui.Space(1.5), Right: ui.Space(1.5), Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
+			layout.Rigid(th.Text(ui.TextSM, f.Name).Weight(font.Medium).Layout),
+			ui.Gap(2),
+			layout.Rigid(th.Text(ui.TextXS, f.Transport).Muted().Mono().Layout),
+			layout.Flexed(1, func(gtx C) D {
+				return layout.E.Layout(gtx, th.Text(ui.TextXS, strings.Join(f.Paths, ", ")).Muted().Mono().Layout)
+			}),
+			ui.Gap(2.5),
+			layout.Rigid(func(gtx C) D { return libraryMarks(gtx, th, f.Providers) }),
+		)
+	})
 }
 
 // markLibrarySeen tells the backend once per visit that what is found now
@@ -281,6 +321,37 @@ func libraryMarks(gtx C, th *ui.Theme, providers []string) D {
 // then a switch for each provider that takes it, with its profiles under it,
 // and the ones that cannot last, saying why.
 func (s *settingsScreen) libraryDetail(th *ui.Theme, sec settingsSection, it backend.LibraryItem, list []backend.LibraryProvider) []layout.Widget {
+	rows := s.libraryDetailHead(th, sec, it)
+	var cannot []backend.LibraryProvider
+	for _, p := range list {
+		if reason := libraryReason(p, it.Kind); reason != "" {
+			cannot = append(cannot, p)
+			continue
+		}
+		shared := librarySharedReason(p, it.Kind)
+		if len(p.Profiles) < 2 || shared != "" {
+			rows = append(rows, func(gtx C) D { return s.librarySwitchRow(gtx, th, it, p.ID, p.Name, "", shared, 0) })
+			continue
+		}
+		rows = append(rows, func(gtx C) D { return libraryProviderHeading(gtx, th, p) })
+		for _, prof := range p.Profiles {
+			rows = append(rows, func(gtx C) D {
+				return s.librarySwitchRow(gtx, th, it, p.ID, prof.Name, prof.Slug, "", libraryProfileIndent)
+			})
+		}
+	}
+	if len(cannot) > 0 {
+		rows = append(rows, func(gtx C) D { return layout.Spacer{Height: ui.Space(4)}.Layout(gtx) })
+	}
+	for _, p := range cannot {
+		rows = append(rows, func(gtx C) D { return libraryCannotRow(gtx, th, p, libraryReason(p, it.Kind)) })
+	}
+	return rows
+}
+
+// libraryDetailHead is the top of an item's page: back to the list, its name
+// and what it is.
+func (s *settingsScreen) libraryDetailHead(th *ui.Theme, sec settingsSection, it backend.LibraryItem) []layout.Widget {
 	l := &s.library
 	rows := []layout.Widget{
 		func(gtx C) D {
@@ -308,8 +379,11 @@ func (s *settingsScreen) libraryDetail(th *ui.Theme, sec settingsSection, it bac
 	}
 	about := it.Description
 	mono := false
-	if it.Kind == api.LibraryMCP {
+	switch it.Kind {
+	case api.LibraryMCP:
 		about, mono = it.Command, true
+	case api.LibraryPluginKind:
+		mono = true
 	}
 	if about != "" {
 		rows = append(rows, func(gtx C) D {
@@ -319,30 +393,6 @@ func (s *settingsScreen) libraryDetail(th *ui.Theme, sec settingsSection, it bac
 			}
 			return layout.Inset{Bottom: ui.Space(4)}.Layout(gtx, t.Layout)
 		})
-	}
-	var cannot []backend.LibraryProvider
-	for _, p := range list {
-		if reason := libraryReason(p, it.Kind); reason != "" {
-			cannot = append(cannot, p)
-			continue
-		}
-		shared := librarySharedReason(p, it.Kind)
-		if len(p.Profiles) < 2 || shared != "" {
-			rows = append(rows, func(gtx C) D { return s.librarySwitchRow(gtx, th, it, p.ID, p.Name, "", shared, 0) })
-			continue
-		}
-		rows = append(rows, func(gtx C) D { return libraryProviderHeading(gtx, th, p) })
-		for _, prof := range p.Profiles {
-			rows = append(rows, func(gtx C) D {
-				return s.librarySwitchRow(gtx, th, it, p.ID, prof.Name, prof.Slug, "", libraryProfileIndent)
-			})
-		}
-	}
-	if len(cannot) > 0 {
-		rows = append(rows, func(gtx C) D { return layout.Spacer{Height: ui.Space(4)}.Layout(gtx) })
-	}
-	for _, p := range cannot {
-		rows = append(rows, func(gtx C) D { return libraryCannotRow(gtx, th, p, libraryReason(p, it.Kind)) })
 	}
 	return rows
 }
@@ -397,6 +447,9 @@ func (s *settingsScreen) librarySwitchRow(gtx C, th *ui.Theme, it backend.Librar
 	}
 	if st.Update(gtx) {
 		opts := api.LibrarySwitchOptions{Kind: it.Kind, Name: it.Name, Provider: provider, Profile: profile, On: st.Value}
+		if it.Kind == api.LibraryPluginKind {
+			opts.Project = s.scopePath()
+		}
 		l.store.setSwitch(opts)
 		go s.setLibrarySwitch(opts)
 	}
@@ -436,32 +489,6 @@ func libraryCannotRow(gtx C, th *ui.Theme, p backend.LibraryProvider, reason str
 			ui.Gap(2.5),
 			layout.Rigid(th.Text(ui.TextSM, p.Name).Layout),
 			layout.Flexed(1, func(gtx C) D { return layout.E.Layout(gtx, th.Text(ui.TextXS, reason).Muted().Layout) }),
-		)
-	})
-}
-
-// lichPluginRow is lich's own plugin: its release and what it brings, and a
-// lock, since every session lich starts runs it.
-func (s *settingsScreen) lichPluginRow(gtx C, th *ui.Theme, p api.LibraryPlugin) D {
-	l := &s.library
-	version := i18n.T("settings.pluginSetting.notInstalled")
-	if p.Version != "" {
-		version = "v" + p.Version
-	}
-	brings := i18n.T("settings.librarySettings.pluginBrings", i18n.Args{"hooks": p.Hooks, "skills": p.Skills, "mcp": p.MCP})
-	gtx.Constraints.Min.X = gtx.Constraints.Max.X
-	return layout.Inset{Left: ui.Space(1.5), Right: ui.Space(1.5), Top: ui.Space(2), Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D {
-		return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
-			layout.Rigid(th.Text(ui.TextSM, "lich").Weight(font.Medium).Layout),
-			ui.Gap(2),
-			layout.Rigid(th.Text(ui.TextXS, version).Muted().Mono().Layout),
-			layout.Flexed(1, func(gtx C) D { return layout.E.Layout(gtx, th.Text(ui.TextXS, brings).Muted().Layout) }),
-			ui.Gap(2.5),
-			layout.Rigid(func(gtx C) D {
-				return th.Tooltip(s.root, &l.lockTip, i18n.T("settings.librarySettings.pluginLocked")).Layout(gtx, func(gtx C) D {
-					return icLibraryLock.Layout(gtx, ui.Space(3.5), th.MutedForeground)
-				})
-			}),
 		)
 	})
 }

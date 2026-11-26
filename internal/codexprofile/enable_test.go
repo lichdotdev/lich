@@ -58,3 +58,55 @@ func TestEnablePluginWithoutAConfig(t *testing.T) {
 		t.Fatalf("EnablePlugin = (%v, %v), want nothing to do", changed, err)
 	}
 }
+
+func TestSetPluginOff(t *testing.T) {
+	const key = "ponytail@ponytail"
+	for name, tc := range map[string]struct {
+		config, want string
+		changed      bool
+	}{
+		"on":                {config: "[plugins.\"ponytail@ponytail\"]\nenabled = true\n", want: "[plugins.\"ponytail@ponytail\"]\nenabled = false\n", changed: true},
+		"on with no line":   {config: "[plugins.\"ponytail@ponytail\"]\n\n[x]\n", want: "[plugins.\"ponytail@ponytail\"]\nenabled = false\n\n[x]\n", changed: true},
+		"already off":       {config: "[plugins.\"ponytail@ponytail\"]\nenabled = false\n"},
+		"another plugin on": {config: "[plugins.\"other@m\"]\nenabled = true\n"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			dir := t.TempDir()
+			path := filepath.Join(dir, configFile)
+			if err := os.WriteFile(path, []byte(tc.config), 0o600); err != nil {
+				t.Fatal(err)
+			}
+			changed, err := SetPlugin(dir, key, false)
+			if err != nil || changed != tc.changed {
+				t.Fatalf("SetPlugin = (%v, %v), want (%v, nil)", changed, err, tc.changed)
+			}
+			got, _ := os.ReadFile(path)
+			want := tc.want
+			if !tc.changed {
+				want = tc.config
+			}
+			if string(got) != want {
+				t.Fatalf("config.toml = %q, want %q", got, want)
+			}
+		})
+	}
+}
+
+func TestPluginsAndMCPServers(t *testing.T) {
+	dir := t.TempDir()
+	config := "[mcp_servers.youtrack]\nurl = \"https://yt/mcp\" # remote\n\n[mcp_servers.youtrack.env]\nA = \"b\"\n\n" +
+		"[mcp_servers.'local']\ncommand = 'bunx'\nargs = [\"x\"]\n\n" +
+		"[plugins.\"a@m\"]\nenabled = false\n\n[plugins.\"b@m\"]\n"
+	if err := os.WriteFile(filepath.Join(dir, configFile), []byte(config), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	plugins, err := Plugins(dir)
+	if err != nil || len(plugins) != 2 || plugins["a@m"] || !plugins["b@m"] {
+		t.Fatalf("Plugins = %v, %v; want a@m off, b@m on", plugins, err)
+	}
+	servers, err := MCPServers(dir)
+	want := map[string]MCPServer{"youtrack": {URL: "https://yt/mcp"}, "local": {Command: "bunx"}}
+	if err != nil || len(servers) != len(want) || servers["youtrack"] != want["youtrack"] || servers["local"] != want["local"] {
+		t.Fatalf("MCPServers = %v, %v; want %v", servers, err, want)
+	}
+}

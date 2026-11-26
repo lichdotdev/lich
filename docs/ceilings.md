@@ -1583,15 +1583,36 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   none yet, and each one's row says so. A built folder is named by its content and never rewritten, so a session
   keeps what it started with; old ones are not removed yet. Moving in copies the item and turns it off where it
   was, never deleting: a skill folder's `SKILL.md` becomes `SKILL.md.lich-moved` (a link is renamed instead), and an
-  MCP entry moves under a `lichMoved_<key>` key beside the provider's own. Claude Code's MCP servers in
-  `~/.claude.json`, which it rewrites while it runs, and Codex's in `config.toml` are not offered. What the
-  providers hold is read again every 30 seconds (go.mod carries no file watcher). A provider with profiles (Claude
+  MCP entry moves under a `lichMoved_<key>` key beside the provider's own. Claude Code's user servers in
+  `~/.claude.json`, which it rewrites while it runs, leave through `claude mcp remove -s user`, whose change a
+  running Claude Code keeps (measured on 2.1.332), and Codex's in `config.toml` through `codex mcp get --json` and
+  `codex mcp remove`: lich does not rewrite either file. A server that sends its own headers (an `Authorization`
+  header, Codex's `bearer_token_env_var`) is refused, since the library has nowhere to keep them yet, and an
+  `opencode.jsonc` with comments is never rewritten, since JSON would drop them. A project's own servers show in
+  that project's scope, never moved: Claude Code's `.mcp.json` and its local scope in `~/.claude.json`, Codex's
+  `.codex/config.toml`, opencode's `opencode.json(c)`, Crush's `crush.json` and `.crush.json`, Cursor CLI's
+  `.cursor/mcp.json` and Kiro CLI's `.kiro/settings/mcp.json`; Antigravity and oh-my-pi read no project file lich
+  knows of yet. What the providers hold, and what the projects a screen showed declare, is read again every 30
+  seconds (go.mod carries no file watcher). A provider with profiles (Claude
   Code, Codex and oh-my-pi, and opencode, Cursor CLI and Kiro CLI where `internal/xdgprofile` gives them some) gets
   one switch per profile; a move in turns the item on for all of them at once, and a profile's own switch wins once
   set. Where lich writes one file or folder that every profile of a provider reads, a split could not be kept, so
   that provider gets one switch saying why: Codex's and Kiro CLI's skills (Codex's profiles link Personal's
   `skills/`, and Kiro CLI's read one `~/.kiro/skills`), and oh-my-pi's and Cursor CLI's MCP servers (one `mcp.json`
   each).
+- **Settings › Plugins switches the providers' own plugins through their own CLI, and some providers have no
+  switch** (`internal/library/plugins.go`): lich lists the plugins each provider loads in the screen's scope and
+  never holds or moves one. Claude Code's are the `enabledPlugins` of each profile's `settings.json`, one switch per
+  profile through `claude plugin enable|disable --scope user` with the profile's `CLAUDE_CONFIG_DIR`; in a project
+  they are Personal's as the project's `.claude/settings.json` and then `settings.local.json` override them, behind
+  one switch that runs `--scope local` in the project and so writes `settings.local.json`, never the committed
+  `settings.json`. A project that commits `settings.local.json` too gets no switch, saying why. Codex has no plugin
+  switch in its CLI (0.170.0), so lich flips the `enabled` line of the plugin's table in each profile's
+  `config.toml`, the file it already rewrites to turn its own plugin back on; Codex installs plugins for the user
+  alone. Antigravity's go through `agy plugin enable|disable`, oh-my-pi's through `omp plugin enable|disable`,
+  which flips them for every profile at once (its `--scope project` writes nothing, measured on 19.1.1). opencode
+  turns a plugin off only by removing it, so its plugins show without a switch, saying so. Crush and Kiro CLI take
+  no plugins, and Cursor CLI loads the ones Claude Code installed, which show under Claude Code.
 - **A plugin install is pinned, so the harness never updates it on its own** (`internal/agentplugin/compat.go`,
   `codex.go` `codexPinMarketplace`): for the providers that still install it (Codex, Antigravity, Crush, Kiro CLI),
   lich installs the newest plugin release inside the range it speaks and declares Codex's marketplace at that
