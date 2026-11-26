@@ -476,17 +476,32 @@ func (c *client) tabsWhere(from int, ok func([]browserwire.Tab) bool) []browserw
 
 // WebKit's inspector is a tab of the page's, as Chrome's DevTools are in the
 // pane, never a window of its own; every request still acts on the page.
+// WebKit docks it into a page large enough and asks a window for a smaller
+// one: the backend's pages are large, and the docked one opened nowhere.
 func TestTheInspectorIsATabAfterThePage(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		w, h int
+	}{{"a small page", 400, 300}, {"a page large enough to dock it", 1280, 800}} {
+		t.Run(tc.name, func(t *testing.T) { inspectAsATab(t, tc.w, tc.h) })
+	}
+}
+
+func inspectAsATab(t *testing.T, w, h int) {
 	c := start(t)
-	c.open("b1", "data:text/html,<title>Inspected</title>", 400, 300, 1)
+	s := site(t)
+	c.open("b1", "about:blank", w, h, 1)
 	from := c.mark()
+	c.must(browserwire.Navigate, browserwire.NavigateParams{Page: "b1", URL: s.URL}, nil)
+	c.loaded(from, "b1")
+	from = c.mark()
 	c.must(browserwire.Inspect, browserwire.PageParams{Page: "b1"}, nil)
 	tabs := c.tabsWhere(from, func(tabs []browserwire.Tab) bool { return len(tabs) == 2 })
 	page, tools := tabs[0], tabs[1]
 	if !tools.DevTools || !tools.Front || page.Front || tools.XID == 0 || tools.XID == page.XID {
 		t.Fatalf("tabs %+v: want the inspector after the page, in front, in an X window of its own", tabs)
 	}
-	if got := c.eval("b1", "document.title"); got != `"Inspected"` {
+	if got := c.eval("b1", "document.title"); got != `"Form"` {
 		t.Fatalf("with the inspector in front eval read %s, want the page's title", got)
 	}
 	from = c.mark()

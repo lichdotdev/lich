@@ -137,10 +137,6 @@ static void adopt(GtkWidget *widget, gpointer window) {
 	gtk_widget_register_window(widget, GDK_WINDOW(window));
 }
 
-// keep_detached refuses the inspector a place inside the tab's own window,
-// which the pane sizes and cuts to the page alone.
-static gboolean keep_detached(WebKitWebInspector *inspector, gpointer data) { return TRUE; }
-
 static GtkWidget *new_view(LichPage *page, WebKitWebView *related) {
 	if (related) {
 		return g_object_new(WEBKIT_TYPE_WEB_VIEW, "related-view", related, "user-content-manager", page->content,
@@ -200,7 +196,9 @@ static void inspector_closed(WebKitWebInspector *inspector, gpointer tab);
 LichTab *lich_tab_new(LichPage *page, WebKitWebView *related, uintptr_t key, int width, int height) {
 	LichTab *tab = hold(page, new_view(page, related), key, width, height);
 	WebKitWebInspector *inspector = webkit_web_view_get_inspector(WEBKIT_WEB_VIEW(tab->view));
-	g_signal_connect(inspector, "attach", G_CALLBACK(keep_detached), NULL);
+	// WebKit docks the inspector into a page large enough (attach) and opens
+	// a window of its own for a smaller one: either way it is a tab.
+	g_signal_connect(inspector, "attach", G_CALLBACK(open_inspector), tab);
 	g_signal_connect(inspector, "open-window", G_CALLBACK(open_inspector), tab);
 	g_signal_connect(inspector, "closed", G_CALLBACK(inspector_closed), tab);
 	lich_events_connect_tab(tab);
