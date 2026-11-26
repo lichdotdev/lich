@@ -774,12 +774,6 @@ func (u *window) chatComposer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, 
 // chatUser is the person's message, in an Accent balloon against the column's
 // right edge, its corner by that edge tighter than the others, its text Markdown as the answers' is; key names it in p's cache.
 func (u *window) chatUser(gtx C, th *ui.Theme, p *chatPane, key, text string) D {
-	return u.chatUserFrom(gtx, th, p, key, "", text)
-}
-
-// chatUserFrom is chatUser with a muted line over the text naming who sent it,
-// none when from is empty.
-func (u *window) chatUserFrom(gtx C, th *ui.Theme, p *chatPane, key, from, text string) D {
 	maxW := int(float32(gtx.Constraints.Max.X) * chatUserShare)
 	on := th.On(th.Accent)
 	return layout.E.Layout(gtx, func(gtx C) D {
@@ -794,15 +788,7 @@ func (u *window) chatUserFrom(gtx C, th *ui.Theme, p *chatPane, key, from, text 
 			},
 			func(gtx C) D {
 				return layout.Inset{Top: ui.Space(3), Bottom: ui.Space(3), Left: ui.Space(4), Right: ui.Space(4)}.Layout(gtx, func(gtx C) D {
-					body := func(gtx C) D { return u.userMarkdown(gtx, on, p, key, text) }
-					if from == "" {
-						return body(gtx)
-					}
-					return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
-						layout.Rigid(on.Text(ui.TextXS, from).Muted().Layout),
-						ui.VGap(0.5),
-						layout.Rigid(body),
-					)
+					return u.userMarkdown(gtx, on, p, key, text)
 				})
 			})
 	})
