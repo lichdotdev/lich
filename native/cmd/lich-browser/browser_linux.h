@@ -28,8 +28,9 @@ typedef struct {
 } LichPage;
 
 // LichTab is one tab: its X window, which the window reparents into its own,
-// and the view GTK draws there. width and height are its size off screen, in
-// device pixels.
+// and the view GTK draws there; with no X display, xid is 0 and holder a
+// GtkOffscreenWindow whose frames the window draws. width and height are its
+// size off screen, in device pixels.
 struct LichTab {
 	Display *x;
 	Window xid;
@@ -46,6 +47,7 @@ struct LichTab {
 
 void lich_browser_invoke(uintptr_t handle);
 int lich_browser_init(void);
+int lich_browser_offscreen(void);
 void lich_browser_main(void);
 void lich_browser_quit(void);
 void lich_browser_set_app(uint64_t xid);
@@ -76,6 +78,7 @@ const char *lich_tab_uri(LichTab *tab);
 const char *lich_tab_title(LichTab *tab);
 int lich_tab_loading(LichTab *tab);
 unsigned char *lich_tab_icon(LichTab *tab, int *length);
+unsigned char *lich_tab_frame(LichTab *tab, int *width, int *height, int *stride);
 
 void lich_tab_focus(LichTab *tab);
 void lich_tab_mouse(LichTab *tab, int kind, double x, double y, guint button, guint state, double dx, double dy);

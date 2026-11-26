@@ -265,7 +265,7 @@ func Describe(providerID, home, cwd, gitCommon string, extraRead []string, sshAg
 	spec.Write = m.keep(write)
 	spec.Read = m.keep(read)
 	spec.Hidden = hidden(home)
-	spec.Session = m.keep(nil, []string{pluginHooksDir(home)}, extraRead)
+	spec.Session = m.keep(nil, []string{pluginHooksDir(home), libraryDir(home)}, extraRead)
 	spec.SkippedLinks = m.links
 	return spec
 }
@@ -285,6 +285,12 @@ func lichConfigDir(home string) string {
 // directory every confined session may read.
 func pluginHooksDir(home string) string {
 	return filepath.Join(lichConfigDir(home), "plugin")
+}
+
+// libraryDir is lich's library of skills and MCP servers (internal/library),
+// which sessions are handed folders of: readable, like the plugin's.
+func libraryDir(home string) string {
+	return filepath.Join(lichConfigDir(home), "library")
 }
 
 // worktreesDir is where lich creates the worktrees its sessions work in

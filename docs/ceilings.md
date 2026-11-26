@@ -1557,6 +1557,31 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   release unpacked, or a provider whose install failed) is one warning toast with the failure's text and Retry,
   and the next start or spawn retries on its own; a session spawned meanwhile starts without the hooks. A failed
   update leaves the release that is there in use and is only logged.
+- **lich's library hands skills and MCP servers to each provider by the route it takes, and some by none yet**
+  (`internal/library`, `internal/terminal/library.go`): the library is `<config>/lich/library/` (`skills/`,
+  `mcp.json`), shared by every profile, and each switch is a settings key in lich.db; a switch never stored is off,
+  so an item reaches only the providers it was moved in from. Skills reach Claude Code and Cursor CLI as a second
+  `--plugin-dir` (a plugin named `lich-library`, so a skill shows as `lich-library:<name>`), opencode through
+  `skills.paths` in its inline config, oh-my-pi through a `--config` overlay, and Crush through a composed
+  `CRUSH_SKILLS_DIR` that links Crush's four global folders beside the library's copies, since the variable
+  replaces its whole search (measured 109 skills to 110); that composition needs symlinks, so on Windows Crush gets
+  none. Codex, Antigravity and Kiro CLI take no skill per session, so lich copies each one on into their skills
+  folder before a spawn, marked with a `.lich-library` file, and removes only marked copies when it is turned off;
+  a folder of that name the person made stays theirs. MCP servers reach Claude Code (a second `--mcp-config`
+  document), Codex (`-c mcp_servers.*`; a name with a dot is left out) and opencode per session, and oh-my-pi and
+  Cursor CLI by an entry lich writes into their `mcp.json` and tracks by name; Antigravity, Crush and Kiro CLI get
+  none yet, and each one's row says so. A built folder is named by its content and never rewritten, so a session
+  keeps what it started with; old ones are not removed yet. Moving in copies the item and turns it off where it
+  was, never deleting: a skill folder's `SKILL.md` becomes `SKILL.md.lich-moved` (a link is renamed instead), and an
+  MCP entry moves under a `lichMoved_<key>` key beside the provider's own. Claude Code's MCP servers in
+  `~/.claude.json`, which it rewrites while it runs, and Codex's in `config.toml` are not offered. What the
+  providers hold is read again every 30 seconds (go.mod carries no file watcher). A provider with profiles (Claude
+  Code, Codex and oh-my-pi, and opencode, Cursor CLI and Kiro CLI where `internal/xdgprofile` gives them some) gets
+  one switch per profile; a move in turns the item on for all of them at once, and a profile's own switch wins once
+  set. Where lich writes one file or folder that every profile of a provider reads, a split could not be kept, so
+  that provider gets one switch saying why: Codex's and Kiro CLI's skills (Codex's profiles link Personal's
+  `skills/`, and Kiro CLI's read one `~/.kiro/skills`), and oh-my-pi's and Cursor CLI's MCP servers (one `mcp.json`
+  each).
 - **A plugin install is pinned, so the harness never updates it on its own** (`internal/agentplugin/compat.go`,
   `codex.go` `codexPinMarketplace`): for the providers that still install it (Codex, Antigravity, Crush, Kiro CLI),
   lich installs the newest plugin release inside the range it speaks and declares Codex's marketplace at that
@@ -2423,7 +2448,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
 - **A page in lich-browser has no pause for the agent to hear** (`internal/browser/webkit*.go`,
-  `docs/lich-browser.md`): on Linux with an X display and `lich-browser` beside `lich`, on macOS with
+  `docs/lich-browser.md`): on Linux with an X or Wayland display and `lich-browser` beside `lich`, on macOS with
   `lich-browser` beside `lich`, and on Windows with `lich-browser.exe` beside `lich.exe`, every page lives there,
   and DevTools is the engine's inspector, a tab of the pane's. Nothing on the wire says the page stopped in its
   debugger, so the agent's tools do not fail naming the pause as they do on a Chrome page: a read answers with the
@@ -2443,6 +2468,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   acceleration AppKit puts on it. A popped-out page's window has no Dock tile (lich-browser is an accessory app),
   and the favicon is fetched apart from the page's cookies. WKDownload refuses a file that exists, so the name Go
   reserves is freed just before WebKit takes it: two downloads of one name at once may race for it.
+- **A page in lich-browser on Wayland without X is drawn from frames, with three gaps against X11**
+  (`native/cmd/lich-browser/frames_linux.go`, `docs/lich-browser.md`): with no X display each tab draws in a
+  `GtkOffscreenWindow`, and the pane shows it the way it showed Chrome's screencast, so every frame crosses the
+  backend's `/events` as a base64 JPEG: 130 KiB a frame at 1280x720 and 353 KiB at 2x, about 65 a second while
+  the wheel scrolls, 2 ms and 8 ms to encode (KWin headless, 2026-11-26), and a PNG once the page holds still.
+  The pane's pointer, keys and committed text reach the page over the wire, trusted, and the clipboard goes
+  through the window, as with Chrome. The gaps: (1) the pane shows the window's arrow over the page, never its
+  I-beam or hand; (2) a file dragged from the desktop does not drop into the page; (3) a page just loaded may
+  show GTK's dark background for one frame, about 50 ms, before WebKit's first paint.
 - **A layer the window floats over the content shows over a page it draws itself only where it says so**
   (`coverPages` in `native/cmd/lich-native/browser_native.go`): the page is a native child window over the pane,
   above anything the window draws, so a layer that floats over the content (a dock or sidebar sliding in, and later

@@ -122,6 +122,10 @@ kiroprofile.DeleteProfile(ProfileSlugOptions) None
 kiroprofile.LoginCommand(ProfileSlugOptions) string
 kiroprofile.Profiles(None) []ProfileInfo
 kiroprofile.UpdateProfile(UpdateProfileOptions) Profile
+library.List(None) Library
+library.MoveIn(LibraryItemOptions) None
+library.Seen(LibrarySeenOptions) None
+library.Set(LibrarySwitchOptions) None
 ompprofile.CreateProfile(CreateProfileOptions) Profile
 ompprofile.DeleteProfile(ProfileSlugOptions) None
 ompprofile.LoginCommand(ProfileSlugOptions) string
@@ -375,6 +379,7 @@ event extension-removed ExtensionIDOptions
 event extension-status Extension
 event extension-update ExtensionUpdate
 event forge ForgeChange
+event library.changed None
 event lich-plugin-problem PluginProblem
 event profile-changed ProfileChanged
 event project-added ProjectAdded
@@ -1013,6 +1018,31 @@ ExtensionGitInstallOptions {
 ExtensionSendOptions {
 	id string
 	message json
+}
+
+Library {
+	skills []LibraryItem
+	mcp []LibraryItem
+	found []LibraryFound
+	plugin LibraryPlugin
+	providers []LibraryProvider
+}
+
+LibraryItemOptions {
+	kind string
+	name string
+}
+
+LibrarySeenOptions {
+	kind string
+}
+
+LibrarySwitchOptions {
+	kind string
+	name string
+	provider string
+	profile string
+	on bool
 }
 
 PatchNotesOptions {
@@ -2919,6 +2949,43 @@ ExtensionText {
 	surfaces,omitempty map[string]string
 }
 
+LibraryItem {
+	kind string
+	name string
+	description string
+	origin string
+	command string
+	transport string
+	switches []LibrarySwitch
+}
+
+LibraryFound {
+	kind string
+	name string
+	description string
+	transport string
+	providers []string
+	paths []string
+	new bool
+}
+
+LibraryPlugin {
+	version string
+	hooks int
+	skills int
+	mcp int
+}
+
+LibraryProvider {
+	id string
+	name string
+	profiles []Profile
+	noSkills string
+	noMCP string
+	oneSkills string
+	oneMCP string
+}
+
 PatchNotesHighlight {
 	kind string
 	text string
@@ -3269,6 +3336,12 @@ ChatPluginParts {
 ChatAskAnswer {
 	picked,omitempty []string
 	other,omitempty string
+}
+
+LibrarySwitch {
+	provider string
+	profile string
+	on bool
 }
 
 StepLog {

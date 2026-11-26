@@ -101,6 +101,7 @@ type settingsScreen struct {
 	// sessionView is the view new sessions open in, on the Providers page.
 	sessionView sessionViewSetting
 	services    servicesSettings
+	library     librarySettings
 	extensions  extensionsSettings
 }
 
@@ -289,6 +290,9 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 		rows = append(rows, func(gtx C) D {
 			return layout.Inset{Bottom: ui.Space(2)}.Layout(gtx, func(gtx C) D { return s.scopePill(gtx, th) })
 		})
+	}
+	if sec.id == sectionSkills || sec.id == sectionMCP || sec.id == sectionPlugins {
+		return append(rows, s.libraryPaneRows(th, sec)...)
 	}
 	if p, ok := s.providerScreen(); ok && sec.id == sectionProviders {
 		rows = append(rows, s.providerHeader(th, p)...)

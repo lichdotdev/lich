@@ -296,6 +296,11 @@ var (
 	// update installed one. Theme.Latest carries them.
 	ThemeUpdatesEvent = defineEvent[None]("theme-updates")
 
+	// LibraryChangedEvent says lich's library changed, or what the providers
+	// have installed did, once the change is on disk; the window reads
+	// library.List again.
+	LibraryChangedEvent = defineEvent[None]("library.changed")
+
 	// ThemeCatalogEvent carries the theme catalog once the backend holds a copy
 	// newer than the one it last sent.
 	ThemeCatalogEvent = defineEvent[ThemeCatalog]("theme-catalog")

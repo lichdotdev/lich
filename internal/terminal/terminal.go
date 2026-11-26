@@ -177,6 +177,9 @@ type Store interface {
 
 // Service manages PTY-backed shell sessions keyed by session ID.
 type Service struct {
+	// library hands a spawn the items lich's library has on (SetLibrary); nil
+	// hands nothing.
+	library Librarian
 	// ensurePlugin sets the plugin up when a spawn finds it missing
 	// (SetPluginEnsure); nil does nothing.
 	ensurePlugin func(kind string)

@@ -56,3 +56,47 @@ func TestDecodeRefusesWhatIsNoJPEG(t *testing.T) {
 		}
 	}
 }
+
+func TestEncodeBGRXKeepsTheColoursAndThePaddedRows(t *testing.T) {
+	const w, h, stride = 40, 30, 40*4 + 16
+	pixels := make([]byte, stride*h)
+	for y := range h {
+		for x := range w {
+			// B, G, R, unused: red on the left half, blue on the right.
+			px := pixels[y*stride+x*4:]
+			if x < w/2 {
+				px[2] = 255
+			} else {
+				px[0] = 255
+			}
+		}
+	}
+	data, err := EncodeBGRX(pixels, w, h, stride, 85)
+	if err != nil {
+		t.Fatal(err)
+	}
+	img, err := Decode(data)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if img.Bounds() != image.Rect(0, 0, w, h) {
+		t.Fatalf("bounds %v, want %dx%d", img.Bounds(), w, h)
+	}
+	for _, c := range []struct {
+		x    int
+		want color.RGBA
+	}{{5, color.RGBA{R: 255, A: 255}}, {w - 5, color.RGBA{B: 255, A: 255}}} {
+		g := img.RGBAAt(c.x, h/2)
+		for i, d := range [3]int{int(g.R) - int(c.want.R), int(g.G) - int(c.want.G), int(g.B) - int(c.want.B)} {
+			if d < -12 || d > 12 {
+				t.Fatalf("pixel %d channel %d is %v, want %v", c.x, i, g, c.want)
+			}
+		}
+	}
+}
+
+func TestEncodeBGRXRefusesTooFewPixels(t *testing.T) {
+	if _, err := EncodeBGRX(make([]byte, 10), 4, 4, 16, 85); err == nil {
+		t.Fatal("encoded 10 bytes as a 4x4 image")
+	}
+}
