@@ -1,4 +1,4 @@
-//go:build linux || windows
+//go:build linux || windows || darwin
 
 package main
 
@@ -50,4 +50,3 @@ func (t *tab) run(script string) {
 	defer C.free(unsafe.Pointer(s))
 	C.lich_tab_run(t.c, s)
 }
-

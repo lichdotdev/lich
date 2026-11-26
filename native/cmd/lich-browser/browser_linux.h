@@ -9,6 +9,9 @@
 // LichDialog is a JavaScript dialog the page waits on, held until answered.
 typedef WebKitScriptDialog LichDialog;
 
+// LichChooser is a file input asking for files, held until answered.
+typedef WebKitFileChooserRequest LichChooser;
+
 // LichPage is what a page's tabs share: cookies and storage, its scripts, its
 // downloads. key is the Go page's, which a callback names it by.
 typedef struct LichTab LichTab;
@@ -86,5 +89,5 @@ void lich_page_pop_in(LichPage *page);
 void lich_page_raise(LichPage *page);
 
 void lich_dialog_answer(LichDialog *dialog, int accept, const char *text);
-void lich_files_answer(WebKitFileChooserRequest *request, const char **paths, int n);
+void lich_files_answer(LichChooser *request, const char **paths, int n);
 #endif

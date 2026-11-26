@@ -1,4 +1,4 @@
-//go:build linux || windows
+//go:build linux || windows || darwin
 
 package main
 
@@ -18,13 +18,13 @@ import (
 )
 
 // The tests drive a built lich-browser over its wire, as the backend does,
-// on the X display they run on (CI's Xvfb).
+// on the display they run on (CI's Xvfb, the macOS runner's own).
 
 var built string
 
 func TestMain(m *testing.M) {
-	if os.Getenv("DISPLAY") == "" {
-		fmt.Println("lich-browser: no X display, the wire tests skip")
+	if noDisplay() {
+		fmt.Println("lich-browser: no display, the wire tests skip")
 		os.Exit(m.Run())
 	}
 	dir, err := os.MkdirTemp("", "lich-browser-test-")
@@ -58,7 +58,7 @@ type client struct {
 func start(t *testing.T) *client {
 	t.Helper()
 	if built == "" {
-		t.Skip("no X display")
+		t.Skip("no display")
 	}
 	cmd := exec.Command(built)
 	cmd.Env = append(os.Environ(), "WAYLAND_DISPLAY=/nonexistent/wl-none")

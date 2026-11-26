@@ -1,4 +1,4 @@
-//go:build linux || windows
+//go:build linux || windows || darwin
 
 package main
 
@@ -57,4 +57,3 @@ func (b *browser) answerDialog(o browserwire.DialogParams) (any, error) {
 	b.wire.event(browserwire.EventDialog, browserwire.DialogEvent{Page: p.id})
 	return nil, nil
 }
-

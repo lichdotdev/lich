@@ -15,7 +15,7 @@ extern int lichRequestStarted(uintptr_t key, char *uri, char *accept, char *kind
 extern void lichRequestFinished(uintptr_t key, int id);
 extern void lichCrashed(uintptr_t key);
 extern int lichDialog(uintptr_t key, LichDialog *dialog, int type, char *message, char *text);
-extern void lichFiles(uintptr_t key, WebKitFileChooserRequest *request, int multiple);
+extern void lichFiles(uintptr_t key, LichChooser *request, int multiple);
 extern void lichConsole(uintptr_t page, char *text);
 extern void lichInputSeen(uintptr_t page, char *type);
 extern char *lichDownloadPath(uintptr_t page, char *suggested);
