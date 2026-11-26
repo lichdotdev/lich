@@ -15,9 +15,11 @@ import (
 func (r *rig) waitingQuestion() api.ChatItem {
 	r.t.Helper()
 	var got api.ChatItem
+	// The item can show before the question waits: Claude Code streams the
+	// tool_use that asks before the request lich answers it on.
 	r.eventually("a waiting question", func() bool {
 		for _, it := range r.history() {
-			if it.Kind == api.ItemQuestion && it.Question != nil && it.Question.Reply == nil {
+			if it.Kind == api.ItemQuestion && it.Question != nil && it.Question.Reply == nil && r.asking(it.ID) {
 				got = it
 				return true
 			}
@@ -25,6 +27,15 @@ func (r *rig) waitingQuestion() api.ChatItem {
 		return false
 	})
 	return got
+}
+
+// asking reports whether the session waits on question item id.
+func (r *rig) asking(id string) bool {
+	c := r.svc.running("s1")
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	_, ok := c.questions[id]
+	return ok
 }
 
 func (r *rig) reply(itemID string, reply api.ChatQReplied) error {
