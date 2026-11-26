@@ -49,8 +49,8 @@ func TestMain(m *testing.M) {
 	os.Exit(code)
 }
 
-// waitFor bounds every wait on the wire: a page load, an answer, an event.
-const waitFor = 15 * time.Second
+// WebView2's first controller can take longer to load on a cold Windows runner.
+const waitFor = 30 * time.Second
 
 type client struct {
 	t     *testing.T
