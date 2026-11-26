@@ -186,7 +186,7 @@ func (f *fileEditor) vimStatus(gtx C, th *ui.Theme) D {
 					layout.Flexed(1, left),
 					layout.Rigid(th.Text(ui.TextSM, u.showcmd).Mono().Muted().Layout),
 					ui.Gap(3),
-					layout.Rigid(th.Text(ui.TextSM, f.vimLspText(current)).Mono().Muted().Layout),
+					layout.Rigid(func(gtx C) D { return f.vimLspStatus(gtx, th, current) }),
 				)
 			})
 		}),
@@ -289,4 +289,27 @@ func (f *fileEditor) vimLspText(current bool) string {
 		return i18n.T("dock.editor.vimLspFailed", i18n.Args{"name": s.failed})
 	}
 	return ""
+}
+
+// vimLspStatus is the strip's say on the file's language servers, the
+// failure's error in a tooltip, and Install where lich knows the command.
+func (f *fileEditor) vimLspStatus(gtx C, th *ui.Theme, current bool) D {
+	text := th.Text(ui.TextSM, f.vimLspText(current)).Mono().Muted()
+	s := f.vim.state
+	if !current || s == nil || len(s.lsp) > 0 {
+		return text.Layout(gtx)
+	}
+	v := &f.vim.lspUI
+	if v.install.Clicked(gtx) && s.install != "" && f.env.installLSP != nil {
+		f.vim.retry = true
+		f.env.installLSP(f.root(), s.install)
+	}
+	label := th.Tooltip(f.env.root, &v.reason, s.reason)
+	children := []layout.FlexChild{layout.Rigid(func(gtx C) D { return label.Layout(gtx, text.Layout) })}
+	if s.install != "" {
+		btn := th.Button(&v.install, i18n.T("dock.editor.vimLspInstall"))
+		btn.Size, btn.Variant = ui.SizeXS, ui.VariantOutline
+		children = append(children, ui.Gap(2), layout.Rigid(btn.Layout))
+	}
+	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
 }

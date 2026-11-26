@@ -58,6 +58,7 @@
     "vimFailed": "Neovim no se inició, así que el editor usa sus propias teclas",
     "vimLspMissing": "{name} no encontrado",
     "vimConfigFailed": "No se pudo abrir la configuración de Neovim",
-    "vimLspFailed": "{name} no se inició"
+    "vimLspFailed": "{name} no se inició",
+    "vimLspInstall": "Instalar"
   }
 }

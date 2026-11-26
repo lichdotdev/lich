@@ -38,6 +38,8 @@ func vimEditorOf(t *testing.T, dir, rel, text string) (*fileEditor, *fakeDisk) {
 	if _, err := exec.LookPath("nvim"); err != nil {
 		t.Skip("no nvim on the PATH")
 	}
+	// Neovim's lsp.log, and the rest of its state, stay out of the person's.
+	t.Setenv("XDG_STATE_HOME", t.TempDir())
 	srv, d := diskBackend(t)
 	f := loadedEditor(t, srv, d, text)
 	if dir != "" {
@@ -45,7 +47,7 @@ func vimEditorOf(t *testing.T, dir, rel, text string) (*fileEditor, *fakeDisk) {
 	}
 	h := newVimHost(func() {})
 	h.args = []string{"--embed", "--clean"}
-	t.Cleanup(h.close)
+	t.Cleanup(func() { vimCloseNow(h) })
 	f.env.vim = h
 	layOut(t, f)
 	vimUntil(t, f, "the buffer to open", func() bool { return f.vim.state != nil })
@@ -471,10 +473,55 @@ func TestVimNamesTheLanguageServerThatFailedToStart(t *testing.T) {
 	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
 	dir := t.TempDir()
 	f, _ := vimEditorOf(t, dir, "main.go", "package main\n")
-	vimUntil(t, f, "the failed server named", func() bool {
+	vimUntil(t, f, "the failed server named, with its error", func() bool {
 		f.vimFeed("lich_editor.focus(...)")
-		return f.vimLspText(true) == "gopls failed to start"
+		return f.vimLspText(true) == "gopls failed to start" && f.vim.state.reason == "no version for this folder"
 	})
+	if _, err := exec.LookPath("go"); err == nil && f.vim.state.install != "go install golang.org/x/tools/gopls@latest" {
+		t.Fatalf("Install offers %q", f.vim.state.install)
+	}
+}
+
+func TestVimRetriesTheServerOnceInstalled(t *testing.T) {
+	real, err := exec.LookPath("gopls")
+	dir := t.TempDir()
+	if err == nil {
+		version := exec.Command(real, "version")
+		version.Dir = dir
+		err = version.Run()
+	}
+	if err != nil {
+		t.Skip("no gopls that runs here on the PATH")
+	}
+	bin := t.TempDir()
+	fake := filepath.Join(bin, "gopls")
+	if err := os.WriteFile(fake, []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	if err := os.WriteFile(filepath.Join(dir, "go.mod"), []byte("module example.com/m\n\ngo 1.22\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	f, _ := vimEditorOf(t, dir, "main.go", "package main\n")
+	vimUntil(t, f, "the failure", func() bool {
+		f.vimFeed("lich_editor.focus(...)")
+		return f.vim.state.failed == "gopls"
+	})
+	if err := os.Symlink(real, fake+".new"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Rename(fake+".new", fake); err != nil {
+		t.Fatal(err)
+	}
+	f.vim.retry = true
+	f.recheck()
+	vimUntil(t, f, "the installed server attached on coming back", func() bool {
+		f.vimFeed("lich_editor.focus(...)")
+		return slices.Contains(f.vim.state.lsp, "gopls")
+	})
+	if f.vim.retry {
+		t.Fatal("the editor kept retrying once a server attached")
+	}
 }
 
 func TestVimClickMovesVimsCursor(t *testing.T) {
@@ -553,4 +600,16 @@ func TestVimCompletionMenuLaysOutItsWordsInLineWithTheWord(t *testing.T) {
 	u, _ := f.env.vim.status(buf)
 	layOut(t, f)
 	f.paintVimPum(frameCtx(), u)
+}
+
+// vimCloseNow ends h's Neovim and waits for it, so it writes nothing more in
+// a test's folders once they are being removed; close does not wait.
+func vimCloseNow(h *vimHost) {
+	h.mu.Lock()
+	v := h.nv
+	h.nv = nil
+	h.mu.Unlock()
+	if v != nil {
+		_ = v.Close()
+	}
 }

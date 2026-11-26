@@ -181,16 +181,34 @@ end
 -- config attached none to, by filetype: the first whose command is on the
 -- PATH, rooted at the nearest of its markers.
 local servers = {
-  { name = 'gopls', fts = { 'go', 'gomod', 'gowork' }, cmd = { 'gopls' }, root = { 'go.work', 'go.mod', '.git' } },
+  {
+    name = 'gopls',
+    fts = { 'go', 'gomod', 'gowork' },
+    cmd = { 'gopls' },
+    root = { 'go.work', 'go.mod', '.git' },
+    install = { { 'go', 'go install golang.org/x/tools/gopls@latest' } },
+  },
   {
     name = 'typescript-language-server',
     fts = { 'typescript', 'typescriptreact', 'javascript', 'javascriptreact' },
     cmd = { 'typescript-language-server', '--stdio' },
     root = { 'tsconfig.json', 'jsconfig.json', 'package.json', '.git' },
   },
-  { name = 'basedpyright', fts = { 'python' }, cmd = { 'basedpyright-langserver', '--stdio' }, root = { 'pyproject.toml', 'setup.py', '.git' } },
+  {
+    name = 'basedpyright',
+    fts = { 'python' },
+    cmd = { 'basedpyright-langserver', '--stdio' },
+    root = { 'pyproject.toml', 'setup.py', '.git' },
+    install = { { 'pipx', 'pipx install basedpyright' }, { 'pip', 'pip install --user basedpyright' } },
+  },
   { name = 'pyright', fts = { 'python' }, cmd = { 'pyright-langserver', '--stdio' }, root = { 'pyproject.toml', 'setup.py', '.git' } },
-  { name = 'rust-analyzer', fts = { 'rust' }, cmd = { 'rust-analyzer' }, root = { 'Cargo.toml', '.git' } },
+  {
+    name = 'rust-analyzer',
+    fts = { 'rust' },
+    cmd = { 'rust-analyzer' },
+    root = { 'Cargo.toml', '.git' },
+    install = { { 'rustup', 'rustup component add rust-analyzer' } },
+  },
   { name = 'clangd', fts = { 'c', 'cpp', 'objc', 'objcpp' }, cmd = { 'clangd' }, root = { 'compile_commands.json', '.clangd', '.git' } },
   { name = 'lua-language-server', fts = { 'lua' }, cmd = { 'lua-language-server' }, root = { '.luarc.json', '.git' } },
   { name = 'jdtls', fts = { 'java' }, cmd = { 'jdtls' }, root = { 'pom.xml', 'build.gradle', 'build.gradle.kts', '.git' } },
@@ -220,7 +238,27 @@ local failed = {}
 -- lich starts its own: lspconfig and vim.lsp.enable attach on FileType.
 local attachWait = 1500
 
-local function autoLsp(buf)
+-- stderrOf is the first line the server name last wrote to its stderr, as
+-- Neovim's lsp.log keeps it: "rpc", the client's name, "stderr", the text.
+local function stderrOf(name)
+  local f = io.open(vim.lsp.get_log_path(), 'rb')
+  if not f then
+    return ''
+  end
+  local size = f:seek('end')
+  f:seek('set', math.max(size - 65536, 0))
+  local tail = f:read('*a')
+  f:close()
+  local last = ''
+  for msg in tail:gmatch('"rpc"\t"' .. vim.pesc(name) .. '"\t"stderr"\t"(.-)"\n') do
+    last = msg
+  end
+  return vim.trim((last:gsub('\\n.*', '')))
+end
+
+local reasons = {}
+
+local function autoLsp(buf, wait)
   vim.defer_fn(function()
     if not api.nvim_buf_is_valid(buf) or #vim.lsp.get_clients({ bufnr = buf }) > 0 then
       return
@@ -236,32 +274,61 @@ local function autoLsp(buf)
       on_exit = function(code)
         if code ~= 0 and #vim.lsp.get_clients({ bufnr = buf }) == 0 then
           failed[buf] = s.cmd[1]
-          vim.schedule(state)
+          vim.schedule(function()
+            reasons[buf] = stderrOf(s.name)
+            state()
+          end)
         end
       end,
     }, { bufnr = buf })
     if id then
       started[id] = true
     end
-  end, attachWait)
+  end, wait or attachWait)
+end
+
+-- retry starts buf's server again where none is attached: one installed
+-- since it was found missing or failed.
+function M.retry(buf)
+  if api.nvim_buf_is_valid(buf) and #vim.lsp.get_clients({ bufnr = buf }) == 0 then
+    failed[buf], reasons[buf] = nil, nil
+    autoLsp(buf, 0)
+    state()
+  end
+end
+
+-- installOf is the command that installs s, through the first of its tools
+-- on the PATH; '' for none.
+local function installOf(s)
+  for _, way in ipairs(s.install or {}) do
+    if vim.fn.executable(way[1]) == 1 then
+      return way[2]
+    end
+  end
+  return ''
 end
 
 -- lsp is what the strip says of the buffer's servers: the names attached,
 -- the server lich knows for its filetype and could not find, or the one it
--- started that exited at once.
+-- started that exited at once with the first line of its error, and the
+-- command that installs it.
 local function lsp(buf)
   local names = {}
   for _, c in ipairs(vim.lsp.get_clients({ bufnr = buf })) do
     names[#names + 1] = c.name
   end
-  local missing = ''
+  local missing, install = '', ''
   if #names == 0 then
     local s, found = serverFor(vim.bo[buf].filetype)
     if s and not found then
       missing = s.cmd[1]
     end
+    if s and (missing ~= '' or failed[buf]) then
+      install = installOf(s)
+    end
   end
-  return { names, missing, #names == 0 and failed[buf] or '' }
+  local fail = #names == 0 and failed[buf] or ''
+  return { names, missing, fail, install, fail ~= '' and reasons[buf] or '' }
 end
 
 function state()
