@@ -43,6 +43,11 @@ void lichMessage(uintptr_t page, char *json);
 static const int OFF_SCREEN = -20000;
 static const UINT RUN = WM_APP + 1;
 static const UINT_PTR DEVTOOLS_TIMER = 1;
+static const UINT_PTR ABORTED_TIMER = 2;
+// A navigation that turns into a download completes first, aborted, and its
+// download starts after (measured on GitHub's windows-latest, WebView2 of
+// 2026-11): the abort is held this long for the download to claim it.
+static const UINT ABORTED_HOLD_MS = 2000;
 // The inspector's window is looked for this often, this many times, after
 // OpenDevToolsWindow, which answers before the window exists.
 static const UINT DEVTOOLS_POLL_MS = 100;
@@ -133,6 +138,8 @@ struct LichTab {
 	// download may turn out to be; downloaded: it did.
 	std::string pending;
 	bool downloaded;
+	// aborted holds an aborted navigation's failure for its download.
+	bool aborted;
 	// inspector: this tab holds inspected's DevTools window, devtools.
 	bool inspector;
 	LichTab *inspected;
@@ -168,6 +175,7 @@ static void fit(LichTab *tab, HWND window) {
 }
 
 static void find_devtools(LichTab *d);
+static void abort_told(LichTab *tab);
 
 static LRESULT CALLBACK tab_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
 	LichTab *tab = (LichTab *)GetWindowLongPtrW(w, GWLP_USERDATA);
@@ -176,6 +184,10 @@ static LRESULT CALLBACK tab_proc(HWND w, UINT msg, WPARAM wp, LPARAM lp) {
 	}
 	if (tab && msg == WM_TIMER && wp == DEVTOOLS_TIMER) {
 		find_devtools(tab);
+		return 0;
+	}
+	if (tab && msg == WM_TIMER && wp == ABORTED_TIMER) {
+		abort_told(tab);
 		return 0;
 	}
 	return DefWindowProcW(w, msg, wp, lp);
@@ -398,6 +410,14 @@ static void refresh_uri(LichTab *tab) {
 	}
 }
 
+// abort_told tells the held abort as the failure it is: no download claimed
+// it.
+static void abort_told(LichTab *tab) {
+	KillTimer(tab->host, ABORTED_TIMER);
+	tab->aborted = false;
+	lichNavigationFailed(tab->key, (char *)tab->pending.c_str(), (int)COREWEBVIEW2_WEB_ERROR_STATUS_CONNECTION_ABORTED);
+}
+
 static void connect_loads(LichTab *tab) {
 	ICoreWebView2 *v = tab->view;
 	EventRegistrationToken t;
@@ -407,6 +427,9 @@ static void connect_loads(LichTab *tab) {
 		    a->get_Uri(&u);
 		    std::string uri = taken(u);
 		    tab->loading = true;
+		    if (tab->aborted) {
+			    abort_told(tab);
+		    }
 		    tab->pending = uri;
 		    tab->downloaded = false;
 		    lichLoad(tab->key, 0, (char *)uri.c_str());
@@ -432,10 +455,11 @@ static void connect_loads(LichTab *tab) {
 		    a->get_WebErrorStatus(&status);
 		    refresh_uri(tab);
 		    tab->loading = false;
-		    fprintf(stderr, "lich-browser: navigation completed ok=%d status=%d download=%d\n", ok, (int)status,
-		            tab->downloaded);
 		    if (tab->downloaded) {
 			    // Told as a download already (connect_downloads).
+		    } else if (!ok && status == COREWEBVIEW2_WEB_ERROR_STATUS_CONNECTION_ABORTED && !tab->pending.empty()) {
+			    tab->aborted = true;
+			    SetTimer(tab->host, ABORTED_TIMER, ABORTED_HOLD_MS, NULL);
 		    } else if (ok) {
 			    lichLoad(tab->key, 3, (char *)tab->uri.c_str());
 		    } else {
@@ -565,8 +589,11 @@ static void connect_downloads(LichTab *tab) {
 			    started->Release();
 		    }
 		    std::string uri = taken(du);
-		    fprintf(stderr, "lich-browser: download starting, navigation pending=%d\n", uri == tab->pending);
 		    if (!tab->pending.empty() && uri == tab->pending) {
+			    if (tab->aborted) {
+				    KillTimer(tab->host, ABORTED_TIMER);
+				    tab->aborted = false;
+			    }
 			    tab->downloaded = true;
 			    lichLoadFailed(tab->key, (char *)uri.c_str(), (char *)"the navigation turned into a download", 1);
 		    }
