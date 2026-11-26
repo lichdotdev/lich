@@ -11,6 +11,7 @@ import (
 // The window's own page follows only a URL that changed, so every load of the
 // URL the page is at has to reach it as a reload, whoever asked for it.
 func TestEveryLoadAtTheSameURLReachesTheWindow(t *testing.T) {
+	t.Parallel()
 	s := settleService(t, `<title>page</title>`, http.NotFound)
 	url := s.Running()[0].URL
 	// A browser in its first seconds reloads the page once more on its own

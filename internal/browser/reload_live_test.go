@@ -13,6 +13,7 @@ import (
 // A script served with only a Last-Modified is fresh by Chrome's heuristic
 // for a tenth of its age, so a plain reload takes it from the cache.
 func TestReloadFetchesAScriptTheCacheHolds(t *testing.T) {
+	t.Parallel()
 	var version atomic.Int32
 	version.Store(1)
 	s := settleService(t, `<title>page</title><script src="/v.js"></script>`, func(w http.ResponseWriter, r *http.Request) {

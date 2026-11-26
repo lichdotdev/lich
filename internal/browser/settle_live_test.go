@@ -67,6 +67,7 @@ onclick="fetch('/slow').then(r => r.text()).then(t => { out.textContent = 'loade
 }
 
 func TestChromeClickAnswersOnceTheFetchItStartedHasRendered(t *testing.T) {
+	t.Parallel()
 	s := slowFetchService(t)
 	info, _ := clickGo(t, s)
 	if !strings.Contains(info.Text, "loaded done") {
@@ -75,6 +76,7 @@ func TestChromeClickAnswersOnceTheFetchItStartedHasRendered(t *testing.T) {
 }
 
 func TestChromeClickWaitsForAFetchWhenTheWallClocksDisagree(t *testing.T) {
+	t.Parallel()
 	s := slowFetchService(t)
 	since := s.actionTime("s")
 	if since.ticks == 0 {
@@ -94,6 +96,7 @@ func TestChromeClickWaitsForAFetchWhenTheWallClocksDisagree(t *testing.T) {
 }
 
 func TestChromeClickIsNotHeldByAFetchThatBeganBeforeIt(t *testing.T) {
+	t.Parallel()
 	release := make(chan struct{})
 	t.Cleanup(func() { close(release) })
 	s := settleService(t, `<script>fetch('/hang')</script>
@@ -111,6 +114,7 @@ func TestChromeClickIsNotHeldByAFetchThatBeganBeforeIt(t *testing.T) {
 }
 
 func TestChromeClickOnAPageThatNeverStopsChangingAnswersByQuietMax(t *testing.T) {
+	t.Parallel()
 	s := settleService(t, `<button id="go" style="font-size:30px"
 onclick="setInterval(() => { out.textContent = Date.now() }, 20)">go</button>
 <div id="out">nothing</div>`, http.NotFound)

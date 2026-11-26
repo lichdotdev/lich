@@ -10,6 +10,7 @@ import (
 const dragText = "plain text to select here"
 
 func TestChromeDragSelectsText(t *testing.T) {
+	t.Parallel()
 	p, srv := livePages(t, map[string]string{"/": `<body style="margin:0"><p id="p" style="margin:0;font:20px monospace">` + dragText + `</p>`})
 	ctx := liveOpen(t, p, srv.URL+"/")
 	steps := []api.BrowserMouseOptions{

@@ -53,6 +53,7 @@ func liveChromeAt(t *testing.T, scale float64) (*chromePage, *httptest.Server) {
 }
 
 func TestChromeClearReachesTheFieldsListener(t *testing.T) {
+	t.Parallel()
 	p, srv := liveChrome(t)
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
@@ -76,6 +77,7 @@ func TestChromeClearReachesTheFieldsListener(t *testing.T) {
 }
 
 func TestChromeCookiesKeepASessionCookie(t *testing.T) {
+	t.Parallel()
 	p, srv := liveChrome(t)
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
@@ -102,6 +104,7 @@ func TestChromeCookiesKeepASessionCookie(t *testing.T) {
 }
 
 func TestPromoteRelaunchesOnTheProfileWithItsCookies(t *testing.T) {
+	t.Parallel()
 	_, srv := liveChrome(t)
 	// headless both times: what is under test is the relaunch on the same
 	// profile, and a headed window needs a display the suite may not have.
@@ -137,6 +140,7 @@ func TestPromoteRelaunchesOnTheProfileWithItsCookies(t *testing.T) {
 }
 
 func TestCookieParamGivesAPersistentCookieItsExpiry(t *testing.T) {
+	t.Parallel()
 	when := time.Date(2027, 1, 2, 3, 4, 5, 0, time.UTC)
 	got := cookieParam(&network.Cookie{Name: "k", Expires: float64(when.Unix())})
 	if got.Expires == nil || !got.Expires.Time().Equal(when) {
@@ -145,6 +149,7 @@ func TestCookieParamGivesAPersistentCookieItsExpiry(t *testing.T) {
 }
 
 func TestChromeScreencastSendsFramesAndPageInfo(t *testing.T) {
+	t.Parallel()
 	p, srv := liveChrome(t)
 	frames := make(chan string, 4)
 	titles := make(chan string, 4)
@@ -190,6 +195,7 @@ func TestChromeScreencastSendsFramesAndPageInfo(t *testing.T) {
 }
 
 func TestChromeScreencastDrawsAHiDPIPaneAtTheFrameScale(t *testing.T) {
+	t.Parallel()
 	p, srv := liveChrome(t)
 	frames := make(chan string, 1)
 	p.Listen(func(_, data string) {
@@ -231,6 +237,7 @@ func TestChromeScreencastDrawsAHiDPIPaneAtTheFrameScale(t *testing.T) {
 }
 
 func TestChromeLaunchedAtA1xWindowsScaleSendsThePanesOwnPixels(t *testing.T) {
+	t.Parallel()
 	p, srv := liveChromeAt(t, 1)
 	frames := make(chan string, 1)
 	p.Listen(func(_, data string) {
@@ -275,6 +282,7 @@ func TestChromeLaunchedAtA1xWindowsScaleSendsThePanesOwnPixels(t *testing.T) {
 }
 
 func TestChromeWindowInputTypesAndSubmits(t *testing.T) {
+	t.Parallel()
 	p, srv := liveChrome(t)
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
@@ -379,6 +387,7 @@ func (r newTabRig) eval(t *testing.T, ctx context.Context, script string, out an
 }
 
 func TestChromeLinkToANewTabComesToTheFrontAndKeepsTheOneUnderIt(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
 	r := startNewTabRig(t, ctx, "/")
@@ -405,6 +414,7 @@ func TestChromeLinkToANewTabComesToTheFrontAndKeepsTheOneUnderIt(t *testing.T) {
 }
 
 func TestChromeDialogTheTabBehindOpensIsAnsweredThere(t *testing.T) {
+	t.Parallel()
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
 	r := startNewTabRig(t, ctx, "/opener")
@@ -430,6 +440,7 @@ func TestChromeDialogTheTabBehindOpensIsAnsweredThere(t *testing.T) {
 }
 
 func TestChromeScrollTurnsTheWheelAtThePoint(t *testing.T) {
+	t.Parallel()
 	p, _ := liveChrome(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
@@ -465,6 +476,7 @@ func TestChromeScrollTurnsTheWheelAtThePoint(t *testing.T) {
 }
 
 func TestChromePageTextLeavesOutTheListedLabelsAndCutsAt1000(t *testing.T) {
+	t.Parallel()
 	p, _ := liveChrome(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
@@ -493,6 +505,7 @@ func TestChromePageTextLeavesOutTheListedLabelsAndCutsAt1000(t *testing.T) {
 }
 
 func TestChromeSelectionReadsAFieldAndNotAPassword(t *testing.T) {
+	t.Parallel()
 	p, _ := liveChrome(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
@@ -524,6 +537,7 @@ func TestChromeSelectionReadsAFieldAndNotAPassword(t *testing.T) {
 }
 
 func TestChromeClickReachesAnElementScrolledOutOfView(t *testing.T) {
+	t.Parallel()
 	p, _ := liveChrome(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
@@ -556,6 +570,7 @@ func TestChromeClickReachesAnElementScrolledOutOfView(t *testing.T) {
 }
 
 func TestChromeClickRefusesAPointOutsideTheViewport(t *testing.T) {
+	t.Parallel()
 	p, srv := liveChrome(t)
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
@@ -573,6 +588,7 @@ func TestChromeClickRefusesAPointOutsideTheViewport(t *testing.T) {
 }
 
 func TestChromeClickByIndexHitsTheLastReadNotAnEarlierOne(t *testing.T) {
+	t.Parallel()
 	p, _ := liveChrome(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
@@ -617,6 +633,7 @@ func TestChromeClickByIndexHitsTheLastReadNotAnEarlierOne(t *testing.T) {
 }
 
 func TestChromeScreenshotIsInCSSPixelsOnAHiDPIPane(t *testing.T) {
+	t.Parallel()
 	p, srv := liveChrome(t)
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
@@ -646,6 +663,7 @@ func TestChromeScreenshotIsInCSSPixelsOnAHiDPIPane(t *testing.T) {
 }
 
 func TestChromeScreenshotOfAWidePaneIs1280AndClicksMapBack(t *testing.T) {
+	t.Parallel()
 	p, _ := liveChrome(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
@@ -695,6 +713,7 @@ func TestChromeScreenshotOfAWidePaneIs1280AndClicksMapBack(t *testing.T) {
 }
 
 func TestChromeClickRefusesAPointReadOffAnotherViewport(t *testing.T) {
+	t.Parallel()
 	p, srv := liveChrome(t)
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()
@@ -746,6 +765,7 @@ func clicked(t *testing.T, p *chromePage, ctx context.Context) string {
 }
 
 func TestChromeClickRefusesAnElementUnderAnOverlayAndClicksOnceItIsGone(t *testing.T) {
+	t.Parallel()
 	p, ctx := clickRig(t, `<button id="buy" onclick="document.body.dataset.hit = 'buy'">Buy</button>
 <div id="consent-banner" style="position:fixed;inset:0;background:#0008"></div>`)
 	_, _, err := p.Click(ctx, Target{Selector: "#buy"})
@@ -767,6 +787,7 @@ func TestChromeClickRefusesAnElementUnderAnOverlayAndClicksOnceItIsGone(t *testi
 }
 
 func TestChromeClickAndTypeRefuseADisabledTarget(t *testing.T) {
+	t.Parallel()
 	p, ctx := clickRig(t, `<button id="off" disabled onclick="document.body.dataset.hit = 'off'">Off</button>
 <fieldset disabled><input id="in"></fieldset>
 <div id="aria" role="button" aria-disabled="true" style="height:20px">Aria</div>`)
@@ -784,6 +805,7 @@ func TestChromeClickAndTypeRefuseADisabledTarget(t *testing.T) {
 }
 
 func TestChromeClickIsNotCoveredByItsOwnChildOrItsLabel(t *testing.T) {
+	t.Parallel()
 	p, ctx := clickRig(t, `<a id="link" href="#x" onclick="document.body.dataset.hit = 'link'; return false"><span style="display:block;padding:10px">Open</span></a>
 <label style="display:block;margin-top:40px"><input id="box" type="checkbox" style="position:absolute;opacity:0;left:0;top:60px;width:20px;height:20px"
  onclick="document.body.dataset.hit = 'box'"><span style="display:block;position:absolute;left:0;top:60px;width:20px;height:20px;background:#ccc"></span></label>`)
@@ -802,6 +824,7 @@ func TestChromeClickIsNotCoveredByItsOwnChildOrItsLabel(t *testing.T) {
 }
 
 func TestChromeClickReachesALinkWrappedOverTwoLines(t *testing.T) {
+	t.Parallel()
 	p, ctx := clickRig(t, `<div style="width:200px;font:16px/48px monospace">aaaaaaaaaaaaaa <a id="link" href="#x" onclick="document.body.dataset.hit = 'link'; return false">go to the next place</a></div>`)
 	if _, _, err := p.Click(ctx, Target{Selector: "#link"}); err != nil {
 		t.Fatalf("click on a link wrapped over two lines: %v", err)
@@ -812,6 +835,7 @@ func TestChromeClickReachesALinkWrappedOverTwoLines(t *testing.T) {
 }
 
 func TestChromeInfoWithinReadsOnlyTheSubtreeAndItsIndexesClick(t *testing.T) {
+	t.Parallel()
 	p, _ := liveChrome(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
@@ -866,6 +890,7 @@ func TestChromeInfoWithinReadsOnlyTheSubtreeAndItsIndexesClick(t *testing.T) {
 }
 
 func TestChromeAnnotatedScreenshotLabelsWhatAClickByIndexHits(t *testing.T) {
+	t.Parallel()
 	p, _ := liveChrome(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")

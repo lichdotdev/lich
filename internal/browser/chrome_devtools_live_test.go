@@ -115,6 +115,7 @@ func framesOf(out *emitted, from int, tab string) (frames, stills int) {
 }
 
 func TestChromeDevToolsDrawsInThePaneWhileTheAgentDrivesThePage(t *testing.T) {
+	t.Parallel()
 	s, out, url := devtoolsService(t, "/")
 	frameEvents := api.BrowserFrameEvents.Of("s").Name
 	if err := s.DevTools("s"); err != nil {
@@ -166,6 +167,7 @@ func TestChromeDevToolsDrawsInThePaneWhileTheAgentDrivesThePage(t *testing.T) {
 }
 
 func TestChromeAPauseInDevToolsHoldsTheAgentUntilDevToolsCloses(t *testing.T) {
+	t.Parallel()
 	s, out, _ := devtoolsService(t, "/pause")
 	if err := s.DevTools("s"); err != nil {
 		t.Fatal(err)
@@ -203,6 +205,7 @@ func TestChromeAPauseInDevToolsHoldsTheAgentUntilDevToolsCloses(t *testing.T) {
 }
 
 func TestChromeClosingAPageClosesItsDevTools(t *testing.T) {
+	t.Parallel()
 	s, out, url := devtoolsService(t, "/")
 	if err := s.TabNav(api.BrowserTabOptions{ID: "s", Action: api.TabNew}); err != nil {
 		t.Fatal(err)
@@ -233,6 +236,7 @@ func TestChromeClosingAPageClosesItsDevTools(t *testing.T) {
 }
 
 func TestChromeAWindowDevToolsOpensComesInBehind(t *testing.T) {
+	t.Parallel()
 	s, out, url := devtoolsService(t, "/")
 	if err := s.DevTools("s"); err != nil {
 		t.Fatal(err)
@@ -271,6 +275,7 @@ func targetOpen(t *testing.T, p *chromePage, id target.ID) bool {
 }
 
 func TestChromeDevToolsPastItsDeadlineNamesTheStepItWasOn(t *testing.T) {
+	t.Parallel()
 	s, _, _ := devtoolsService(t, "/")
 	ctx, cancel := context.WithDeadline(context.Background(), time.Now())
 	defer cancel()

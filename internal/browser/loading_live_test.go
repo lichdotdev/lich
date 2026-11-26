@@ -47,6 +47,7 @@ func loadingService(t *testing.T, body string) (s *Service, base string, release
 }
 
 func TestATabLoadsUntilItsPageAndItsResourcesLanded(t *testing.T) {
+	t.Parallel()
 	s, base, release := loadingService(t, `<title>page</title>`)
 	go s.Navigate("s", base+"held")
 	waitLoading(t, s, true)
@@ -55,6 +56,7 @@ func TestATabLoadsUntilItsPageAndItsResourcesLanded(t *testing.T) {
 }
 
 func TestATabALinkOpenedLoadsUntilItsPageLanded(t *testing.T) {
+	t.Parallel()
 	s, _, release := loadingService(t, `<a id="go" target="_blank" href="/held">go</a>`)
 	go s.ClickAt(t.Context(), api.BrowserClickOptions{ID: "s", Selector: "#go"})
 	waitLoading(t, s, true)
@@ -63,6 +65,7 @@ func TestATabALinkOpenedLoadsUntilItsPageLanded(t *testing.T) {
 }
 
 func TestABrowserOpenedOnAPageLoadsUntilItLanded(t *testing.T) {
+	t.Parallel()
 	if _, err := chromium.FindBrowser(exec.LookPath); err != nil {
 		t.Skip("no Chromium-family browser on this machine")
 	}
@@ -85,6 +88,7 @@ func TestABrowserOpenedOnAPageLoadsUntilItLanded(t *testing.T) {
 // Each of these ends a navigation without the load a page has: none leaves
 // the tab loading.
 func TestATabStopsLoadingWhereANavigationEndsWithoutAPage(t *testing.T) {
+	t.Parallel()
 	s, base, release := loadingService(t, `<title>page</title>`)
 	close(release)
 	closed, err := net.Listen("tcp", "127.0.0.1:0")
@@ -100,6 +104,7 @@ func TestATabStopsLoadingWhereANavigationEndsWithoutAPage(t *testing.T) {
 }
 
 func TestATabStaysLoadedWhenThePersonStaysOnThePage(t *testing.T) {
+	t.Parallel()
 	s, base, _ := loadingService(t, `<button id="b">b</button>
 <script>addEventListener('beforeunload', e => e.preventDefault())</script>`)
 	// A click gives the page the user activation Chrome asks of a

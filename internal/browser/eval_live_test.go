@@ -19,6 +19,7 @@ const evalPage = `<title>Eval</title>
 <script>window.app = {user: {name: "ana"}, items: [1, 2]}</script>`
 
 func TestChromeEvalAnswersWhatTheScriptReturns(t *testing.T) {
+	t.Parallel()
 	s, url := liveEvalService(t)
 	if _, err := s.Open("s", url); err != nil {
 		t.Fatal(err)
@@ -46,6 +47,7 @@ func TestChromeEvalAnswersWhatTheScriptReturns(t *testing.T) {
 }
 
 func TestChromeEvalFailsOnAThrowACycleAndADialog(t *testing.T) {
+	t.Parallel()
 	s, url := liveEvalService(t)
 	if _, err := s.Open("s", url); err != nil {
 		t.Fatal(err)
@@ -96,6 +98,7 @@ func liveEvalService(t *testing.T) (*Service, string) {
 }
 
 func TestChromePageSeesTheMouseThePaneGivesIt(t *testing.T) {
+	t.Parallel()
 	s, url := liveEvalService(t)
 	if _, err := s.Open("s", url); err != nil {
 		t.Fatal(err)

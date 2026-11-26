@@ -88,6 +88,7 @@ func TestChromeADialogWaitsForTheAgentsAnswer(t *testing.T) {
 }
 
 func TestChromeAPaneOpenedOnADialogShowsThePage(t *testing.T) {
+	t.Parallel()
 	p, srv := liveChrome(t)
 	frames := make(chan string, 8)
 	opened := make(chan struct{}, 1)

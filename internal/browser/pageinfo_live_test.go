@@ -76,6 +76,7 @@ const twoButtons = `<body style="margin:0">
 <button onclick="document.body.dataset.hit = 'b'">B</button></body>`
 
 func TestChromeIndexSurvivesAnElementInsertedAboveIt(t *testing.T) {
+	t.Parallel()
 	p, srv := livePages(t, map[string]string{"/": twoButtons})
 	ctx := liveOpen(t, p, srv.URL)
 	before := liveInfo(t, ctx, p)
@@ -103,6 +104,7 @@ n.onclick = () => document.body.dataset.hit = 'new'; document.body.prepend(n); }
 }
 
 func TestChromeIndexOfARemovedElementIsNotHandedOutAgain(t *testing.T) {
+	t.Parallel()
 	p, srv := livePages(t, map[string]string{"/": twoButtons})
 	ctx := liveOpen(t, p, srv.URL)
 	a := indexOf(t, liveInfo(t, ctx, p), "A")
@@ -121,6 +123,7 @@ n.textContent = 'C'; n.onclick = () => document.body.dataset.hit = 'c'; document
 }
 
 func TestChromeIndexOfAClonedElementIsNotTheClones(t *testing.T) {
+	t.Parallel()
 	p, srv := livePages(t, map[string]string{"/": twoButtons})
 	ctx := liveOpen(t, p, srv.URL)
 	b := indexOf(t, liveInfo(t, ctx, p), "B")
@@ -139,6 +142,7 @@ n.onclick = () => document.body.dataset.hit = 'copy'; document.body.prepend(n); 
 }
 
 func TestChromeIndexFromAnotherDocumentFindsNothing(t *testing.T) {
+	t.Parallel()
 	p, srv := livePages(t, map[string]string{"/": twoButtons, "/next": twoButtons})
 	ctx := liveOpen(t, p, srv.URL)
 	a := indexOf(t, liveInfo(t, ctx, p), "A")
@@ -158,6 +162,7 @@ func TestChromeIndexFromAnotherDocumentFindsNothing(t *testing.T) {
 }
 
 func TestChromeIndexOfAnElementScrolledAwayStillClicks(t *testing.T) {
+	t.Parallel()
 	p, srv := livePages(t, map[string]string{"/": `<body style="margin:0">
 <button onclick="document.body.dataset.hit = 'top'">Top</button>
 <div style="height:3000px"></div>
@@ -177,6 +182,7 @@ func TestChromeIndexOfAnElementScrolledAwayStillClicks(t *testing.T) {
 }
 
 func TestChromeIndexOfAnElementNoLongerShownIsNotClicked(t *testing.T) {
+	t.Parallel()
 	p, srv := livePages(t, map[string]string{"/": twoButtons})
 	ctx := liveOpen(t, p, srv.URL)
 	b := indexOf(t, liveInfo(t, ctx, p), "B")
