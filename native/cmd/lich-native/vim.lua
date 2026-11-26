@@ -446,6 +446,10 @@ function M.open(path, lines, wrap)
   pcall(api.nvim_buf_set_name, buf, path)
   vim.bo[buf].buftype = 'acwrite'
   vim.bo[buf].modified = false
+  -- A smooth scroll walks the top line to where the wheel set it, and the
+  -- editor, which follows every top Neovim reports, would walk back with it.
+  vim.b[buf].snacks_scroll = false
+  vim.b[buf].minianimate_disable = true
   owned[buf] = true
   api.nvim_buf_attach(buf, false, {
     on_lines = function(_, b, tick, first, last, lastnew)
@@ -475,12 +479,6 @@ function M.focus(buf)
     api.nvim_set_current_buf(buf)
   end
   state()
-end
-
--- feed types keys, in key notation, into buf.
-function M.feed(buf, keys)
-  M.focus(buf)
-  api.nvim_input(keys)
 end
 
 -- set replaces buf's lines with the disk's and answers the tick after it:

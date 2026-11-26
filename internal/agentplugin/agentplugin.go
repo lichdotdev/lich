@@ -1,25 +1,29 @@
 // Package agentplugin manages the lich companion plugin inside the provider
 // CLIs that can run it: whether it is installed, whether a newer release
-// exists, and installing or updating it. Six of the registry's seven ship the
+// exists, and installing or updating it. Every provider of the registry runs the
 // same plugin from the same repository; what differs per provider — the
 // subcommands, where the installed version is read from, and whether there is a
 // CLI at all — lives in claude.go, codex.go, antigravity.go, opencode.go,
 // omp.go and crush.go.
 //
-// Two install shapes, decided by the harness rather than by lich:
+// Three shapes, decided by the harness rather than by lich:
 //
-//   - Claude Code and Codex are driven through their own plugin CLI, the
-//     supported interface, so lich never edits their state files by hand.
-//   - Antigravity, opencode, oh-my-pi and Crush have lich write the files the
-//     release published: a customization directory under Antigravity's global
-//     `config/plugins/`, a module into opencode's plugin directory, another into
-//     oh-my-pi's extensions directory, and hook scripts plus a delimited block
-//     of `hook add` lines into Crush's crushrc. opencode, oh-my-pi, Crush and
-//     Kiro also get the plugin's theme skill in their skills directory
-//     (skill.go). Each carries the version it installed — a marker line, or a
-//     field in a manifest lich owns outright — which is the only record of what
-//     is installed where the harness keeps none. Antigravity does have a plugin CLI; antigravity.go says why it is
-//     not the install.
+//   - Claude Code, Cursor CLI, opencode and oh-my-pi load lich's own copy of
+//     the plugin per session (bundle.go), so nothing in their config decides
+//     whether a lich session has it. Their install unpacks that copy and takes
+//     out what a lich of the past installed there; opencode and oh-my-pi still
+//     get the theme skill, and oh-my-pi and Cursor lich's MCP server, in their
+//     own directories.
+//   - Codex is driven through its own plugin CLI, the supported interface, and
+//     lich turns the plugin back on before each spawn (reenable.go).
+//   - Antigravity, Crush and Kiro CLI have lich write the files the release
+//     published: a customization directory under Antigravity's global
+//     `config/plugins/`, hook scripts plus a delimited block of `hook add`
+//     lines into Crush's crushrc, and an agent of lich's own for Kiro. Each
+//     carries the version it installed, a marker line or a field in a manifest
+//     lich owns outright, the only record of what is installed where the
+//     harness keeps none. Antigravity does have a plugin CLI; antigravity.go
+//     says why it is not the install.
 package agentplugin
 
 import (
@@ -51,9 +55,6 @@ const (
 	// holds whatever this lich would pick unless 100 releases have shipped past
 	// its ceiling.
 	releasesURL = "https://api.github.com/repos/" + marketplaceRepo + "/releases?per_page=100"
-	// gitURL is the repository as a git remote, the spelling Claude Code takes a
-	// ref on (url#ref, measured on 2.1.270).
-	gitURL = "https://github.com/" + marketplaceRepo + ".git"
 	// rawBaseURL serves the repository's files at a tag, for the harnesses lich
 	// installs by writing files rather than by calling a CLI.
 	rawBaseURL = "https://raw.githubusercontent.com/" + marketplaceRepo
@@ -108,6 +109,9 @@ type Service struct {
 	// rawBase serves the plugin repository's files at a tag; a field so tests
 	// can point it at a local server.
 	rawBase string
+	// tarballBase serves a release as a tarball (bundle.go); a field so tests
+	// can point it at a local server.
+	tarballBase string
 	// lookPath resolves a binary on PATH, injected so tests decide which
 	// provider CLIs the machine has.
 	lookPath func(string) (string, error)
@@ -131,6 +135,7 @@ func New(bins BinResolver) *Service {
 		http:        &http.Client{Timeout: httpTimeout},
 		releasesURL: releasesURL,
 		rawBase:     rawBaseURL,
+		tarballBase: tarballBaseURL,
 		lookPath:    exec.LookPath,
 		lichBin:     lichBinary,
 	}
@@ -259,7 +264,9 @@ func computeStatus(id string, available, installed bool, installedVer, latestVer
 // is one, by writing the released files where there is not.
 func (s *Service) Install(_ context.Context, opts api.PluginProviderOptions) (api.None, error) {
 	switch opts.Provider {
-	case providers.Claude, providers.Codex:
+	case providers.Claude:
+		return api.None{}, s.claudeInstall()
+	case providers.Codex:
 		return api.None{}, s.installAndFollow(opts.Provider)
 	case providers.Antigravity:
 		return api.None{}, s.antigravityInstall()
@@ -307,13 +314,13 @@ func (s *Service) Update(ctx context.Context, opts api.PluginProviderOptions) (a
 func (s *Service) installedVersion(provider string) (string, bool) {
 	switch provider {
 	case providers.Claude:
-		return claudeInstalledVersion()
+		return bundleVersion()
 	case providers.Codex:
 		return s.codexInstalledVersion()
 	case providers.Antigravity:
 		return s.antigravityInstalledVersion()
 	case providers.OpenCode:
-		return s.opencodeInstalledVersion()
+		return opencodeInstalledVersion()
 	case providers.OMP:
 		return s.ompInstalledVersion()
 	case providers.Crush:

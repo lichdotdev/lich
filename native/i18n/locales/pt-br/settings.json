@@ -533,7 +533,7 @@
       "crush": "Informa o status, o nome e as mudanças do git. Um Crush anterior à 0.99.0 não tem evento de fim de turno, então nele só informa o id da sessão e atualiza o status do git.",
       "omp": "Informa o status, o nome e as mudanças do git. Não tem evento de aprovação observado, então uma sessão esperando sua permissão mostra um spinner em vez de um sino.",
       "antigravity": "Informa o status, o nome e as mudanças do git. Não tem evento de aprovação observado, então uma sessão esperando sua permissão mostra um spinner em vez de um sino.",
-      "cursor": "Roda o plugin instalado no Claude Code, então informa o que aquela versão informa e atualiza junto com ela. O lich só acrescenta aqui as próprias ferramentas. Também não gera evento de aprovação, então uma sessão esperando sua permissão mostra um spinner em vez de um sino."
+      "cursor": "Roda o mesmo plugin do Claude Code, então informa o que aquela versão informa e atualiza junto com ela. O lich só acrescenta aqui as próprias ferramentas. Também não gera evento de aprovação, então uma sessão esperando sua permissão mostra um spinner em vez de um sino."
     },
     "installFailed": "Falha na instalação: {error}",
     "updateFailed": "Falha na atualização: {error}",

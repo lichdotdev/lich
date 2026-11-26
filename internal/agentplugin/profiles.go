@@ -5,7 +5,6 @@ import (
 	"os"
 
 	"github.com/lichdotdev/lich/api"
-	"github.com/lichdotdev/lich/internal/claudeprofile"
 	"github.com/lichdotdev/lich/internal/codexprofile"
 	"github.com/lichdotdev/lich/internal/profilestore"
 	"github.com/lichdotdev/lich/internal/providers"
@@ -13,16 +12,16 @@ import (
 	"github.com/lichdotdev/lich/internal/events"
 )
 
-// Claude Code and Codex keep a plugin set per profile, so the lich plugin
-// Personal runs is not the one a profile runs. A profile follows Personal: once
+// Codex keeps a plugin set per profile, so the lich plugin Personal runs is not
+// the one a profile runs. A profile follows Personal: once
 // Personal's plugin is installed or updated, every other profile of that
 // provider gets the same pinned install, run as the profile, one after the
-// other. oh-my-pi needs none of this: its extension lives in the `extensions/`
-// directory every profile links to Personal's (internal/ompprofile).
+// other. Claude Code and oh-my-pi need none of this: every session of theirs
+// loads lich's own copy of the plugin (bundle.go).
 //
-// A profile needs no login for it: `claude plugin install` and `codex plugin
-// add` both install into a logged-out home (measured on Claude Code 2.1.296 and
-// codex-cli 0.162.1), and the install after a login runs again anyway.
+// A profile needs no login for it: `codex plugin add` installs into a
+// logged-out home (measured on codex-cli 0.162.1), and the install after a
+// login runs again anyway.
 
 type ProfilesEvent = api.PluginProfiles
 
@@ -42,15 +41,6 @@ type profileProvider struct {
 }
 
 var profileProviders = map[string]profileProvider{
-	providers.Claude: {
-		list:         claudeprofile.List,
-		ensureShared: claudeprofile.EnsureShared,
-		env:          claudeprofile.Env,
-		version: func(_ *Service, _ []string, dir string) (string, bool) {
-			return claudeInstalledVersionIn(dir)
-		},
-		install: (*Service).claudeInstallIn,
-	},
 	providers.Codex: {
 		list:         codexprofile.List,
 		ensureShared: codexprofile.EnsureShared,

@@ -6,20 +6,17 @@ import (
 	"path/filepath"
 )
 
-// The opencode side. opencode has no plugin CLI and no marketplace: a plugin
-// there is a JavaScript module its server imports from a directory, so
-// installing one is writing the file and uninstalling one is deleting it.
-//
-// lich writes the module the release published, with a marker line naming the
-// version above it — that line is the only record of what is installed, since
-// opencode keeps no plugin state to ask.
+// The opencode side. Its sessions load the module from lich's own copy of the
+// plugin through the inline config (bundle.go, internal/terminal), so the
+// module a lich of the past wrote into opencode's plugin directory is removed:
+// opencode loads that directory beside the inline config, and would run both.
+// The theme skill is still written into opencode's skills directory
+// (installOpencodeSkills), where opencode 1 needs a copy of its own.
 
 const (
-	// opencodeSource is the module's path inside the plugin repository, and
-	// opencodeFile the name it takes in opencode's plugin directory. The
-	// extension is load-bearing: opencode 1.x globs `{plugin,plugins}/*.{ts,js}`
-	// and 2.x `plugins/*.{ts,js}`, so a `.mjs` would sit there unread.
-	opencodeSource = "opencode/lich.js"
+	// OpencodeModule is the module's path inside the plugin, and opencodeFile
+	// the name a lich of the past gave it in opencode's plugin directory.
+	OpencodeModule = "opencode/lich.js"
 	opencodeFile   = "lich.js"
 
 	// opencodeLegacyPluginDir is the directory lich wrote the module into
@@ -31,14 +28,10 @@ const (
 )
 
 func (s *Service) opencodeInstall() error {
-	version, err := s.releaseVersion()
-	if err != nil {
+	if err := s.installBundle(); err != nil {
 		return err
 	}
-	data, err := s.fetchFile(version, opencodeSource)
-	if err != nil {
-		return err
-	}
+	version, _ := bundleVersion()
 	dir, err := opencodePluginDir()
 	if err != nil {
 		return err
@@ -46,15 +39,36 @@ func (s *Service) opencodeInstall() error {
 	if err := s.installOpencodeSkills(version, filepath.Join(filepath.Dir(dir), "skills")); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(dir, 0o755); err != nil {
-		return fmt.Errorf("create %s: %w", dir, err)
+	return removeOpencodeModules()
+}
+
+// removeOpencodeModules deletes the modules lich wrote into opencode's plugin
+// directories, today's and the one before opencode 2.
+func removeOpencodeModules() error {
+	dir, err := opencodePluginDir()
+	if err != nil {
+		return err
 	}
-	body := fmt.Sprintf("%s %s v%s — installed by lich, replace with the file from %s\n%s",
-		jsComment, markerName, version, marketplaceRepo, data)
-	if err := writeFile(filepath.Join(dir, opencodeFile), []byte(body), 0o644); err != nil {
+	if err := removeMarked(filepath.Join(dir, opencodeFile)); err != nil {
 		return err
 	}
 	return removeLegacyOpencodeModule()
+}
+
+// removeMarked deletes a module lich wrote, which carries its marker line. A
+// file there without it is somebody else's and stays.
+func removeMarked(path string) error {
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return nil
+	}
+	if _, ours := versionOf(data, jsComment); !ours {
+		return nil
+	}
+	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("remove the module lich installed at %s: %w", path, err)
+	}
+	return nil
 }
 
 // removeLegacyOpencodeModule deletes the module an older lich wrote into
@@ -66,17 +80,7 @@ func removeLegacyOpencodeModule() error {
 	if err != nil {
 		return err
 	}
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil
-	}
-	if _, ours := versionOf(data, jsComment); !ours {
-		return nil
-	}
-	if err := os.Remove(path); err != nil && !os.IsNotExist(err) {
-		return fmt.Errorf("remove the module an older lich installed at %s: %w", path, err)
-	}
-	return nil
+	return removeMarked(path)
 }
 
 func legacyOpencodeModule() (string, error) {
@@ -87,30 +91,15 @@ func legacyOpencodeModule() (string, error) {
 	return filepath.Join(filepath.Dir(dir), opencodeLegacyPluginDir, opencodeFile), nil
 }
 
-// opencodeInstalledVersion reads the version off the marker line lich wrote, or
-// ("", false) when the module is absent, unreadable, or was not written by lich
-// — a hand-installed copy carries no marker, and reporting a version for it
-// would claim an install lich cannot update.
-//
-// The module an older lich left in `plugin/` still counts, so its user is
-// offered the update that moves it.
-func (s *Service) opencodeInstalledVersion() (string, bool) {
+// opencodeInstalledVersion is the version of the plugin opencode sessions load,
+// once the install has copied the theme skill opencode reads from its own
+// directory: until then the window keeps offering the install.
+func opencodeInstalledVersion() (string, bool) {
 	dir, err := opencodePluginDir()
-	if err != nil {
+	if err != nil || !skillPresent(filepath.Join(filepath.Dir(dir), "skills")) {
 		return "", false
 	}
-	legacy, err := legacyOpencodeModule()
-	if err != nil {
-		return "", false
-	}
-	for _, path := range []string{filepath.Join(dir, opencodeFile), legacy} {
-		if data, err := os.ReadFile(path); err == nil {
-			if version, ok := versionOf(data, jsComment); ok {
-				return version, true
-			}
-		}
-	}
-	return "", false
+	return bundleVersion()
 }
 
 // opencodePluginDir resolves opencode's global plugin directory, the one both

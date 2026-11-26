@@ -168,7 +168,7 @@ report that starts printing JSON without a verdict stops that session from using
 tools, and nothing says why.
 
 **Cursor CLI's column is Claude Code's registration, fired by Cursor.** lich
-installs nothing there: the CLI runs the plugin installed in Claude Code and maps
+installs nothing there: the CLI runs the Claude Code plugin lich hands it with `--plugin-dir` and maps
 its `UserPromptSubmit` and `Stop` onto its own `beforeSubmitPrompt` and `stop`
 (measured on the interactive TUI, 2026.08.11 through 2026.10.01; `cursor-agent -p`
 fires neither). It has no `Notification`, so a Cursor session never reports

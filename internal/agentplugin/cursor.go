@@ -10,21 +10,17 @@ import (
 	"github.com/lichdotdev/lich/internal/relay"
 )
 
-// The Cursor CLI side, which is not like the other six: lich ships it no hooks
-// at all. Cursor executes every Claude Code hook on the machine — the user's own
-// and each installed plugin's, `${CLAUDE_PLUGIN_ROOT}` expanded (measured on
-// 2026.08.11) — so the plugin installed in Claude Code is already running inside
-// every Cursor session, reporting the state, the title, the touched files and
-// the chat id. There is nothing here for lich to write that Claude Code's own
-// install does not already put there, which is why installing *for* Cursor is
-// installing for Claude Code, and why the version reported for Cursor is the
-// version installed there. A machine without Claude Code has a Cursor session
-// that reports nothing, and this reports it as not installed, which is true.
+// The Cursor CLI side. Its sessions load lich's own copy of the plugin with
+// `--plugin-dir`, in the Claude Code plugin format it reads, and run its hooks
+// (measured on 2026.11.19), so the version reported for Cursor is that copy's.
+// Cursor also runs every plugin installed in Claude Code, which is why lich
+// takes its own install out of there (migrateClaude): left in, every hook would
+// report twice.
 //
-// What that route does not carry is the MCP registration: Cursor takes no
-// server on its command line, and a Claude Code plugin declares none. That is
-// the one file this writes — an `mcpServers` document under `~/.cursor`, merged
-// into whatever is already there, the same trade omp's makes.
+// What a plugin does not carry is the MCP registration: Cursor takes no server
+// on its command line, and a Claude Code plugin declares none. That is the one
+// file this writes — an `mcpServers` document under `~/.cursor`, merged into
+// whatever is already there, the same trade omp's makes.
 
 const (
 	// cursorMCPFile is the document Cursor reads MCP servers from. It sits under
@@ -33,19 +29,11 @@ const (
 	cursorMCPFile = "mcp.json"
 )
 
-// cursorInstall registers lich's MCP server with Cursor. It refuses while the
-// plugin is not installed in Claude Code, because that install is where a Cursor
-// session's reports come from: registering the tools alone would leave a card
-// that answers with lich's own operations and never says it is working.
-//
-// It does not install into Claude Code itself. That is a second provider's
-// state, one button away on the same screen, and an install that silently
-// changes another provider is not a thing lich does.
+// cursorInstall readies the plugin Cursor sessions load and registers lich's
+// MCP server with Cursor.
 func (s *Service) cursorInstall() error {
-	if _, ok := claudeInstalledVersion(); !ok {
-		return fmt.Errorf(
-			"%s runs the plugin installed in Claude Code: install it there first",
-			providerName(providers.Cursor))
+	if err := s.installBundle(); err != nil {
+		return err
 	}
 	// Merged before anything is written, for the reason omp's install gives: the
 	// only way this step fails is a document lich must not replace.
@@ -61,15 +49,15 @@ func (s *Service) cursorInstall() error {
 	return writeMCPDocument(path, lichBin)
 }
 
-// cursorInstalledVersion is the Claude Code install's version, and only once
-// lich's server is registered with Cursor: the reports come from that install
-// and the tools from this registration, so a session has the plugin only when
-// both are there. ("", false) when either half is missing.
+// cursorInstalledVersion is the version of the plugin Cursor sessions load,
+// and only once lich's server is registered with Cursor: the reports come from
+// that plugin and the tools from this registration, so a session has the
+// plugin only when both are there. ("", false) when either half is missing.
 func (s *Service) cursorInstalledVersion() (string, bool) {
 	if !cursorRegistered() {
 		return "", false
 	}
-	return claudeInstalledVersion()
+	return bundleVersion()
 }
 
 // cursorRegistered reports whether lich's own server is in Cursor's MCP

@@ -76,6 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **lich's own plugin runs in every session lich starts, even after you turned it off or removed it in the agent's own config.** Each session picks it up as it starts; on Kiro CLI and Crush it still comes from the install in Settings › Updates › lich plugin.
 - **Menus, dialogs, tooltips and the panels over the message box float on a shadow and grow in from where you opened them.** Across the window, parts are set apart by space instead of lines, states are their glyphs, and the key that does something sits in its button. Toasts stand a little higher, so their shadow clears the footer.
 - **In a project's scope, Settings shows only what that project can change.** The settings every project shares give way to one line at the page's foot, whose Open Global takes you to them.
 - **A chat's message box keeps its files in a strip of their own over the text, and shows where a file you drag will land.** The strip ends with a square that opens the file picker, as does the "+" that now always starts the box's controls. Drag a file over the chat and a dashed card waits at the end of the strip until you drop it.
