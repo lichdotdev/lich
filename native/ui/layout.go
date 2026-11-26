@@ -69,11 +69,19 @@ func (th *Theme) ScrollArea(state *widget.List) material.ListStyle {
 // edge in.
 func (th *Theme) ThinScrollArea(state *widget.List) material.ListStyle {
 	list := th.ScrollArea(state)
-	list.Indicator.MinorWidth = Space(2)
-	list.Indicator.CornerRadius = Space(1)
-	list.Track.MinorPadding = 0
+	list.ScrollbarStyle = th.ThinScrollbar(&state.Scrollbar)
 	list.AnchorStrategy = material.Overlay
 	return list
+}
+
+// ThinScrollbar is ThinScrollArea's bar alone, over state, for a widget that
+// scrolls itself.
+func (th *Theme) ThinScrollbar(state *widget.Scrollbar) material.ScrollbarStyle {
+	bar := th.scrollbar(state)
+	bar.Indicator.MinorWidth = Space(2)
+	bar.Indicator.CornerRadius = Space(1)
+	bar.Track.MinorPadding = 0
+	return bar
 }
 
 // scrollbar is ScrollArea's bar alone, over state, for a widget that scrolls
