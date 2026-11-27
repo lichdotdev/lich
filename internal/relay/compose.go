@@ -64,6 +64,8 @@ func SpawnBriefing(lang prompt.Lang, hasTools bool, route SubagentRoute) string 
 		return text.BriefingIntro + text.BriefingCards + command + artifacts
 	case RouteNative:
 		return text.BriefingIntro + text.BriefingNative + artifacts
+	case RouteOff:
+		return text.BriefingIntro + text.BriefingOff + command + artifacts
 	default:
 		return text.BriefingIntro + text.BriefingSessions + command + artifacts
 	}
@@ -105,6 +107,12 @@ const (
 	// sending it to new sessions, which would nest cards past the limit by
 	// another door.
 	RouteNative
+	// RouteOff is a session whose provider's cards Settings › Subagents turned
+	// off, at any depth. Its subagents run natively, and its briefing pushes
+	// no delegation either way: fanning out through lich sessions is what
+	// turning cards off was meant to save. lich sessions stay for what a
+	// subagent cannot be.
+	RouteOff
 )
 
 // pickTicketNudge is what a worker is told at its own prompt after a turn that

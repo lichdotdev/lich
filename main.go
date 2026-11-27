@@ -642,7 +642,11 @@ func registerServices(db *store.Service, term *terminal.Service, chats *chat.Ser
 	routes.Spawn(dispatcher, spawner)
 	// A provider's own subagent call asks /subagent first, which opens it as a
 	// card and tells the asker's chat which call it vetoed.
-	cards := subagent.New(subagent.Workspace{Load: db.LoadState, Depth: db.SessionSubagentDepth},
+	// What a card brings is Settings › Subagents', read at each card's spawn.
+	cardSettings := subagent.NewCards(db, lib, func() { events.Send(hub.Emit, api.SubagentCardsChangedEvent, api.None{}) })
+	term.SetCards(cardSettings.Card)
+	routes.SubagentCards(dispatcher, cardSettings)
+	cards := subagent.New(subagent.Workspace{Load: db.LoadState, Depth: db.SessionSubagentDepth, CardsOff: func(kind string) bool { return !cardSettings.On(kind) }},
 		spawner, rl, db.PromptLanguage, func(v api.SubagentVeto) { events.Send(hub.Emit, api.SubagentVetoEvent, v) })
 	term.SetSubagent(cards.Decide)
 	routes.Subagent(dispatcher, cards)

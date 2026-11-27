@@ -129,6 +129,16 @@ var (
 	// the window, so there is no second spawn to report it again.
 	SessionMCPEvent = defineEvent[SessionMCP]("session-mcp")
 
+	// SessionBroughtEvent carries what a subagent card brought of the user's
+	// setup at its spawn ({id, brought}), emitted by every card's spawn and
+	// persisted with the row (store.Session's Brought) for SessionMCPEvent's
+	// reason. The card's tooltip names it.
+	SessionBroughtEvent = defineEvent[SessionBrought]("session-brought")
+
+	// SubagentCardsChangedEvent says a provider's card settings changed, once
+	// they are stored; the window reads subagent.Cards again.
+	SubagentCardsChangedEvent = defineEvent[None]("subagent-cards.changed")
+
 	// SessionDuplicateEvent carries a session that just reported a conversation
 	// another open card already runs ({id, heldBy}): a resume typed in the
 	// provider's own TUI, which lich cannot stop, only point out. Emitted once the

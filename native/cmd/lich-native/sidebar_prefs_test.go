@@ -58,6 +58,8 @@ func (f *sidebarBackend) answer(method string, args []json.RawMessage) any {
 		return nil
 	case "providers.Detect":
 		return f.detected
+	case "subagent.Cards":
+		return subagentCardsFixture()
 	case "library.List":
 		var opts api.LibraryListOptions
 		_ = json.Unmarshal(args[0], &opts)

@@ -32,6 +32,9 @@ type Asker struct {
 	Kind  string
 	Label string
 	Depth int
+	// CardsOff is whether the user keeps this provider's subagents inside
+	// the session (Settings › Subagents).
+	CardsOff bool
 }
 
 // Sessions finds the session asking.
@@ -110,6 +113,9 @@ func (s *Service) Decide(ctx context.Context, req api.SubagentRequest) (api.Suba
 	}
 	if req.Call == api.SubagentWait {
 		return s.wait(req), func(bool) {}
+	}
+	if asker.CardsOff {
+		return s.allowed(req, "cards off for this provider")
 	}
 	if req.Sealed {
 		return s.denied(req, api.SubagentAnswer{Decision: api.SubagentDeny, Reason: prompt.For(s.lang()).SubagentSealed}, nil, asker)

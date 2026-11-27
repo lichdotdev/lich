@@ -145,6 +145,9 @@ var settingsSections = []settingsSection{
 	}},
 	{id: sectionProviders, labelKey: "settings.settings.section.providers", icon: icons.Lucide("blocks"), navGroupKey: navGroupAgents,
 		rows: providerEntries(), unported: append(providerBinEntries(), providerChatPrefEntries()...)},
+	{id: sectionSubagents, labelKey: "settings.settings.section.subagents", icon: icons.Lucide("bot"), navGroupKey: navGroupAgents, rows: []settingEntry{
+		{titleKey: "settings.subagentsSettings.cardsSwitch", alsoKey: "settings.subagentsSettings.searchWords", key: subagentsKey},
+	}},
 	{id: sectionSkills, labelKey: "settings.settings.section.skills", icon: icons.Lucide("sparkles"), navGroupKey: navGroupAgents, rows: []settingEntry{
 		{titleKey: "settings.settings.section.skills", alsoKey: "settings.librarySettings.skillsSearchWords", key: librarySkillsKey},
 	}},

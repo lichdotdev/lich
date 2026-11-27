@@ -1196,10 +1196,22 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `research`, Cursor CLI `explore`), and a call that mixes one with other tasks stays native as a whole, since a
   veto is the call's; so do a workflow step, another plugin's spawn, a call from inside a native subagent and the
   subagents of a worker two levels down, and the worker is reached with `send_to_session` or `lich send`, never with
-  the provider's own message tool. Subagent cards are not optional: there is no setting, and a plugin older than
-  the hook still reads `LICH_SUBAGENT_CARDS=off`, which lich exports only to a worker past the depth cards nest to.
+  the provider's own message tool. Settings › Subagents turns a provider's cards off, and a plugin older than the
+  hook still reads `LICH_SUBAGENT_CARDS=off`, which lich exports to a worker past the depth cards nest to and, under
+  such a plugin, to every Claude Code session whose cards are off.
   A call lich cannot open within 5 s runs natively, and what it opened after that is closed; so is a call whose
   hook gave up before lich answered.
+- **A subagent card starts lean only on Claude Code, opencode and oh-my-pi** (`internal/subagent/cards.go`,
+  docs/hooks/subagent-cards.md, What a card brings): a card brings lich, the project's own instructions and what
+  Settings › Subagents has it bring, nothing else by default. Codex, Crush, Cursor CLI, Kiro CLI and Antigravity
+  have no way lich uses to start a session with less (no per-spawn knob for MCP, plugins or memory in their
+  `--help`; Codex's `-c plugins."<id>".enabled=false` and `--disable apps` are documented but not measured yet, and
+  Kiro injects AGENTS.md, README.md and its skills on its own), so a card of theirs brings everything; the switch that turns their cards off still works.
+  What always comes even where a card is lean: Claude Code's user hooks from `settings.json` (no knob drops them
+  without lich's), claude.ai connectors and a project's or local-scope MCP servers (not listed, since lich does
+  not read them without a session), opencode's plugins and oh-my-pi's MCP servers. A card the user takes over
+  keeps what it was born with until it is restarted. A Claude Code card no longer reads the user's auto memory
+  unless Memory is picked, which a user upgrading has to turn back on.
 - **Cursor CLI's chat runs no hooks** (docs/hooks/subagent-cards.md, Known ceilings): `cursor-agent acp` runs
   neither Cursor's hooks nor the Claude Code install's, so a Cursor chat's subagent runs natively and never becomes a
   card; in a terminal it does.
@@ -1235,8 +1247,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   run natively when `jq` is missing, as the reports already go silent without it. No install step brings jq and the
   window says nothing, so a machine without jq sees no card for an agent's own subagent; `lich doctor` warns and
   names the command that installs it.
-- **oh-my-pi's chat loads the plugin's extension only from `$PI_CODING_AGENT_DIR/extensions/`**: its ACP server
-  takes no flags, so without the extension there a chat's subagent runs natively.
+- **oh-my-pi's chat takes the plugin's extension only on its root, before `acp`**: `acp` takes no flags of its own,
+  and the root's (`-e`, `--config`, a lean card's `--no-extensions`, `--no-skills`, `--no-rules`) are passed before it
+  (measured on 19.1.1), so without the extension there a chat's subagent runs natively.
 - **A vetoed call is drawn as opened only where the chat's tool item carries the hook's `tool_use_id`**
   (`native/cmd/lich-native/chat_veto.go`): Claude Code's chat does (its item id is the `toolu_` id). Codex's
   app-server chat draws no item at all for a vetoed spawn, so nothing there is drawn as failed, and the redirect's

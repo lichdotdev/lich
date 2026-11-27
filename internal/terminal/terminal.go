@@ -24,6 +24,7 @@ import (
 	"github.com/lichdotdev/lich/internal/pricing"
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/quota"
+	"github.com/lichdotdev/lich/internal/subagent"
 )
 
 type duplicateEvent = api.SessionDuplicate
@@ -109,6 +110,10 @@ type session struct {
 	// call and reported in the same event.
 	confined     bool
 	sandboxLinks []string
+	// isCard and card are what spawnLaunch says of it, reported once the
+	// spawn is out of the lock as confined is.
+	isCard bool
+	card   subagent.Card
 	// awaitsStart is whether Ready holds this session until its provider
 	// reports session-start, and started whether it has. Both guarded by the
 	// service's mu. See startgate.go.
@@ -157,6 +162,8 @@ type Store interface {
 	SetSessionSandbox(sessionID, sandbox string) error
 	SetSessionMCPServers(sessionID string, servers []string) error
 	SetSessionSandboxLinks(sessionID string, links []string) error
+	SetSessionBrought(sessionID string, items []string) error
+	SubagentCards(providerID string) bool
 	SandboxDefault(providerID, projectID, cwd string) bool
 	SandboxSSHAgent(projectID string) bool
 	SandboxGHToken(projectID string) bool
@@ -180,6 +187,8 @@ type Service struct {
 	// library hands a spawn the items lich's library has on (SetLibrary); nil
 	// hands nothing.
 	library Librarian
+	// cards is what a card spawn brings (SetCards); nil brings everything.
+	cards func(provider string) subagent.Card
 	// ensurePlugin sets the plugin up when a spawn finds it missing
 	// (SetPluginEnsure); nil does nothing.
 	ensurePlugin func(kind string)

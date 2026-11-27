@@ -38,6 +38,7 @@ var migrations = []func(*sql.Tx) error{
 	addSessionChatMode,
 	addViewedFiles,
 	addSessionPullRequests,
+	addSessionBrought,
 }
 
 // addSessionEffort is version 2: the reasoning effort a session was opened at,
@@ -426,6 +427,13 @@ var legacyAlters = []string{
 	`ALTER TABLE projects ADD COLUMN closed_seq INTEGER NOT NULL DEFAULT 0`,
 	`ALTER TABLE session_costs ADD COLUMN updated_at INTEGER NOT NULL DEFAULT 0`,
 	`ALTER TABLE session_texts ADD COLUMN truncated INTEGER NOT NULL DEFAULT 0`,
+}
+
+// addSessionBrought is version 22: what a subagent card brought of the user's
+// setup at its spawn (SetSessionBrought), which its tooltip names.
+func addSessionBrought(tx *sql.Tx) error {
+	_, err := tx.Exec(`ALTER TABLE sessions ADD COLUMN brought TEXT NOT NULL DEFAULT ''`)
+	return err
 }
 
 // migrationApplied reports whether an ALTER TABLE failed because the migration

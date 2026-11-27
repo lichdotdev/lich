@@ -142,7 +142,8 @@
   "sessionTooltip": {
     "notMounted": "未挂载（符号链接）：{paths}",
     "morePaths": "另外 {count} 项",
-    "modelChanged": "启动时为 {requested}，当前运行 {running}"
+    "modelChanged": "启动时为 {requested}，当前运行 {running}",
+    "brought": "已带上：{items}"
   },
   "worktreeDialogView": {
     "title": "新建工作树会话",
