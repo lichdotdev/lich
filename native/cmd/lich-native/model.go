@@ -951,6 +951,32 @@ func (m *model) closeSession(id string) (projectID, active string, ok bool) {
 
 // sessionAt finds the project holding a session and its slot there. Callers
 // hold m.mu.
+// sessionCalled is the open session target names as a lich tool takes it:
+// its id, or its label in project projectID; false for none or for a label
+// two of the project's sessions share.
+func (m *model) sessionCalled(projectID, target string) (id, label string, ok bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	if p, i := m.sessionAt(target); p != nil {
+		return target, p.Sessions[i].Label, true
+	}
+	for _, p := range m.projects {
+		if p.ID != projectID {
+			continue
+		}
+		for _, s := range p.Sessions {
+			if s.Label != target {
+				continue
+			}
+			if ok {
+				return "", "", false
+			}
+			id, label, ok = s.ID, s.Label, true
+		}
+	}
+	return id, label, ok
+}
+
 func (m *model) sessionAt(id string) (*backend.Project, int) {
 	for pi := range m.projects {
 		if i := slices.IndexFunc(m.projects[pi].Sessions, func(s backend.Session) bool { return s.ID == id }); i >= 0 {

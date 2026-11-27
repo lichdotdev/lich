@@ -65,6 +65,9 @@
       "fetched": {
         "other": "ページ {count} 件を取得"
       },
+      "lich": {
+        "other": "lich を {count} 回呼び出し"
+      },
       "others": {
         "other": "ほかのツール {count} 件を使用"
       },
@@ -74,7 +77,37 @@
     },
     "latest": "最新へ",
     "newActivity": "新しい動き",
-    "edited": "編集"
+    "edited": "編集",
+    "lich": {
+      "openedSession": "セッション作成",
+      "openingSession": "セッション作成中",
+      "sentTo": "送信",
+      "sendingTo": "送信中",
+      "replied": "返信",
+      "replying": "返信中",
+      "waited": "待機",
+      "waiting": "待機中",
+      "closed": "終了",
+      "closing": "終了中",
+      "renamed": "名前変更",
+      "renaming": "名前変更中",
+      "adjusted": "調整",
+      "adjusting": "調整中",
+      "filed": "フォルダへ移動",
+      "filing": "フォルダへ移動中",
+      "started": "起動",
+      "starting": "起動中",
+      "stopped": "停止",
+      "stopping": "停止中",
+      "restarted": "再起動",
+      "restarting": "再起動中",
+      "openedPage": "ページ表示",
+      "openingPage": "ページ表示中",
+      "wentTo": "移動",
+      "goingTo": "移動中",
+      "showed": "コード表示",
+      "showing": "コード表示中"
+    }
   },
   "done": {
     "done": "完了",

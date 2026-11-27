@@ -173,7 +173,7 @@ func deletedDiff(path, content string) string {
 func argsTitle(raw json.RawMessage) string {
 	var args map[string]any
 	_ = json.Unmarshal(raw, &args)
-	for _, key := range []string{"path", "file_path", "command", "query", "url", "name"} {
+	for _, key := range []string{"path", "file_path", "command", "query", "url", "name", "session", "service"} {
 		if v, ok := args[key].(string); ok && v != "" {
 			return v
 		}

@@ -98,6 +98,12 @@
         "many": "загружено {count} страниц",
         "other": "загружено {count} страницы"
       },
+      "lich": {
+        "one": "{count} вызов lich",
+        "few": "{count} вызова lich",
+        "many": "{count} вызовов lich",
+        "other": "{count} вызова lich"
+      },
       "others": {
         "one": "использован ещё {count} инструмент",
         "few": "использовано ещё {count} инструмента",
@@ -113,7 +119,37 @@
     },
     "latest": "К последнему",
     "newActivity": "Новые события",
-    "edited": "Изменено"
+    "edited": "Изменено",
+    "lich": {
+      "openedSession": "Открытие сессии",
+      "openingSession": "Открывается сессия",
+      "sentTo": "Отправка",
+      "sendingTo": "Отправляется",
+      "replied": "Ответ",
+      "replying": "Отвечает",
+      "waited": "Ожидание",
+      "waiting": "Ожидает",
+      "closed": "Закрытие",
+      "closing": "Закрывается",
+      "renamed": "Переименование",
+      "renaming": "Переименовывается",
+      "adjusted": "Настройка",
+      "adjusting": "Настраивается",
+      "filed": "Перенос в папку",
+      "filing": "Переносится в папку",
+      "started": "Запуск",
+      "starting": "Запускается",
+      "stopped": "Остановка",
+      "stopping": "Останавливается",
+      "restarted": "Перезапуск",
+      "restarting": "Перезапускается",
+      "openedPage": "Открытие страницы",
+      "openingPage": "Открывается страница",
+      "wentTo": "Переход",
+      "goingTo": "Переходит",
+      "showed": "Показ кода",
+      "showing": "Показывается код"
+    }
   },
   "done": {
     "done": "Готово",

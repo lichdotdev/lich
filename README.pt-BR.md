@@ -163,6 +163,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | De volta a um shell sem marcas de prompt depois de sair do agente, um programa pode definir o card de novo | sim | não | não | não | não | sim | sim | não |
 | A bandeja lista as sessões esperando por você e as que estão trabalhando, e o ícone ganha um ponto | sim | sim | só as que trabalham | sim | só as que trabalham | a partir do Crush 0.99.0 | só as que trabalham | só as que trabalham |
 | O card avisa quando a conversa está sendo compactada | no chat | no chat | no chat: só um /compact que você digita | no chat: só um /compact ou /summarize que você digita | no chat: só um /compact que você digita | não | não verificado | no chat |
+| No chat, uma chamada a uma ferramenta do lich diz o que fez com ícone próprio, e a sessão que ela alcançou fica a um clique | sim | sim | não | não | não | não | não | não |
 | Filtro da barra lateral por estado: Aguardando, Rodando, Não lidas | sim | sim | sem Aguardando | sim | sem Aguardando | a partir do Crush 0.99.0; nas versões anteriores, sempre Ociosas | sem Aguardando | sem Aguardando |
 | Rodado pelo seu agente dentro de outra sessão (`claude -p`, `cursor-agent -p`), não aparece no card dessa sessão | sim | sim | sim | sim | sim | sim | sim | não |
 | Além das ferramentas para falar com as suas outras sessões, o agente é avisado de quando usá-las (passar trabalho para uma sessão na própria worktree) | sim | sim, a não ser que o seu `config.toml` defina `developer_instructions` | sim | sim | sim | sim | não medido | sim |

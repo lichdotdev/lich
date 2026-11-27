@@ -130,6 +130,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   took is its result's time in a Claude Code transcript, and otherwise the moment lich first saw it ended live: a
   conversation read back from Codex or an ACP server carries no end, so its calls show no time. A call the
   provider left running when its turn ended (interrupted) ends at the turn's end, live; read back, it has no end.
+- **A chat draws a call to one of lich's own tools with its icon, verb and session link only on Claude Code and
+  Codex** (`native/cmd/lich-native/chat_lich.go`, `internal/chat/claude.go` `claudeTool`, `codex_items.go`
+  `argsTitle`): the window knows a lich tool by the name it is called under (`mcp__lich__…`, and the single
+  underscore and bare forms `toolline.go` lists), and a session by the `session` argument read into the call's
+  title. An ACP chat names a call after its kind, or Antigravity's `call_mcp_tool` and Kiro CLI's own name, and
+  titles it as its server does, so on Antigravity, opencode, oh-my-pi, Cursor CLI and Kiro CLI a lich call is a
+  plain MCP call; Crush has no chat. The pill shows only when the session is still open and its label is unique
+  in the project, and a failed call keeps its row so its reason shows.
 - **A chat draws a compaction only where its provider reports one, or where the person typed the provider's own
   command for it** (`internal/chat/compaction.go`, `claude_compact.go`, `codex_compact.go`, `acp_compact.go`):
   Claude Code (2.1.330) and Codex (0.170.0) report a compaction's start and end, typed or automatic, with the

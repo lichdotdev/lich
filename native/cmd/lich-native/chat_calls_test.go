@@ -16,7 +16,7 @@ func toolItem(id, name, title, state string) backend.ChatItem {
 // Codex's, the kinds ACP sends, Antigravity's and Kiro CLI's.
 func TestAGroupSaysWhatItsCallsDidOnEveryProvider(t *testing.T) {
 	for provider, names := range map[string][]string{
-		"claude":      {"Bash", "Read", "Grep", "WebFetch", "mcp__lich__list_sessions"},
+		"claude":      {"Bash", "Read", "Grep", "WebFetch", "mcp__playwright__browser_click"},
 		"codex":       {"Bash", "view_image", "web_search", "fetch", "mcp__gh__search"},
 		"acp":         {"execute", "read", "search", "fetch", "switch_mode2"},
 		"antigravity": {"run_command", "view_file", "list_dir", "fetch", "call_mcp_tool"},
@@ -45,7 +45,7 @@ func TestACallsVerbIsItsKindsOrItsOwnName(t *testing.T) {
 		{"Bash", true, "Running"},
 		{"view_file", false, "Read"},
 		{"apply_patch", false, "Edited"},
-		{"mcp__lich__browser_open", false, "browser_open"},
+		{"mcp__playwright__browser_open", false, "browser_open"},
 		{"TodoWrite", false, "TodoWrite"},
 	} {
 		if got := callVerb(&backend.ChatToolCall{Name: tc.name}, tc.running); got != tc.want {

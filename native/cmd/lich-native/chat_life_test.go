@@ -73,7 +73,7 @@ func TestEachToolWearsTheGlyphOfItsKind(t *testing.T) {
 	if toolIcon("SomethingNew") != icToolOther || toolIcon("") != icToolOther {
 		t.Error("an unknown tool does not wear the generic glyph")
 	}
-	if g := toolIcon("mcp__lich__open_session"); g == icToolOther || g != toolIcon("mcp__x__y") {
+	if g := toolIcon("mcp__x__y"); g != icToolMCP {
 		t.Error("an MCP tool has no glyph of its own")
 	}
 }

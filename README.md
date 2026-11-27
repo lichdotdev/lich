@@ -160,6 +160,7 @@ what lich can read back out of it, since each CLI records different things.
 | Back at a shell without prompt marks after you quit the agent, a program can set the card again | yes | no | no | no | no | yes | yes | no |
 | The tray lists the sessions waiting on you and the ones working, and its icon takes a dot | yes | yes | working only | yes | working only | from Crush 0.99.0 | working only | working only |
 | The card says when the conversation is being compacted | in a chat | in a chat | only a /compact you type in a chat | only a /compact or /summarize you type in a chat | only a /compact you type in a chat | no | not verified | in a chat |
+| In a chat, a call to one of lich's own tools says what it did under its own icon, and the session it reached is a click away | yes | yes | no | no | no | no | no | no |
 | Sidebar filter by state: Waiting, Running, Unread | yes | yes | no Waiting | yes | no Waiting | from Crush 0.99.0; before it, always Idle | no Waiting | no Waiting |
 | Run by your agent inside another session (`claude -p`, `cursor-agent -p`), it stays out of that session's card | yes | yes | yes | yes | yes | yes | yes | no |
 | Besides the tools for reaching your other sessions, the agent is told when to use them (hand work to a session on its own worktree) | yes | yes, unless your `config.toml` sets `developer_instructions` | yes | yes | yes | yes | not measured | yes |

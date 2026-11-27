@@ -164,6 +164,7 @@ distinto.
 | De vuelta en un shell sin marcas de prompt tras salir del agente, un programa puede volver a fijar la tarjeta | sí | no | no | no | no | sí | sí | no |
 | La bandeja lista las sesiones que te esperan y las que trabajan, y su icono lleva un punto | sí | sí | solo las que trabajan | sí | solo las que trabajan | desde Crush 0.99.0 | solo las que trabajan | solo las que trabajan |
 | La tarjeta avisa cuando la conversación se está compactando | en el chat | en el chat | en el chat: solo un /compact que escribes | en el chat: solo un /compact o /summarize que escribes | en el chat: solo un /compact que escribes | no | sin verificar | en el chat |
+| En un chat, una llamada a una herramienta de lich dice lo que hizo con su propio icono, y la sesión a la que llegó queda a un clic | sí | sí | no | no | no | no | no | no |
 | Filtro de la barra lateral por estado: En espera, En ejecución, Sin leer | sí | sí | no En espera | sí | no En espera | desde Crush 0.99.0; en versiones anteriores, siempre Inactiva | no En espera | no En espera |
 | Si tu agente lo ejecuta dentro de otra sesión (`claude -p`, `cursor-agent -p`), no aparece en la tarjeta de esa sesión | sí | sí | sí | sí | sí | sí | sí | no |
 | Además de las herramientas para llegar a tus otras sesiones, al agente se le indica cuándo usarlas (pasar trabajo a una sesión en su propio worktree) | sí | sí, salvo que tu `config.toml` defina `developer_instructions` | sí | sí | sí | sí | no medido | sí |

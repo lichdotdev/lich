@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **A call to one of lich's own tools in a chat says what it did, under an icon of its own, and links the session it reached.** "Sent to", "Closed" or "Restarted" leads the row, and a click on the session's pill opens its card. Not on Antigravity, opencode, oh-my-pi, Cursor CLI or Kiro CLI.
 - **Your agent can compact its own conversation, start another session on a new one, or fork itself.** Ask it to: `control_session` takes compact and new, and `open_session` takes fork. Forking needs Claude Code, Codex or opencode.
 - **Close several sessions at once: a folder's, a session's children, or the ones you pick with Ctrl+click.** Close all sessions is in a folder's menu, Close child sessions in a mother session's, and Ctrl+click (Cmd+click on macOS) on cards selects them for one right-click Close all sessions.
 - **Keep your skills and MCP servers in lich, and choose which agent and which profile gets each one.** Settings › Skills and MCP servers list what your agents have installed, to move in with one click, then each item's switches, and in a project's scope MCP servers also shows the ones the project declares; Plugins lists lich's own and every plugin your agents load, each with its switch. MCP servers do not reach Antigravity, Crush or Kiro CLI yet.

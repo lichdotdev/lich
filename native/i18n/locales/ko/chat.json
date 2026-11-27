@@ -65,6 +65,9 @@
       "fetched": {
         "other": "페이지 {count}개 가져옴"
       },
+      "lich": {
+        "other": "lich {count}회 호출"
+      },
       "others": {
         "other": "다른 도구 {count}개 사용"
       },
@@ -74,7 +77,37 @@
     },
     "latest": "최신으로",
     "newActivity": "새 활동",
-    "edited": "편집함"
+    "edited": "편집함",
+    "lich": {
+      "openedSession": "세션 열기",
+      "openingSession": "세션 여는 중",
+      "sentTo": "보내기",
+      "sendingTo": "보내는 중",
+      "replied": "답장",
+      "replying": "답장하는 중",
+      "waited": "대기",
+      "waiting": "대기 중",
+      "closed": "닫기",
+      "closing": "닫는 중",
+      "renamed": "이름 변경",
+      "renaming": "이름 변경 중",
+      "adjusted": "조정",
+      "adjusting": "조정 중",
+      "filed": "폴더로 이동",
+      "filing": "폴더로 이동 중",
+      "started": "시작",
+      "starting": "시작 중",
+      "stopped": "중지",
+      "stopping": "중지 중",
+      "restarted": "재시작",
+      "restarting": "재시작 중",
+      "openedPage": "페이지 열기",
+      "openingPage": "페이지 여는 중",
+      "wentTo": "이동",
+      "goingTo": "이동 중",
+      "showed": "코드 표시",
+      "showing": "코드 표시 중"
+    }
   },
   "done": {
     "done": "완료",

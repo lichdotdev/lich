@@ -2,6 +2,7 @@ package main
 
 import (
 	"image"
+	"image/color"
 	"strconv"
 	"strings"
 
@@ -17,11 +18,12 @@ import (
 
 var icOpenCard = icons.Lucide("arrow-up-right")
 
-// chatOpened is how a call lich opened as a card draws in its row: the card's
-// provider mark in place of the tool's glyph, and a pill per card that opens
-// it.
+// chatOpened is how a call that reached a card draws in its row: the card's
+// provider mark in place of the tool's glyph, the card's pill in place of the
+// tool's target, or a pill per card that opens it in place of the call's time.
+// A nil one keeps the row's own.
 type chatOpened struct {
-	mark, links layout.Widget
+	mark, target, links layout.Widget
 }
 
 // vetoOutcome draws a provider's subagent call lich opened as a card as
@@ -44,7 +46,7 @@ func (u *window) vetoOutcome(p *chatPane, sv sessionView) func(backend.ChatItem)
 			row := make([]layout.FlexChild, 0, 2*len(opened))
 			for i, o := range opened {
 				row = append(row, ui.Gap(1.5), layout.Rigid(func(gtx C) D {
-					return u.openedPill(gtx, th, p.note("veto:"+it.ID+":"+strconv.Itoa(i)), o.ID, o.Label)
+					return u.openedPill(gtx, th, p.note("veto:"+it.ID+":"+strconv.Itoa(i)), o.ID, th.Text(ui.TextXS, o.Label).In(th.Destructive), th.Destructive)
 				}))
 			}
 			return layout.Inset{Left: ui.Space(1)}.Layout(gtx, func(gtx C) D {
@@ -58,24 +60,26 @@ func (u *window) vetoOutcome(p *chatPane, sv sessionView) func(backend.ChatItem)
 	}
 }
 
-// openedPill is a card lich opened: its state's dot, its name and an arrow,
-// in a pill tinted by the row's ink, lit on hover; a click opens the card.
-func (u *window) openedPill(gtx C, th *ui.Theme, click *ui.Clickable, id, label string) D {
+// chatPillInset is the room an opened pill leaves each side of its name.
+var chatPillInset = ui.Space(2)
+
+// openedPill is a card lich opened: its state's dot, its name and an arrow
+// in the row's ink, in a pill lit on hover; a click opens the card.
+func (u *window) openedPill(gtx C, th *ui.Theme, click *ui.Clickable, id string, name ui.LabelStyle, ink color.NRGBA) D {
 	if click.Clicked(gtx) {
 		if card, ok := u.model.sessionViewOf(id); ok {
 			u.openSession(card.projectID, card.ID)
 		}
 	}
 	sv, _ := u.model.sessionViewOf(id)
-	ink := th.Destructive
 	return click.Layout(gtx, func(gtx C) D {
 		m := op.Record(gtx.Ops)
 		gtx.Constraints.Min = image.Point{}
-		d := layout.Inset{Left: ui.Space(2), Right: ui.Space(2), Top: ui.Space(0.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
+		d := layout.Inset{Left: chatPillInset, Right: chatPillInset, Top: ui.Space(0.5), Bottom: ui.Space(0.5)}.Layout(gtx, func(gtx C) D {
 			return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
 				layout.Rigid(func(gtx C) D { return ui.StatusDot(gtx, childDot(th, sv)) }),
 				ui.Gap(0.5),
-				layout.Rigid(th.Text(ui.TextXS, label).In(ink).Layout),
+				layout.Rigid(name.Layout),
 				ui.Gap(1),
 				layout.Rigid(func(gtx C) D { return icOpenCard.Layout(gtx, ui.Space(3), ink) }),
 			)

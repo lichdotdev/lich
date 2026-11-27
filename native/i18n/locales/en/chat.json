@@ -76,6 +76,10 @@
         "one": "fetched {count} page",
         "other": "fetched {count} pages"
       },
+      "lich": {
+        "one": "made {count} lich call",
+        "other": "made {count} lich calls"
+      },
       "others": {
         "one": "used {count} other tool",
         "other": "used {count} other tools"
@@ -87,7 +91,37 @@
     },
     "latest": "Latest",
     "newActivity": "New activity",
-    "edited": "Edited"
+    "edited": "Edited",
+    "lich": {
+      "openedSession": "Opened session",
+      "openingSession": "Opening session",
+      "sentTo": "Sent to",
+      "sendingTo": "Sending to",
+      "replied": "Replied",
+      "replying": "Replying",
+      "waited": "Waited",
+      "waiting": "Waiting",
+      "closed": "Closed",
+      "closing": "Closing",
+      "renamed": "Renamed",
+      "renaming": "Renaming",
+      "adjusted": "Adjusted",
+      "adjusting": "Adjusting",
+      "filed": "Filed",
+      "filing": "Filing",
+      "started": "Started",
+      "starting": "Starting",
+      "stopped": "Stopped",
+      "stopping": "Stopping",
+      "restarted": "Restarted",
+      "restarting": "Restarting",
+      "openedPage": "Opened page",
+      "openingPage": "Opening page",
+      "wentTo": "Went to",
+      "goingTo": "Going to",
+      "showed": "Showed",
+      "showing": "Showing"
+    }
   },
   "done": {
     "done": "Done",

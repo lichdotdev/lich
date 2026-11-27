@@ -589,7 +589,7 @@ func claudeTool(name string, raw json.RawMessage) api.ChatToolCall {
 	var in map[string]any
 	_ = json.Unmarshal(raw, &in)
 	tool := api.ChatToolCall{Name: name}
-	for _, key := range []string{"file_path", "command", "pattern", "path", "url", "query", "description"} {
+	for _, key := range []string{"file_path", "command", "pattern", "path", "url", "query", "description", "session", "service"} {
 		if v, ok := in[key].(string); ok && v != "" {
 			tool.Title = v
 			break
