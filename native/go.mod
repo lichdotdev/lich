@@ -59,7 +59,7 @@ require (
 // requests still reaching the widgets of a subtree a frame replays from a
 // cache), and a surface refresh the window system is not ready for retried
 // (the window stayed black after a resize under XWayland). Every patch of ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261123233932-67c6422e7129
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261127143756-265ddb097d37
 
 replace github.com/lichdotdev/lich => ../
 
