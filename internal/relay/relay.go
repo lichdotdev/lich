@@ -236,6 +236,9 @@ type Terminal interface {
 	// subagent, where its provider says so; false where it cannot tell
 	// (docs/ceilings.md).
 	BackgroundWork(id string) bool
+	// ContextTokens is how many tokens that session's conversation holds in its
+	// context, where its provider records it: the footer's context readout.
+	ContextTokens(id string) (int, bool)
 }
 
 type Peer = api.Peer
@@ -700,6 +703,7 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode, w
 	s.clearAll(expired)
 	s.announceInboxAll(senders)
 
+	largeContext := s.largeContext(dest.ID)
 	takes, err := s.takesDelivery(dest.ID)
 	if err != nil {
 		s.mu.Lock()
@@ -726,6 +730,7 @@ func (s *Service) send(ctx context.Context, opts SendOptions, mode errandMode, w
 	// timeout on an errand that is running perfectly well.
 	result := s.await(ctx, id, t, wait)
 	result.Private = t.private
+	result.TargetContext = largeContext
 	return result, nil
 }
 

@@ -398,6 +398,10 @@ func (c *client) send(args []string) error {
 	if err := c.report(result, *asJSON); err != nil {
 		return err
 	}
+	// stderr, so stdout stays the answer alone (report).
+	if !*asJSON && result.TargetContext > 0 {
+		fmt.Fprint(c.stderr, largeTargetText(prompt.For(c.lang()).LargeTargetCLI, result))
+	}
 	return outcome(result.Status)
 }
 

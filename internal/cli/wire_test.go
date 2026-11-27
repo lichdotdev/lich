@@ -83,6 +83,7 @@ func (*wiredTerminal) ChatOpened(string) bool             { return false }
 func (*wiredTerminal) Chat(string) bool                   { return false }
 func (*wiredTerminal) FinalMessage(string) (string, bool) { return "", false }
 func (*wiredTerminal) BackgroundWork(string) bool         { return false }
+func (*wiredTerminal) ContextTokens(string) (int, bool)   { return 0, false }
 
 func (w *wiredTerminal) Write(_ context.Context, opts api.WriteOptions) (api.None, error) {
 	w.mu.Lock()

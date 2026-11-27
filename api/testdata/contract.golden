@@ -1751,6 +1751,7 @@ SendResult {
 	status string
 	answer string
 	private,omitempty bool
+	targetContext,omitempty int
 }
 
 SetScheduleOptions {

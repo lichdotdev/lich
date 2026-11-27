@@ -1000,6 +1000,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 ## Relay, errands and subagents
 
+- **Only Claude Code, Codex and Kiro CLI warn a sender that its target's context is large**
+  (`internal/relay/largecontext.go`, `largeContextTokens`; `terminal.ContextTokens`): a task handed to a session
+  whose context is past 200k tokens is delivered as any other, and the sender's result says how big that context
+  is and that an independent task costs less in a new session. The size is the footer's context readout, so the
+  providers that record no window (Antigravity, opencode, oh-my-pi, Crush, Cursor CLI) never warn. It is read
+  once, when the task is sent: a target that grows past the line while it works, or a task held until the target
+  is at a prompt, is not warned again.
 - **A compaction can cost a terminal worker its ticket, and nothing reminds it** (`internal/relay/observe.go`,
   `compactReminderLocked`; docs/hooks/session-state.md): a relayed task is a turn of the worker's conversation,
   and a compaction may summarise its ticket away; with two errands open an answer that names none is refused, so
