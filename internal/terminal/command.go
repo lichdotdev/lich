@@ -13,6 +13,7 @@ import (
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/subagent"
 )
 
 // What a session's PTY runs: which binary, and with which arguments. Every
@@ -163,16 +164,13 @@ func SupportsEffort(kind string) bool {
 	return ok || kind == providers.Codex
 }
 
-// claudeSettingsFlag hands Claude Code a settings document for this run only,
-// and claudeUltracodeSettings is the one that turns ultracode on at whatever
+// claudeSettingsFlag hands Claude Code a settings document for this run only
+// (claudeSettingsArgs). Its `ultracode` key turns ultracode on at whatever
 // effort the session runs. `--effort ultracode` would do it too, but pins the
-// effort to xhigh. The `ultracode` key is documented in the settings schema
-// 2.1.288 ships ("typically provided via --settings"), and Claude Code drops it
-// on --resume (measured on 2.1.288), so lich passes it on every spawn.
-const (
-	claudeSettingsFlag      = "--settings"
-	claudeUltracodeSettings = `{"ultracode":true}`
-)
+// effort to xhigh. The key is documented in the settings schema 2.1.288 ships
+// ("typically provided via --settings"), and Claude Code drops it on --resume
+// (measured on 2.1.288), so lich passes it on every spawn.
+const claudeSettingsFlag = "--settings"
 
 // SupportsUltracode reports whether a provider has an ultracode to turn on.
 // Claude Code is the only one.
@@ -321,20 +319,22 @@ func flagValue(value string) (string, bool) {
 // come last. Kiro's subcommand opens the session rather than a conversation, so
 // it comes before every flag.
 func providerArgs(
-	kind, name, resume, model, effort, lichBin, agent, plugin string, lib library.Delivery, fork, skipPermissions, ultracode bool,
+	kind, name, resume, model, effort, lichBin, agent, plugin string, lib library.Delivery, card subagent.Card, fork, skipPermissions, ultracode bool,
 	route relay.SubagentRoute, lang prompt.Lang,
 ) []string {
+	lib = cardLibrary(lib, card)
 	mcp := libraryMCPArgs(kind, mcpArgs(kind, lichBin), lib.MCP)
 	args := append([]string{}, subcommandArgs(kind)...)
 	args = append(args, nameArgs(kind, name, resume, fork)...)
 	args = append(args, agentArgs(kind, agent)...)
 	args = append(args, pluginArgs(kind, plugin)...)
 	args = append(args, librarySkillArgs(kind, lib)...)
+	args = append(args, cardArgs(kind, card)...)
 	args = append(args, resumeArgs(kind, resume, fork)...)
 	args = append(args, skipPermissionArgs(kind, skipPermissions)...)
 	args = append(args, modelArgs(kind, model, resume)...)
 	args = append(args, effortArgs(kind, effort, resume)...)
-	args = append(args, ultracodeArgs(kind, ultracode)...)
+	args = append(args, claudeSettingsArgs(kind, ultracode, card)...)
 	args = append(args, briefingArgs(kind, route, lang)...)
 	if kind == providers.Codex {
 		return append(mcp, args...)
@@ -412,16 +412,6 @@ func effortArgs(kind, effort, resume string) []string {
 		return nil
 	}
 	return []string{flag, effort}
-}
-
-// ultracodeArgs returns the arguments that turn ultracode on, or nil when it is
-// off or the provider has none. Unlike the model and effort it is passed on a
-// resume too: Claude Code forgets it there, so leaving it out would drop it.
-func ultracodeArgs(kind string, on bool) []string {
-	if !on || !SupportsUltracode(kind) {
-		return nil
-	}
-	return []string{claudeSettingsFlag, claudeUltracodeSettings}
 }
 
 // briefingArgs returns the arguments that append lich's own briefing to a
