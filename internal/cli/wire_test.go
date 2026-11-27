@@ -42,6 +42,9 @@ func (wiredSessions) SetSessionSchedule(string, int64, string) error { return ni
 // No checkout here has a branch git could name.
 func (wiredSessions) SessionBranch(string) string { return "" }
 
+// Nobody here was opened as a subagent.
+func (wiredSessions) SessionSubagentDepth(string) int { return 0 }
+
 type wiredTerminal struct {
 	mu    sync.Mutex
 	typed string

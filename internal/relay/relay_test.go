@@ -33,6 +33,9 @@ func (f fakeSessions) LoadState(_ context.Context, _ api.None) ([]store.Project,
 
 func (f fakeSessions) SessionBranch(sessionID string) string { return f.branches[sessionID] }
 
+// Nobody here was opened as a subagent.
+func (fakeSessions) SessionSubagentDepth(string) int { return 0 }
+
 func (f fakeSessions) SetLichSchedule(sessionID string, at int64, prompt string) error {
 	return f.SetSessionSchedule(sessionID, at, prompt)
 }

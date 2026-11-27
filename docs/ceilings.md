@@ -1045,6 +1045,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   lich-plugin does not forward) and Cursor CLI's terminal (its `stop` names none); in a chat the ACP providers'
   self-started turn arrives as updates with no `session/prompt` running, which the ACP driver does not run as a
   turn. All read from shipped binaries, not measured.
+- **A subagent card is not listed lich's folder, project, service and handoff tools** (`internal/cli/mcp.go`,
+  `cardTools`): every request a card makes carries its tool list, and a card does the task it was handed. A
+  card asked to file sessions, close a project, run a service or hand off says it has no tool for it; a call by
+  name still runs, so a client that kept an older list loses nothing. Same on every provider that reaches
+  `lich mcp`: the depth is read from the backend by `LICH_SESSION_ID`, which every tool already needs.
 - **Codex and Kiro CLI sessions get the spawn briefing, not lich's MCP instructions** (`internal/cli/mcp.go`,
   `mcpInstructions`; `internal/terminal/command.go`, `codexBriefingArgs`, `briefingEnv`): both initialize the
   server, list its tools and never hand its initialize `instructions` to the model (measured 2026-11-07 on

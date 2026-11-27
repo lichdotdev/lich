@@ -1699,6 +1699,7 @@ Peer {
 	detail,omitempty string
 	reason,omitempty string
 	focused,omitempty bool
+	subagent,omitempty int
 }
 
 ReplyOptions {

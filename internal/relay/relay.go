@@ -179,6 +179,9 @@ type Sessions interface {
 	// SessionBranch is the branch of the checkout a session runs in, "" when
 	// git cannot name one. A subagent's report names it (subagentReport).
 	SessionBranch(sessionID string) string
+	// SessionSubagentDepth is how deep a session runs as a subagent card, 0
+	// for one nobody opened as a subagent (Peer.Subagent).
+	SessionSubagentDepth(sessionID string) int
 }
 
 // Events is where the relay announces a request in flight. The app's event hub
