@@ -35,6 +35,8 @@ github.com/lichdotdev/godemirror v0.11.1-0.20261126205617-87e2c8480af5 h1:aXasRF
 github.com/lichdotdev/godemirror v0.11.1-0.20261126205617-87e2c8480af5/go.mod h1:Bpzw5JlSRuXiEVRcX2gD+nsP0ix8cDpy9TTH5Q3n3XY=
 github.com/lichdotdev/godemirror v0.11.1-0.20261126230344-3c364449fece h1:5rb1krRSBlVyXcbJxWPARAzFvncT9L8yBEjsfsBthxk=
 github.com/lichdotdev/godemirror v0.11.1-0.20261126230344-3c364449fece/go.mod h1:Bpzw5JlSRuXiEVRcX2gD+nsP0ix8cDpy9TTH5Q3n3XY=
+github.com/lichdotdev/godemirror v0.12.0 h1:R9Hk4t029m/9big6oAFAyw2HEqNRandoF233L4n5+cs=
+github.com/lichdotdev/godemirror v0.12.0/go.mod h1:Bpzw5JlSRuXiEVRcX2gD+nsP0ix8cDpy9TTH5Q3n3XY=
 github.com/neovim/go-client v1.2.1 h1:kl3PgYgbnBfvaIoGYi3ojyXH0ouY6dJY/rYUCssZKqI=
 github.com/neovim/go-client v1.2.1/go.mod h1:EeqCP3z1vJd70JTaH/KXz9RMZ/nIgEFveX83hYnh/7c=
 github.com/yuin/goldmark v1.4.13 h1:fVcFKWvrslecOb/tg+Cc05dkeYx540o0FuFt3nUVDoE=
