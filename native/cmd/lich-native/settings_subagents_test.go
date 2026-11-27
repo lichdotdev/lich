@@ -156,7 +156,7 @@ func TestTheTooltipNamesWhatACardBrought(t *testing.T) {
 		brought []string
 		shows   bool
 	}{{nil, false}, {[]string{"mcp:ai-memory", "plugin:ponytail@ponytail", api.SubagentAlsoMemory}, true}} {
-		sv := sessionView{Session: backend.Session{ID: "s1", Label: "Worker", Brought: c.brought}, shown: "/repo"}
+		sv := sessionView{ID: "s1", Label: "Worker", Brought: c.brought, shown: "/repo"}
 		r := newFrameRig(image.Pt(400, 160), func(gtx C, th *ui.Theme) { sessionTooltip(th, &sv)(gtx) })
 		drawn, _ := r.frame()
 		if r.shows(line) != c.shows {
