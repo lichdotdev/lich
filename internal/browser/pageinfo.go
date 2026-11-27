@@ -1,5 +1,7 @@
 package browser
 
+import "github.com/lichdotdev/lich/pagescript"
+
 // pageInfoScript is injected into the page the agent is driving. It stamps
 // data-lich-idx so a later click/type can find the same node, and it never
 // reads a form control's value into the result.
@@ -22,6 +24,11 @@ package browser
 // matches nothing or is not valid answers with error before any stamp
 // changes. The element itself is not listed, only what is under it.
 //
+// A same-origin frame's document is read where the frame stands, its text
+// after the page's and its elements in page order, with rects in the top
+// viewport, and within reaches into one as pagescript.Frames' find does: a
+// page that draws everything inside a frame is read as the person sees it.
+//
 // A password input has no innerText, so an innerText || value label chain
 // hands the live credential to the agent and into the session transcript.
 // Rather than classify which fields are sensitive — type === 'password' is
@@ -40,12 +47,18 @@ package browser
 // the list (measured 2026-11-07). That left the cut at 1000 holding as much
 // text of its own as 1200 had.
 const pageInfoScript = `((base, within) => {
+  ` + pagescript.Frames + `
   const sel = 'a[href], button, input, textarea, select, [role=button], [role=link], [onclick], [contenteditable=""], [contenteditable="true"]';
-  const isVisible = (el) => {
-    const r = el.getBoundingClientRect();
+  const rectOf = (el, frames) => {
+    const r = el.getBoundingClientRect(), o = offset(frames);
+    return { left: r.left + o.x, top: r.top + o.y, right: r.right + o.x, bottom: r.bottom + o.y, width: r.width, height: r.height };
+  };
+  const isVisible = ({ el, frames }) => {
+    const r = rectOf(el, frames);
     if (r.width <= 0 || r.height <= 0) return false;
     if (r.bottom < 0 || r.top > innerHeight || r.right < 0 || r.left > innerWidth) return false;
-    const s = getComputedStyle(el);
+    if (frames.length > 0 && framed(el, frames).w === 0) return false;
+    const s = el.ownerDocument.defaultView.getComputedStyle(el);
     return s.visibility !== 'hidden' && s.display !== 'none';
   };
   const CAPTION_TYPES = ['submit', 'button', 'reset'];
@@ -74,30 +87,45 @@ const pageInfoScript = `((base, within) => {
       attr(el, 'name')
     ).trim();
   };
-  let root = document;
+  let root = { e: document, frames: [] };
   if (within) {
     try {
-      root = document.querySelector(within);
+      root = find(within);
     } catch (e) {
       return { error: e.message };
     }
     if (!root) return { error: 'no element matches ' + within };
   }
+  const els = [], texts = [(within ? root.e : document.body)?.innerText ?? ''];
+  const scan = (node, frames) => {
+    for (const el of node.querySelectorAll(sel + ', iframe, frame')) {
+      const doc = inside(el);
+      if (doc) {
+        texts.push(doc.body?.innerText ?? '');
+        scan(doc, [...frames, el]);
+      } else if (el.matches(sel)) els.push({ el, frames });
+    }
+  };
+  const doc = inside(root.e);
+  if (doc) {
+    texts.push(doc.body?.innerText ?? '');
+    scan(doc, [...root.frames, root.e]);
+  } else scan(root.e, root.frames);
+  const shown = els.filter(isVisible);
   if (!window.__lichIdx) Object.defineProperty(window, '__lichIdx', { value: { next: 0, of: new WeakMap() } });
   const idx = window.__lichIdx;
   idx.next = Math.max(idx.next, base);
-  document.querySelectorAll('[data-lich-idx]').forEach((el) => {
+  documents().forEach(({ doc }) => doc.querySelectorAll('[data-lich-idx]').forEach((el) => {
     if (String(idx.of.get(el)) !== el.getAttribute('data-lich-idx')) el.removeAttribute('data-lich-idx');
-  });
-  const els = [...root.querySelectorAll(sel)].filter(isVisible);
-  const interactive = els.slice(0, 200).map((el) => {
+  }));
+  const interactive = shown.slice(0, 200).map(({ el, frames }) => {
     let i = idx.of.get(el);
     if (i === undefined) {
       i = idx.next++;
       idx.of.set(el, i);
     }
     el.setAttribute('data-lich-idx', String(i));
-    const r = el.getBoundingClientRect();
+    const r = rectOf(el, frames);
     const tag = el.tagName.toLowerCase();
     const type = (el.getAttribute('type') || '').toLowerCase();
     const entry = {
@@ -120,10 +148,10 @@ const pageInfoScript = `((base, within) => {
   return {
     url: location.href,
     title: document.title,
-    text: ((within ? root : document.body)?.innerText ?? '').split('\n')
+    text: texts.filter((text) => text.trim() !== '').join('\n').split('\n')
       .filter((line) => !labels.has(line.trim())).join('\n').trim().slice(0, 1000),
     interactive: interactive,
-    truncated: els.length > 200,
+    truncated: shown.length > 200,
     next: idx.next,
   };
 })`
