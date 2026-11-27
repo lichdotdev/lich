@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/lichdotdev/lich/api"
+	"github.com/lichdotdev/lich/pagescript"
 )
 
 // textPoll is how often a wait reads the page's text again: short enough that
@@ -18,8 +19,12 @@ const textPoll = 100 * time.Millisecond
 // 60-second openCall.
 const maxTextWait = 20 * time.Second
 
-// hasTextScript takes the text as a JSON string literal.
-const hasTextScript = `(document.body ? document.body.innerText : '').includes(%s)`
+// hasTextScript takes the text as a JSON string literal. A same-origin
+// frame's text is the page's too.
+const hasTextScript = `(() => {
+	` + pagescript.Frames + `
+	return documents().some(({doc}) => (doc.body ? doc.body.innerText : '').includes(%s));
+})()`
 
 // waitText holds a read until opts.WaitFor is on the page and opts.WaitGone
 // is off it, and says whether it gave up first.

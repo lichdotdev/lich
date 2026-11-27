@@ -9,6 +9,7 @@ import (
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/browserwire"
+	"github.com/lichdotdev/lich/pagescript"
 )
 
 func at(ms int) browserTime {
@@ -112,9 +113,9 @@ func TestWebkitServiceCallsReachTheWire(t *testing.T) {
 	f := newFakeLichBrowser(t)
 	f.eval = func(script string) (string, string, bool) {
 		switch {
-		case strings.HasPrefix(script, "(document.body"):
+		case strings.HasPrefix(script, hasTextScript[:strings.Index(hasTextScript, "%s")]):
 			return "true", "", true
-		case strings.Contains(script, "elementFromPoint"):
+		case script == pagescript.ElementAt(1, 2):
 			return `{"selector":"#a"}`, "", true
 		case strings.HasPrefix(script, annotateJS), script == unannotateJS:
 			return "", "", true

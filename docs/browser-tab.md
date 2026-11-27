@@ -147,7 +147,11 @@ so in one line instead (`internal/browser/told.go`); `browser_info` always
 answers with the whole list of what it reads. With `within`, a CSS selector, it
 reads the first element it matches (its text and the buttons and links under it,
 not the element itself) and a selector that matches nothing is an error; the
-actions that follow answer with the whole page. Click, type and
+actions that follow answer with the whole page. A same-origin iframe is read
+where it stands, its text after the page's and its elements in page order with
+their rects in the top viewport, and a selector steps into one with ` >>> `
+(`iframe#app >>> button.save`), in `within` and in every target
+(`pagescript.Frames`); a cross-origin iframe stays the frame element. Click, type and
 press are real input events. A click, or the click a target of type or press
 makes, by index or selector fails before dispatch when the element is disabled
 or another one covers its click point, naming it (`covered by <div#consent-banner>`). `press` is named keys only. `browser_eval` runs

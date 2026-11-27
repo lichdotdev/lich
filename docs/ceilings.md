@@ -2654,7 +2654,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Disabled is `:disabled` or `aria-disabled="true"`, which a page may set on something it still handles.
 - **A note left on the page names only what the page shows lich** (`internal/browser/notes.go`,
   `native/cmd/lich-native/browser_notes.go`): the pick asks the page for the element under the pointer, so an
-  element inside an iframe is picked as the iframe and one inside a closed shadow root as its host, and a
+  element inside a cross-origin iframe is picked as the iframe and one inside a closed shadow root as its host.
+  Inside a same-origin iframe the pick reaches the element, and its selector joins the frame's and the
+  element's with ` >>> `, which `browser_click` and the agent's other targets and `within` follow too. A
   selector picked inside an open shadow root finds it again only from that root, where `browser_click` does
   not look. The React component comes from the page's fiber, there only in a development build, and its file
   and line from `_debugSource`, which React 19 dropped. Pins follow their elements by looking them up again
@@ -2663,6 +2665,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   fixed one, so an absolutely positioned element that escapes such an ancestor is cut anyway, and one a
   sibling covers keeps its pin. Notes not sent yet
   live in the window: closing it, or the browser, loses them.
+- **The agent reads into a same-origin iframe only** (`internal/browser/pageinfo.go`, `pagescript/pagescript.go`):
+  a page's script reaches a frame's document only on its own origin, so a cross-origin frame's text and elements
+  stay out of `browser_info` and ` >>> ` does not step into it; a click at x and y off a screenshot still lands
+  there. A frame's text follows the page's, so the 1000-character cut can leave it out of a long page.
 - **A sketch on the page is a picture of what the pane showed, and only an agent that reads images sees it**
   (`native/cmd/lich-native/browser_sketch.go`): the strokes are in the pane's coordinates, not the page's, so
   the wheel is held while there are any, a navigation drops them, and a pane resized under them leaves them
