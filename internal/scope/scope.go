@@ -116,6 +116,9 @@ var allowed = map[string]string{
 	"themes.List":        "",
 	"themes.Selection":   "",
 	"themes.Select":      "",
+	// Whether the session's own provider opens cards, for its MCP
+	// instructions.
+	"subagent.CardsOn": "id",
 }
 
 // Allows reports whether a scoped token may call method at all.

@@ -272,10 +272,12 @@ Settings › Subagents (`internal/subagent/cards.go`, `internal/terminal/cards.g
 holds two global settings per provider:
 
 - **Open subagents as cards**, on by default. Off, `/subagent` answers
-  `allow` for that provider, its spawn briefing loses the card text (the
-  sessions route at depth 0, the native one in a card), and a mod older than
-  this hook is told `LICH_SUBAGENT_CARDS=off`. Relay, MCP, the browser and
-  `open_session` stay.
+  `allow` for that provider; its spawn briefing, at any depth, takes the
+  cards-off route (`relay.RouteOff`), which keeps the subagent tool native,
+  pushes no delegation and keeps lich sessions for what a subagent cannot be;
+  its `lich mcp` leaves out the sentences on cards, read from the store at
+  initialize (`subagent.CardsOn`); and a mod older than this hook is told
+  `LICH_SUBAGENT_CARDS=off`. Relay, MCP, the browser and `open_session` stay.
 - **What a card also brings**, nothing by default. A card is a spawn at
   depth 1 or more; a session the user opens is never touched. The list is
   what `library.CardItems` reads (the provider's own MCP documents, the
@@ -333,9 +335,10 @@ its tooltip.
   for a native subagent that does not exist before ending the turn waiting.
   With the `wait` answered `deny` as well (3 more samples), two tried
   `wait_agent` once and ended the turn on its veto.
-- **oh-my-pi's ACP server takes no flags** and loads extensions only from
-  `$PI_CODING_AGENT_DIR/extensions/` (`.js` or `.ts`), so the plugin's extension
-  must be there for the chat.
+- **oh-my-pi's ACP server takes its root's flags before `acp`**: `-e`,
+  `--config`, `--no-extensions`, `--no-skills` and `--no-rules` all start
+  `omp ... acp` and answer `initialize` (measured on 19.1.1), so a chat gets
+  lich's extension by `-e` and a lean card its flags, as the terminal does.
 - **The reason is all that holds the model back**: a reason that does not say
   where the work went made Cursor's model retry the tool once. lich's text has
   to name the session and the envelope that will come.

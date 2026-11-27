@@ -16,7 +16,7 @@ import (
 func TestSpawnBriefingIsCmdSafeInEveryLanguage(t *testing.T) {
 	t.Parallel()
 	for _, lang := range prompt.Langs {
-		for _, route := range []SubagentRoute{RouteSessions, RouteCards, RouteNative} {
+		for _, route := range []SubagentRoute{RouteSessions, RouteCards, RouteNative, RouteOff} {
 			for _, hasTools := range []bool{true, false} {
 				briefing := SpawnBriefing(lang, hasTools, route)
 				if strings.ContainsAny(briefing, `"<>`) {
@@ -61,7 +61,7 @@ func TestEveryEnvelopeRendersInEveryLanguage(t *testing.T) {
 func TestSpawnBriefingExplainsTheEnvelopeInEveryLanguage(t *testing.T) {
 	t.Parallel()
 	for _, lang := range prompt.Langs {
-		for _, route := range []SubagentRoute{RouteSessions, RouteCards, RouteNative} {
+		for _, route := range []SubagentRoute{RouteSessions, RouteCards, RouteNative, RouteOff} {
 			for tools, literals := range map[bool][]string{true: {ToolReply, ToolCollect}, false: {"lich reply TICKET ANSWER", "lich wait"}} {
 				briefing := SpawnBriefing(lang, tools, route)
 				for _, literal := range append(literals, "lich-notification", AnswerLastMessage, AnswerReply) {
@@ -123,7 +123,7 @@ func TestTheRussianReminderAgreesWithItsCount(t *testing.T) {
 func TestSpawnBriefingSendsPagesToTheArtifactFolder(t *testing.T) {
 	t.Parallel()
 	for _, lang := range prompt.Langs {
-		for _, route := range []SubagentRoute{RouteSessions, RouteCards, RouteNative} {
+		for _, route := range []SubagentRoute{RouteSessions, RouteCards, RouteNative, RouteOff} {
 			for hasTools, opener := range map[bool]string{true: "browser_open", false: "lich browser open PATH"} {
 				briefing := SpawnBriefing(lang, hasTools, route)
 				if !strings.Contains(briefing, "LICH_ARTIFACT_DIR") || !strings.Contains(briefing, opener) {
@@ -155,5 +155,26 @@ func TestAnExtensionsTaskIsFromTheExtension(t *testing.T) {
 	typed := term.written("s2")
 	if !strings.Contains(typed, `kind="task" from="Lich Notes" ticket="`) || strings.Contains(typed, "session=") {
 		t.Errorf("the task does not name the extension alone:\n%s", typed)
+	}
+}
+
+// With a provider's cards off the briefing, in every language, keeps the
+// subagent native and says when to open a session, without the card text or
+// the push to fan out through sessions.
+func TestCardsOffBriefingPushesNoDelegation(t *testing.T) {
+	t.Parallel()
+	for _, lang := range prompt.Langs {
+		text := prompt.For(lang)
+		for _, hasTools := range []bool{true, false} {
+			briefing := SpawnBriefing(lang, hasTools, RouteOff)
+			if !strings.Contains(briefing, text.BriefingOff) {
+				t.Errorf("%s tools %v: the briefing lacks the cards-off text:\n%s", lang, hasTools, briefing)
+			}
+			for _, pushed := range []string{text.BriefingCards, text.BriefingNative, text.BriefingSessions} {
+				if strings.Contains(briefing, pushed) {
+					t.Errorf("%s tools %v: the briefing carries %q", lang, hasTools, pushed)
+				}
+			}
+		}
 	}
 }

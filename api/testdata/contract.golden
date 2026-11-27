@@ -311,6 +311,7 @@ store.SetSetting(SetSettingOptions) None
 store.UnmarkViewed(UnmarkViewedOptions) None
 store.ViewedFiles(ViewedFilesOptions) []ViewedFile
 subagent.Cards(None) []SubagentCardProvider
+subagent.CardsOn(SessionIDOptions) SubagentCardsState
 subagent.SetBring(SubagentSetBringOptions) None
 subagent.SetCards(SubagentSetCardsOptions) None
 subagent.Vetoed(None) []SubagentVeto
@@ -2220,6 +2221,10 @@ SubagentCardProvider {
 	cards bool
 	lean bool
 	items []SubagentCardItem
+}
+
+SubagentCardsState {
+	cards bool
 }
 
 SubagentSetBringOptions {

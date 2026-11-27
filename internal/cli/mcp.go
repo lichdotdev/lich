@@ -121,14 +121,32 @@ const privateToolUsage = "Set this when you are a subagent or workflow step runn
 //
 // The artifact paragraph names the session's own folder, so an agent whose
 // file tools take no variables can write there; a lich mcp started outside a
-// lich session has none, and the paragraph is left out.
-func mcpInstructions(lang prompt.Lang) string {
+// lich session has none, and the paragraph is left out. cards is what it says
+// of subagent cards (mcpCards).
+func mcpInstructions(lang prompt.Lang, cards string) string {
 	catalog := prompt.For(lang)
-	text := fmt.Sprintf(catalog.MCPInstructions, relay.ToolReply)
+	text := fmt.Sprintf(catalog.MCPInstructions, relay.ToolReply, cards)
 	if dir := os.Getenv(artifact.EnvVar); dir != "" {
 		text += "\n\n" + fmt.Sprintf(catalog.MCPArtifacts, dir)
 	}
 	return text
+}
+
+// mcpCards is what the instructions say of subagent cards for this session:
+// the catalog's sentences, unless lich says its provider's cards are off
+// (Settings › Subagents). Outside a session, or with lich out of reach, the
+// sentences stay, as they read before the setting existed.
+func (c *client) mcpCards(lang prompt.Lang) string {
+	text := prompt.For(lang).MCPSubagentCards
+	id := c.sessionID()
+	if id == "" {
+		return text
+	}
+	state, err := callMethod(context.Background(), c, api.SubagentCardsOn, api.SessionIDOptions{ID: id}, shortCall)
+	if err != nil || state.Cards {
+		return text
+	}
+	return ""
 }
 
 // serveMCP runs the stdio server until its input ends. Messages are answered
@@ -275,9 +293,11 @@ func (c *client) handleMCP(ctx context.Context, request jsonRPC) (jsonRPC, bool)
 	var result map[string]any
 	switch request.Method {
 	case "initialize":
-		result = mcpHandshake(request.Params, c.version, c.lang())
+		lang := c.lang()
+		result = mcpHandshake(request.Params, c.version, lang, c.mcpCards(lang))
 	case "server/discover":
-		result = mcpDiscovery(c.lang())
+		lang := c.lang()
+		result = mcpDiscovery(lang, c.mcpCards(lang))
 	case "tools/list":
 		result = map[string]any{"tools": mcpToolList()}
 	case "tools/call":
@@ -313,11 +333,11 @@ func requestedProtocol(params json.RawMessage) (string, bool) {
 
 // mcpDiscovery answers server/discover, the modern era's counterpart of
 // initialize: the same capabilities and briefing, without a session.
-func mcpDiscovery(lang prompt.Lang) map[string]any {
+func mcpDiscovery(lang prompt.Lang, cards string) map[string]any {
 	return map[string]any{
 		"supportedVersions": mcpModernVersions,
 		"capabilities":      map[string]any{"tools": map[string]any{}},
-		"instructions":      mcpInstructions(lang),
+		"instructions":      mcpInstructions(lang, cards),
 	}
 }
 
@@ -344,7 +364,7 @@ func mcpServerInfo(version string) map[string]any {
 
 // mcpHandshake answers initialize, echoing the client's protocol version when
 // it named one (see mcpProtocolVersion).
-func mcpHandshake(params json.RawMessage, version string, lang prompt.Lang) map[string]any {
+func mcpHandshake(params json.RawMessage, version string, lang prompt.Lang, cards string) map[string]any {
 	var asked struct {
 		ProtocolVersion string `json:"protocolVersion"`
 	}
@@ -357,7 +377,7 @@ func mcpHandshake(params json.RawMessage, version string, lang prompt.Lang) map[
 		"protocolVersion": protocol,
 		"capabilities":    map[string]any{"tools": map[string]any{}},
 		"serverInfo":      mcpServerInfo(version),
-		"instructions":    mcpInstructions(lang),
+		"instructions":    mcpInstructions(lang, cards),
 	}
 }
 

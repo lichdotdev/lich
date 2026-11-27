@@ -36,6 +36,7 @@ func (cardPicks) SubagentCards(string) bool                   { return true }
 func (cardPicks) SetSubagentCards(string, bool) error         { return nil }
 func (p cardPicks) SubagentBrings(id string) []string         { return p[id] }
 func (cardPicks) SetSubagentBring(string, string, bool) error { return nil }
+func (cardPicks) SessionKind(string) string                   { return "" }
 
 // spawned is the argv and environment one spawn of kind would run with.
 func spawned(t *testing.T, bins stubBins, kind string, picks cardPicks) ptySpec {
@@ -71,11 +72,13 @@ func briefingOf(sp ptySpec) string {
 	return ""
 }
 
-// With a provider's cards off its briefing never mentions cards: a session
-// fans out through lich's sessions, a card keeps its own subagents inside.
+// With a provider's cards off its briefing, at any depth, keeps the subagent
+// native and pushes no delegation: neither the card text nor the line that
+// sends fan-out to lich sessions.
 func TestCardsOffBriefsNoCards(t *testing.T) {
 	withClaudePlugin(t, "0.19.0")
-	cardText := prompt.For(prompt.English).BriefingCards
+	text := prompt.For(prompt.English)
+	cardText := text.BriefingCards
 	for _, kind := range []string{providers.Claude, providers.OMP, providers.Codex, providers.Kiro} {
 		for _, depth := range []int{0, 1} {
 			t.Run(kind, func(t *testing.T) {
@@ -84,8 +87,13 @@ func TestCardsOffBriefsNoCards(t *testing.T) {
 				if !strings.Contains(on, cardText) {
 					t.Errorf("depth %d, cards on: briefing %q lacks the card text", depth, on)
 				}
-				if off == "" || strings.Contains(off, cardText) {
-					t.Errorf("depth %d, cards off: briefing %q, want one without the card text", depth, off)
+				if !strings.Contains(off, text.BriefingOff) {
+					t.Errorf("depth %d, cards off: briefing %q, want the cards-off text", depth, off)
+				}
+				for _, pushed := range []string{text.BriefingCards, text.BriefingNative, text.BriefingSessions} {
+					if strings.Contains(off, pushed) {
+						t.Errorf("depth %d, cards off: briefing carries %q", depth, pushed)
+					}
 				}
 			})
 		}

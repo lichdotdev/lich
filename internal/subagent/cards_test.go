@@ -49,6 +49,12 @@ func (f *fakeCardStore) SetSubagentCards(id string, on bool) error {
 	return nil
 }
 func (f *fakeCardStore) SubagentBrings(id string) []string { return f.brings[id] }
+func (f *fakeCardStore) SessionKind(id string) string {
+	if id == "s1" {
+		return providers.Claude
+	}
+	return ""
+}
 func (f *fakeCardStore) SetSubagentBring(id, item string, on bool) error {
 	items := slices.DeleteFunc(f.brings[id], func(it string) bool { return it == item })
 	if on {
@@ -194,5 +200,19 @@ func TestSettingsChangeAndTellTheWindow(t *testing.T) {
 	}
 	if *emitted != 2 {
 		t.Errorf("a refused change emitted: %d", *emitted)
+	}
+}
+
+// A session asks whether its own provider opens cards; a session lich does
+// not know is refused.
+func TestCardsOnReadsTheSessionsProvider(t *testing.T) {
+	cards, store, _ := newCards()
+	store.off[providers.Claude] = true
+	got, err := cards.CardsOn(context.Background(), api.SessionIDOptions{ID: "s1"})
+	if err != nil || got.Cards {
+		t.Errorf("CardsOn = %+v, %v; want Claude Code's cards off", got, err)
+	}
+	if _, err := cards.CardsOn(context.Background(), api.SessionIDOptions{ID: "nobody"}); err == nil {
+		t.Error("an unknown session was answered")
 	}
 }

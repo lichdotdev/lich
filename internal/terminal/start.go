@@ -244,7 +244,8 @@ func (s *Service) prepareSpawnLocked(opts api.StartOptions, profileDir, name str
 	skipPermissions := s.store.SkipPermissions(opts.Kind, opts.ProjectID, opts.Cwd)
 	ultracode := s.store.Ultracode(opts.Kind) || s.store.SessionUltracode(opts.ID)
 	depth := s.store.SessionSubagentDepth(opts.ID)
-	cardsOn := subagentCardsOn(opts.Kind, profileDir, depth) && s.store.SubagentCards(opts.Kind)
+	cardsAllowed := s.store.SubagentCards(opts.Kind)
+	cardsOn := subagentCardsOn(opts.Kind, profileDir, depth) && cardsAllowed
 	card := s.cardFor(opts.Kind, depth)
 	// The model and effort are read from the row rather than passed in, so every
 	// spawn that starts a conversation of its own gets them: the window's first
@@ -271,7 +272,10 @@ func (s *Service) prepareSpawnLocked(opts api.StartOptions, profileDir, name str
 	if artifacts != "" {
 		env = append(env, artifact.EnvVar+"="+artifacts)
 	}
-	route, lang := subagentRoute(opts.Kind, s.store.SessionView(opts.ID), profileDir, depth, cardsOn), s.promptLanguage()
+	route, lang := relay.RouteOff, s.promptLanguage()
+	if cardsAllowed {
+		route = subagentRoute(opts.Kind, s.store.SessionView(opts.ID), profileDir, depth, cardsOn)
+	}
 	env = briefingEnv(env, opts.Kind, route, lang)
 	model := s.store.SessionModel(opts.ID)
 	if oc2 {

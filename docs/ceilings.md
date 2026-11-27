@@ -1242,8 +1242,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   run natively when `jq` is missing, as the reports already go silent without it. No install step brings jq and the
   window says nothing, so a machine without jq sees no card for an agent's own subagent; `lich doctor` warns and
   names the command that installs it.
-- **oh-my-pi's chat loads the plugin's extension only from `$PI_CODING_AGENT_DIR/extensions/`**: its ACP server
-  takes no flags, so without the extension there a chat's subagent runs natively.
+- **oh-my-pi's chat takes the plugin's extension only on its root, before `acp`**: `acp` takes no flags of its own,
+  and the root's (`-e`, `--config`, a lean card's `--no-extensions`, `--no-skills`, `--no-rules`) are passed before it
+  (measured on 19.1.1), so without the extension there a chat's subagent runs natively.
 - **A vetoed call is drawn as opened only where the chat's tool item carries the hook's `tool_use_id`**
   (`native/cmd/lich-native/chat_veto.go`): Claude Code's chat does (its item id is the `toolu_` id). Codex's
   app-server chat draws no item at all for a vetoed spawn, so nothing there is drawn as failed, and the redirect's

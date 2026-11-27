@@ -12,6 +12,9 @@ var (
 	SubagentSetCards = define[SubagentSetCardsOptions, None]("subagent.SetCards")
 	// SubagentSetBring turns one item a card of a provider brings on or off.
 	SubagentSetBring = define[SubagentSetBringOptions, None]("subagent.SetBring")
+	// SubagentCardsOn is whether session ID's provider opens its subagents as
+	// cards, for its lich mcp's instructions.
+	SubagentCardsOn = define[SessionIDOptions, SubagentCardsState]("subagent.CardsOn")
 )
 
 // The kinds of item a card can bring, as SubagentCardItem.Kind names them.
@@ -75,6 +78,11 @@ type SubagentSetBringOptions struct {
 	Provider string `json:"provider"`
 	Item     string `json:"item"`
 	On       bool   `json:"on"`
+}
+
+// SubagentCardsState answers SubagentCardsOn.
+type SubagentCardsState struct {
+	Cards bool `json:"cards"`
 }
 
 // SessionBrought is the payload of SessionBroughtEvent: a card and the items

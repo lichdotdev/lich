@@ -20,6 +20,7 @@ type CardStore interface {
 	SetSubagentCards(providerID string, on bool) error
 	SubagentBrings(providerID string) []string
 	SetSubagentBring(providerID, item string, on bool) error
+	SessionKind(sessionID string) string
 }
 
 // CardItems reads the MCP servers and plugins of the user's own setup a
@@ -118,6 +119,15 @@ func (c *Cards) changed() {
 	if c.emit != nil {
 		c.emit()
 	}
+}
+
+// CardsOn answers api.SubagentCardsOn.
+func (c *Cards) CardsOn(_ context.Context, opts api.SessionIDOptions) (api.SubagentCardsState, error) {
+	kind := c.store.SessionKind(opts.ID)
+	if kind == "" {
+		return api.SubagentCardsState{}, fmt.Errorf("lich has no session with id %q", opts.ID)
+	}
+	return api.SubagentCardsState{Cards: c.store.SubagentCards(kind)}, nil
 }
 
 // On reports whether provider's subagents open as cards.

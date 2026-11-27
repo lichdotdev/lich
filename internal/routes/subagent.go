@@ -16,4 +16,5 @@ func SubagentCards(d *rpc.Handler, c *subagent.Cards) {
 	rpc.Handle(d, api.SubagentCards, c.List)
 	rpc.Handle(d, api.SubagentSetCards, c.SetCards)
 	rpc.Handle(d, api.SubagentSetBring, c.SetBring)
+	rpc.Handle(d, api.SubagentCardsOn, c.CardsOn)
 }
