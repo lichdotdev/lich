@@ -10,7 +10,7 @@ require (
 	github.com/go-text/typesetting v0.3.5
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/lichdotdev/gio-driver v0.0.0-20261111143827-fb7064d51698
-	github.com/lichdotdev/godemirror v0.12.0
+	github.com/lichdotdev/godemirror v0.13.0
 	github.com/lichdotdev/lich v0.0.0
 	github.com/lichdotdev/lich/extension v0.4.0
 	github.com/neovim/go-client v1.2.1

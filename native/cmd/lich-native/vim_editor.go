@@ -108,6 +108,10 @@ func (f *fileEditor) vimOn() bool {
 // syncVim lays what Neovim reported into the editor and hands it the keys,
 // or gives the editor its own keys back once Vim is off.
 func (f *fileEditor) syncVim() {
+	if f.ed != nil {
+		// Neovim pairs, indents and takes Tab by the person's own config.
+		f.ed.CloseBrackets, f.ed.IndentWithTab = !f.vimOn(), !f.vimOn()
+	}
 	if !f.vimOn() {
 		f.vimOff()
 		return

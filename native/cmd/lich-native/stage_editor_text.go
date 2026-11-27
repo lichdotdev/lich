@@ -160,3 +160,25 @@ func diskVerdictOf(base, doc, disk string) diskVerdict {
 	}
 	return diskAsk
 }
+
+// fileIndentUnit is the indentation text is written with: a tab when its
+// first indented line starts with one, else its fewest leading spaces, ""
+// (godemirror's default) for a file with none. A line opening on * is a
+// block comment's, whose one space says nothing of the file's.
+func fileIndentUnit(text string) string {
+	fewest := 0
+	for line := range strings.Lines(text) {
+		code := strings.TrimLeft(line, " \t")
+		lead := line[:len(line)-len(code)]
+		if lead == "" || strings.TrimSpace(code) == "" || code[0] == '*' {
+			continue
+		}
+		if lead[0] == '\t' {
+			return "\t"
+		}
+		if n := len(lead) - len(strings.TrimLeft(lead, " ")); n > 1 && (fewest == 0 || n < fewest) {
+			fewest = n
+		}
+	}
+	return strings.Repeat(" ", fewest)
+}

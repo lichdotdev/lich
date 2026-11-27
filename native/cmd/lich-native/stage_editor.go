@@ -244,7 +244,7 @@ func (f *fileEditor) take() error {
 func (f *fileEditor) setText(text string) error {
 	f.sep, f.vim.shown = lineBreak(text), nil
 	err := f.ed.SetState(godemirror.EditorStateConfig{Doc: text, Filename: f.rel, LineSeparator: f.sep,
-		StyleTags: codeview.StyleTags, AllowMultipleSelections: true})
+		StyleTags: codeview.StyleTags, AllowMultipleSelections: true, BracketIndent: true, IndentUnit: fileIndentUnit(text)})
 	f.base = f.ed.State().Doc()
 	f.gen++
 	f.blame.gen++
