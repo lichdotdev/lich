@@ -10,3 +10,10 @@ import (
 func Subagent(d *rpc.Handler, s *subagent.Service) {
 	rpc.Handle(d, api.SubagentVetoed, s.Vetoed)
 }
+
+// SubagentCards exposes Settings › Subagents.
+func SubagentCards(d *rpc.Handler, c *subagent.Cards) {
+	rpc.Handle(d, api.SubagentCards, c.List)
+	rpc.Handle(d, api.SubagentSetCards, c.SetCards)
+	rpc.Handle(d, api.SubagentSetBring, c.SetBring)
+}

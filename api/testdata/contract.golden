@@ -310,6 +310,9 @@ store.SetSessionUnread(SessionUnreadOptions) None
 store.SetSetting(SetSettingOptions) None
 store.UnmarkViewed(UnmarkViewedOptions) None
 store.ViewedFiles(ViewedFilesOptions) []ViewedFile
+subagent.Cards(None) []SubagentCardProvider
+subagent.SetBring(SubagentSetBringOptions) None
+subagent.SetCards(SubagentSetCardsOptions) None
 subagent.Vetoed(None) []SubagentVeto
 system.AttachNative(AttachNativeOptions) None
 system.Diagnostics(None) Diagnostics
@@ -391,6 +394,7 @@ event pull-request-changed PRChanged
 event service-reveal ServiceIDOptions
 event services []Service
 event session-agent SessionAgent
+event session-brought SessionBrought
 event session-closed SessionClosed
 event session-conversation SessionConversation
 event session-cwd SessionCwd
@@ -420,6 +424,7 @@ event session-watch-stopped SessionWatchStopped
 event sessions-colored SessionsColored
 event sessions-filed SessionsFiled
 event show-code ShowCode
+event subagent-cards.changed None
 event subagent-veto SubagentVeto
 event terminal:data:<id> string
 event terminal:exit:<id> SessionExit
@@ -2145,6 +2150,7 @@ Session {
 	unread bool
 	mcpServers []string
 	sandboxSkippedLinks []string
+	brought,omitempty []string
 	view,omitempty string
 }
 
@@ -2207,6 +2213,24 @@ ViewedFile {
 	path string
 	hash string
 	viewedAt int64
+}
+
+SubagentCardProvider {
+	provider string
+	cards bool
+	lean bool
+	items []SubagentCardItem
+}
+
+SubagentSetBringOptions {
+	provider string
+	item string
+	on bool
+}
+
+SubagentSetCardsOptions {
+	provider string
+	on bool
 }
 
 SubagentVeto {
@@ -2551,6 +2575,11 @@ PRChanged {
 SessionAgent {
 	id string
 	agent string
+}
+
+SessionBrought {
+	id string
+	brought []string
 }
 
 SessionClosed {
@@ -3245,6 +3274,14 @@ SessionWatch {
 	runs int
 	pr int
 	seen string
+}
+
+SubagentCardItem {
+	id string
+	kind string
+	name string
+	origin,omitempty string
+	on bool
 }
 
 SubagentOpened {
