@@ -359,8 +359,11 @@ func (s *settingsScreen) subagentTitle(th *ui.Theme, p providerInfo, c api.Subag
 				layout.Rigid(th.Text(settingsTitle, p.name).Weight(font.SemiBold).Leading(32).Layout),
 				layout.Flexed(1, func(gtx C) D { return D{Size: gtx.Constraints.Min} }),
 				layout.Rigid(func(gtx C) D {
-					// the switch says whether cards are on; its name is its tooltip
-					return th.Tooltip(s.root, u.tipOf(p.id), i18n.T("settings.subagentsSettings.cardsSwitch")).Layout(gtx, th.Switch(sw).Layout)
+					// the switch says whether cards are on; its name is its tooltip.
+					// Inset as the rows' are, so it lines up with theirs.
+					return layout.Inset{Right: rowPadX}.Layout(gtx, func(gtx C) D {
+						return th.Tooltip(s.root, u.tipOf(p.id), i18n.T("settings.subagentsSettings.cardsSwitch")).Layout(gtx, th.Switch(sw).Layout)
+					})
 				}),
 			)
 		})
