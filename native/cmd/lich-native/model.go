@@ -140,6 +140,8 @@ type model struct {
 	threadFixes threadFixStore
 	// vetoes is the provider subagent calls lich opened as cards.
 	vetoes vetoStore
+	// subagentCards is Settings › Subagents.
+	subagentCards subagentCardsStore
 	// artifacts is every open session's artifact list.
 	artifacts artifactStore
 	// chat is every chat session's conversation (chat_store.go). toTerminal
@@ -424,8 +426,14 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 				if err := m.library.load(ctx, m.client); err != nil {
 					log.Printf("%s: %v", ev.Name, err)
 				}
-				m.invalidate()
+				m.reloadSubagentCards(ctx, ev.Name)
 			}()
+		case api.SubagentCardsChangedEvent.Name:
+			go m.reloadSubagentCards(ctx, ev.Name)
+		case api.SessionBroughtEvent.Name:
+			if b, err := backend.Decode(ev, api.SessionBroughtEvent); err == nil {
+				m.editSession(b.ID, func(s *backend.Session) { s.Brought = b.Brought })
+			}
 		case api.ServicesEvent.Name:
 			if list, err := backend.Decode(ev, api.ServicesEvent); err == nil {
 				m.services.set(list)

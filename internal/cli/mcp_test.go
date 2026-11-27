@@ -909,12 +909,12 @@ func TestMCPListWorktreesReturnsThemAsJSON(t *testing.T) {
 func TestMCPInstructionsNameTheSessionsArtifactFolder(t *testing.T) {
 	t.Setenv(artifact.EnvVar, "/home/u/.config/lich/artifacts/s1")
 	for _, lang := range prompt.Langs {
-		if got := mcpInstructions(lang); !strings.Contains(got, "/home/u/.config/lich/artifacts/s1") || !strings.Contains(got, "browser_open") {
+		if got := mcpInstructions(lang, prompt.For(lang).MCPSubagentCards); !strings.Contains(got, "/home/u/.config/lich/artifacts/s1") || !strings.Contains(got, "browser_open") {
 			t.Errorf("%s: the instructions do not send pages to the artifact folder:\n%s", lang, got)
 		}
 	}
 	t.Setenv(artifact.EnvVar, "")
-	if got := mcpInstructions(prompt.English); strings.Contains(got, "artifact folder") {
+	if got := mcpInstructions(prompt.English, prompt.For(prompt.English).MCPSubagentCards); strings.Contains(got, "artifact folder") {
 		t.Errorf("outside a lich session the instructions still name an artifact folder:\n%s", got)
 	}
 }

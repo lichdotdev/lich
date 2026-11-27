@@ -371,6 +371,7 @@ func run(w *app.Window, rt backend.Runtime) error {
 	u.settings.notify = u.notifier
 	u.settings.services.store = &u.model.services
 	u.settings.library.store = &u.model.library
+	u.settings.subagents.store = &u.model.subagentCards
 	u.settings.services.home = u.model.homeProject
 	u.settings.extensions.store = &u.model.extensions
 	u.settings.extensions.catalog = u.model.catalog
@@ -537,6 +538,9 @@ func (u *window) connect() error {
 	}
 	if err := u.model.vetoes.load(u.ctx, u.client); err != nil {
 		log.Printf("load subagent vetoes: %v", err)
+	}
+	if err := u.model.subagentCards.load(u.ctx, u.client); err != nil {
+		log.Printf("load subagent cards: %v", err)
 	}
 	if err := u.model.threadFixes.load(u.ctx, u.client); err != nil {
 		return err

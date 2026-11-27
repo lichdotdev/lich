@@ -1163,6 +1163,13 @@ the tool descriptions each only explain their own door. `list_sessions`,
 `list_worktrees`, `list_folders`, `list_services` and `read_service_output` are annotated `readOnlyHint`, so a client
 may auto-allow them.
 
+A subagent card (a session opened with `lich open --subagent`, at any depth) is
+listed every tool but the workspace's administration: the folder tools,
+`close_project`, the service tools and `handoff_session`. `lich mcp` asks the
+backend its session's depth (`relay.Self`) at `tools/list`; a session it cannot
+name, or a backend it cannot reach, gets the whole list. The instructions are the
+same for both, since they name none of those tools.
+
 `file_session`, `rename_folder` and `color_folder` refuse a call that leaves out
 `folder`, `to` or `color`, rather than reading the missing field as empty: an
 empty name takes a session out of its folder, or a folder apart, an empty color

@@ -142,7 +142,8 @@
   "sessionTooltip": {
     "notMounted": "Not mounted (symlinks): {paths}",
     "morePaths": "+{count} more",
-    "modelChanged": "Opened on {requested}, running {running}"
+    "modelChanged": "Opened on {requested}, running {running}",
+    "brought": "Brought: {items}"
   },
   "worktreeDialogView": {
     "title": "New worktree session",

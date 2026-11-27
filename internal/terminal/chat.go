@@ -71,7 +71,7 @@ func chatArgs(a spawnArgs, l ChatLaunch) []string {
 	switch a.kind {
 	case providers.Claude:
 		return slices.Concat(claudeChatArgs, claudeLaunchArgs(l), providerArgs(
-			a.kind, a.name, a.resume, a.model, a.effort, a.lichBin, a.agent, a.plugin, a.lib, false, a.skipPermissions, a.ultracode, a.route, a.lang,
+			a.kind, a.name, a.resume, a.model, a.effort, a.lichBin, a.agent, a.plugin, a.lib, a.card, false, a.skipPermissions, a.ultracode, a.route, a.lang,
 		))
 	case providers.Kiro:
 		model := modelArgs(a.kind, a.model, a.resume)
@@ -95,7 +95,7 @@ func chatArgs(a spawnArgs, l ChatLaunch) []string {
 	// oh-my-pi's root takes -e before the subcommand (measured on 19.1.1).
 	// Cursor's ACP server runs no plugin hooks, so it is handed none.
 	if a.kind == providers.OMP {
-		return slices.Concat(pluginArgs(a.kind, a.plugin), librarySkillArgs(a.kind, a.lib), []string{acpSubcmd})
+		return slices.Concat(pluginArgs(a.kind, a.plugin), librarySkillArgs(a.kind, a.lib), cardArgs(a.kind, a.card), []string{acpSubcmd})
 	}
 	return []string{acpSubcmd}
 }
@@ -262,6 +262,7 @@ func (s *Service) StartChat(_ context.Context, opts api.StartOptions, launch Cha
 	s.reportProfileMove(opts.ID, bornIn)
 	s.reportSandbox(opts.ID, l.confined, l.links)
 	s.reportMCPServers(opts.ID, opts.Kind, opts.Cwd, profileDir)
+	s.reportBrought(opts.ID, l.isCard, l.card)
 	return p, nil
 }
 

@@ -29,7 +29,7 @@ func TestEveryTextRendersInEveryLanguage(t *testing.T) {
 	large := relay.Result{Status: relay.StatusAnswered, Target: "docs", Answer: "fixed", TargetContext: 451_234}
 	for _, lang := range prompt.Langs {
 		texts := map[string]string{
-			"instructions":  mcpInstructions(lang),
+			"instructions":  mcpInstructions(lang, prompt.For(lang).MCPSubagentCards),
 			"opened":        openedText(lang, opened),
 			"opened plain":  openedText(lang, spawn.Session{Label: "docs", Project: "p"}),
 			"removed":       closedText(lang, spawn.Closed{Label: "docs", Worktree: "/w", Removed: true}),
@@ -122,8 +122,8 @@ func TestTheClientReadsThePromptLanguageFromTheEnvironment(t *testing.T) {
 func TestTheHandshakeCarriesTheInstructionsInTheClientsLanguage(t *testing.T) {
 	t.Parallel()
 	for _, lang := range prompt.Langs {
-		got := mcpHandshake(nil, "test", lang)["instructions"]
-		if got != mcpInstructions(lang) {
+		got := mcpHandshake(nil, "test", lang, prompt.For(lang).MCPSubagentCards)["instructions"]
+		if got != mcpInstructions(lang, prompt.For(lang).MCPSubagentCards) {
 			t.Errorf("%s: handshake instructions differ from the catalog's", lang)
 		}
 	}

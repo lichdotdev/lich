@@ -615,7 +615,7 @@ func (s *Service) sessionsOf(projectID string) ([]Session, error) {
 	rows, err := s.db.Query(
 		`SELECT id, label, kind, path, provider_session_id, sandbox, pinned,
 		        folder, color, profile, model, origin_session_id, origin_label, forked, scheduled_at, scheduled_prompt, scheduled_by, unread,
-		        mcp_servers, sandbox_links, watch_on, watch_prompt, watch_by, watch_runs, watch_pr, watch_seen, view
+		        mcp_servers, sandbox_links, watch_on, watch_prompt, watch_by, watch_runs, watch_pr, watch_seen, view, brought
 		   FROM sessions WHERE project_id = ? AND is_open = 1 ORDER BY position, rowid`,
 		projectID,
 	)
@@ -627,18 +627,19 @@ func (s *Service) sessionsOf(projectID string) ([]Session, error) {
 	sessions := []Session{}
 	for rows.Next() {
 		var sess Session
-		var servers, links string
+		var servers, links, brought string
 		if err := rows.Scan(
 			&sess.ID, &sess.Label, &sess.Kind, &sess.Path, &sess.ProviderSessionID,
 			&sess.Sandbox, &sess.Pinned, &sess.Folder, &sess.Color, &sess.Profile, &sess.Model,
 			&sess.OriginSessionID, &sess.OriginLabel, &sess.Forked,
 			&sess.ScheduledAt, &sess.ScheduledPrompt, &sess.ScheduledBy, &sess.Unread, &servers, &links,
-			&sess.Watch.On, &sess.Watch.Prompt, &sess.Watch.By, &sess.Watch.Runs, &sess.Watch.PR, &sess.Watch.Seen, &sess.View,
+			&sess.Watch.On, &sess.Watch.Prompt, &sess.Watch.By, &sess.Watch.Runs, &sess.Watch.PR, &sess.Watch.Seen, &sess.View, &brought,
 		); err != nil {
 			return nil, fmt.Errorf("scan session: %w", err)
 		}
 		sess.MCPServers = decodeStrings(servers)
 		sess.SandboxSkippedLinks = decodeStrings(links)
+		sess.Brought = decodeStrings(brought)
 		sessions = append(sessions, sess)
 	}
 	if err := rows.Err(); err != nil {

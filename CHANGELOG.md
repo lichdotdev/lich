@@ -7,8 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+> [!NOTE]
+> **If your agents open subagent cards, a card now starts without your MCP servers, plugins and memory.** Turn back on what a card needs in Settings › Subagents.
+
 ### Added
 
+- **Choose what a subagent card brings, or keep a provider's subagents inside the session.** Settings › Subagents lists your agents: switch one's cards off, or open it and pick the MCP servers, plugins and memory a card also loads beyond lich and the project's own instructions. Not on Codex, Crush, Cursor CLI, Kiro CLI or Antigravity, whose cards bring everything.
 - **An agent that hands a task to a session with a very large context is told a new session would do it for less.** The task is still delivered; past 200k tokens of context the result your agent reads adds one line saying so. Not on Antigravity, opencode, oh-my-pi, Crush or Cursor CLI.
 - **A call to one of lich's own tools in a chat says what it did, under an icon of its own, and links the session it reached.** "Sent to", "Closed" or "Restarted" leads the row, and a click on the session's pill opens its card. Not on Antigravity, opencode, oh-my-pi, Cursor CLI or Kiro CLI.
 - **Your agent can compact its own conversation, start another session on a new one, or fork itself.** Ask it to: `control_session` takes compact and new, and `open_session` takes fork. Forking needs Claude Code, Codex or opencode.
@@ -86,6 +90,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **A subagent card spends fewer tokens on lich's tools.** Its tool list leaves out folders, projects, services and handoff, about a third of what every request it makes carried; a session you open keeps all of them.
 - **A report from another session shows in the chat as one shut line with its agent's mark, how it ended and its first words.** Click the line to read the whole report, or the arrow beside it to open that session.
 - **A task another session hands an agent shows at the left of its chat, under the sender's mark and name.** The right side is only ever your own messages; the arrow by the name opens the session that asked.
 - **Buttons are one size across lich.** Dialogs, Pulls threads and comments, and every screen's actions now share the same height; only the small buttons inside dense rows stay smaller.

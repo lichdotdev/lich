@@ -12,6 +12,7 @@ import (
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/subagent"
 )
 
 // withClaudePlugin points Claude Code's config at a directory whose plugin
@@ -113,8 +114,8 @@ func TestSubagentRouteWithoutTheCardPlugin(t *testing.T) {
 // own subagent tool; every other spawn keeps the line against it.
 func TestBriefingFollowsSubagentCards(t *testing.T) {
 	t.Parallel()
-	cards := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", "", library.Delivery{}, false, false, false, relay.RouteCards, prompt.English)
-	plain := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", "", library.Delivery{}, false, false, false, relay.RouteSessions, prompt.English)
+	cards := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", "", library.Delivery{}, subagent.Card{}, false, false, false, relay.RouteCards, prompt.English)
+	plain := providerArgs(providers.Claude, "", "", "", "", "/usr/bin/lich", "", "", library.Delivery{}, subagent.Card{}, false, false, false, relay.RouteSessions, prompt.English)
 	briefing := func(args []string) string {
 		at := slices.Index(args, "--append-system-prompt")
 		if at < 0 || at+1 >= len(args) {

@@ -83,7 +83,7 @@ func TestMCPModernToolsListIsCacheable(t *testing.T) {
 	}
 	resultOf(t, replies[0], &result)
 
-	result.check(t, "public")
+	result.check(t, "private")
 	if len(result.Tools) == 0 {
 		t.Error("the modern tools/list lists no tools")
 	}

@@ -9,6 +9,7 @@ import (
 	"gioui.org/layout"
 	"gioui.org/op"
 
+	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/native/backend"
 	"github.com/lichdotdev/lich/native/i18n"
 	"github.com/lichdotdev/lich/native/ui"
@@ -26,9 +27,9 @@ var (
 )
 
 // sessionTooltip is what the card's one line has no room for: the full label,
-// what the turn is doing, the full path, the shield's symlinks left out, the
-// branch and its standing against the base when no checkout row above says
-// them, and last the model the provider says it is running beside how long
+// what the turn is doing, the full path, the shield's symlinks left out, what
+// a subagent card brought, the branch and its standing against the base when
+// no checkout row above says them, and last the model the provider says it is running beside how long
 // the status has lasted.
 func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 	th = th.On(th.Popover)
@@ -44,6 +45,9 @@ func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 	if len(sv.sandbox.SkippedLinks) > 0 {
 		sections = append(sections, sandboxSection(th, sv.sandbox))
 	}
+	if len(sv.Brought) > 0 {
+		sections = append(sections, para(th.Text(ui.TextXS, broughtLine(sv.Brought)).Muted()).Layout)
+	}
 	if sv.git.Branch != "" {
 		sections = append(sections, branchSection(th, sv))
 		if line, ok := prChangesSection(th, sv); ok {
@@ -56,6 +60,24 @@ func sessionTooltip(th *ui.Theme, sv *sessionView) layout.Widget {
 		sections = append(sections, footLine(th, sv))
 	}
 	return func(gtx C) D { return ui.Stack(1.5, sections...)(gtx) }
+}
+
+// broughtLine names what a subagent card brought of the user's setup, by
+// the names Settings › Subagents shows them under.
+func broughtLine(ids []string) string {
+	names := make([]string, len(ids))
+	for i, id := range ids {
+		kind, name, ok := strings.Cut(id, ":")
+		switch {
+		case !ok:
+			names[i] = subagentItemName(api.SubagentCardItem{ID: id, Kind: api.SubagentBringAlso})
+		case kind == api.SubagentBringPlugin:
+			names[i], _, _ = strings.Cut(name, "@")
+		default:
+			names[i] = name
+		}
+	}
+	return i18n.T("sidebar.sessionTooltip.brought", i18n.Args{"items": strings.Join(names, ", ")})
 }
 
 // para lets a label wrap instead of truncating.

@@ -34,7 +34,8 @@
       "chat": "채팅",
       "skills": "스킬",
       "mcp": "MCP 서버",
-      "plugins": "플러그인"
+      "plugins": "플러그인",
+      "subagents": "서브에이전트"
     },
     "notYet": "아직 여기에 없습니다"
   },
@@ -830,5 +831,33 @@
     "pluginLocked": "lich가 여는 모든 세션에서 동작합니다. 끌 수 없습니다.",
     "moveFailed": "{name}을(를) 옮기지 못했습니다: {error}",
     "setFailed": "바꾸지 못했습니다: {error}"
+  },
+  "subagentsSettings": {
+    "cardsSwitch": "서브에이전트를 카드로 열기",
+    "searchWords": "서브에이전트 카드 워커 토큰 mcp 플러그인 메모리 가져가기 subagent card",
+    "subtitle": "에이전트가 서브에이전트를 시작하면 lich가 그것을 지켜보고 넘겨받을 수 있는 카드로 엽니다. 프로바이더의 카드를 끄면 그 서브에이전트는 세션 안에서 실행됩니다.",
+    "detailOff": "꺼짐: 서브에이전트가 세션 안에서 실행됩니다",
+    "detailEverything": "모두 가져갑니다: {provider}는 더 적게 시작할 수 없습니다",
+    "detailNothing": "더 가져가는 것이 없습니다",
+    "detailBrings": "가져가는 것: {items}",
+    "subtitleLean": "카드는 lich와 프로젝트 자체의 지침으로 시작합니다. 함께 가져갈 것을 켜세요.",
+    "subtitleEverything": "카드는 {provider}에 설정한 모든 것을 가져갑니다. 더 적게 세션을 시작할 방법이 없습니다.",
+    "subtitleOff": "서브에이전트는 {provider}가 실행하는 방식대로 세션 안에서 실행됩니다. 카드를 켜면 하나씩 지켜보고 넘겨받을 수 있습니다.",
+    "also": "그 밖에",
+    "onOf": "· {count}개 중 {on}개",
+    "memory": "메모리",
+    "memoryDetail": "Claude Code가 프로젝트를 넘나들며 기억하는 당신에 대한 내용입니다.",
+    "claudeSetup": "Claude Code 설정",
+    "claudeSetupDetail": "~/.claude의 CLAUDE.md와 스킬로, opencode도 읽습니다.",
+    "extensions": "확장",
+    "extensionsDetail": "oh-my-pi가 스스로 찾는 확장입니다. lich의 확장은 항상 불러옵니다.",
+    "skills": "스킬",
+    "skillsDetail": "당신의 스킬로, lich 라이브러리의 스킬도 포함합니다.",
+    "rules": "규칙",
+    "rulesDetail": "oh-my-pi가 스스로 찾는 규칙 파일입니다.",
+    "opencodePlugins": "플러그인은 항상 함께 갑니다. opencode는 플러그인 없이 시작할 수 없습니다.",
+    "originLibrary": "라이브러리",
+    "mcpCost": "카드는 호출할 때마다 이 서버의 도구와 지침을 읽습니다. 카드의 작업에 필요할 때만 켜세요.",
+    "saveFailed": "서브에이전트 설정을 저장할 수 없습니다: {error}"
   }
 }
