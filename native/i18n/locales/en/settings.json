@@ -35,7 +35,8 @@
       "chat": "Chat",
       "skills": "Skills",
       "mcp": "MCP servers",
-      "plugins": "Plugins"
+      "plugins": "Plugins",
+      "subagents": "Subagents"
     },
     "notYet": "Not here yet"
   },
@@ -838,5 +839,33 @@
     "pluginLocked": "Every session lich starts runs it. It cannot be turned off.",
     "moveFailed": "Could not move {name} in: {error}",
     "setFailed": "Could not change it: {error}"
+  },
+  "subagentsSettings": {
+    "cardsSwitch": "Open subagents as cards",
+    "searchWords": "subagent card worker token tokens mcp plugin memory bring lean",
+    "subtitle": "When an agent starts a subagent, lich opens it as a card you can watch and take over. Turn cards off for a provider to keep its subagents inside the session.",
+    "detailOff": "Off: subagents run inside the session",
+    "detailEverything": "Brings everything: {provider} cannot start with less",
+    "detailNothing": "Brings nothing extra",
+    "detailBrings": "Brings {items}",
+    "subtitleLean": "A card starts with lich and the project's own instructions. Turn on what it should also bring.",
+    "subtitleEverything": "A card brings everything you set up for {provider}: it has no way to start a session with less.",
+    "subtitleOff": "Subagents run inside the session, the way {provider} runs them. Turn cards on to watch and take over each one.",
+    "also": "Also",
+    "onOf": "· {on} of {count}",
+    "memory": "Memory",
+    "memoryDetail": "What Claude Code remembers about you across projects.",
+    "claudeSetup": "Claude Code's setup",
+    "claudeSetupDetail": "Your ~/.claude CLAUDE.md and skills, which opencode also reads.",
+    "extensions": "Extensions",
+    "extensionsDetail": "The extensions oh-my-pi finds on its own. lich's own always loads.",
+    "skills": "Skills",
+    "skillsDetail": "Your skills, lich's library included.",
+    "rules": "Rules",
+    "rulesDetail": "The rules files oh-my-pi finds on its own.",
+    "opencodePlugins": "Plugins always come along: opencode cannot start without them.",
+    "originLibrary": "library",
+    "mcpCost": "Every card reads this server's tools and instructions on each call. Turn it on only if a card's task needs it.",
+    "saveFailed": "Could not save the subagent setting: {error}"
   }
 }

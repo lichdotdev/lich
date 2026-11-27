@@ -102,6 +102,7 @@ type settingsScreen struct {
 	sessionView sessionViewSetting
 	services    servicesSettings
 	library     librarySettings
+	subagents   subagentSettings
 	extensions  extensionsSettings
 }
 
@@ -293,6 +294,9 @@ func (s *settingsScreen) paneRows(sec settingsSection, th *ui.Theme, values scop
 	}
 	if sec.id == sectionSkills || sec.id == sectionMCP || sec.id == sectionPlugins {
 		return append(rows, s.libraryPaneRows(th, sec)...)
+	}
+	if sec.id == sectionSubagents {
+		return append(rows, s.subagentsPaneRows(th, sec)...)
 	}
 	if p, ok := s.providerScreen(); ok && sec.id == sectionProviders {
 		rows = append(rows, s.providerHeader(th, p)...)
