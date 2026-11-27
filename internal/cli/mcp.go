@@ -279,7 +279,7 @@ func (c *client) handleMCP(ctx context.Context, request jsonRPC) (jsonRPC, bool)
 	case "server/discover":
 		result = mcpDiscovery(c.lang())
 	case "tools/list":
-		result = map[string]any{"tools": mcpToolList()}
+		result = map[string]any{"tools": mcpToolList(c.offeredTools(ctx))}
 	case "tools/call":
 		result, response.Error = c.callMCPTool(ctx, request.Params)
 	case "ping":
@@ -321,20 +321,16 @@ func mcpDiscovery(lang prompt.Lang) map[string]any {
 	}
 }
 
-// markModern adds what a modern result carries over a legacy one. Discovery is
-// cached privately because its briefing is written in the calling session's
-// language, so one session's copy is not another's; the tool list is the same
-// English for every session.
+// markModern adds what a modern result carries over a legacy one. Both are
+// cached privately, since one session's copy is not another's: discovery's
+// briefing is written in the calling session's language, and a subagent card is
+// listed fewer tools (offeredTools).
 func markModern(method string, result map[string]any, version string) {
 	result["resultType"] = "complete"
 	result["_meta"] = map[string]any{"io.modelcontextprotocol/serverInfo": mcpServerInfo(version)}
-	switch method {
-	case "server/discover":
+	if method == "server/discover" || method == "tools/list" {
 		result["ttlMs"] = mcpCacheTTL.Milliseconds()
 		result["cacheScope"] = "private"
-	case "tools/list":
-		result["ttlMs"] = mcpCacheTTL.Milliseconds()
-		result["cacheScope"] = "public"
 	}
 }
 
@@ -395,9 +391,27 @@ func mcpText(text string, failed bool) map[string]any {
 	return result
 }
 
-func mcpToolList() []map[string]any {
-	list := make([]map[string]any, 0, len(mcpTools))
-	for _, tool := range mcpTools {
+// offeredTools is the tool list this server shows: a subagent card gets
+// cardTools, everything else every tool. A session lich cannot name is offered
+// everything, as before lich knew cards.
+func (c *client) offeredTools(ctx context.Context) []mcpTool {
+	if c.sessionID() == "" {
+		return mcpTools
+	}
+	self, err := callMethod(ctx, c, api.RelaySelf, relay.SelfOptions{From: c.sessionID()}, shortCall)
+	if err != nil {
+		fmt.Fprintf(c.stderr, "lich mcp: offering every tool, since this session's subagent depth could not be read: %v\n", err)
+		return mcpTools
+	}
+	if self.Subagent > 0 {
+		return cardTools
+	}
+	return mcpTools
+}
+
+func mcpToolList(tools []mcpTool) []map[string]any {
+	list := make([]map[string]any, 0, len(tools))
+	for _, tool := range tools {
 		entry := map[string]any{
 			"name":        tool.Name,
 			"description": tool.Description,
@@ -779,6 +793,18 @@ var mcpTools = append([]mcpTool{
 		},
 	},
 }, append(append(append(append(append(append(append(append(append(folderTools, controlTools...), closeProjectTools...), serviceTools...), browserTools...), handoffTools...), scheduleTools...), checkLogTools...), codeTools...), threadTools...)...)
+
+// adminTools look after the workspace: its folders, projects, services and
+// handoffs. A subagent card does the task it was handed and reports back, so
+// its list leaves them out: each tool's description rides every request the
+// card makes. Calling one by name still works (callMCPTool reads mcpTools); the
+// list is about tokens, not permission.
+var adminTools = slices.Concat(folderTools, closeProjectTools, serviceTools, handoffTools)
+
+// cardTools is mcpTools without adminTools, in the same order.
+var cardTools = slices.DeleteFunc(slices.Clone(mcpTools), func(tool mcpTool) bool {
+	return slices.ContainsFunc(adminTools, func(admin mcpTool) bool { return admin.Name == tool.Name })
+})
 
 // handOver gives a just-opened session its first task, wording the outcome the
 // way send_to_session words it — the caller should not have to learn two

@@ -213,6 +213,11 @@ type Peer struct {
 	// active card of the project tab in front. No session has it while no
 	// window is open.
 	Focused bool `json:"focused,omitempty"`
+	// Subagent is how many subagent levels below a session nobody opened as
+	// one this session runs (store.SessionSubagentDepth), 0 for such a
+	// session. lich mcp reads its own to leave a card's tool list without the
+	// workspace administration tools (internal/cli, cardTools).
+	Subagent int `json:"subagent,omitempty"`
 }
 
 // ReplyOptions is one Reply call, an object for the reason SendOptions is one.
