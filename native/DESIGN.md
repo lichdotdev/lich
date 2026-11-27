@@ -1112,9 +1112,11 @@ group heading under it. A section with a structure of its own (Providers, Sandbo
 Control, Hotkeys, Updates, Help) stays one entry. A search result's path names the section and the group.
 
 The pane's content sits in a reading column centred at `settingsColumn` (760px), the title included; the
-extension catalog and the Themes page keep the pane's width, since their grids take columns as the pane grows. A page title has no
-subtitle; the Footer's alone holds its one line of how to use the editor, and Restore default at its right. A
-count beside it, in muted mono, appears only on Notifications (switches on) and Footer (items shown).
+extension catalog and the Themes page keep the pane's width, since their grids take columns as the pane grows. A page title
+may carry a subtitle: one muted `TextXS` line under it saying what the page decides, for a page whose rows
+cannot say it alone, because the idea is new to the reader or the list starts in a state worth naming
+(everything off). It never repeats the title or the rows; a page whose rows read plainly has none. The Footer's line says how to use the editor, with Restore default at its
+right. A count beside the title, in muted mono, appears only on Notifications (switches on) and Footer (items shown).
 
 Every row keeps its control at its right, a segmented control included; what the chosen answer does is a line
 under the description (`settingRow.detail`), never under the control. The control drops under the text only
