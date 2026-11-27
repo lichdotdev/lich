@@ -67,15 +67,16 @@ func hasText(ctx context.Context, eval evalFunc, text string) (bool, error) {
 	return has, eval(ctx, fmt.Sprintf(hasTextScript, literal), &has)
 }
 
-// clearFieldJS empties the focused field. Assigning el.value fires no input
-// event, so a framework that owns the field keeps its old value; a delete
-// through the editing commands does.
+// clearFieldJS empties the focused field, inside a same-origin frame too.
+// Assigning el.value fires no input event, so a framework that owns the field
+// keeps its old value; a delete through the editing commands does.
 const clearFieldJS = `(() => {
-	const el = document.activeElement;
+	` + pagescript.Frames + `
+	const el = focused();
 	if (!el) return;
 	if (typeof el.select === 'function') el.select();
-	else document.execCommand('selectAll');
-	document.execCommand('delete');
+	else el.ownerDocument.execCommand('selectAll');
+	el.ownerDocument.execCommand('delete');
 })()`
 
 // viewMiddleJS is the viewport's middle, where a scroll with no point turns.

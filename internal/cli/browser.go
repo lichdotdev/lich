@@ -293,7 +293,7 @@ type targetFlags struct {
 
 func registerTarget(flags *flag.FlagSet) *targetFlags {
 	t := &targetFlags{}
-	t.selector = flags.String("selector", "", "CSS selector")
+	t.selector = flags.String("selector", "", `CSS selector; " >>> " steps into a same-origin iframe`)
 	flags.Func("index", "element index from browser info", func(s string) error {
 		n, err := strconv.Atoi(s)
 		if err != nil {

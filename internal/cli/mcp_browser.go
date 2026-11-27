@@ -48,7 +48,7 @@ var browserTools = []mcpTool{
 		Schema: schema(map[string]any{
 			"wait_for":  property("string", "Wait until this text is on the page (case-sensitive, the whole page)."),
 			"wait_gone": property("string", "Wait until this text is no longer on the page."),
-			"within":    property("string", "CSS selector: read only the first element it matches, its text and elements."),
+			"within":    property("string", "CSS selector, \" >>> \" stepping into a same-origin iframe: read only the first element it matches, its text and elements."),
 		}),
 		ReadOnly: true,
 		Run:      mcpBrowserInfo,
@@ -62,7 +62,7 @@ var browserTools = []mcpTool{
 			"and dialog open: lines.",
 		Schema: schema(map[string]any{
 			"index":    property("integer", "Index from the last browser_info."),
-			"selector": property("string", "CSS selector."),
+			"selector": property("string", "CSS selector; \" >>> \" steps into a same-origin iframe, as in \"iframe#app >>> button.save\"."),
 			"x":        property("number", "Last screenshot's image X."),
 			"y":        property("number", "Last screenshot's image Y."),
 		}),
@@ -79,7 +79,7 @@ var browserTools = []mcpTool{
 			"text":     property("string", "Keys to send."),
 			"clear":    property("boolean", "Replace the field before typing."),
 			"index":    property("integer", "Index from the last browser_info."),
-			"selector": property("string", "CSS selector."),
+			"selector": property("string", "CSS selector; \" >>> \" steps into a same-origin iframe, as in \"iframe#app >>> button.save\"."),
 			"x":        property("number", "Last screenshot's image X."),
 			"y":        property("number", "Last screenshot's image Y."),
 		}, "text"),
@@ -106,7 +106,7 @@ var browserTools = []mcpTool{
 		Schema: schema(map[string]any{
 			"key":      property("string", "Named key: Enter, Tab, Escape, …"),
 			"index":    property("integer", "Index from the last browser_info."),
-			"selector": property("string", "CSS selector."),
+			"selector": property("string", "CSS selector; \" >>> \" steps into a same-origin iframe, as in \"iframe#app >>> button.save\"."),
 			"x":        property("number", "Last screenshot's image X."),
 			"y":        property("number", "Last screenshot's image Y."),
 		}, "key"),

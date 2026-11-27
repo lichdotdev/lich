@@ -21,6 +21,7 @@ import (
 	"github.com/chromedp/cdproto/storage"
 	"github.com/chromedp/chromedp"
 	"github.com/lichdotdev/lich/internal/chromium"
+	"github.com/lichdotdev/lich/pagescript"
 )
 
 // domSettle is how long a navigation waits for the document to become
@@ -541,29 +542,37 @@ type point struct {
 // so is one read off a screenshot of another viewport size: the person resized
 // the pane, moved the window to another monitor or zoomed the page since, and
 // the page laid out again under it. x and y are the image's pixels, scale
-// per CSS pixel, and an outside point is reported in them.
+// per CSS pixel, and an outside point is reported in them. A selector or an
+// index reaches into same-origin frames, as pagescript.Frames does.
 const resolveJS = `(function(index, selector, x, y, shotW, shotH, scale) {
+  ` + pagescript.Frames + `
   var inView = function(px, py) { return px >= 0 && py >= 0 && px < innerWidth && py < innerHeight; };
   if (typeof x === 'number' && typeof y === 'number') {
     if (shotW > 0 && (shotW !== innerWidth || shotH !== innerHeight)) return {x: x, y: y, resized: true, w: innerWidth, h: innerHeight};
     if (!inView(x / scale, y / scale)) return {x: x, y: y, outside: true, w: Math.round(innerWidth * scale), h: Math.round(innerHeight * scale)};
     return {x: x / scale, y: y / scale};
   }
-  var el = null;
-  if (selector) el = document.querySelector(selector);
+  var found = null;
+  if (selector) found = find(selector);
   else if (typeof index === 'number') {
     var reg = window.__lichIdx;
-    el = Array.from(document.querySelectorAll('[data-lich-idx="' + index + '"]')).find(function(e) {
-      return reg && reg.of.get(e) === index && e.getClientRects().length > 0;
-    }) || null;
+    found = documents().map(function(d) {
+      var e = Array.from(d.doc.querySelectorAll('[data-lich-idx="' + index + '"]')).find(function(e) {
+        return reg && reg.of.get(e) === index && e.getClientRects().length > 0;
+      });
+      return e ? {e: e, frames: d.frames} : null;
+    }).find(Boolean) || null;
   }
-  if (!el) return null;
+  if (!found) return null;
+  var el = found.e;
   if (el.matches(':disabled') || el.getAttribute('aria-disabled') === 'true') return {disabled: true};
   // An inline element wrapped over lines has a bounding box whose center can be
   // on neither line, so it is clicked on its first non-empty line box instead.
   var box = function() {
     var rs = Array.from(el.getClientRects());
-    return rs.length > 1 && rs.find(function(b) { return b.width > 0 && b.height > 0; }) || el.getBoundingClientRect();
+    var b = rs.length > 1 && rs.find(function(b) { return b.width > 0 && b.height > 0; }) || el.getBoundingClientRect();
+    var o = offset(found.frames);
+    return {left: b.left + o.x, top: b.top + o.y, width: b.width, height: b.height};
   };
   var r = box();
   if (!inView(r.left + r.width / 2, r.top + r.height / 2)) {
@@ -571,7 +580,12 @@ const resolveJS = `(function(index, selector, x, y, shotW, shotH, scale) {
     r = box();
   }
   var cx = r.left + r.width / 2, cy = r.top + r.height / 2;
-  var hit = document.elementFromPoint(cx, cy);
+  var hit = document.elementFromPoint(cx, cy), hx = cx, hy = cy;
+  while (hit && hit !== el && inside(hit)) {
+    var c = content(hit);
+    hx -= c.x; hy -= c.y;
+    hit = inside(hit).elementFromPoint(hx, hy);
+  }
   // A label's click reaches its control, which is how a custom checkbox hides
   // the real input under a styled sibling.
   var lbl = hit && hit.closest('label');

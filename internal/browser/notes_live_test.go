@@ -7,6 +7,7 @@ import (
 	"net/http/httptest"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/lichdotdev/lich/api"
 )
@@ -236,5 +237,37 @@ func TestChromeElementAtNamesTheReactComponentButNotAMinifiedOne(t *testing.T) {
 	}
 	if prod.Component != "" {
 		t.Errorf("production build names component %q, a minifier's name", prod.Component)
+	}
+}
+
+// frameProbe draws a page inside a same-origin iframe, as a system that
+// renders everything in one does: the button stands at 45,105 of the
+// viewport, past the frame's 40,100 and its 5px border.
+const frameProbe = `<body style="margin:0">
+<iframe id="app" style="position:absolute;left:40px;top:100px;width:400px;height:300px;border:5px solid"
+ srcdoc="<body style='margin:0'><div class='toolbar'><button class='save' style='display:block;width:150px;height:40px'>Save</button></div></body>"></iframe>
+</body>`
+
+func TestChromeElementAtReachesAnElementInsideASameOriginFrame(t *testing.T) {
+	t.Parallel()
+	p, ctx := notesPageOf(t, frameProbe)
+	for loaded := false; !loaded; time.Sleep(20 * time.Millisecond) {
+		if err := p.evaluate(ctx, `!!document.getElementById('app').contentDocument.querySelector('.save')`, &loaded); err != nil {
+			t.Fatal(err)
+		}
+	}
+	want := api.BrowserRect{X: 45, Y: 105, W: 150, H: 40}
+	el, err := p.ElementAt(ctx, 60, 120)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if el.Label != `button.save "Save"` {
+		t.Fatalf("picked %q, want the button inside the frame", el.Label)
+	}
+	if el.Box != want {
+		t.Errorf("box %+v, want %+v", el.Box, want)
+	}
+	if got := boxOf(t, p, ctx, el.Selector); got != want {
+		t.Errorf("selector %q finds %+v, want the button at %+v", el.Selector, got, want)
 	}
 }
