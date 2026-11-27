@@ -266,6 +266,46 @@ exporting `LICH_SUBAGENT_CARDS` to such a plugin until its floor moves to
   and exports the variable only to a plugin older than the hook.
 
 
+## What a card brings
+
+Settings › Subagents (`internal/subagent/cards.go`, `internal/terminal/cards.go`)
+holds two global settings per provider:
+
+- **Open subagents as cards**, on by default. Off, `/subagent` answers
+  `allow` for that provider, its spawn briefing loses the card text (the
+  sessions route at depth 0, the native one in a card), and a mod older than
+  this hook is told `LICH_SUBAGENT_CARDS=off`. Relay, MCP, the browser and
+  `open_session` stay.
+- **What a card also brings**, nothing by default. A card is a spawn at
+  depth 1 or more; a session the user opens is never touched. The list is
+  what `library.CardItems` reads (the provider's own MCP documents, the
+  library's servers switched on for it, its plugins switched on), and lich's
+  own server and plugin are never in it: a card always carries them, and the
+  project's own instructions. Picks apply to the next card spawned, a card
+  restarted included.
+
+How each provider leaves the rest out, measured with lich's plugin and MCP
+server still loaded (Claude Code 2.1.332 by the `system/init` event of
+`-p --output-format stream-json`, opencode 1.19.4 and oh-my-pi 19.1.1 by the
+first call's context):
+
+| Provider | Item by item | All or nothing | Always comes |
+| --- | --- | --- | --- |
+| Claude Code | MCP servers: `deniedMcpServers` in `--settings` (blocks a server by name in every scope, `--mcp-config` included). Plugins: `enabledPlugins` `false` in the same document (drops the plugin's hooks, skills and MCP servers; lich's `--plugin-dir` stays) | Memory: `CLAUDE_CODE_DISABLE_AUTO_MEMORY=1` | the hooks in the user's `settings.json` (an empty `hooks` key is merged, `disableAllHooks` takes lich's too); claude.ai connectors, a project's `.mcp.json` and local-scope servers, which `library.CardItems` does not read; the user's skills (see below) |
+| opencode | MCP servers of its own config: `mcp.<name>.enabled=false` in `OPENCODE_CONFIG_CONTENT`; a library server is not handed over | Claude Code's setup: `OPENCODE_DISABLE_CLAUDE_CODE=1` (~/.claude's CLAUDE.md and skills) | plugins: its `plugin` array only adds, and `--pure` drops lich's plugin too |
+| oh-my-pi | none | `--no-extensions` (an explicit `-e`, lich's, still loads), `--no-skills`, `--no-rules`, on its root before `acp` in a chat too | MCP servers: no per-server flag |
+| Codex, Crush, Cursor CLI, Kiro CLI, Antigravity | none | none | everything (docs/ceilings.md) |
+
+Not offered, because it saves nothing: Claude Code's skills. With
+`--disable-slash-commands` the first call read 2.7k tokens more, and with
+`disableBundledSkills` 3.7k more (2.1.332, against 21.3k with only project
+settings), and the flag also turns off slash commands and lich's own skills.
+`--strict-mcp-config` is not used either: it would need every picked server
+re-emitted on argv, environment and secrets included.
+
+A card's spawn reports what it brought (`session-brought`, kept on the row) for
+its tooltip.
+
 ## Known ceilings
 
 - **Cursor CLI's chat runs no hooks** (`cursor-agent acp`, measured with the
