@@ -26,6 +26,7 @@ func TestEveryTextRendersInEveryLanguage(t *testing.T) {
 		},
 		Open: []string{"g"},
 	}
+	large := relay.Result{Status: relay.StatusAnswered, Target: "docs", Answer: "fixed", TargetContext: 451_234}
 	for _, lang := range prompt.Langs {
 		texts := map[string]string{
 			"instructions":  mcpInstructions(lang),
@@ -46,11 +47,21 @@ func TestEveryTextRendersInEveryLanguage(t *testing.T) {
 			"expired":       expiredText(lang, "docs"),
 			"handover":      handOverFailure(lang, errors.New("boom"), relaySendPrivate),
 			"handover open": handOverFailure(lang, errors.New("boom"), relaySend),
+			"large target":  sendOutcome(lang, large),
+			"large cli":     largeTargetText(prompt.For(lang).LargeTargetCLI, large),
 		}
 		for name, text := range texts {
 			if strings.Contains(text, "%!") {
 				t.Errorf("%s %s: a format argument is off:\n%s", lang, name, text)
 			}
+		}
+		for name, literal := range map[string]string{"large target": "open_session", "large cli": "`lich open`"} {
+			if text := texts[name]; !strings.Contains(text, literal) || !strings.Contains(text, "451k") {
+				t.Errorf("%s %s: want %q and the size in thousands:\n%s", lang, name, literal, text)
+			}
+		}
+		if !strings.HasPrefix(texts["large target"], "fixed\n\n") {
+			t.Errorf("%s: the answer does not lead the large-target result:\n%s", lang, texts["large target"])
 		}
 		for _, literal := range []string{
 			"open_session", "send_to_session", "wait_for_answer", "close_session",

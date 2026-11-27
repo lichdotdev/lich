@@ -169,6 +169,11 @@ type Catalog struct {
 	CollectedNothing       string
 	CollectedAnswer        string
 	CollectedStillWorking  string
+	// LargeTarget follows a send_to_session result whose target's context is
+	// past relay.largeContextTokens: %[1]q is the target, %[2]d its context in
+	// thousands of tokens.
+	LargeTarget            string
+	LargeTargetCLI         string
 	OpenedProject          string
 	OpenedWorktree         string
 	OpenedConfined         string

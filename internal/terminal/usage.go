@@ -57,6 +57,19 @@ func (s *Service) sessionUsage(id string) (usageEvent, bool) {
 	return s.usageFrom(id, src)
 }
 
+// ContextTokens is how many tokens the conversation running in session id
+// holds in its context, read the way the footer's context readout is. ok is
+// false for every miss sessionUsage has and for a provider that records no
+// window (contextUsageFor).
+func (s *Service) ContextTokens(id string) (int, bool) {
+	src, ok := s.transcriptSource(id)
+	if !ok {
+		return 0, false
+	}
+	u, ok, _ := contextUsageFor(src)
+	return u.tokens, ok
+}
+
 // transcriptSource resolves the conversation a session is running: its recorded
 // provider session, then the file that provider files it in. false for a
 // session with no provider id yet and for a provider lich cannot read.

@@ -181,6 +181,8 @@ Esta sessão tem um navegador próprio (ferramentas browser_*). Ele roda sem jan
 	CollectedNothing:      "Nada para coletar: nenhum resultado está esperando e nenhum pedido seu está aberto.",
 	CollectedAnswer:       "Resposta de %[1]q (ticket %[2]s):\n%[3]s",
 	CollectedStillWorking: "Ainda trabalhando: %s. Os resultados deles vão se anunciar no seu prompt.",
+	LargeTarget:           "O contexto da sessão %[1]q tem cerca de %[2]dk tokens, e cada chamada que ela faz ao modelo lê tudo de novo. Uma tarefa que não precisa do que essa sessão já sabe sai mais barata numa sessão nova (open_session).",
+	LargeTargetCLI:        "O contexto da sessão %[1]q tem cerca de %[2]dk tokens, e cada chamada que ela faz ao modelo lê tudo de novo. Uma tarefa que não precisa do que essa sessão já sabe sai mais barata numa sessão nova (`lich open`).\n",
 	OpenedProject:         "projeto %q",
 	OpenedWorktree:        "%[1]s, na worktree %[2]s",
 	OpenedConfined: " Ela roda confinada: um home vazio com só o estado do próprio agente, a " +

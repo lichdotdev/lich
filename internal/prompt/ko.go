@@ -173,6 +173,8 @@ task 블록이 당신의 프롬프트에 도착하면, 당신이 워커입니다
 	CollectedNothing:      "받을 것이 없습니다. 기다리는 결과도, 열려 있는 요청도 없습니다.",
 	CollectedAnswer:       "%[1]q의 답(티켓 %[2]s):\n%[3]s",
 	CollectedStillWorking: "아직 작업 중: %s. 결과는 준비되면 프롬프트에 알아서 알려 옵니다.",
+	LargeTarget:           "%[1]q 세션의 컨텍스트는 약 %[2]dk 토큰이고, 모델을 호출할 때마다 이를 전부 다시 읽습니다. 그 세션이 이미 아는 내용이 필요 없는 작업이라면 새 세션(open_session)에서 하는 편이 더 저렴합니다.",
+	LargeTargetCLI:        "%[1]q 세션의 컨텍스트는 약 %[2]dk 토큰이고, 모델을 호출할 때마다 이를 전부 다시 읽습니다. 그 세션이 이미 아는 내용이 필요 없는 작업이라면 새 세션(`lich open`)에서 하는 편이 더 저렴합니다.\n",
 	OpenedProject:         "프로젝트 %q",
 	OpenedWorktree:        "%[1]s, worktree %[2]s",
 	OpenedConfined: " 격리된 상태로 실행됩니다. 에이전트 자신의 상태만 담긴 빈 홈, 읽기 전용 머신, " +

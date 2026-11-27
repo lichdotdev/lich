@@ -546,7 +546,7 @@ var mcpTools = append([]mcpTool{
 			if err != nil {
 				return "", err
 			}
-			return mcpOutcome(c.lang(), result), nil
+			return sendOutcome(c.lang(), result), nil
 		},
 	},
 	{
@@ -830,6 +830,22 @@ func mcpOutcome(lang prompt.Lang, result relay.Result) string {
 		return fmt.Sprintf(text.StillWorkingPrivate, result.Target, result.Ticket)
 	}
 	return fmt.Sprintf(text.StillWorkingOpen, result.Target, result.Ticket)
+}
+
+// sendOutcome is mcpOutcome for a send, which also says when the target's
+// context is large enough that a new session would cost less.
+func sendOutcome(lang prompt.Lang, result relay.Result) string {
+	out := mcpOutcome(lang, result)
+	if result.TargetContext > 0 {
+		out += "\n\n" + largeTargetText(prompt.For(lang).LargeTarget, result)
+	}
+	return out
+}
+
+// largeTargetText words a result's TargetContext with format, LargeTarget or
+// LargeTargetCLI.
+func largeTargetText(format string, result relay.Result) string {
+	return fmt.Sprintf(format, result.Target, result.TargetContext/1000)
 }
 
 // collectedText words a drain: each result in the order it arrived, then who

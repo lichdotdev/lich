@@ -92,6 +92,9 @@ type fakeTerminal struct {
 	// background is whether each session's agent has work running in the
 	// background, standing in for its chat or its turn-end hook.
 	background map[string]bool
+	// contexts is each session's context in tokens, standing in for the
+	// footer's context readout (see largecontext_test.go).
+	contexts map[string]int
 }
 
 func newFakeTerminal(live ...string) *fakeTerminal {

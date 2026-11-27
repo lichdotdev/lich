@@ -140,6 +140,7 @@ distinto.
 | Instalarlo desde la bienvenida | sí | sí | sí | sí; no en Windows | sí | con npm, o Homebrew en macOS | sí | Linux y macOS |
 | Iniciar sesión desde la bienvenida | sí | sí | no, en su primera ejecución | en una terminal, con un proyecto abierto | en una terminal, con un proyecto abierto | no, en su primera ejecución | en una terminal, con un proyecto abierto; no en macOS | en una terminal, con un proyecto abierto; solo Linux |
 | Ventana de contexto en el pie de ventana | sí | sí | no | no | no | no | no | sí |
+| Un agente que pasa una tarea a una sesión con más de 200k tokens de contexto se entera de que una sesión nueva costaría menos | sí | sí | no | no | no | no | no | sí |
 | Cuánto del último turno salió de la caché de prompts, en el pie de ventana | sí | sí | no | en el tooltip del costo | en el tooltip del costo | no | no | no |
 | Cuántos tokens ha releído la sesión de la caché de prompts en todas sus llamadas, en el tooltip de contexto | sí | no | no | no | no | no | no | no |
 | El tooltip de la tarjeta nombra el modelo en uso, y con cuál se abrió si cambió | sí | sí | no | no | no | no | no | sí |

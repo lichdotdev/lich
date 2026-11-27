@@ -139,6 +139,7 @@ o lich consegue ler de volta, porque cada CLI registra coisas diferentes.
 | Instalar pela tela de boas-vindas | sim | sim | sim | sim; não no Windows | sim | com npm, ou Homebrew no macOS | sim | Linux e macOS |
 | Entrar pela tela de boas-vindas | sim | sim | não, na primeira execução | num terminal, com um projeto aberto | num terminal, com um projeto aberto | não, na primeira execução | num terminal, com um projeto aberto; não no macOS | num terminal, com um projeto aberto; só Linux |
 | Janela de contexto no rodapé | sim | sim | não | não | não | não | não | sim |
+| Um agente que passa uma tarefa a uma sessão com mais de 200k tokens de contexto fica sabendo que uma sessão nova sairia mais barata | sim | sim | não | não | não | não | não | sim |
 | Quanto do último turno veio do cache de prompt, no rodapé | sim | sim | não | no tooltip de custo | no tooltip de custo | não | não | não |
 | Quantos tokens a sessão leu de volta do cache de prompt em todas as chamadas, no tooltip de contexto | sim | não | não | não | não | não | não | não |
 | O tooltip do card mostra o modelo em uso, e com qual abriu se ele mudou | sim | sim | não | não | não | não | não | sim |

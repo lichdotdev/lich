@@ -186,6 +186,8 @@ This session has a browser of its own (browser_* tools). It runs headless inside
 	CollectedNothing:      "Nothing to collect: no results are waiting and no errand of yours is open.",
 	CollectedAnswer:       "Answer from %[1]q (ticket %[2]s):\n%[3]s",
 	CollectedStillWorking: "Still working: %s. Their results will announce themselves at your prompt.",
+	LargeTarget:           "The %[1]q session's context holds about %[2]dk tokens, and every model call it makes reads all of them again. A task that does not need what that session already knows costs less in a new session (open_session).",
+	LargeTargetCLI:        "The %[1]q session's context holds about %[2]dk tokens, and every model call it makes reads all of them again. A task that does not need what that session already knows costs less in a new session (`lich open`).\n",
 	OpenedProject:         "project %q",
 	OpenedWorktree:        "%[1]s, in worktree %[2]s",
 	OpenedConfined: " It runs confined: an empty home holding only its agent's own state, the " +

@@ -171,6 +171,8 @@ lich 交给本会话的一切都以 lich-notification 块的形式到达，其 k
 	CollectedNothing:      "没有可取回的内容：没有等待中的结果，你也没有打开的任务。",
 	CollectedAnswer:       "来自 %[1]q 的答案（工单 %[2]s）：\n%[3]s",
 	CollectedStillWorking: "仍在工作：%s。它们的结果会自行出现在你的提示处。",
+	LargeTarget:           "%[1]q 会话的上下文约有 %[2]dk 个 token，它每次调用模型都会把这些全部重读一遍。如果任务用不到该会话已掌握的内容，放到新会话（open_session）里做会更省。",
+	LargeTargetCLI:        "%[1]q 会话的上下文约有 %[2]dk 个 token，它每次调用模型都会把这些全部重读一遍。如果任务用不到该会话已掌握的内容，放到新会话（`lich open`）里做会更省。\n",
 	OpenedProject:         "项目 %q",
 	OpenedWorktree:        "%[1]s，位于 worktree %[2]s",
 	OpenedConfined: " 它在受限环境中运行：一个空的主目录，只包含它的智能体自己的状态，" +
