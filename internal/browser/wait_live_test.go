@@ -20,7 +20,6 @@ const lateTextPage = `<title>Late</title><div style="height:3000px"></div>
 <script>setTimeout(() => { document.getElementById('status').textContent = 'Saved' }, 300)</script>`
 
 func TestChromeReadWaitsForTextThePageWritesLater(t *testing.T) {
-	t.Parallel()
 	if _, err := chromium.FindBrowser(exec.LookPath); err != nil {
 		t.Skip("no Chromium-family browser on this machine")
 	}

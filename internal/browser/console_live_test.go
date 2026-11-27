@@ -21,7 +21,6 @@ const consolePage = `<title>Console</title>
 <script>console.error("load failed:", 42); console.warn("only a warning")</script>`
 
 func TestChromeNamesTheConsoleErrorsOnceInTheNextPageAnswer(t *testing.T) {
-	t.Parallel()
 	if _, err := chromium.FindBrowser(exec.LookPath); err != nil {
 		t.Skip("no Chromium-family browser on this machine")
 	}

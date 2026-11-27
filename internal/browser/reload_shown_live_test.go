@@ -10,8 +10,6 @@ import (
 
 // The window's own page follows only a URL that changed, so every load of the
 // URL the page is at has to reach it as a reload, whoever asked for it.
-// Serial: Chrome's own reload in its first seconds (startupGrace) comes late
-// on a machine busy with the parallel tests and counts as one more.
 func TestEveryLoadAtTheSameURLReachesTheWindow(t *testing.T) {
 	s := settleService(t, `<title>page</title>`, http.NotFound)
 	url := s.Running()[0].URL
