@@ -175,7 +175,10 @@ their text with the tone itself.
 ### Icons
 
 Lucide through `icons.Lucide`, at `Space(3.5)` or `Space(4)`; `Space(3)` (12) inside dense meta and rows.
-Provider marks and file-type logos have their own sets in `ui/icons`. An icon centered in a box of odd
+Provider marks and file-type logos have their own sets in `ui/icons`. lich's own marks are pixel art
+(`icons.Lich`, `ui/icons/lich/`): 14×14 PNGs, black on clear with 1px strokes, tinted like a Lucide glyph and
+scaled by whole blocks only, so a fractional screen scale draws them a step smaller, centered, never smeared.
+A new one is drawn on the same grid and stroke. An icon centered in a box of odd
 leftover goes through `ui.CenteredIcon`, at a fractional offset, or it lands half a pixel off.
 
 ### Elevation
@@ -517,7 +520,7 @@ never makes the Latest pill show.
   Codex and Claude Code desktop) leaves the agent's mark off its calls. A run of one call is no fold: it is that
   call's row, its target in view, the complaint most heard of the apps that fold it. Several read as what they
   did, a clause per kind in one sentence ("Ran 4 commands, read 2 files", `chat_calls.go`: edited, ran, read,
-  searched, fetched, then "used N other tools"), then, muted, how long the run took, from its first call to its
+  searched, fetched, "made N lich calls", then "used N other tools"), then, muted, how long the run took, from its first call to its
   last call's end, and "· 1 failed" in `Destructive` when one did (a call lich opened as a card is not a
   failure); the turn's total is on its closing line. While a call runs the line is that call instead, its
   running verb and target shimmering ("Running go test ./…", cut at 60 characters), the run's time counting,
@@ -527,7 +530,8 @@ never makes the Latest pill show.
   which would push the view past its height. The rest wait behind a first row, muted `TextXS`
   "Show 12 earlier calls", lit on hover, whose click shows them all and turns it into "Show less". A row is its
   tool's glyph muted (a Lucide mark by tool name, Claude Code's, Codex's, ACP's kinds and the names Antigravity
-  and Kiro CLI put in their place, one generic wrench for the rest), its verb muted (the tool's own name, an MCP
+  and Kiro CLI put in their place, one generic wrench for the rest; a lich tool its family's pixel mark), its
+  verb muted (a lich tool's own, "Sent to", "Restarted", where it has one; else the tool's own name, an MCP
   tool's without its server, when it has no kind) in a column as wide as the run's widest verb, up to
   `Space(24)`, so the targets line up, what it acted on in mono, then at the right the time it ran in muted mono.
   A call that went well says nothing more; a failed one turns its glyph and verb `Destructive` and shows the
@@ -535,7 +539,11 @@ never makes the Latest pill show.
   tone the provider's veto has always worn, but trades the glyph for the card's provider mark and the time and
   output for a badge per card at the right: the card's state dot, its name and `arrow-up-right` in
   `Destructive`, with no fill or edge at rest and an `Accent` fill under the pointer, and a click opens the
-  card. The veto's own milliseconds are the hook answering, not work, so they are not shown. A time that stands still reads in milliseconds under a second ("476ms"), the line's
+  card. The veto's own milliseconds are the hook answering, not work, so they are not shown. A lich call whose
+  target is an open session (`chat_lich.go`: send, close, rename, control, file) draws the same badge in place
+  of its target, its name in mono `Foreground` as the other targets read and its dot and arrow muted, pulled
+  left by its own inset so the name starts on the targets' column; the time stays. A failed one keeps its plain
+  row, which says why. A time that stands still reads in milliseconds under a second ("476ms"), the line's
   own time too; a call whose end nobody reported (most histories) shows no time. A call that changed a file is
   not in the fold: it is an edit, a line of its own (see An edit). The group never opens on its own. Only
   the turn in flight is alive: a call an ended turn left running (interrupted) stops with it, its time up to the
