@@ -248,6 +248,10 @@ func (c *markdownCell) relate(p f32.Point) where {
 		return before
 	case int(p.Y) >= b.Max.Y:
 		return after
+	case c.inRow && int(p.X) < b.Min.X:
+		return before
+	case c.inRow && int(p.X) >= b.Max.X:
+		return after
 	}
 	return inside
 }

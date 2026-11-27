@@ -47,6 +47,7 @@ func renderTable(th *ui.Theme, source []byte, table *extast.Table) *markdownTabl
 		cells := make([]*markdownCell, 0, len(table.Alignments))
 		for cell := row.FirstChild(); cell != nil; cell = cell.NextSibling() {
 			content := renderNode(th, source, cell, fg)
+			content.inRow = true
 			if header {
 				for i := range content.spans {
 					content.spans[i].Font.Weight = font.Medium
