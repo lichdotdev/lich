@@ -506,3 +506,37 @@ func TestBodyLinesStandALineHeightApart(t *testing.T) {
 		}
 	}
 }
+
+const acrossTable = "| Name | What it does here |\n|---|---|\n| alpha beta | one two three four five six seven eight nine ten eleven |\n| gamma | short |"
+
+// cellOrigin is where cell n stands in the body: a press anywhere is heard by
+// every cell, in its own pixels.
+func (r *selectRig) cellOrigin(n int) f32.Point {
+	r.click(f32.Pt(0, 0), 0)
+	return f32.Pt(0, 0).Sub(r.cell(n).sel.press)
+}
+
+// A table is read row by row, left to right: a cell beside the pointer is
+// before or after it, never cut at the pointer's height.
+func TestADragAcrossATableSelectsItsCellsInReadingOrder(t *testing.T) {
+	r := newSelectRig(t, acrossTable)
+	alpha, one, gamma := r.cellOrigin(2), r.cellOrigin(3), r.cellOrigin(4)
+	if alpha.Y != one.Y || r.cell(2).sel.bounds.Max.Y <= 30 {
+		t.Fatal("alpha beta does not wrap beside the long cell")
+	}
+	r.drag(alpha.Add(f32.Pt(1, 5)), one.Add(f32.Pt(20, 5)))
+	if got := r.selected(2); got != "alpha beta" {
+		t.Errorf("dragged right into the next cell, the first one selected %q, want all of it", got)
+	}
+	r.drag(r.cellOrigin(1).Add(f32.Pt(1, 5)), alpha.Add(f32.Pt(1, float32(r.cell(2).sel.bounds.Max.Y-6))))
+	if got := r.selected(3); got != "" {
+		t.Errorf("dragged down into the first column, the cell after the pointer selected %q", got)
+	}
+	r.drag(gamma.Add(f32.Pt(10, 5)), one.Add(f32.Pt(20, 5)))
+	if got := r.selected(2); got != "" {
+		t.Errorf("dragged up into the second column, the cell before the pointer selected %q", got)
+	}
+	if got := r.selected(3); got == "" {
+		t.Error("dragged up into the second column, the cell under the pointer selected nothing")
+	}
+}

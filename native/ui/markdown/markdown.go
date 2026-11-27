@@ -106,6 +106,9 @@ type markdownCell struct {
 	// sel is the cell's selection, nil for text no selection is made in.
 	sel *textSelection
 	geo *cellGeometry
+	// inRow is a table cell, read after the cell on its left: a pointer
+	// beside it is before or after it, not on one of its lines.
+	inRow bool
 }
 
 // Cache keeps each body's markdownText by a key of the caller's, so
