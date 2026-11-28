@@ -78,6 +78,16 @@ type vimEvent struct {
 	quit, discard bool
 	// yank is the yanked text's region, as a visual one is spelled.
 	yank *vimState
+	// diags is all of the buffer's diagnostics, each time they change.
+	diags *[]vimDiag
+}
+
+// vimDiag is a diagnostic as vim.diagnostic keeps it: 0-based rows and byte
+// columns, its severity numbered as godemirror's.
+type vimDiag struct {
+	row, col, endRow, endCol int
+	severity                 int
+	message, source, code    string
 }
 
 type vimLines struct {
@@ -256,6 +266,7 @@ func (h *vimHost) start() (*nvim.Nvim, error) {
 		"lich_write": func(buf int) { h.push(buf, vimEvent{write: true}) },
 		"lich_quit":  func(buf int, discard bool) { h.push(buf, vimEvent{quit: true, discard: discard}) },
 		"lich_yank":  h.onYank,
+		"lich_diags": h.onDiags,
 	}
 	for name, fn := range handlers {
 		if err := v.RegisterHandler(name, fn); err != nil {
@@ -429,6 +440,34 @@ func (h *vimHost) onYank(buf int, kind string, regions [][]int) {
 		st.row, st.col = st.regions[0][0], st.regions[0][1]-1
 		h.push(buf, vimEvent{yank: st})
 	}
+}
+
+func (h *vimHost) onDiags(buf int, raw [][]any) {
+	diags := make([]vimDiag, 0, len(raw))
+	for _, r := range raw {
+		if len(r) != 8 {
+			continue
+		}
+		d := vimDiag{row: vimInt(r[0]), col: vimInt(r[1]), endRow: vimInt(r[2]), endCol: vimInt(r[3]), severity: vimInt(r[4])}
+		d.message, _ = r[5].(string)
+		d.source, _ = r[6].(string)
+		d.code, _ = r[7].(string)
+		diags = append(diags, d)
+	}
+	h.push(buf, vimEvent{diags: &diags})
+}
+
+// vimInt is a number msgpack decoded into an any.
+func vimInt(v any) int {
+	switch n := v.(type) {
+	case int64:
+		return int(n)
+	case uint64:
+		return int(n)
+	case int:
+		return n
+	}
+	return 0
 }
 
 // vimLspOf reads vim.lua's {names, missing, failed, install, reason}.

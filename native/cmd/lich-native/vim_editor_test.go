@@ -671,3 +671,17 @@ func TestVimClickWhileACommandWaitsForItsRest(t *testing.T) {
 	vimType(f, "j")
 	vimUntil(t, f, "j after the click move one row", func() bool { return f.vim.state.row == 11 })
 }
+
+func TestVimsDiagnosticsShowInTheEditor(t *testing.T) {
+	text := "package main\n\nfunc main() {\n\tx := \n}\n"
+	f, _ := vimEditor(t, text)
+	vimUntil(t, f, "Neovim's buffer", func() bool { buf, _, _ := f.vim.held(); return buf != 0 })
+	f.vimFeed("lich_editor.focus(...)")
+	vimCommand(f, `lua vim.diagnostic.set(vim.api.nvim_create_namespace('t'), 0, {{lnum = 3, col = 1, end_lnum = 3, end_col = 2, severity = vim.diagnostic.severity.ERROR, message = 'expected expression', source = 'gopls'}})`)
+	at := strings.Index(text, "x :=")
+	vimUntil(t, f, "Neovim's diagnostic in the editor", func() bool {
+		d := f.ed.Diagnostics()
+		return len(d) == 1 && d[0].From == at && d[0].To == at+1 && d[0].Severity == godemirror.SeverityError &&
+			d[0].Message == "expected expression" && d[0].Source == "gopls"
+	})
+}

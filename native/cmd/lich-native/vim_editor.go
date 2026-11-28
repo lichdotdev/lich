@@ -151,6 +151,9 @@ func (f *fileEditor) vimOff() {
 	f.vim.buf, f.vim.gen, f.vim.opens = 0, 0, 0
 	f.vim.mu.Unlock()
 	f.vim.opening, f.vim.setting, f.vim.state = false, false, nil
+	if f.ed != nil {
+		f.ed.SetDiagnostics(nil)
+	}
 	if h := f.env.vim; h != nil && buf != 0 {
 		h.do(func(v *nvim.Nvim, _ int) error { return v.ExecLua("lich_editor.close(...)", nil, buf) })
 	}
@@ -231,6 +234,14 @@ func (f *fileEditor) vimApply(ev vimEvent) {
 	case ev.yank != nil:
 		f.vim.yank = vimSelection(f.ed.State(), *ev.yank).Ranges()
 		f.vim.yankUntil = f.now().Add(vimYankFlash)
+	case ev.diags != nil:
+		st := f.ed.State()
+		out := make([]godemirror.Diagnostic, 0, len(*ev.diags))
+		for _, d := range *ev.diags {
+			out = append(out, godemirror.Diagnostic{From: vimPos(st, d.row+1, d.col), To: vimPos(st, d.endRow+1, d.endCol),
+				Severity: godemirror.Severity(d.severity), Message: d.message, Source: d.source, Code: d.code})
+		}
+		f.ed.SetDiagnostics(out)
 	case ev.quit:
 		f.onQuit(ev.discard)
 	case ev.write:

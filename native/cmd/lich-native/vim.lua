@@ -381,6 +381,22 @@ api.nvim_create_autocmd('LspAttach', {
     vim.schedule(state)
   end,
 })
+-- The buffer's diagnostics, from the person's servers and linters alike,
+-- for lich to underline: Neovim draws them in its own window, not lich's.
+api.nvim_create_autocmd('DiagnosticChanged', {
+  group = group,
+  callback = function(ev)
+    if not owned[ev.buf] then
+      return
+    end
+    local out = {}
+    for _, d in ipairs(vim.diagnostic.get(ev.buf)) do
+      out[#out + 1] = { d.lnum, d.col, d.end_lnum or d.lnum, d.end_col or d.col, d.severity, d.message,
+        d.source or '', d.code ~= nil and tostring(d.code) or '' }
+    end
+    vim.rpcnotify(chan, 'lich_diags', ev.buf, out)
+  end,
+})
 api.nvim_create_autocmd('LspDetach', { group = group, callback = function() vim.schedule(state) end })
 
 -- The commands that leave a file, and whether each writes it first.
