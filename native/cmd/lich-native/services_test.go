@@ -1,6 +1,7 @@
 package main
 
 import (
+	"image/color"
 	"slices"
 	"strings"
 	"testing"
@@ -77,6 +78,20 @@ func TestServiceStateTextSaysHowItRunsOrEnded(t *testing.T) {
 	stopped.StoppedAt = now.UnixMilli()
 	if got := consoleStateText(stopped, now); got != "Stopped · 09:40" {
 		t.Errorf("stopped: %q", got)
+	}
+}
+
+func TestServiceGlyphWearsItsStateTone(t *testing.T) {
+	th := &ui.Theme{Palette: ui.Dark}
+	for state, want := range map[string]color.NRGBA{
+		api.ServiceRunning:  th.TonePass,
+		api.ServiceStopping: th.TonePass,
+		api.ServiceFailed:   th.Destructive,
+		api.ServiceStopped:  th.MutedForeground,
+	} {
+		if got := serviceGlyphInk(th, svc("a", "p", state)); got != want {
+			t.Errorf("%s: %v, want %v", state, got, want)
+		}
 	}
 }
 

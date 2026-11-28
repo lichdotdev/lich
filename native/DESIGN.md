@@ -1396,9 +1396,10 @@ list, then a header drawn as a folder's is (the services glyph in the node's col
 chevron under the pointer, the SERVICES group label and its count in the tones, "2 running" in `TonePass` and
 "1 failed" in `Destructive`, "3 stopped" muted when none does either, and space to the `⋯`), which opens
 and closes the rows under it. Its `⋯` and right click hold Start all, Stop all and New service. A service is a
-row as a session is: its glyph where the mark sits, the name (`MutedForeground` while it is down), how long it
+row as a session is: its glyph where the mark sits, in its state's tone (`TonePass` while it is up, `Destructive`
+once it failed, `MutedForeground` while it is down), the name (`MutedForeground` while it is down), how long it
 has run at the end or its exit code in `Destructive`, and the corner slot, the `⋯` under the pointer and the
-souls spinner alone while it stops, with no word. No dot, and no button on the row: its actions are its menu; a click shows its
+souls spinner alone while it stops, with no word. No dot: the glyph is the state. No button on the row: its actions are its menu; a click shows its
 console. The open list scrolls past `serviceRowsShown` rows. Adding a service and editing one happen in a dialog over the screen
 (`settings_service_dialog.go`), from the footer's New service, a row's Edit or Settings › Services alike,
 whose rows open it on a click: the name in a narrow field beside the command, one line on how a command runs
