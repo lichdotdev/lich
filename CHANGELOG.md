@@ -167,6 +167,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **Creating a worktree shows a spinner on its button until the session opens.** It only dimmed before, so the dialog looked stuck while the agent started.
 - **A language server hears when the editor saves a file,** so one that checks on save (rust-analyzer, linters) updates its errors.
 
 - **The browser's Select and the agent's browser tools reach inside an iframe of the same site, not only the iframe.** A system that draws everything in a frame can be noted with Select, read by the agent and clicked or typed into; a frame from another site is still one element.

@@ -133,7 +133,8 @@ func (u *window) layoutWorktreeDialog(gtx C, th *ui.Theme) {
 		label = i18n.T("sidebar.worktreeDialogView.open")
 	}
 	create := on.Button(&d.create, label)
-	create.Disabled = v.base == "" || v.submitting
+	create.Disabled = v.base == ""
+	create.Busy = v.submitting
 	dlg := th.Dialog(&d.dialog, d.open, title, description)
 	dlg.Root = d.root
 	dlg.Body = func(gtx C) D { return d.body(gtx, on, u.ctx, v, u.spot) }
