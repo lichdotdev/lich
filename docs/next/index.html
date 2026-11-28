@@ -1,0 +1,466 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>lich: the multi-agent ADE</title>
+<link rel="icon" href="../media/appicon.svg">
+<style>
+  /* godemirror's page: light zinc around, the app's dark inside the figures. The pixel tones are the
+     five grays the window paints its books and flame in (native/grimoire). */
+  :root {
+    --bg: #ebebed; --paper: #f5f5f6; --line: #d4d4d8; --fg: #18181b; --muted: #64636e; --faint: #9f9fa9;
+    --kw: #18181b; --ok: #206b38; --wait: #9d5300;
+    --dark: #09090b; --dpaper: #18181b; --dline: #27272a; --dfg: #fafafa; --dmuted: #9f9fa9; --dkw: #fafafa;
+    --t1: #e4e4e7; --t5: #b4b4bb; --t3: #71717a; --t2: #3f3f46; --t4: #18181b;
+    --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --mono: ui-monospace, "JetBrains Mono", "SFMono-Regular", Menlo, Consolas, monospace;
+  }
+  :root[data-theme="dark"] {
+    --bg: #09090b; --paper: #111113; --line: #27272a; --fg: #fafafa; --muted: #a1a1aa; --faint: #71717a;
+    --kw: #fafafa; --ok: #5ee08a; --wait: #f5b14a;
+    --t1: #27272a; --t5: #55555d; --t3: #a1a1aa; --t2: #d4d4d8; --t4: #fafafa;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--bg); color: var(--fg); font: 16px/1.6 var(--sans); }
+  body { margin: 0; }
+  a { color: var(--kw); } a:hover { text-decoration: none; }
+  code { font: 13px var(--mono); }
+  .wrap { max-width: 1160px; margin: 0 auto; padding: 0 28px; }
+  .px { display: block; image-rendering: pixelated; }
+
+  nav .wrap { display: flex; align-items: center; height: 56px; font: 13px var(--mono); gap: 24px; border-bottom: 1px solid var(--line); }
+  nav .logo { font-weight: 700; display: flex; align-items: center; gap: 9px; color: var(--fg); text-decoration: none; }
+  nav .logo svg { width: 20px; height: 30px; }
+  nav .r { margin-left: auto; display: flex; gap: 20px; align-items: center; }
+  nav a, nav button { color: var(--muted); text-decoration: none; background: none; border: 0; font: inherit; cursor: pointer; padding: 0; }
+  nav a:hover, nav button:hover { color: var(--fg); }
+  nav .star { border: 1px solid var(--line); padding: 3px 8px; border-radius: 4px; color: var(--fg); }
+
+  /* The hero stands on the window's backdrop: dithered dots that thicken toward a corner and
+     light up under the pointer. */
+  .hero { position: relative; display: grid; grid-template-columns: 1.3fr 1fr; gap: 48px; padding: 64px 0 48px; align-items: center; }
+  .hero::before { content: ""; position: absolute; inset: 0 -28px; z-index: -1;
+    background: radial-gradient(var(--t3) 1px, transparent 1.3px) 0 0 / 6px 6px;
+    -webkit-mask: radial-gradient(70% 90% at 100% 100%, #000 0, transparent 75%); mask: radial-gradient(70% 90% at 100% 100%, #000 0, transparent 75%); opacity: .55; }
+  .hero::after { content: ""; position: absolute; inset: 0 -28px; z-index: -1; pointer-events: none;
+    background: radial-gradient(var(--t4) 1.2px, transparent 1.5px) 0 0 / 12px 12px; opacity: .45;
+    -webkit-mask: radial-gradient(120px at var(--mx, -999px) var(--my, -999px), #000, transparent); mask: radial-gradient(120px at var(--mx, -999px) var(--my, -999px), #000, transparent); }
+  .ver { font: 12px var(--mono); color: var(--muted); margin: 0 0 14px; }
+  .ver b { color: var(--ok); font-weight: 400; }
+  .hero h1 { font: 600 42px/1.14 var(--mono); letter-spacing: -0.03em; margin: 0 0 18px; }
+  .hero h1 em { font-style: normal; }
+  .hero p { color: var(--muted); font-size: 17px; margin: 0 0 22px; max-width: 34em; }
+  .hero p b { color: var(--fg); font-weight: 500; }
+  .cta { display: flex; gap: 10px; flex-wrap: wrap; }
+  .b { font: 13px var(--mono); text-decoration: none; padding: 9px 14px; border-radius: 4px; border: 1px solid var(--fg); color: var(--fg); }
+  .b { transition: background-color .15s, color .15s; }
+  .b:hover { background: color-mix(in oklab, var(--fg) 8%, transparent); }
+  .b.dark { background: var(--fg); color: var(--bg); }
+  .b.dark:hover { background: color-mix(in oklab, var(--fg) 82%, var(--bg)); }
+  .facts { display: flex; gap: 18px; flex-wrap: wrap; margin: 18px 0 0; padding: 0; list-style: none; font: 12px var(--mono); color: var(--muted); }
+  .facts li::before { content: "■ "; color: var(--ok); font-size: 9px; vertical-align: 1px; }
+  .flame { justify-self: center; }
+  :root:not([data-theme="dark"]) .flame { filter: invert(1) brightness(.95); }
+
+  .fig { border: 1px solid var(--line); background: var(--paper); border-radius: 6px; padding: 10px; }
+  .fig-head, .fig-foot { display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap; font: 12px var(--mono); color: var(--muted); padding: 2px 4px 10px; }
+  .fig-foot { justify-content: flex-start; padding: 10px 4px 2px; }
+  .panel { display: grid; grid-template-columns: 210px minmax(0, 1fr); border: 1px solid var(--dline); border-radius: 4px; overflow: hidden; background: var(--dark); }
+  .side { border-right: 1px solid var(--dline); padding: 10px 0; font: 13px var(--mono); color: var(--dmuted); }
+  .side .grp { padding: 10px 14px 4px; font-size: 11px; letter-spacing: .08em; text-transform: uppercase; color: #71717a; }
+  .side button { all: unset; cursor: pointer; display: flex; align-items: center; gap: 9px; width: calc(100% - 28px); padding: 6px 14px; }
+  .side button svg { width: 14px; height: 14px; --t4: currentColor; }
+  .side button[aria-selected="true"] { background: var(--dpaper); color: var(--dfg); box-shadow: inset 2px 0 0 var(--dkw); }
+  .side button:hover { color: var(--dfg); }
+  .stage { position: relative; aspect-ratio: 16 / 10; }
+  .stage img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: top left; display: none; }
+  .stage img.on { display: block; }
+  .cap { font: 13px var(--sans); color: var(--muted); padding: 10px 4px 0; }
+
+  section { padding: 88px 0 0; }
+  /* A group's label as the window draws it (native/DESIGN.md, group labels): small, uppercase, semibold and
+     muted, and what it counts after it, " · " apart, each part in its state's tone. */
+  .label { font: 600 11px var(--sans); letter-spacing: .06em; text-transform: uppercase; color: var(--muted); margin: 0 0 10px; }
+  .label i { font-style: normal; color: var(--faint); }
+  .label .ok { color: var(--ok); }
+  h2 { font: 600 30px/1.2 var(--mono); letter-spacing: -0.02em; margin: 0 0 12px; }
+  .lede { color: var(--muted); max-width: 720px; margin: 0 0 28px; }
+
+  /* The agents' shelf: each provider's book as the Welcome draws it. */
+  .shelf { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+  .book { display: grid; grid-template-columns: 68px 1fr; gap: 14px; align-items: center; padding: 18px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--paper); }
+  .tome { width: 68px; height: 92px; display: grid; place-items: center; }
+  /* A flashlight over a grid of cards: the pointer lights what it passes. */
+  .lamp { position: relative; }
+  .lamp::after { content: ""; position: absolute; inset: 0; pointer-events: none; opacity: 0; transition: opacity .25s;
+    background: radial-gradient(320px circle at var(--x, 50%) var(--y, 50%), color-mix(in oklab, var(--fg) 14%, transparent), transparent 70%); }
+  .lamp.lit::after { opacity: 1; }
+  .book h3 { margin: 0; font: 600 15px var(--mono); display: flex; align-items: center; gap: 7px; }
+  .book h3 .mk { color: var(--fg); flex: none; }
+  .book code { color: var(--muted); font-size: 12px; }
+  .caps { display: flex; flex-wrap: wrap; gap: 4px 8px; margin-top: 8px; font: 11px var(--mono); }
+  .caps span { color: var(--ok); } .caps span::before { content: "✓ "; }
+  .caps .p { color: var(--wait); } .caps .p::before { content: "◐ "; }
+  .caps .n { color: var(--faint); text-decoration: line-through; } .caps .n::before { content: ""; }
+  .matrix { border-collapse: separate; border-spacing: 0; }
+  .matrix th, .matrix td { text-align: center; padding: 12px 6px; transition: background-color .15s; }
+  .matrix th:first-child, .matrix td:first-child { text-align: left; padding-left: 16px; }
+  .matrix thead th { vertical-align: bottom; font: 12px var(--mono); color: var(--muted); letter-spacing: 0; text-transform: none; padding-top: 18px; }
+  .matrix .mkbox { display: flex; align-items: flex-end; justify-content: center; height: 32px; margin-bottom: 8px; color: var(--fg); }
+  .matrix td:first-child { font: 600 13px var(--mono); color: var(--fg); }
+  .matrix td small { display: block; font: 400 12px var(--sans); color: var(--muted); margin-top: 1px; }
+  .matrix tfoot td { font: 12px var(--mono); color: var(--muted); border-bottom: 0; }
+  .matrix tfoot td:first-child { font-weight: 400; color: var(--faint); }
+  .matrix tbody tr:hover td { background: color-mix(in oklab, var(--fg) 3%, transparent); }
+  .matrix .on { background: color-mix(in oklab, var(--fg) 6%, transparent); }
+  .matrix thead .on { color: var(--fg); }
+  .gem { display: inline-block; vertical-align: middle; }
+  .gem svg { display: block; }
+  .note .gem { margin: 0 8px 2px 0; --ink: var(--fg); }
+  .note { font: 12px var(--mono); color: var(--muted); margin-top: 12px; display: flex; gap: 18px; flex-wrap: wrap; }
+
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+  .grid article { padding: 22px 20px 24px; border-right: 1px solid var(--line); border-bottom: 1px solid var(--line); background: var(--paper); }
+  .grid h3 { margin: 0 0 8px; font: 600 15px var(--mono); display: flex; align-items: center; gap: 10px; }
+  .grid h3 svg { width: 21px; height: 21px; flex: none; }
+  .grid h3 .sq { width: 21px; height: 21px; flex: none; background: radial-gradient(var(--t3) 1px, transparent 1.4px) 0 0 / 3px 3px; }
+  .grid p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.55; }
+  .grid .new { font: 10px var(--mono); color: var(--kw); border: 1px solid var(--kw); border-radius: 3px; padding: 0 4px; margin-left: auto; }
+  kbd { font: 11px var(--mono); border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 3px; padding: 0 4px; color: var(--fg); }
+
+  .spec { display: grid; grid-template-columns: repeat(4, 1fr); border-top: 1px solid var(--line); }
+  .spec div { padding: 18px 16px 18px 0; border-bottom: 1px solid var(--line); }
+  .spec b { display: block; font: 600 26px var(--mono); }
+  .spec span { color: var(--muted); font-size: 14px; }
+
+  .two { display: grid; grid-template-columns: 1fr 1fr; gap: 28px; }
+  .two ul { margin: 0; padding: 0; list-style: none; }
+  .two li { padding: 10px 0; border-bottom: 1px solid var(--line); color: var(--muted); font-size: 15px; }
+  .two li b { color: var(--fg); font: 600 14px var(--mono); }
+  .dlg { margin-top: 16px; background: var(--dark); color: var(--dfg); border: 1px solid var(--dline); border-radius: 4px; padding: 16px 18px; font-size: 14px; }
+  .dlg h4 { margin: 0 0 4px; font: 600 14px var(--sans); } .dlg .m { font: 12px var(--mono); color: var(--dmuted); }
+  .dlg p { color: var(--dmuted); margin: 8px 0 12px; }
+  .dlg .act { display: flex; justify-content: flex-end; gap: 8px; } .dlg .act span { font: 12px var(--mono); padding: 5px 10px; border-radius: 4px; border: 1px solid var(--dline); }
+  .dlg .act .p { background: var(--dfg); color: var(--dark); border-color: var(--dfg); }
+
+  table { width: 100%; border-collapse: collapse; font-size: 15px; background: var(--paper); border: 1px solid var(--line); }
+  th, td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { font: 600 12px var(--mono); color: var(--muted); text-transform: uppercase; letter-spacing: .06em; }
+  td:first-child { color: var(--fg); }
+  td.us { color: var(--ok); font-family: var(--mono); font-size: 13px; }
+  td.them { color: var(--muted); font-size: 14px; }
+  .scroll { overflow-x: auto; }
+
+  .tabs { display: flex; gap: 22px; font: 13px var(--mono); border-bottom: 1px solid var(--line); margin-bottom: 14px; }
+  .tabs button { all: unset; cursor: pointer; padding: 8px 0; color: var(--muted); border-bottom: 2px solid transparent; margin-bottom: -1px; }
+  .tabs button[aria-selected="true"] { color: var(--fg); border-color: var(--kw); }
+  pre { font: 14px/1.6 var(--mono); background: var(--dark); color: var(--dfg); border-radius: 4px; padding: 18px 20px; overflow-x: auto; margin: 0; }
+  pre .c { color: #71717a; }
+  .dls { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 14px; }
+  .os p { color: var(--muted); font-size: 14px; margin: 12px 0 0; }
+
+  footer { margin-top: 96px; border-top: 1px solid var(--line); padding: 28px 0 40px; font: 13px var(--mono); color: var(--muted); }
+  footer .cols { display: grid; grid-template-columns: 1.4fr 1fr 1fr 1fr; gap: 24px; }
+  footer h4 { margin: 0 0 8px; font: 600 11px var(--mono); text-transform: uppercase; letter-spacing: .08em; color: var(--faint); }
+  footer a { display: block; color: var(--muted); text-decoration: none; padding: 2px 0; } footer a:hover { color: var(--fg); }
+  footer .bottom { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 28px; padding-top: 16px; border-top: 1px solid var(--line); }
+  footer .bottom a { display: inline; }
+
+  @media (max-width: 900px) {
+    .hero, .panel, .two { grid-template-columns: 1fr; } .flame { display: none; }
+    .shelf { grid-template-columns: 1fr 1fr; } .grid { grid-template-columns: 1fr; } .spec { grid-template-columns: 1fr 1fr; }
+    .hero h1 { font-size: 30px; } .hero { padding-top: 36px; }
+    .side { display: flex; flex-wrap: wrap; border-right: 0; border-bottom: 1px solid var(--dline); padding: 6px; } .side .grp { display: none; }
+    .side button { width: auto; padding: 5px 10px; }
+    nav .r .wide { display: none; } footer .cols { grid-template-columns: 1fr 1fr; }
+  }
+  @media (max-width: 560px) { .shelf { grid-template-columns: 1fr; } }
+</style>
+<script>try { if (localStorage.getItem("theme") === "dark") document.documentElement.dataset.theme = "dark"; } catch (e) {}</script>
+</head>
+<body>
+<nav><div class="wrap">
+  <a class="logo" href="#"><svg class="px"><use href="../media/px/flame.svg#s"/></svg>lich</a>
+  <div class="r">
+    <a href="#window">window</a><a href="#agents">agents</a><a class="wide" href="#features">features</a><a class="wide" href="#extensions">extensions</a><a class="wide" href="#compare">compare</a><a href="#install">download</a><a class="wide" href="../changelog.html">changelog</a>
+    <button id="theme" type="button">theme</button><a href="#">en ▾</a><a class="star" href="https://github.com/lichdotdev/lich">★ github</a>
+  </div>
+</div></nav>
+
+<main class="wrap">
+  <div class="hero" id="hero">
+    <div>
+      <p class="ver"><b>●</b> v0.94.0 · free and open source · AGPL-3.0</p>
+      <h1>The multi-agent ADE: all your agents at <em>once</em>, each on its own branch.</h1>
+      <p>An Agentic Development Environment: run <b>Claude Code, Codex, opencode</b> or the agent you already use in parallel, each in its own git worktree. Talk to it in a chat or its own terminal, fix its code in an editor with your language server, and review and merge the pull request in the same window.</p>
+      <div class="cta"><a class="b dark" href="#install">download for linux</a><a class="b" href="https://github.com/lichdotdev/lich">github.com/lichdotdev/lich</a></div>
+      <ul class="facts"><li>no account, no API key, no telemetry</li><li>your agents keep their own login and plan</li><li>linux, macOS and windows</li></ul>
+    </div>
+    <canvas class="flame" id="flame" role="img" aria-label="lich's flame, in pixel art"></canvas>
+  </div>
+
+  <div class="fig" id="window">
+    <div class="fig-head"><span class="label">the window <i>·</i> <span class="ok">recorded</span></span><span id="figtheme">dark</span></div>
+    <div class="panel">
+      <div class="side" role="tablist">
+        <div class="grp">a session</div>
+        <button role="tab" aria-selected="true" data-shot="chat"><svg class="px"><use href="../media/px/icon-send.svg#s"/></svg>Chat</button>
+        <button role="tab" aria-selected="false" data-shot="editor"><svg class="px"><use href="../media/px/icon-code.svg#s"/></svg>Editor + gopls</button>
+        <button role="tab" aria-selected="false" data-shot="waiting"><svg class="px"><use href="../media/px/icon-wait.svg#s"/></svg>Needs you</button>
+        <button role="tab" aria-selected="false" data-shot="empty-chat"><svg class="px"><use href="../media/px/icon-session.svg#s"/></svg>New session</button>
+        <div class="grp">first launch</div>
+        <button role="tab" aria-selected="false" data-shot="welcome"><svg class="px"><use href="../media/px/icon-open.svg#s"/></svg>Welcome</button>
+        <div class="grp">theme</div>
+        <button data-t="dark" aria-selected="true">Dark</button>
+        <button data-t="light" aria-selected="false">Light</button>
+      </div>
+      <div class="stage" id="stage"></div>
+    </div>
+    <p class="cap" id="cap"></p>
+    <div class="fig-foot"><span>lich-native on Linux</span><span>Claude Code in a chat</span><span>gopls on PATH</span><span>recorded at 2x</span></div>
+  </div>
+
+  <section id="agents">
+    <p class="label">agents <i>·</i> <span class="ok">8 supported</span></p>
+    <h2>Bring the agents you already pay for.</h2>
+    <p class="lede">lich finds them on your <code>PATH</code>, or installs them from its Welcome, and opens them in a chat or their own terminal. Your login, your plan and your config stay theirs; lich has no account and no API key of its own.</p>
+    <div class="shelf lamp" id="shelf"></div>
+    <p class="label" style="margin-top:28px">what lich reads <i>·</i> 6 signals</p>
+    <div class="scroll"><table class="matrix" id="matrix"></table></div>
+    <div class="note"><span><i class="gem y"></i>works</span><span><i class="gem p"></i>on some systems or plans</span><span><i class="gem n"></i>not yet</span><span>any other CLI runs in a terminal session</span><a href="https://github.com/lichdotdev/lich#provider-support">every detail in the provider table →</a></div>
+  </section>
+
+  <section id="features">
+    <p class="label">around the agent <i>·</i> 15 <i>·</i> <span class="ok">2 new</span></p>
+    <h2>The window keeps track so you do not have to.</h2>
+    <p class="lede">What each session is doing, which one needs you, what it costs and what it changed.</p>
+    <div class="grid lamp">
+      <article><h3><svg class="px"><use href="../media/px/icon-send.svg#s"/></svg>Chat or terminal<span class="new">new</span></h3><p>A chat folds the tool calls, opens each edit into its diff and takes <code>/</code> commands, <code>@</code> files and <code>!</code> shell lines. GUI | TUI moves the same conversation to the agent's own terminal.</p></article>
+      <article><h3><svg class="px"><use href="../media/px/icon-code.svg#s"/></svg>An editor with your language server<span class="new">new</span></h3><p>Errors, completions, docs and go to definition from the server on your <code>PATH</code>, blame on the cursor's line, and Vim keys run by your own Neovim.</p></article>
+      <article><h3><span class="sq"></span>A worktree per task</h3><p>Each session gets its own branch and checkout, so agents run in parallel without touching each other's files. Type <code>#123</code> and the branch is named after the issue.</p></article>
+      <article><h3><span class="sq"></span>Review in place</h3><p>Read the diff, comment on its lines and send the comments back to the session as one prompt. Revert a line from the gutter.</p></article>
+      <article><h3><span class="sq"></span>Pull requests</h3><p>Check, review and merge GitHub pull requests and GitLab merge requests in Pulls, with the checks, the threads and the files you marked viewed.</p></article>
+      <article><h3><svg class="px"><use href="../media/px/icon-browser.svg#s"/></svg>A browser the agent drives</h3><p>A page beside the session that the agent opens and clicks through. Draw on it and leave notes, and the agent reads them.</p></article>
+      <article><h3><svg class="px"><use href="../media/px/icon-wait.svg#s"/></svg>Know which one needs you</h3><p>A session's card turns amber the moment its agent waits on you, and a desktop notification says which one.</p></article>
+      <article><h3><svg class="px"><use href="../media/px/icon-session.svg#s"/></svg>Sessions that work together</h3><p>Agents hand each other tasks, fork themselves and report back through lich's tools. A subagent gets a card of its own and closes when it is done.</p></article>
+      <article><h3><span class="sq"></span>Layouts that lay themselves out</h3><p>Put sessions in a layout and lich picks the grid from how many there are and the room the window has. Name one, keep as many as you like.</p></article>
+      <article><h3><svg class="px"><use href="../media/px/icon-service.svg#s"/></svg>Services that keep running</h3><p>Save a dev server, a container or a tunnel once per project. lich starts it with the project, keeps it running and shows its console.</p></article>
+      <article><h3><span class="sq"></span>Your plan in sight</h3><p>The context window, the prompt cache, what the session has spent and what is left of your plan's window, read from what each agent writes down.</p></article>
+      <article><h3><span class="sq"></span>Several accounts, one card</h3><p>Keep a personal and a work login as profiles. A session moved to another account carries on in the same card.</p></article>
+      <article><h3><svg class="px"><use href="../media/px/icon-open.svg#s"/></svg>Fork a conversation</h3><p>Branch a session's conversation into a new worktree and try the other idea without losing the first.</p></article>
+      <article><h3><span class="sq"></span>Jump to any session</h3><p><kbd>Ctrl</kbd>+<kbd>P</kbd> finds a session by name or by something said in it, and resumes conversations you started outside lich.</p></article>
+      <article><h3><span class="sq"></span>Run a session confined</h3><p>An OS sandbox with a fresh home, the rest of the machine read-only and only its checkout writable: bubblewrap on Linux, <code>sandbox-exec</code> on macOS. Not a boundary against hostile code.</p></article>
+    </div>
+  </section>
+
+  <section>
+    <p class="label">counted in the repository</p>
+    <div class="spec">
+      <div><b>8</b><span>agents, each in a chat or its terminal</span></div>
+      <div><b>7</b><span>interface languages</span></div>
+      <div><b>3</b><span>systems: Linux, macOS, Windows</span></div>
+      <div><b>0</b><span>accounts, API keys or telemetry</span></div>
+    </div>
+  </section>
+
+  <section id="extensions">
+    <p class="label">extensions <i>·</i> <span class="ok">go sdk</span></p>
+    <h2>Build what lich is missing for you.</h2>
+    <p class="lede">An extension is your own tool inside lich's window. It draws with the components lich itself is made of, and it drives lich through the same tools your agents use.</p>
+    <div class="two">
+      <ul>
+        <li><b>Run your sessions.</b> Open one in a worktree, hand it a task and collect its answer.</li>
+        <li><b>Follow them.</b> Know the moment a session starts working, finishes or waits on you.</li>
+        <li><b>Run your services.</b> Start, stop and restart them, and read what they print.</li>
+        <li><b>Read the checkout.</b> Its branch, its changes and its pull request.</li>
+        <li><b>Reach you.</b> A desktop notification, a file in the dock or a page in a session's browser.</li>
+        <li><b>Have its own screens.</b> A button in the top bar, its own shortcuts and data that outlives an update.</li>
+      </ul>
+      <div>
+        <p style="margin:0;color:var(--muted)"><a href="https://github.com/lichdotdev/lich-notes">LichNotes</a> is the published example: the Markdown notes of a folder, filtered as you type and edited beside a live preview. The <a href="../extensions.html">catalog</a> lists the rest; <a href="https://github.com/lichdotdev/lich/blob/main/docs/extensions.md">write your own</a> with the Go SDK.</p>
+        <div class="dlg"><h4>Install LichNotes 0.1.1?</h4><span class="m">from github.com/lichdotdev/lich-notes</span><p>It will run on your computer as you, with access to your files and accounts. Install it only if you trust who made it.</p><div class="act"><span>Cancel</span><span class="p">Install</span></div></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="compare">
+    <p class="label">how lich compares <i>·</i> ides and wrappers</p>
+    <h2>Built around the agents you already run.</h2>
+    <p class="lede">Editors were built for one person typing, and agent wrappers stop at one terminal. lich is the window around the agents: worktrees, review, pull requests and sessions that work together.</p>
+    <div class="scroll"><table>
+      <tr><th>capability</th><th>lich</th><th>IDEs and wrappers</th></tr>
+      <tr><td>The agent CLIs as they ship, in a chat or a real terminal</td><td class="us">yes</td><td class="them">often their own agent</td></tr>
+      <tr><td>Parallel agents, each in its own git worktree</td><td class="us">yes</td><td class="them">sometimes</td></tr>
+      <tr><td>Linux, Windows and macOS</td><td class="us">yes</td><td class="them">often macOS first</td></tr>
+      <tr><td>Free and open source, AGPL-3.0</td><td class="us">yes</td><td class="them">rarely</td></tr>
+      <tr><td>Your login and your plan: no account, no API key, no telemetry</td><td class="us">yes</td><td class="them">their account</td></tr>
+      <tr><td>A GPU-drawn native window, terminal included</td><td class="us">yes</td><td class="them">mostly Electron</td></tr>
+      <tr><td>An editor with your language server</td><td class="us">yes</td><td class="them">in IDEs</td></tr>
+      <tr><td>Diff comments sent back to the session as one prompt</td><td class="us">yes</td><td class="them">limited</td></tr>
+      <tr><td>A browser beside the session that the agent drives</td><td class="us">yes</td><td class="them">limited</td></tr>
+      <tr><td>Pull requests reviewed and merged in the app</td><td class="us">yes</td><td class="them">in the browser</td></tr>
+      <tr><td>Sessions hand each other work over MCP</td><td class="us">yes</td><td class="them">—</td></tr>
+      <tr><td>An OS sandbox per session</td><td class="us">yes</td><td class="them">rarely</td></tr>
+    </table></div>
+  </section>
+
+  <section id="install">
+    <p class="label">install <i>·</i> linux <i>·</i> macos <i>·</i> windows</p>
+    <h2>Install it in one line.</h2>
+    <p class="lede">Then open a project and pick an agent. <code>git</code> on your <code>PATH</code>; <code>gh</code> or <code>glab</code> only for pull requests.</p>
+    <div class="tabs" role="tablist"><button aria-selected="true" data-os="linux">linux</button><button aria-selected="false" data-os="macos">macOS</button><button aria-selected="false" data-os="windows">windows</button></div>
+    <div class="os" data-os="linux"><pre><span class="c">$</span> curl -fsSL https://raw.githubusercontent.com/lichdotdev/lich/main/install.sh | sh</pre><p>Picks the <code>.deb</code>, <code>.rpm</code> or <code>.pkg.tar.zst</code> for your distribution and checks it against <code>checksums.txt</code>. On Arch: <code>yay -S lich-bin</code>. x86_64, glibc 2.34+ and <code>zenity</code>.</p><div class="dls"><a class="b" href="#">debian, ubuntu · .deb</a><a class="b" href="#">fedora, opensuse · .rpm</a><a class="b" href="#">arch · .pkg.tar.zst</a></div></div>
+    <div class="os" data-os="macos" hidden><pre><span class="c">$</span> brew install --cask lichdotdev/tap/lich</pre><p>Through Homebrew; <code>brew upgrade</code> takes the next release.</p><div class="dls"><a class="b" href="#">apple silicon · .zip</a><a class="b" href="#">intel · .zip</a></div></div>
+    <div class="os" data-os="windows" hidden><pre><span class="c">$</span> scoop install https://github.com/lichdotdev/lich/releases/latest/download/lich.json</pre><p>Through Scoop, or the installer, which updates itself in place.</p><div class="dls"><a class="b" href="#">installer · .exe</a><a class="b" href="#">portable · .zip</a></div></div>
+  </section>
+</main>
+
+<footer><div class="wrap">
+  <div class="cols">
+    <div><a class="logo" href="#" style="display:flex;align-items:center;gap:8px;color:var(--fg);font-weight:700"><svg class="px" style="width:16px;height:24px"><use href="../media/px/flame.svg#s"/></svg>lich</a><p style="margin:8px 0 0">Run your coding agents at once, each on its own branch. Free and open source for Linux, Windows and macOS.</p></div>
+    <div><h4>product</h4><a href="#install">download</a><a href="../changelog.html">changelog</a><a href="../extensions.html">extensions</a><a href="#">install guide</a><a href="#">known limits</a></div>
+    <div><h4>docs</h4><a href="#">provider support</a><a href="#">cli</a><a href="#">themes</a><a href="#">plugin</a></div>
+    <div><h4>project</h4><a href="#">github</a><a href="#">issues</a><a href="#">sponsor</a><a href="#">security</a></div>
+  </div>
+  <div class="bottom"><span>AGPL-3.0-only · made by lichdotdev</span><span style="margin-left:auto"></span><a href="#">English</a><a href="#">Português (Brasil)</a><a href="#">Español</a><a href="#">简体中文</a><a href="#">日本語</a><a href="#">한국어</a><a href="#">Русский</a></div>
+</div></footer>
+
+<script>
+  var agents = [
+    ["claude", "Claude Code", "claude", "yyyyyy", [13, 8], "#d97757"], ["codex", "Codex", "codex", "yyyyyy", [13, 13], "#6e7bff"],
+    ["antigravity", "Antigravity", "agy", "nnynnn", [13, 11], "#4285f4"], ["opencode", "opencode", "opencode", "nypyyy", [9, 12], ""],
+    ["omp", "oh-my-pi", "omp", "nynnyn", [13, 13], ""], ["crush", "Crush", "crush", "nynnnn", [11, 10], "#ff5fd2"],
+    ["cursor", "Cursor CLI", "cursor-agent", "nnynpn", [13, 15], ""], ["kiro", "Kiro CLI", "kiro-cli", "yynnpn", [11, 13], "#9046ff"]];
+  // mark is a provider's pixel mark at 2 css px a pixel: a whole scale keeps its grid sharp.
+  function mark(a) { return '<svg class="px mk" style="width:' + a[4][0] * 2 + "px;height:" + a[4][1] * 2 + 'px"><use href="../media/px/mark-' + a[0] + '.svg#s"/></svg>'; }
+  var caps = [["context", "how full the context window is"], ["cost", "what the session spent"], ["plan", "what is left of your plan's window"],
+    ["fork", "a conversation forked into a new worktree"], ["profiles", "several accounts, one card each"], ["bell", "a notification when it waits on you"]];
+  document.getElementById("shelf").innerHTML = agents.map(function (a) {
+    return '<div class="book"><canvas class="tome" data-id="' + a[0] + '"></canvas><div><h3>' + mark(a) + a[1] + "</h3><code>" + a[2] + '</code></div></div>';
+  }).join("");
+  // gem draws a cell's mark in pixels, 2 css px each: a check in the agent's color, the check crossed by a block
+  // sign's band in the waiting amber for "on some systems or plans", or a short dash in the faint gray.
+  var MARKS = {
+    y: [["......#", ".....##", "#...##.", "##.##..", ".###...", "..#...."], "AGENT"],
+    p: [["BB......#", ".BB....##", "..BB..##.", "#..BB.#..", "##..BB...", ".###.BB..", "..##..BB.", ".......BB"], "var(--wait)"],
+    n: [[".......", ".......", ".#####.", ".......", ".......", "......."], "var(--faint)"]};
+  function gem(k, ink) {
+    var m = MARKS[k], w = m[0][0].length, h = m[0].length, out = "";
+    m[0].forEach(function (r, y) { r.split("").forEach(function (c, x) { if (c !== ".") out += '<rect x="' + x + '" y="' + y + '" width="1" height="1"/>'; }); });
+    return '<svg viewBox="0 0 ' + w + " " + h + '" shape-rendering="crispEdges" style="width:' + w * 2 + "px;height:" + h * 2 + "px;fill:" + (m[1] === "AGENT" ? ink : m[1]) + '">' + out + "</svg>";
+  }
+  document.querySelectorAll(".note:not(.opts) .gem").forEach(function (g) { g.innerHTML = gem(g.classList[1], "var(--fg)"); });
+  var matrix = document.getElementById("matrix");
+  matrix.innerHTML = "<thead><tr><th></th>" + agents.map(function (a, j) {
+    return '<th data-col="' + j + '"><span class="mkbox">' + mark(a) + "</span>" + a[1] + "</th>";
+  }).join("") + "</tr></thead><tbody>" + caps.map(function (c, i) {
+    return "<tr><td>" + c[0] + "<small>" + c[1] + "</small></td>" + agents.map(function (a, j) {
+      var k = a[3][i], t = { y: "works", p: "on some systems or plans", n: "not yet" }[k];
+      return '<td data-col="' + j + '"><i class="gem" role="img" title="' + t + '" aria-label="' + t + '">' + gem(k, a[5] || "var(--fg)") + "</i></td>";
+    }).join("") + "</tr>";
+  }).join("") + '</tbody><tfoot><tr><td>of 6</td>' + agents.map(function (a, j) {
+    var n = a[3].split("").filter(function (k) { return k === "y"; }).length;
+    return '<td data-col="' + j + '">' + n + "</td>";
+  }).join("") + "</tr></tfoot>";
+  // Pointing at a column lights it, as the flashlight lights a book.
+  matrix.addEventListener("pointerover", function (e) {
+    var cell = e.target.closest("[data-col]"), col = cell ? cell.dataset.col : null;
+    matrix.querySelectorAll("[data-col]").forEach(function (x) { x.classList.toggle("on", x.dataset.col === col); });
+  });
+  matrix.addEventListener("pointerleave", function () { matrix.querySelectorAll(".on").forEach(function (x) { x.classList.remove("on"); }); });
+
+  // A book unseals under the pointer as the Welcome plays it (grimoire.Unseal, 85 ms a frame), then its gem
+  // burns (grimoire.Flame, 110 ms) until the pointer leaves, and it seals again.
+  var UNSEAL = 32, FLAME = 6;
+  // pixelSprite draws frame f of a sheet of fw x fh frames into canvas c at the whole number of device
+  // pixels per art pixel nearest cssW, as the window scales its pixel art: a fractional scale would
+  // give each frame a different mix of 2- and 3-pixel columns, and the art would tremble.
+  function pixelSprite(c, sheet, fw, fh, cols, cssW) {
+    var img = new Image(), ready = false, f = 0;
+    function size() {
+      var dpr = devicePixelRatio || 1, k = Math.max(1, Math.round(cssW * dpr / fw));
+      c.width = fw * k; c.height = fh * k;
+      c.style.width = c.width / dpr + "px"; c.style.height = c.height / dpr + "px";
+    }
+    function draw(n) {
+      if (n !== undefined) f = n;
+      if (!ready) return;
+      var x = c.getContext("2d");
+      x.imageSmoothingEnabled = false;
+      x.clearRect(0, 0, c.width, c.height);
+      x.drawImage(img, (f % cols) * fw, Math.floor(f / cols) * fh, fw, fh, 0, 0, c.width, c.height);
+    }
+    img.onload = function () { ready = true; draw(); };
+    size();
+    addEventListener("resize", function () { size(); draw(); });
+    return { draw: draw, src: function (u) { if (img.src.indexOf(u) < 0) { ready = false; img.src = u; } } };
+  }
+  function dark() { return document.documentElement.dataset.theme === "dark"; }
+  var tomes = [];
+  document.querySelectorAll(".book").forEach(function (b) {
+    var id = b.querySelector(".tome").dataset.id, sp = pixelSprite(b.querySelector(".tome"), null, 34, 46, 38, 68), timer = null, f = 0;
+    sp.theme = function () { sp.src("../media/books/" + id + (dark() ? "-dark" : "-light") + ".png"); };
+    sp.theme(); tomes.push(sp);
+    function step() {
+      if (f < UNSEAL - 1) { f++; sp.draw(f); timer = setTimeout(step, 85); return; }
+      f = f < UNSEAL ? UNSEAL : UNSEAL + (f - UNSEAL + 1) % FLAME; sp.draw(f); timer = setTimeout(step, 110);
+    }
+    b.addEventListener("pointerenter", function () { clearTimeout(timer); if (matchMedia("(prefers-reduced-motion: reduce)").matches) { f = UNSEAL; sp.draw(f); return; } step(); });
+    b.addEventListener("pointerleave", function () { clearTimeout(timer); f = 0; sp.draw(0); });
+  });
+  document.querySelectorAll(".lamp").forEach(function (sh) {
+    sh.addEventListener("pointermove", function (e) { var r = sh.getBoundingClientRect(); sh.style.setProperty("--x", e.clientX - r.left + "px"); sh.style.setProperty("--y", e.clientY - r.top + "px"); sh.classList.add("lit"); });
+    sh.addEventListener("pointerleave", function () { sh.classList.remove("lit"); });
+  });
+
+  var shots = {
+    chat: ["chat", "gif", "A task typed into a new chat: the agent reads, edits and tests, each edit opens into its diff, and the dock reviews the whole change."],
+    editor: ["editor", "gif", "A typo in the editor: gopls underlines it, the header counts it and the pointer shows why."],
+    waiting: ["waiting", "webp", "An agent asking for permission waits in its chat, its card says so, and one key allows or denies."],
+    "empty-chat": ["empty-chat", "webp", "A new chat starts on its own branch, with the model, effort and mode under the message box."],
+    welcome: ["welcome", "webp", "On first launch lich installs the agents you pick and signs you in with their own login."]};
+  var shot = "chat", look = "dark", stage = document.getElementById("stage");
+  function show() {
+    var s = shots[shot];
+    stage.innerHTML = '<img class="on" alt="' + s[2] + '" src="../media/window/' + s[0] + "-" + look + "." + s[1] + '">';
+    document.getElementById("cap").textContent = s[2];
+    document.getElementById("figtheme").textContent = look;
+  }
+  document.querySelectorAll(".side [data-shot]").forEach(function (b) {
+    b.onclick = function () { shot = b.dataset.shot; document.querySelectorAll(".side [data-shot]").forEach(function (x) { x.setAttribute("aria-selected", x === b); }); show(); };
+  });
+  document.querySelectorAll(".side [data-t]").forEach(function (b) {
+    b.onclick = function () { look = b.dataset.t; document.querySelectorAll(".side [data-t]").forEach(function (x) { x.setAttribute("aria-selected", x === b); }); show(); };
+  });
+  show();
+
+  document.querySelectorAll(".tabs button").forEach(function (b) {
+    b.onclick = function () {
+      document.querySelectorAll(".tabs button").forEach(function (x) { x.setAttribute("aria-selected", x === b); });
+      document.querySelectorAll(".os").forEach(function (o) { o.hidden = o.dataset.os !== b.dataset.os; });
+    };
+  });
+
+  document.getElementById("theme").onclick = function () {
+    var dark = document.documentElement.dataset.theme !== "dark";
+    if (dark) document.documentElement.dataset.theme = "dark"; else delete document.documentElement.dataset.theme;
+    try { localStorage.setItem("theme", dark ? "dark" : "light"); } catch (e) {}
+    tomes.forEach(function (t) { t.theme(); });
+  };
+
+  // The flame plays the window's own sheet: 32 frames of 56x84 on 8 columns, 70 ms each (grimoire/logo.go).
+  (function () {
+    var sp = pixelSprite(document.getElementById("flame"), null, 56, 84, 8, 224), i = 0;
+    sp.src("../media/px/flame-sheet.png");
+    if (matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    setInterval(function () { i = (i + 1) % 32; sp.draw(i); }, 70);
+  })();
+  (function () {
+    var h = document.getElementById("hero");
+    h.addEventListener("pointermove", function (e) { var r = h.getBoundingClientRect(); h.style.setProperty("--mx", e.clientX - r.left + 28 + "px"); h.style.setProperty("--my", e.clientY - r.top + "px"); });
+    h.addEventListener("pointerleave", function () { h.style.removeProperty("--mx"); });
+  })();
+</script>
+</body>
+</html>
