@@ -231,6 +231,7 @@ func (f *fileEditor) take() error {
 		}
 		f.ed, f.diff = l.ed, l.diff
 		f.ed.OnUpdate = f.updated
+		f.ed.RectangularSelection, f.ed.CrosshairCursor = true, true
 	}
 	f.loaded, f.disk.seen = f.opens, l.text
 	if err := f.setText(l.text); err != nil {

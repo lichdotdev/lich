@@ -686,4 +686,11 @@ func TestVimsDiagnosticsShowInTheEditor(t *testing.T) {
 		return len(d) == 1 && d[0].From == at && d[0].To == at+1 && d[0].Severity == godemirror.SeverityError &&
 			d[0].Message == "expected expression" && d[0].Source == "gopls"
 	})
+	if errs, warns := f.lspCounts(); errs != 1 || warns != 0 {
+		t.Fatalf("header counts %d errors and %d warnings, want Neovim's one error", errs, warns)
+	}
+	f.ed.NextDiagnostic(godemirror.SeverityError)
+	vimUntil(t, f, "Neovim's cursor on the error the header jumped to", func() bool {
+		return f.vim.state != nil && f.vim.state.row == 4 && f.vim.state.col == 1
+	})
 }
