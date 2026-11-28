@@ -536,6 +536,7 @@
   "settingsProfilesView": {
     "defaultTag": "· padrão",
     "logIn": "Entrar",
+    "prefs": "Modelo e esforço…",
     "logInAgain": "Entrar novamente",
     "copyFrom": "Copiar plugins de…",
     "rename": "Renomear",
@@ -582,7 +583,9 @@
     "copiedTitle": "Plugins de {name}",
     "loggedInAs": "Logado como {email}",
     "lichPluginNote": "Não foi possível instalar o plugin do lich: {error}",
-    "done": "Concluir"
+    "done": "Concluir",
+    "prefsTitle": "Modelo e esforço de {name}",
+    "save": "Salvar"
   },
   "profiles": {
     "usageLimit": "limite",

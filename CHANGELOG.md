@@ -91,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **A profile's model and effort moved off its row, into Model and effort… in the profile's menu.** The row still names them after the account; Settings › your provider › Profiles, then ⋯ on the profile.
 - **A running service is easy to spot: its icon in the sidebar turns green.** It turns red when the service failed and stays grey while it is stopped.
 - **A subagent card spends fewer tokens on lich's tools.** Its tool list leaves out folders, projects, services and handoff, about a third of what every request it makes carried; a session you open keeps all of them.
 - **A report from another session shows in the chat as one shut line with its agent's mark, how it ended and its first words.** Click the line to read the whole report, or the arrow beside it to open that session.

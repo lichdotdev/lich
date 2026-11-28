@@ -532,6 +532,7 @@
   "settingsProfilesView": {
     "defaultTag": "· 기본값",
     "logIn": "로그인",
+    "prefs": "모델과 추론 강도…",
     "logInAgain": "다시 로그인",
     "copyFrom": "다음에서 플러그인 복사…",
     "rename": "이름 바꾸기",
@@ -578,7 +579,9 @@
     "copiedTitle": "{name}의 플러그인",
     "loggedInAs": "{email} 계정으로 로그인됨",
     "lichPluginNote": "lich 플러그인을 설치할 수 없습니다: {error}",
-    "done": "완료"
+    "done": "완료",
+    "prefsTitle": "{name}의 모델과 추론 강도",
+    "save": "저장"
   },
   "profiles": {
     "usageLimit": "한도",

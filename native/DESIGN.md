@@ -1167,10 +1167,11 @@ starts and ends together (`planLine`). A lock takes the reset's place in `Destru
 window first in `ToneWait`. The resets are one line, "Resets" then the grants joined by " · " (`resetsLine`).
 The account is on the profile's row, never repeated under the bars.
 
-From Global, the Profiles block is a table: each profile's row carries the model and the effort its new chats
-start on, as two `SelectTrigger`s of fixed widths (`profileModelW`, `profileEffortW`) under uppercase column
-labels, before the `⋯`. Effort shows once a chat offered one. The line saying terminals keep the provider's own
-setting is the block's detail, said once.
+From Global, a profile's row names the model and the effort its new chats start on at the end of its account
+line, in the same muted text; a value left to the provider is not named. They are set from Model and effort…,
+the first item of the row's `⋯`, in a dialog with one select each and Cancel and Save; nothing is stored before
+Save. Effort shows once a chat offered one. The line saying terminals keep the provider's own setting is the
+dialog's description, not the block's.
 
 A profile's row and a hotkey's row show their `⋯` under the pointer and while its menu is open, its room kept
 at rest so nothing on the line moves. The row's hover is registered over its content with a `pointer.PassOp`,

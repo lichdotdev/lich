@@ -544,6 +544,7 @@
   "settingsProfilesView": {
     "defaultTag": "· по умолчанию",
     "logIn": "Войти",
+    "prefs": "Модель и глубина рассуждений…",
     "logInAgain": "Войти снова",
     "copyFrom": "Скопировать плагины из…",
     "rename": "Переименовать",
@@ -590,7 +591,9 @@
     "copiedTitle": "Плагины для {name}",
     "loggedInAs": "Вы вошли как {email}",
     "lichPluginNote": "Не удалось установить плагин lich: {error}",
-    "done": "Готово"
+    "done": "Готово",
+    "prefsTitle": "Модель и глубина рассуждений: {name}",
+    "save": "Сохранить"
   },
   "profiles": {
     "usageLimit": "лимит",

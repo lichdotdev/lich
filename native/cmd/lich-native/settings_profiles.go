@@ -23,6 +23,7 @@ const (
 	flowDelete
 	flowCopy
 	flowLogin
+	flowPrefs
 )
 
 // flowStep is how far along the dialog is: asking, waiting on the backend, or
@@ -62,10 +63,14 @@ type flowData struct {
 	pluginNote string
 	plugins    []backend.ProfilePlugin
 	source     string
+	// prefs are the model and effort the Model and effort dialog has picked,
+	// by category, stored only on Save.
+	prefs map[string]string
 }
 
 // profileFlow is the dialog every profile action runs in: New profile, Rename,
-// Delete, Copy plugins, and the login that follows a creation.
+// Delete, Copy plugins, Model and effort, and the login that follows a
+// creation.
 type profileFlow struct {
 	// ps is the provider's profiles the dialog belongs to.
 	ps   *profileSettings
@@ -295,6 +300,25 @@ func (s *settingsScreen) startCopy(c *profileSettings, p backend.Profile) {
 	s.invalidate()
 }
 
+// startPrefs opens Model and effort on p, on the values it has now.
+func (s *settingsScreen) startPrefs(c *profileSettings, p backend.Profile, m providersMachine) {
+	prefs := map[string]string{}
+	for _, category := range []string{api.OptionModel, api.OptionEffort} {
+		prefs[category] = c.pref(providerPrefKey(c.provider.kind, category), p.Slug, m)
+	}
+	c.flow.set(func(d *flowData) { *d = flowData{kind: flowPrefs, open: true, target: p, prefs: prefs} })
+	s.invalidate()
+}
+
+// saveProfilePrefs stores what Model and effort picked, for the columns the
+// provider shows.
+func (s *settingsScreen) saveProfilePrefs(c *profileSettings, d flowData) {
+	for _, col := range s.profilePrefColumns(c, s.providers.snapshot()) {
+		s.setProfilePref(c, col.key, d.target.Slug, d.prefs[col.category])
+	}
+	c.flow.set(func(d *flowData) { d.open = false })
+}
+
 // defaultCopySource is where a copy reads from unless asked otherwise:
 // Personal, or the first other profile when Personal is the target.
 func defaultCopySource(list []backend.Profile, target string) string {
@@ -343,6 +367,8 @@ func (s *settingsScreen) confirmFlow(c *profileSettings, d flowData) {
 		s.deleteProfile(c, d.target.Slug)
 	case flowCopy:
 		s.copyPlugins(c, d.target, f.checkedKeys(d.plugins))
+	case flowPrefs:
+		s.saveProfilePrefs(c, d)
 	}
 }
 

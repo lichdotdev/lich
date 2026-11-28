@@ -38,6 +38,7 @@ func settingsFramesOn(t *testing.T, section string) (*settingsScreen, *frameRig,
 	r.draw = func(gtx C, th *ui.Theme) {
 		root.Layout(gtx, func(gtx C) D {
 			s.layoutPatchNotesDialog(gtx, th)
+			s.layoutProfileDialogs(gtx, th)
 			if s.open {
 				s.layout(gtx, th, openTabs)
 			}
@@ -107,13 +108,13 @@ func chatPrefFrames(t *testing.T) (*settingsScreen, *frameRig) {
 }
 
 // TestEachProfileShowsTheModelItsChatsStartOn: Global lists each profile with
-// its own model and effort, and a project born in Work follows Work's, not
-// Personal's.
+// its own model and effort at the end of its account line, and a project born
+// in Work follows Work's, not Personal's.
 func TestEachProfileShowsTheModelItsChatsStartOn(t *testing.T) {
 	s, r := chatPrefFrames(t)
 	r.settle(t)
 	writeShot(t, r, "providers-global.png")
-	for _, label := range []string{"Opus", "Sonnet", "High", "Medium"} {
+	for _, label := range []string{"me@x.y · Max · no plugins · Opus High", "w@x.y · Team · no plugins · Sonnet Medium"} {
 		if !r.shows(label) {
 			t.Fatalf("no %q in: %s", label, r.drawn())
 		}
@@ -142,7 +143,7 @@ func TestAProfileRowsMenuOpensFromItsDots(t *testing.T) {
 	name := r.at(t, "Work")
 	r.hover(name)
 	y := int(name.Y)
-	dots := r.smallestClickIn(t, image.Rect(rigWindow.X/2, y-12, rigWindow.X, y+48))
+	dots := r.smallestClickIn(t, image.Rect(rigWindow.X/2, y-48, rigWindow.X, y+48))
 	r.hover(dots)
 	r.frames(4)
 	if _, ok := r.smallestClickAt(dots.Round()); !ok {
@@ -150,7 +151,16 @@ func TestAProfileRowsMenuOpensFromItsDots(t *testing.T) {
 	}
 	r.click(t, dots)
 	r.settle(t)
-	if rename := i18n.T("settings.settingsProfilesView.rename"); !r.shows(rename) {
-		t.Errorf("no %q after clicking the ⋯:\n%s", rename, r.drawn())
+	for _, item := range []string{i18n.T("settings.settingsProfilesView.rename"), i18n.T("settings.settingsProfilesView.prefs")} {
+		if !r.shows(item) {
+			t.Errorf("no %q after clicking the ⋯:\n%s", item, r.drawn())
+		}
+	}
+	writeShot(t, r, "profile-menu.png")
+	r.click(t, r.glyphAt(t, i18n.T("settings.settingsProfilesView.prefs")))
+	r.settle(t)
+	writeShot(t, r, "profile-prefs.png")
+	if title := i18n.T("settings.settingsProfilesDialogs.prefsTitle", i18n.Args{"name": "Work"}); !r.shows(title) {
+		t.Errorf("no %q after picking it in the menu:\n%s", title, r.drawn())
 	}
 }

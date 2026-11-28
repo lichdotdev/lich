@@ -536,6 +536,7 @@
   "settingsProfilesView": {
     "defaultTag": "· 默认",
     "logIn": "登录",
+    "prefs": "模型和思考强度…",
     "logInAgain": "重新登录",
     "copyFrom": "从…复制插件",
     "rename": "重命名",
@@ -582,7 +583,9 @@
     "copiedTitle": "{name} 的插件",
     "loggedInAs": "已登录为 {email}",
     "lichPluginNote": "无法安装 lich 插件：{error}",
-    "done": "完成"
+    "done": "完成",
+    "prefsTitle": "{name} 的模型和思考强度",
+    "save": "保存"
   },
   "profiles": {
     "usageLimit": "已达上限",

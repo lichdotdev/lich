@@ -710,3 +710,50 @@ func TestChatPrefsAreReadPerProjectAndCounted(t *testing.T) {
 		t.Errorf("Providers badge = %d, want the project's model", got)
 	}
 }
+
+// TestModelAndEffortStoreOnlyOnSave: the dialog opens on the profile's values,
+// a pick stays in the dialog until Save, and Cancel stores nothing.
+func TestModelAndEffortStoreOnlyOnSave(t *testing.T) {
+	s := flowScreen(t, &profileBackend{})
+	c := &s.providers.claude
+	key := providerPrefKey(claudeKind, api.OptionModel)
+	c.prefs = map[string]string{key + "@work": "sonnet"}
+	work := backend.Profile{Slug: "work", Name: "Work"}
+	pick := func(id string) { c.flow.set(func(d *flowData) { d.prefs[api.OptionModel] = id }) }
+
+	s.startPrefs(c, work, s.providers.snapshot())
+	if got := c.flow.view().prefs[api.OptionModel]; got != "sonnet" {
+		t.Fatalf("dialog opened on %q, want the profile's sonnet", got)
+	}
+	pick("haiku")
+	s.dismissFlow(c, c.flow.view())
+	if got := c.pref(key, "work", s.providers.snapshot()); got != "sonnet" {
+		t.Errorf("after Cancel the model is %q, want sonnet kept", got)
+	}
+
+	s.startPrefs(c, work, s.providers.snapshot())
+	pick("opus")
+	s.confirmFlow(c, c.flow.view())
+	if c.flow.view().open {
+		t.Error("Save left the dialog open")
+	}
+	if got := c.pref(key, "work", s.providers.snapshot()); got != "opus" {
+		t.Errorf("after Save the model is %q, want opus", got)
+	}
+}
+
+// TestAProfileRowNamesItsModelAndEffort: the row names the values set and
+// leaves out one left to the provider.
+func TestAProfileRowNamesItsModelAndEffort(t *testing.T) {
+	model, effort := providerPrefKey(claudeKind, api.OptionModel), providerPrefKey(claudeKind, api.OptionEffort)
+	c := &profileSettings{provider: claudeProfileProvider, prefs: map[string]string{model + "@work": "opus", effort + "@work": "high", model + "@small": "haiku"}}
+	cols := []profilePrefColumn{
+		{category: api.OptionModel, key: model, choices: []api.ChatChoice{{ID: "opus", Label: "Opus 5.5"}}},
+		{category: api.OptionEffort, key: effort},
+	}
+	for slug, want := range map[string]string{"work": "Opus 5.5 high", "small": "haiku", "none": ""} {
+		if got := profilePrefSummary(c, providersMachine{}, cols, slug); got != want {
+			t.Errorf("profilePrefSummary(%q) = %q, want %q", slug, got, want)
+		}
+	}
+}

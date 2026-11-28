@@ -46,6 +46,9 @@ func flowHeading(prov profileProvider, d flowData) (title, desc string) {
 			return i18n.T("settings.settingsProfilesDialogs.copiedTitle", i18n.Args{"name": name}), desc
 		}
 		return i18n.T("settings.settingsProfilesDialogs.copyTitle", i18n.Args{"name": name}), desc
+	case flowPrefs:
+		return i18n.T("settings.settingsProfilesDialogs.prefsTitle", i18n.Args{"name": name}),
+			i18n.T("settings.chatPrefSetting.profilesDetail", i18n.Args{"provider": prov.label})
 	}
 	switch {
 	case d.step != stepResult:
@@ -204,6 +207,8 @@ func confirmLabel(kind flowKind) string {
 		return i18n.T("settings.settingsProfilesView.rename")
 	case flowDelete:
 		return i18n.T("settings.settingsProfilesView.delete")
+	case flowPrefs:
+		return i18n.T("settings.settingsProfilesDialogs.save")
 	}
 	return i18n.T("settings.settingsProfilesDialogs.copy")
 }
@@ -227,6 +232,8 @@ func (s *settingsScreen) formBody(gtx C, th *ui.Theme, f *profileFlow, d flowDat
 		children = append(children, layout.Rigid(func(gtx C) D { return nameField(gtx, th, &f.name) }))
 	case flowCopy:
 		children = append(children, layout.Rigid(func(gtx C) D { return s.copySource(gtx, th, f, d) }), ui.VGap(3))
+	case flowPrefs:
+		children = append(children, s.prefFields(th, f, d)...)
 	}
 	if f.ps.provider.plugins && (d.kind == flowNew || d.kind == flowCopy) {
 		children = append(children, ui.VGap(4), layout.Rigid(func(gtx C) D { return s.checklist(gtx, th, f, d) }))
@@ -235,6 +242,26 @@ func (s *settingsScreen) formBody(gtx C, th *ui.Theme, f *profileFlow, d flowDat
 		children = append(children, ui.VGap(3), layout.Rigid(func(gtx C) D { return th.Text(ui.TextXS, d.failure).In(th.Destructive).Wrapped().Layout(gtx) }))
 	}
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx, children...)
+}
+
+// prefFields are Model and effort's selects, one per column the provider
+// shows, each picking into the dialog until Save.
+func (s *settingsScreen) prefFields(th *ui.Theme, f *profileFlow, d flowData) []layout.FlexChild {
+	c := f.ps
+	var children []layout.FlexChild
+	for i, col := range s.profilePrefColumns(c, s.providers.snapshot()) {
+		if i > 0 {
+			children = append(children, ui.VGap(4))
+		}
+		current := d.prefs[col.category]
+		pick := func(id string) { f.set(func(d *flowData) { d.prefs[col.category] = id }) }
+		children = append(children, layout.Rigid(th.Label(i18n.T(col.titleKey)).Layout), ui.VGap(1.5), layout.Rigid(func(gtx C) D {
+			label := chatPrefLabel(col.choices, current, c.provider.label)
+			return s.chatPrefSelect(gtx, th, c.prefPicker(d.target.Slug, col.category), col.choices, current, label,
+				chatPrefLabel(col.choices, "", c.provider.label), profilePickerW, pick)
+		}))
+	}
+	return children
 }
 
 func nameField(gtx C, th *ui.Theme, name *widget.Editor) D {
