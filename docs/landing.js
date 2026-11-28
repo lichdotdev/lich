@@ -1,5 +1,5 @@
-// The landing page: the download button picks the visitor's system, the window in the hero switches views, and the
-// install commands copy. Its words come from the page's own #strings, so every language shares this file.
+// The landing page: the download button picks the visitor's system, the window under the hero switches screens,
+// and the install commands copy. Its words come from the page's own #strings, so every language shares this file.
 var strings = JSON.parse(document.getElementById("strings").textContent);
 var latest = fetch("https://api.github.com/repos/lichdotdev/lich/releases/latest")
   .then(function (r) { return r.ok ? r.json() : null; })
@@ -45,25 +45,27 @@ latest.then(function (release) {
   });
 })();
 
-// The window: a sidebar row or the GUI | TUI switch puts its view on the stage. The first session remembers which
-// of its two views it was left on, as the app does.
+// The window: each tab shows its screenshot, arrows move between tabs the way a tablist does.
 (function () {
-  var win = document.getElementById("win");
-  var rows = win.querySelectorAll(".w-side [data-go]");
-  var first = "chat";
-  function show(view, row) {
-    win.setAttribute("data-view", view);
-    if (view === "chat" || view === "term") first = view;
-    rows.forEach(function (r) { r.classList.toggle("on", r === row); });
-  }
-  rows.forEach(function (r) {
-    r.addEventListener("click", function () {
-      var view = r.getAttribute("data-go");
-      show(view === "chat" ? first : view, r);
+  var tabs = Array.prototype.slice.call(document.querySelectorAll(".gtabs [role=tab]"));
+  function show(tab, focus) {
+    tabs.forEach(function (t) {
+      var on = t === tab;
+      t.setAttribute("aria-selected", String(on));
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
     });
-  });
-  win.querySelectorAll(".seg2 [data-go]").forEach(function (b) {
-    b.addEventListener("click", function () { show(b.getAttribute("data-go"), rows[0]); });
+    if (focus) tab.focus();
+  }
+  tabs.forEach(function (t, i) {
+    t.tabIndex = i === 0 ? 0 : -1;
+    t.addEventListener("click", function () { show(t); });
+    t.addEventListener("keydown", function (e) {
+      var step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (!step) return;
+      e.preventDefault();
+      show(tabs[(i + step + tabs.length) % tabs.length], true);
+    });
   });
 })();
 
