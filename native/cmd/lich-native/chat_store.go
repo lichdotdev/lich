@@ -33,6 +33,9 @@ type chatStore struct {
 	// suggestion is each session's likely next message, drawn in its idle
 	// box (chat_suggest.go).
 	suggestion map[string]string
+	// loading is each session whose history is being read off the event
+	// loop, with the items heard meanwhile, laid on top once it lands.
+	loading map[string][]api.ChatItemUpdate
 }
 
 func (s *chatStore) loadKinds(ctx context.Context, client *backend.Client) error {
@@ -54,9 +57,9 @@ func (s *chatStore) offers(kind string) bool {
 	return kind != "shell" && slices.Contains(s.kinds, kind)
 }
 
-// history takes session id's conversation whole. It is read with the event
-// stream held behind it, so what was heard before it is older and goes, and
-// what is heard after lands on top.
+// history takes session id's conversation whole: what was heard before it is
+// older and goes, and what was heard while beginLoad's read ran lands on top,
+// each item's last update being at least as new as the read.
 func (s *chatStore) history(id string, items []backend.ChatItem) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -64,6 +67,10 @@ func (s *chatStore) history(id string, items []backend.ChatItem) {
 		s.items = map[string][]backend.ChatItem{}
 	}
 	s.items[id] = slices.Clone(items)
+	for _, u := range s.loading[id] {
+		s.put(u)
+	}
+	delete(s.loading, id)
 	s.forgetSent(id)
 	delete(s.suggestion, id)
 	// The turns' numbers are the conversation's own, and a history read back
@@ -79,12 +86,46 @@ func (s *chatStore) apply(u api.ChatItemUpdate) {
 		s.items = map[string][]backend.ChatItem{}
 	}
 	s.heard(u.SessionID, u.Item)
+	if pending, ok := s.loading[u.SessionID]; ok {
+		s.loading[u.SessionID] = append(pending, u)
+		return
+	}
+	s.put(u)
+}
+
+// put replaces the item with the update's id, or appends it. s.mu is held.
+func (s *chatStore) put(u api.ChatItemUpdate) {
 	list := s.items[u.SessionID]
 	if i := slices.IndexFunc(list, func(it backend.ChatItem) bool { return it.ID == u.Item.ID }); i >= 0 {
 		list[i] = u.Item
 		return
 	}
 	s.items[u.SessionID] = append(list, u.Item)
+}
+
+// beginLoad claims the read of session id's history, false when the store
+// holds it or a read runs already.
+func (s *chatStore) beginLoad(id string) bool {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if _, ok := s.items[id]; ok {
+		return false
+	}
+	if _, ok := s.loading[id]; ok {
+		return false
+	}
+	if s.loading == nil {
+		s.loading = map[string][]api.ChatItemUpdate{}
+	}
+	s.loading[id] = nil
+	return true
+}
+
+// dropLoad gives up session id's read, so the next show asks again.
+func (s *chatStore) dropLoad(id string) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	delete(s.loading, id)
 }
 
 func (s *chatStore) turn(t api.ChatTurn) {
@@ -260,6 +301,7 @@ func (m *model) chatEvent(ctx context.Context, ev backend.Event) {
 	switch ev.Name {
 	case api.ChatItemEvent.Name:
 		if u, err := backend.Decode(ev, api.ChatItemEvent); err == nil {
+			m.ensureChat(ctx, u.SessionID)
 			m.chat.apply(u)
 			m.steerQueue(ctx, u)
 		}
@@ -316,24 +358,30 @@ func (m *model) applyView(ctx context.Context, v api.SessionView) {
 	}
 }
 
-// loadChats reads the conversation of every open session drawn as a chat
-// the store does not hold yet: when the window attaches, and when a reload
-// brings a session back (a reopen, a project opened). It runs with the event
-// stream held behind it, as history needs.
-func (m *model) loadChats(ctx context.Context) {
-	m.mu.Lock()
-	var ids []string
-	for _, p := range m.projects {
-		for _, s := range p.Sessions {
-			if s.View == api.ViewChat && !m.chat.holds(s.ID) {
-				ids = append(ids, s.ID)
-			}
-		}
+// ensureChat reads session id's conversation the first time it is shown or
+// heard from, off the event loop: ChatHistory starts the agent, which a chat
+// nobody looked at since launch does not run yet.
+func (m *model) ensureChat(ctx context.Context, id string) {
+	if m.client == nil || !m.chat.beginLoad(id) {
+		return
 	}
-	m.mu.Unlock()
-	for _, id := range ids {
+	go func() {
 		m.loadChat(ctx, id)
+		m.invalidate()
+	}()
+}
+
+// readChat reads session id's conversation now when it is drawn as a chat the
+// store does not hold.
+func (m *model) readChat(ctx context.Context, id string) {
+	m.mu.Lock()
+	p, i := m.sessionAt(id)
+	chat := p != nil && p.Sessions[i].View == api.ViewChat
+	m.mu.Unlock()
+	if !chat || m.client == nil || !m.chat.beginLoad(id) {
+		return
 	}
+	m.loadChat(ctx, id)
 }
 
 func (m *model) loadChat(ctx context.Context, id string) {
@@ -342,6 +390,7 @@ func (m *model) loadChat(ctx context.Context, id string) {
 	}
 	items, err := m.client.ChatHistory(ctx, id)
 	if err != nil {
+		m.chat.dropLoad(id)
 		log.Printf("chat history of %s: %v", id, err)
 		return
 	}

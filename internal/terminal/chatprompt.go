@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"context"
+	"log/slog"
 
 	"github.com/lichdotdev/lich/api"
 	"github.com/lichdotdev/lich/internal/providers"
@@ -12,6 +13,9 @@ import (
 // drawn as a chat: its process has no terminal to type at, so a prompt goes to
 // the chat as its next message.
 type ChatSink interface {
+	// Open starts session id's chat on its conversation, unless it runs
+	// already, and returns once the conversation is open.
+	Open(ctx context.Context, id string) error
 	// Opened is whether session id's chat has opened its conversation, before
 	// which a message would land mid-handshake.
 	Opened(id string) bool
@@ -51,10 +55,33 @@ func (s *Service) ChatPrompt(id, text string) (relay.HandedPrompt, error) {
 }
 
 // ChatOpened is whether session id's chat has opened its conversation
-// (relay.Terminal), before which a message would land mid-handshake.
+// (relay.Terminal), before which a message would land mid-handshake. A chat
+// nobody opened yet is started here: the relay asks only when a message waits
+// for that session, and its next poll finds the conversation open.
 func (s *Service) ChatOpened(id string) bool {
 	sink := s.chatSink(id)
-	return sink != nil && sink.Opened(id)
+	if sink == nil {
+		return false
+	}
+	if sink.Opened(id) {
+		return true
+	}
+	s.wakeChat(sink, id)
+	return false
+}
+
+// wakeChat starts session id's chat in the background, once however many
+// polls ask while it starts.
+func (s *Service) wakeChat(sink ChatSink, id string) {
+	if _, waking := s.wakingChats.LoadOrStore(id, true); waking {
+		return
+	}
+	go func() {
+		defer s.wakingChats.Delete(id)
+		if err := sink.Open(context.Background(), id); err != nil {
+			slog.Warn("start a chat a message waits for", "session", id, "err", err)
+		}
+	}()
 }
 
 // FinalMessage is the final message of session id's last turn, whole, and
@@ -91,9 +118,11 @@ func (s *Service) BackgroundWork(id string) bool {
 	return running == true
 }
 
-// chatSink is the chat service when session id runs as a chat, nil otherwise.
+// chatSink is the chat service when session id runs as a chat, or is drawn as
+// one with no terminal running, nil otherwise. The window starts a chat only
+// when it shows it, so a chat nobody opened since launch has no process yet.
 func (s *Service) chatSink(id string) ChatSink {
-	if !s.spawnOf(id).chat {
+	if !s.spawnOf(id).chat && (s.live(id) || s.store.SessionView(id) != api.ViewChat) {
 		return nil
 	}
 	s.mu.Lock()
@@ -102,8 +131,9 @@ func (s *Service) chatSink(id string) ChatSink {
 }
 
 // Reachable answers whether session id has a process a message can reach:
-// its terminal, or its chat. Live stays the terminal's question, since a write
-// that needs the PTY must not be told a chat is there to take it.
+// its terminal, or its chat, started on the first message when it does not run
+// yet. Live stays the terminal's question, since a write that needs the PTY
+// must not be told a chat is there to take it.
 func (s *Service) Reachable(_ context.Context, opts api.SessionIDOptions) (bool, error) {
-	return s.live(opts.ID) || s.spawnOf(opts.ID).chat, nil
+	return s.live(opts.ID) || s.Chat(opts.ID), nil
 }

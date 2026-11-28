@@ -554,7 +554,6 @@ func (u *window) connect() error {
 	if err := u.model.chat.loadKinds(u.ctx, u.client); err != nil {
 		u.logErr("read the chat providers", err)
 	}
-	u.model.loadChats(u.ctx)
 	if err := u.model.extensions.load(u.ctx, u.client); err != nil {
 		u.logErr("read the extensions", err)
 	}
@@ -1484,7 +1483,7 @@ func (u *window) newSession(l launchRequest, typeahead string) bool {
 		u.toaster.Show(ui.Toast{Variant: ui.ToastError, Title: backend.ErrorText(err)})
 		return false
 	}
-	if err := u.loadSessions(); err != nil {
+	if err := u.loadSessions(id); err != nil {
 		u.logErr("reload", err)
 		return true
 	}

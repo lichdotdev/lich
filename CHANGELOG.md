@@ -94,6 +94,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **A profile's model and effort moved off its row, into Model and effort… in the profile's menu.** The row still names them after the account; Settings › your provider › Profiles, then ⋯ on the profile.
 - **A running service is easy to spot: its icon in the sidebar turns green.** It turns red when the service failed and stays grey while it is stopped.
+- **lich opens at once however many chat sessions you have, and a chat's agent starts when you open it.** A chat you have not opened since launch still takes a task or a note from another session, and starts to take it.
 - **A subagent card spends fewer tokens on lich's tools.** Its tool list leaves out folders, projects, services and handoff, about a third of what every request it makes carried; a session you open keeps all of them.
 - **A report from another session shows in the chat as one shut line with its agent's mark, how it ended and its first words.** Click the line to read the whole report, or the arrow beside it to open that session.
 - **A task another session hands an agent shows at the left of its chat, under the sender's mark and name.** The right side is only ever your own messages; the arrow by the name opens the session that asked.

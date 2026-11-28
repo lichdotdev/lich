@@ -456,7 +456,7 @@ func (u *window) reopenWorktree(r worktreeRequest, path string) {
 
 // showNewSession reloads the project and puts session id on screen.
 func (u *window) showNewSession(projectID, id string) error {
-	if err := u.loadSessions(); err != nil {
+	if err := u.loadSessions(id); err != nil {
 		return err
 	}
 	u.model.setActive(u.ctx, id)
@@ -465,17 +465,17 @@ func (u *window) showNewSession(projectID, id string) error {
 	return nil
 }
 
-// loadSessions reloads the projects, so a session just recorded has its card,
-// and reads the chat of one born as a chat: its process starts now, and its
-// options reach the composer before anyone writes to it. The backend's
+// loadSessions reloads the projects, so session id, just recorded, has its
+// card, and reads its chat when it is born as one: its process starts now, and
+// its options reach the composer before anyone writes to it. The backend's
 // SessionOpenedEvent does this for a spawn, but a session the window records
 // itself sends none.
-func (u *window) loadSessions() error {
+func (u *window) loadSessions(id string) error {
 	if err := u.model.reload(u.ctx); err != nil {
 		return err
 	}
 	u.logErr("load folds", u.model.loadFolds(u.ctx))
-	u.model.loadChats(u.ctx)
+	u.model.readChat(u.ctx, id)
 	return nil
 }
 

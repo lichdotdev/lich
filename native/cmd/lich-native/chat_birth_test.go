@@ -44,7 +44,7 @@ func TestASessionBornAsAChatShowsItsOptionsBeforeTheFirstMessage(t *testing.T) {
 	u.model.launched = true
 	c := birthBackend(t, u.model.projects)
 	u.client, u.model.client = c, c
-	if err := u.loadSessions(); err != nil {
+	if err := u.loadSessions("s1"); err != nil {
 		t.Fatalf("loadSessions: %v", err)
 	}
 	r.settle(t)

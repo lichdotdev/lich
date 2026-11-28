@@ -272,7 +272,7 @@ func (u *window) prSession(project backend.Project, d backend.PRDetail) (string,
 	if err != nil {
 		return "", err
 	}
-	return id, u.loadSessions()
+	return id, u.loadSessions(id)
 }
 
 // recordPRSession records a session for the PR at existing, a checkout with

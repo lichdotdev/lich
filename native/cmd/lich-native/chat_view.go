@@ -334,6 +334,7 @@ func (v *chatView) answer(item, option string) *ui.Clickable {
 // chatScreen draws session sv's conversation over gtx's area, the composer at
 // its foot, keys typing into it when the session takes them.
 func (u *window) chatScreen(gtx C, sv sessionView, keys bool) {
+	u.model.ensureChat(u.ctx, sv.ID)
 	p := u.chats.pane(sv.ID)
 	items := u.model.chat.of(sv.ID)
 	working := chatWorking(sv, u.model.chat.isRunning(sv.ID))

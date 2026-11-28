@@ -288,6 +288,8 @@ type Service struct {
 	// left work running in the background (BackgroundWork). Not under mu for
 	// the reason unread is not.
 	background sync.Map
+	// wakingChats holds each session whose chat ChatOpened is starting.
+	wakingChats sync.Map
 	// hands is how long each session has been worked on, measured off the same
 	// three signals the card is already drawing — a state report, a keystroke,
 	// output while the agent is busy (see handsOn). It carries its own lock for

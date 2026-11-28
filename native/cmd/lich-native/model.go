@@ -592,14 +592,12 @@ func (m *model) follow(ctx context.Context, events <-chan backend.Event) {
 			} else if err := m.loadFolds(ctx); err != nil {
 				log.Printf("load folds after %s: %v", ev.Name, err)
 			}
-			m.loadChats(ctx)
 		case api.SessionOpenedEvent.Name, api.SessionClosedEvent.Name, api.SessionsFiledEvent.Name, api.SessionsColoredEvent.Name:
 			if err := m.reload(ctx); err != nil {
 				log.Printf("reload after %s: %v", ev.Name, err)
 			} else if err := m.loadFolds(ctx); err != nil {
 				log.Printf("load folds after %s: %v", ev.Name, err)
 			}
-			m.loadChats(ctx)
 		default:
 			live, err := m.applyLive(ev)
 			if err != nil {

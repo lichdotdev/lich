@@ -178,9 +178,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   terminal** (`internal/chat/relay.go`, `internal/terminal/chatprompt.go`): `ChatPrompt` hands the text to the
   chat, which sends it at once or queues it, oldest first, behind the turn running; the receipt is acked when its
   turn starts. What still needs a terminal refuses a chat with an error rather than writing nothing: Insert types
-  at a prompt a chat does not have. A chat is reachable only while its process runs: the
-  window starts every session drawn as a chat when it attaches, and a spawn starts one at its birth, so a
-  headless lich restarted with no window attached leaves those sessions out of the roster until one does. An ACP
+  at a prompt a chat does not have. A chat's process starts when the window shows it, at
+  its birth, or on the first message the relay holds for it (`ChatOpened` starts it, and the next poll delivers):
+  a chat nobody opened since launch is in the roster, and the message waits the few seconds its agent takes to
+  resume. An ACP
   chat opens its conversation with no MCP servers of its own (`mcpServers: []`), so whether its agent answers a
   task with lich's tools rests on the provider loading lich's registration in its ACP mode, which was not
   measured for any ACP provider in `chat.Kinds`; Claude Code's chat is given `--mcp-config` like its terminal.

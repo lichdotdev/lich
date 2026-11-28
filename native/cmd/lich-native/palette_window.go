@@ -233,7 +233,7 @@ func (u *window) resumeParked(c backend.ClosedSession) {
 	if _, ok := u.model.restoreSession(c.ProjectID, *restored, math.MaxInt); !ok {
 		return
 	}
-	u.model.loadChats(u.ctx)
+	u.model.readChat(u.ctx, restored.ID)
 	u.openSession(c.ProjectID, restored.ID)
 }
 

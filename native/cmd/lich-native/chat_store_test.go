@@ -285,27 +285,61 @@ func TestAChatEventThroughTheStreamReachesTheStore(t *testing.T) {
 	}
 }
 
-// A reload brings back sessions in a chat (a reopen, a project opened): only
-// those the store never read are read.
-func TestLoadChatsReadsOnlyChatsTheStoreDoesNotHold(t *testing.T) {
+// The window reads a chat when it is shown, not every chat at launch: a read
+// starts its agent. One the store holds, or is reading, is not read again.
+func TestEnsureChatReadsOnlyAChatTheStoreDoesNotHold(t *testing.T) {
 	f, client := newChatBackend(t)
 	m := chatModel(api.ViewChat, api.ViewTerminal, api.ViewChat)
 	m.client = client
 	m.chat.history("s1", nil)
-	m.loadChats(context.Background())
-	if body := f.waitCall(t, api.ChatHistory.Name); !strings.Contains(body, `"id":"s3"`) {
-		t.Errorf("read %s, want s3", body)
-	}
+	m.ensureChat(context.Background(), "s1")
+	m.ensureChat(context.Background(), "s3")
+	m.ensureChat(context.Background(), "s3")
+	f.waitCall(t, api.ChatWorkflows.Name)
 	f.mu.Lock()
 	defer f.mu.Unlock()
 	// A chat's options, commands, background shells and workflows are read
 	// with its history, since the contract gave a chat all four for the window
 	// to show.
-	if len(f.calls) != 5 || !strings.HasPrefix(f.calls[1], "chat.Options ") || !strings.Contains(f.calls[1], `"id":"s3"`) ||
+	if len(f.calls) != 5 || !strings.HasPrefix(f.calls[0], "chat.History ") || !strings.Contains(f.calls[0], `"id":"s3"`) ||
+		!strings.HasPrefix(f.calls[1], "chat.Options ") || !strings.Contains(f.calls[1], `"id":"s3"`) ||
 		!strings.HasPrefix(f.calls[2], "chat.Commands ") || !strings.Contains(f.calls[2], `"id":"s3"`) ||
 		!strings.HasPrefix(f.calls[3], "chat.Shells ") || !strings.Contains(f.calls[3], `"id":"s3"`) ||
 		!strings.HasPrefix(f.calls[4], "chat.Workflows ") || !strings.Contains(f.calls[4], `"id":"s3"`) {
-		t.Errorf("calls %v, want s3's history, options, commands, shells and workflows alone", f.calls)
+		t.Errorf("calls %v, want s3's history, options, commands, shells and workflows once", f.calls)
+	}
+}
+
+// A chat the relay started before anyone showed it is heard first through an
+// item: that reads its history, rather than drawing the item alone.
+func TestAnItemFromAChatTheStoreDoesNotHoldReadsItsHistory(t *testing.T) {
+	f, client := newChatBackend(t)
+	m := chatModel(api.ViewChat)
+	m.client = client
+	m.chatEvent(context.Background(), chatEventOf(t, api.ChatItemEvent, api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "1", Text: "hi"}}))
+	if body := f.waitCall(t, api.ChatHistory.Name); !strings.Contains(body, `"id":"s1"`) {
+		t.Errorf("read %s, want s1", body)
+	}
+}
+
+// What is heard while a history is read lands on top of it: an item the read
+// already holds takes its newer update, and a new one follows.
+func TestItemsHeardWhileAHistoryIsReadLandOnTop(t *testing.T) {
+	m := chatModel(api.ViewChat)
+	if !m.chat.beginLoad("s1") || m.chat.beginLoad("s1") {
+		t.Fatal("beginLoad claimed the read twice, or not at all")
+	}
+	m.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "1", Text: "edited"}})
+	m.chat.apply(api.ChatItemUpdate{SessionID: "s1", Item: backend.ChatItem{ID: "2", Text: "new"}})
+	if m.chat.holds("s1") {
+		t.Fatal("the store holds a chat whose history is still being read")
+	}
+	m.chat.history("s1", []backend.ChatItem{{ID: "1", Text: "old"}})
+	if got := chatIDs(m.chat.of("s1")); !reflect.DeepEqual(got, []string{"1:edited", "2:new"}) {
+		t.Errorf("items %v, want the read with what was heard on top", got)
+	}
+	if m.chat.beginLoad("s1") {
+		t.Error("beginLoad claimed a chat the store holds")
 	}
 }
 
