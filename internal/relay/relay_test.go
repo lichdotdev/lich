@@ -33,6 +33,9 @@ func (f fakeSessions) LoadState(_ context.Context, _ api.None) ([]store.Project,
 
 func (f fakeSessions) SessionBranch(sessionID string) string { return f.branches[sessionID] }
 
+// Nobody here was opened as a subagent.
+func (fakeSessions) SessionSubagentDepth(string) int { return 0 }
+
 func (f fakeSessions) SetLichSchedule(sessionID string, at int64, prompt string) error {
 	return f.SetSessionSchedule(sessionID, at, prompt)
 }
@@ -92,6 +95,9 @@ type fakeTerminal struct {
 	// background is whether each session's agent has work running in the
 	// background, standing in for its chat or its turn-end hook.
 	background map[string]bool
+	// contexts is each session's context in tokens, standing in for the
+	// footer's context readout (see largecontext_test.go).
+	contexts map[string]int
 }
 
 func newFakeTerminal(live ...string) *fakeTerminal {

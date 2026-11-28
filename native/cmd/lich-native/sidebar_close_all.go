@@ -9,7 +9,7 @@ import (
 	"github.com/lichdotdev/lich/native/ui"
 )
 
-// closeAll is a checkout menu's Close all sessions: it asks first when any of
+// closeAll is a block's or a selection's Close all sessions: it asks first when any of
 // ids is mid-turn, and closes them all otherwise.
 func (u *window) closeAll(ids []string) {
 	if running := u.model.runningOf(ids); running > 0 {

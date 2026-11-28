@@ -4,7 +4,10 @@ import (
 	"image/color"
 
 	"gioui.org/font"
+	"gioui.org/io/semantic"
 	"gioui.org/layout"
+	"gioui.org/op"
+	"gioui.org/op/clip"
 	"gioui.org/unit"
 
 	"github.com/lichdotdev/lich/native/ui/icons"
@@ -24,10 +27,12 @@ const (
 // Size is shadcn's button size; the Icon sizes are square.
 type Size uint8
 
+// The zero value is SizeSM, the size of an action on a screen
+// (native/DESIGN.md › Buttons); SizeMD is the exception beside a 36px input.
 const (
-	SizeDefault Size = iota
+	SizeSM Size = iota
 	SizeXS
-	SizeSM
+	SizeMD
 	SizeLG
 	SizeIcon
 	SizeIconXS
@@ -45,14 +50,14 @@ type buttonGeometry struct {
 // ...). Every size is rounded-md: the min(--radius-md, 8px) of the small ones
 // is 6px too.
 var buttonSizes = map[Size]buttonGeometry{
-	SizeDefault: {height: Space(9), padX: Space(2.5), gap: Space(1.5), icon: Space(4), text: TextSM},
-	SizeXS:      {height: Space(6), padX: Space(2), gap: Space(1), icon: Space(3), text: TextXS},
-	SizeSM:      {height: Space(8), padX: Space(2.5), gap: Space(1), icon: Space(4), text: TextSM},
-	SizeLG:      {height: Space(10), padX: Space(2.5), gap: Space(1.5), icon: Space(4), text: TextSM},
-	SizeIcon:    {height: Space(9), icon: Space(4), text: TextSM, square: true},
-	SizeIconXS:  {height: Space(6), icon: Space(3), text: TextXS, square: true},
-	SizeIconSM:  {height: Space(8), icon: Space(4), text: TextSM, square: true},
-	SizeIconLG:  {height: Space(10), icon: Space(4), text: TextSM, square: true},
+	SizeMD:     {height: Space(9), padX: Space(2.5), gap: Space(1.5), icon: Space(4), text: TextSM},
+	SizeXS:     {height: Space(6), padX: Space(2), gap: Space(1), icon: Space(3), text: TextXS},
+	SizeSM:     {height: Space(8), padX: Space(2.5), gap: Space(1), icon: Space(4), text: TextSM},
+	SizeLG:     {height: Space(10), padX: Space(2.5), gap: Space(1.5), icon: Space(4), text: TextSM},
+	SizeIcon:   {height: Space(9), icon: Space(4), text: TextSM, square: true},
+	SizeIconXS: {height: Space(6), icon: Space(3), text: TextXS, square: true},
+	SizeIconSM: {height: Space(8), icon: Space(4), text: TextSM, square: true},
+	SizeIconLG: {height: Space(10), icon: Space(4), text: TextSM, square: true},
 }
 
 // disabledOpacity is the opacity of a disabled button.
@@ -76,8 +81,8 @@ type ButtonStyle struct {
 	Click *Clickable
 	Text  string
 	Icon  *icons.Icon // leading, optional
-	Keys  string      // a key cap leading the text, the key that presses it
-	// AlsoKeys is a second key that presses it, in a cap after the text: a
+	Keys  string      // the key that presses it, in caps after the text
+	// AlsoKeys is a second key that presses it, in caps after Keys: a
 	// permission's one-time reject takes its digit and Esc.
 	AlsoKeys string
 	Variant  Variant
@@ -92,7 +97,7 @@ type ButtonStyle struct {
 	theme *Theme
 }
 
-// Button is a default-variant, default-size button.
+// Button is a default-variant SizeSM button.
 func (th *Theme) Button(click *Clickable, text string) ButtonStyle {
 	return ButtonStyle{Click: click, Text: text, theme: th}
 }
@@ -160,6 +165,16 @@ func (b ButtonStyle) draw(gtx C, hovered bool) D {
 	if geo.square {
 		gtx.Constraints.Min.X, gtx.Constraints.Max.X = h, h
 	}
+	macro := op.Record(gtx.Ops)
+	d := b.face(gtx, geo, col)
+	face := macro.Stop()
+	defer clip.Rect{Max: d.Size}.Push(gtx.Ops).Pop()
+	semantic.Button.Add(gtx.Ops)
+	face.Add(gtx.Ops)
+	return d
+}
+
+func (b ButtonStyle) face(gtx C, geo buttonGeometry, col buttonColors) D {
 	return layout.Background{}.Layout(gtx,
 		func(gtx C) D { return b.surface(gtx, col) },
 		func(gtx C) D {
@@ -189,10 +204,8 @@ func (b ButtonStyle) content(gtx C, geo buttonGeometry, fg color.NRGBA) D {
 		children = append(children, layout.Rigid(func(gtx C) D { return b.theme.Spinner(gtx, geo.icon, fg) }))
 	case b.Icon != nil:
 		children = append(children, layout.Rigid(func(gtx C) D { return b.Icon.Layout(gtx, geo.icon, fg) }))
-	case b.Keys != "":
-		children = append(children, layout.Rigid(b.theme.KeyCap(b.Keys).Layout))
 	}
-	if (b.Busy || b.Icon != nil || b.Keys != "") && b.Text != "" {
+	if (b.Busy || b.Icon != nil) && b.Text != "" {
 		children = append(children, layout.Rigid(layout.Spacer{Width: geo.gap}.Layout))
 	}
 	if b.Text != "" {
@@ -200,8 +213,24 @@ func (b ButtonStyle) content(gtx C, geo buttonGeometry, fg color.NRGBA) D {
 			return b.theme.Text(geo.text, b.Text).In(fg).Weight(font.Medium).Layout(gtx)
 		}))
 	}
-	if b.AlsoKeys != "" {
-		children = append(children, layout.Rigid(layout.Spacer{Width: geo.gap}.Layout), layout.Rigid(b.theme.KeyCap(b.AlsoKeys).Layout))
+	for _, keys := range []string{b.Keys, b.AlsoKeys} {
+		if keys == "" {
+			continue
+		}
+		if len(children) > 0 {
+			children = append(children, layout.Rigid(layout.Spacer{Width: buttonKeysGap}.Layout))
+		}
+		children = append(children, layout.Rigid(b.keyCap(keys, fg)))
 	}
 	return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+}
+
+// buttonKeysGap sets a button's keys a little apart from its word, so the
+// caps read as a hint after it and not as part of it.
+const buttonKeysGap = 6
+
+func (b ButtonStyle) keyCap(keys string, fg color.NRGBA) layout.Widget {
+	k := b.theme.KeyCap(keys)
+	k.Ink = fg
+	return k.Layout
 }

@@ -52,6 +52,7 @@
     "prUnreadable": "No se pudo leer: {error}",
     "prAlsoLinked": "También en esta sesión: {numbers}",
     "closeSession": "Cerrar sesión",
+    "closeChildSessions": "Cerrar las sesiones hijas",
     "fork": "Bifurcar",
     "forkHere": "Aquí",
     "forkWorktree": "Worktree…",
@@ -141,7 +142,8 @@
   "sessionTooltip": {
     "notMounted": "No montado (enlaces simbólicos): {paths}",
     "morePaths": "+{count} más",
-    "modelChanged": "Abierta con {requested}, se ejecuta con {running}"
+    "modelChanged": "Abierta con {requested}, se ejecuta con {running}",
+    "brought": "Llevó: {items}"
   },
   "worktreeDialogView": {
     "title": "Nueva sesión en worktree",

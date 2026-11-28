@@ -42,6 +42,7 @@ func (u *window) undoClose(projectID string, s backend.Session, index int, parke
 	if !ok {
 		return // the project was closed while the toast was up
 	}
+	u.model.loadChats(u.ctx)
 	u.model.invalidate()
 	// The reopen appends, so the slot the card went back to is a reorder.
 	u.logErr("reorder sessions", u.client.ReorderSessions(u.ctx, projectID, ids))

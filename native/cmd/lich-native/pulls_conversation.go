@@ -463,9 +463,9 @@ func (v *pullView) replyBox(gtx C, th *ui.Theme, d backend.PRDetail, t backend.P
 		label = i18n.T("pulls.commentBox.sending")
 	}
 	sendB := th.Button(send, label)
-	sendB.Size, sendB.Disabled, sendB.Keys = ui.SizeXS, body == "" || busy, ctrlEnterCap()
+	sendB.Size, sendB.Disabled, sendB.Keys = ui.SizeSM, body == "" || busy, ctrlEnterCap()
 	cancelB := th.Button(cancel, i18n.T("common.action.cancel"))
-	cancelB.Size, cancelB.Variant = ui.SizeXS, ui.VariantGhost
+	cancelB.Size, cancelB.Variant = ui.SizeSM, ui.VariantGhost
 	return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 		layout.Rigid(func(gtx C) D {
 			ta := th.Textarea(ed, i18n.T("pulls.reviewThread.replyPlaceholder"))
@@ -562,9 +562,9 @@ func (v *pullView) pendingRow(gtx C, th *ui.Theme, i int, c backend.ReviewCommen
 		body = func(gtx C) D { return v.pendingEditBox(gtx, th) }
 	}
 	editB := th.Button(edit, i18n.T("pulls.pullsConversation.edit"))
-	editB.Size, editB.Variant = ui.SizeXS, ui.VariantGhost
+	editB.Size, editB.Variant = ui.SizeSM, ui.VariantGhost
 	discardB := th.Button(discard, i18n.T("pulls.pullsConversation.discard"))
-	discardB.Size, discardB.Variant = ui.SizeXS, ui.VariantDestructive
+	discardB.Size, discardB.Variant = ui.SizeSM, ui.VariantDestructive
 	anchor := lineAnchor(c.StartLine, c.Line)
 	return layout.Inset{Left: pullsPadX, Right: pullsPadX, Top: ui.Space(2)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{}.Layout(gtx,
@@ -589,9 +589,9 @@ func (v *pullView) pendingRow(gtx C, th *ui.Theme, i int, c backend.ReviewCommen
 func (v *pullView) pendingEditBox(gtx C, th *ui.Theme) D {
 	e := &v.talk.pendingEdit
 	saveB := th.Button(&e.save, i18n.T("pulls.pullsConversation.save"))
-	saveB.Size, saveB.Disabled = ui.SizeXS, strings.TrimSpace(e.editor.Text()) == ""
+	saveB.Size, saveB.Disabled = ui.SizeSM, strings.TrimSpace(e.editor.Text()) == ""
 	cancelB := th.Button(&e.cancel, i18n.T("common.action.cancel"))
-	cancelB.Size, cancelB.Variant = ui.SizeXS, ui.VariantGhost
+	cancelB.Size, cancelB.Variant = ui.SizeSM, ui.VariantGhost
 	return layout.Inset{Top: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 		return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
 			layout.Rigid(func(gtx C) D {

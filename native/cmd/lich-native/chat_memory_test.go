@@ -15,11 +15,11 @@ import (
 var memoryList = api.ChatMemoryList{
 	Reported: true,
 	Files: []api.ChatMemoryFile{
-		{Kind: api.MemoryUser, Path: nativeTestPath("/Users/me/.claude/CLAUDE.md")},
-		{Kind: api.MemoryProject, Path: nativeTestPath("/repo/CLAUDE.md"), Exists: true},
-		{Kind: api.MemoryOther, Path: nativeTestPath("/repo/docs/rules.md"), Imported: true, Exists: true},
+		{Kind: api.MemoryUser, Path: osPath("/Users/me/.claude/CLAUDE.md")},
+		{Kind: api.MemoryProject, Path: osPath("/repo/CLAUDE.md"), Exists: true},
+		{Kind: api.MemoryOther, Path: osPath("/repo/docs/rules.md"), Imported: true, Exists: true},
 	},
-	Memories:   []api.ChatMemoryNote{{Name: "lich-uses-pnpm.md", Path: nativeTestPath("/Users/me/.claude/projects/repo/memory/lich-uses-pnpm.md"), Description: "frontend is pnpm", Type: "project"}},
+	Memories:   []api.ChatMemoryNote{{Name: "lich-uses-pnpm.md", Path: osPath("/Users/me/.claude/projects/repo/memory/lich-uses-pnpm.md"), Description: "frontend is pnpm", Type: "project"}},
 	AutoMemory: &api.ChatMemoryToggle{Enabled: true},
 }
 
@@ -28,9 +28,9 @@ var agentList = api.ChatAgentList{
 	Create:   []string{api.AgentProject, api.AgentUser},
 	Agents: []api.ChatAgent{
 		{Name: "Explore", Description: "Search the code", Model: "inherit", Source: api.AgentBuiltIn},
-		{Name: "reviewer", Description: "Reviews code", Model: "sonnet", Source: api.AgentUser, Path: nativeTestPath("/Users/me/.claude/agents/reviewer.md"), Tools: []string{"Read", "Grep"}},
-		{Name: "helper", Description: "Helps", Source: api.AgentProject, Path: nativeTestPath("/repo/.claude/agents/helper.md")},
-		{Name: "plug-agent", Description: "A plugin's", Source: api.AgentPlugin, Path: nativeTestPath("/Users/me/.claude/plugins/p/agents/plug-agent.md"), ReadOnly: true},
+		{Name: "reviewer", Description: "Reviews code", Model: "sonnet", Source: api.AgentUser, Path: osPath("/Users/me/.claude/agents/reviewer.md"), Tools: []string{"Read", "Grep"}},
+		{Name: "helper", Description: "Helps", Source: api.AgentProject, Path: osPath("/repo/.claude/agents/helper.md")},
+		{Name: "plug-agent", Description: "A plugin's", Source: api.AgentPlugin, Path: osPath("/Users/me/.claude/plugins/p/agents/plug-agent.md"), ReadOnly: true},
 	},
 }
 
@@ -39,8 +39,8 @@ var agentList = api.ChatAgentList{
 func memoryFrames(t *testing.T, command string) (*window, *frameRig, *chatBackend, *chatPane) {
 	t.Helper()
 	u, r, f := chatFrames(t, api.ViewChat)
-	f.answers = map[string]any{api.ChatMemory.Name: memoryList, api.ChatAgents.Name: agentList, api.ChatNewAgent.Name: api.ChatNewAgentResult{Path: nativeTestPath("/repo/.claude/agents/scout.md")}}
-	u.model.projects[0].Path = nativeTestPath("/repo")
+	f.answers = map[string]any{api.ChatMemory.Name: memoryList, api.ChatAgents.Name: agentList, api.ChatNewAgent.Name: api.ChatNewAgentResult{Path: osPath("/repo/.claude/agents/scout.md")}}
+	u.model.projects[0].Path = osPath("/repo")
 	u.settings, u.pulls, u.extension = new(settingsScreen), new(pullsScreen), new(extensionScreen)
 	u.editors = stageEditors{client: u.client, invalidate: func() {}, dirty: u.model.markEditorDirty, saved: func(string) {}}
 	u.model.chat.history("s1", []backend.ChatItem{{ID: "u1", Kind: api.ItemUser, Turn: 1, Text: "go"}})
@@ -76,20 +76,20 @@ func TestMemoryRowsOpenCreateAndTurn(t *testing.T) {
 		t.Errorf("the setting asked %s", body)
 	}
 	r.click(t, r.at(t, "Project instructions"))
-	if ed := u.editors.byCheckout[nativeTestPath("/repo")]; ed == nil || ed.rel != "CLAUDE.md" || ed.dir != "" || p.tools.opened() {
+	if ed := u.editors.byCheckout[osPath("/repo")]; ed == nil || ed.rel != "CLAUDE.md" || ed.dir != "" || p.tools.opened() {
 		t.Fatalf("the project's file did not open in the checkout's editor: %+v", ed)
 	}
 	p.tools.open(chatMemoryCommand)
 	u.fetchTools(p, "s1")
 	toolsSettle(r)
 	r.click(t, r.at(t, "User instructions"))
-	wantPath, _ := json.Marshal(nativeTestPath("/Users/me/.claude/CLAUDE.md"))
-	if body := f.waitCall(t, api.ChatCreateMemory.Name); !strings.Contains(body, string(wantPath)) {
+	userFile, _ := json.Marshal(osPath("/Users/me/.claude/CLAUDE.md"))
+	if body := f.waitCall(t, api.ChatCreateMemory.Name); !strings.Contains(body, string(userFile)) {
 		t.Errorf("create asked %s", body)
 	}
 	toolsSettle(r)
 	u.takeCodeAsk()
-	if ed := u.editors.byCheckout[nativeTestPath("/repo")]; ed.dir != nativeTestPath("/Users/me/.claude") || ed.rel != "CLAUDE.md" || !ed.writable {
+	if ed := u.editors.byCheckout[osPath("/repo")]; ed.dir != osPath("/Users/me/.claude") || ed.rel != "CLAUDE.md" || !ed.writable {
 		t.Errorf("the user's file opened as %q in %q writable %v", ed.rel, ed.dir, ed.writable)
 	}
 }
@@ -105,7 +105,7 @@ func TestAgentsListOpenAndAdd(t *testing.T) {
 	}
 	writeShot(t, r, "agents-list.png")
 	r.click(t, r.at(t, "plug-agent"))
-	if ed := u.editors.byCheckout[nativeTestPath("/repo")]; ed == nil || ed.dir != nativeTestPath("/Users/me/.claude/plugins/p/agents") || ed.writable {
+	if ed := u.editors.byCheckout[osPath("/repo")]; ed == nil || ed.dir != osPath("/Users/me/.claude/plugins/p/agents") || ed.writable {
 		t.Fatalf("the plugin's agent did not open read only: %+v", ed)
 	}
 	p.tools.open(chatAgentsCommand)
@@ -124,7 +124,7 @@ func TestAgentsListOpenAndAdd(t *testing.T) {
 	}
 	toolsSettle(r)
 	u.takeCodeAsk()
-	if ed := u.editors.byCheckout[nativeTestPath("/repo")]; ed.rel != ".claude/agents/scout.md" || ed.dir != "" {
+	if ed := u.editors.byCheckout[osPath("/repo")]; ed.rel != ".claude/agents/scout.md" || ed.dir != "" {
 		t.Errorf("the new agent opened as %q in %q", ed.rel, ed.dir)
 	}
 }
@@ -150,8 +150,8 @@ func TestAgentsWithoutFieldsKeepTheKeysOnTheBox(t *testing.T) {
 	u, r, f, p := memoryFrames(t, "/agents")
 	f.mu.Lock()
 	f.answers[api.ChatAgents.Name] = api.ChatAgentList{Reported: true, Agents: []api.ChatAgent{
-		{Name: "reviewer", Source: api.AgentOther, Path: nativeTestPath("/Users/me/.codex/reviewer.toml")},
-		{Name: "writer", Source: api.AgentOther, Path: nativeTestPath("/Users/me/.codex/writer.toml")},
+		{Name: "reviewer", Source: api.AgentOther, Path: osPath("/Users/me/.codex/reviewer.toml")},
+		{Name: "writer", Source: api.AgentOther, Path: osPath("/Users/me/.codex/writer.toml")},
 	}}
 	f.mu.Unlock()
 	p.tools.open(chatAgentsCommand)
@@ -162,7 +162,7 @@ func TestAgentsWithoutFieldsKeepTheKeysOnTheBox(t *testing.T) {
 	}
 	r.press(key.NameDownArrow)
 	r.press(key.NameReturn)
-	if ed := u.editors.byCheckout[nativeTestPath("/repo")]; ed == nil || ed.rel != "writer.toml" || !ed.writable {
+	if ed := u.editors.byCheckout[osPath("/repo")]; ed == nil || ed.rel != "writer.toml" || !ed.writable {
 		t.Fatalf("Down and Enter opened %+v, want writer.toml", ed)
 	}
 	p.tools.open(chatAgentsCommand)

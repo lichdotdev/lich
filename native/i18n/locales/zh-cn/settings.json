@@ -35,7 +35,8 @@
       "chat": "聊天",
       "skills": "技能",
       "mcp": "MCP 服务器",
-      "plugins": "插件"
+      "plugins": "插件",
+      "subagents": "子代理"
     },
     "notYet": "这里还没有"
   },
@@ -826,13 +827,44 @@
     "moveInAll": "全部移入",
     "noSkills": "lich 的库里还没有技能。",
     "noMCP": "lich 的库里还没有 MCP 服务器。",
+    "project": "在此项目中",
     "reason": {
       "notWritten": "lich 还不会把 MCP 服务器写入 {provider}",
-      "sharedFile": "{provider} 的所有配置文件读取同一个文件，因此一个开关对全部生效"
+      "sharedFile": "{provider} 的所有配置文件读取同一个文件，因此一个开关对全部生效",
+      "committed": "{provider} 保存此开关的文件已提交到此仓库",
+      "noSwitch": "{provider} 只能通过移除来停用插件"
     },
     "pluginBrings": "钩子：{hooks} · 技能：{skills} · MCP 服务器：{mcp}",
     "pluginLocked": "lich 打开的每个会话都会运行它，无法关闭。",
     "moveFailed": "无法移入 {name}：{error}",
     "setFailed": "无法更改：{error}"
+  },
+  "subagentsSettings": {
+    "cardsSwitch": "以卡片打开子代理",
+    "searchWords": "子代理 卡片 worker 令牌 token mcp 插件 记忆 带上 subagent card",
+    "subtitle": "智能体启动子代理时，lich 会把它作为一张卡片打开，你可以查看并接手。关闭某个提供方的卡片后，它的子代理会留在会话内运行。",
+    "detailOff": "已关闭：子代理在会话内运行",
+    "detailEverything": "全部带上：{provider} 无法以更少的内容启动",
+    "detailNothing": "不额外带上任何内容",
+    "detailBrings": "带上 {items}",
+    "subtitleLean": "卡片从 lich 和项目自身的指令开始。打开它还应带上的内容。",
+    "subtitleEverything": "卡片会带上你为 {provider} 设置的全部内容：它无法以更少的内容启动会话。",
+    "subtitleOff": "子代理在会话内运行，与 {provider} 自身的方式相同。打开卡片即可查看并接手每一个。",
+    "also": "其他",
+    "onOf": "· {count} 项中的 {on} 项",
+    "memory": "记忆",
+    "memoryDetail": "Claude Code 跨项目记住的关于你的内容。",
+    "claudeSetup": "Claude Code 的设置",
+    "claudeSetupDetail": "你的 ~/.claude 中的 CLAUDE.md 和技能，opencode 也会读取。",
+    "extensions": "扩展",
+    "extensionsDetail": "oh-my-pi 自行找到的扩展。lich 自己的扩展始终加载。",
+    "skills": "技能",
+    "skillsDetail": "你的技能，包括 lich 库中的技能。",
+    "rules": "规则",
+    "rulesDetail": "oh-my-pi 自行找到的规则文件。",
+    "opencodePlugins": "插件始终随附：opencode 没有插件就无法启动。",
+    "originLibrary": "库",
+    "mcpCost": "每张卡片在每次调用时都会读取此服务器的工具和指令。只在卡片的任务需要时才打开。",
+    "saveFailed": "无法保存子代理设置：{error}"
   }
 }

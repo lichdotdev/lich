@@ -10,7 +10,7 @@ require (
 	github.com/coder/websocket v1.8.14
 	github.com/creack/pty v1.1.24
 	github.com/ebitengine/purego v0.11.2
-	github.com/lichdotdev/godemirror v0.11.1-0.20261125175513-d64f3ef2d3ef
+	github.com/lichdotdev/godemirror v0.13.0
 	github.com/lichdotdev/lich/extension v0.4.0
 	github.com/ncruces/zenity v0.10.14
 	golang.org/x/image v0.47.0
@@ -20,11 +20,15 @@ require (
 )
 
 require (
+	gioui.org v0.10.3 // indirect
 	github.com/akavel/rsrc v0.10.2 // indirect
+	github.com/alecthomas/chroma/v2 v2.27.0 // indirect
 	github.com/chromedp/sysutil v1.1.0 // indirect
 	github.com/dchest/jsmin v0.0.0-20220218165748-59f39799265f // indirect
+	github.com/dlclark/regexp2/v2 v2.2.1 // indirect
 	github.com/dustin/go-humanize v1.0.1 // indirect
 	github.com/go-json-experiment/json v0.0.0-20260623181947-01eb4420fa68 // indirect
+	github.com/go-text/typesetting v0.3.5 // indirect
 	github.com/gobwas/httphead v0.1.0 // indirect
 	github.com/gobwas/pool v0.2.1 // indirect
 	github.com/gobwas/ws v1.4.0 // indirect
@@ -36,6 +40,7 @@ require (
 	github.com/randall77/makefat v0.0.0-20210315173500-7ddd0e42c844 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
 	github.com/stretchr/testify v1.11.1 // indirect
+	golang.org/x/exp/shiny v0.0.0-20261009195045-ca0d7ba23607 // indirect
 	modernc.org/libc v1.73.4 // indirect
 	modernc.org/mathutil v1.7.1 // indirect
 	modernc.org/memory v1.11.0 // indirect

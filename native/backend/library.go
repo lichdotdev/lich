@@ -14,10 +14,13 @@ type LibraryFound = api.LibraryFound
 
 type LibraryProvider = api.LibraryProvider
 
-// Library reads lich's library, what the providers hold beside it and lich's
-// own plugin.
-func (c *Client) Library(ctx context.Context) (Library, error) {
-	return callMethod(ctx, c, api.LibraryList, api.None{})
+// LibrarySwitch is one switch of a library item or plugin.
+type LibrarySwitch = api.LibrarySwitch
+
+// Library reads lich's library, what the providers hold beside it, lich's own
+// plugin and theirs, in project's scope ("" for the user's).
+func (c *Client) Library(ctx context.Context, project string) (Library, error) {
+	return callMethod(ctx, c, api.LibraryList, api.LibraryListOptions{Project: project})
 }
 
 // MoveIn copies a found item into the library and turns it off where it was.

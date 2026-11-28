@@ -55,10 +55,13 @@
     "blame": "{author}, {age} · {summary}",
     "blameUncommitted": "You · Uncommitted changes",
     "artifactReadOnly": "From the agent · read only",
+    "readOnly": "Read only",
     "vimFailed": "Neovim did not start, so the editor takes its own keys",
-    "vimLspMissing": "{name} not found",
+    "lspMissing": "{name} not found",
     "vimConfigFailed": "Could not open the Neovim config",
-    "vimLspFailed": "{name} failed to start",
-    "vimLspInstall": "Install"
+    "lspFailed": "{name} failed to start",
+    "lspInstall": "Install",
+    "lspInstalling": "Installing {name}…",
+    "lspInstallFailed": "{name} install failed"
   }
 }

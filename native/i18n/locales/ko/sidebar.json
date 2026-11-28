@@ -51,6 +51,7 @@
     "prUnreadable": "읽을 수 없습니다: {error}",
     "prAlsoLinked": "이 세션의 다른 항목: {numbers}",
     "closeSession": "세션 닫기",
+    "closeChildSessions": "하위 세션 닫기",
     "fork": "포크",
     "forkHere": "여기서",
     "forkWorktree": "worktree…",
@@ -139,7 +140,8 @@
   "sessionTooltip": {
     "notMounted": "마운트되지 않음(심볼릭 링크): {paths}",
     "morePaths": "+{count}개 더",
-    "modelChanged": "{requested} 모델로 시작, 지금은 {running} 실행 중"
+    "modelChanged": "{requested} 모델로 시작, 지금은 {running} 실행 중",
+    "brought": "가져간 것: {items}"
   },
   "worktreeDialogView": {
     "title": "새 worktree 세션",

@@ -35,7 +35,8 @@
       "chat": "Chat",
       "skills": "Skills",
       "mcp": "Servidores MCP",
-      "plugins": "Plugins"
+      "plugins": "Plugins",
+      "subagents": "Subagentes"
     },
     "notYet": "Aún no está aquí"
   },
@@ -827,13 +828,44 @@
     "moveInAll": "Mover todos",
     "noSkills": "Todavía no hay skills en la biblioteca de lich.",
     "noMCP": "Todavía no hay servidores MCP en la biblioteca de lich.",
+    "project": "En este proyecto",
     "reason": {
       "notWritten": "lich todavía no escribe servidores MCP en {provider}",
-      "sharedFile": "Todos los perfiles de {provider} leen el mismo archivo, así que un interruptor sirve para todos"
+      "sharedFile": "Todos los perfiles de {provider} leen el mismo archivo, así que un interruptor sirve para todos",
+      "committed": "Este repositorio versiona el archivo donde {provider} guarda este interruptor",
+      "noSwitch": "{provider} solo desactiva un plugin quitándolo"
     },
     "pluginBrings": "Hooks: {hooks} · skills: {skills} · servidores MCP: {mcp}",
     "pluginLocked": "Todas las sesiones que abre lich lo usan. No se puede desactivar.",
     "moveFailed": "No se pudo mover {name}: {error}",
     "setFailed": "No se pudo cambiar: {error}"
+  },
+  "subagentsSettings": {
+    "cardsSwitch": "Abrir subagentes como tarjetas",
+    "searchWords": "subagente tarjeta worker token tokens mcp plugin memoria llevar ligero",
+    "subtitle": "Cuando un agente inicia un subagente, lich lo abre como una tarjeta que puedes seguir y tomar. Desactiva las tarjetas de un proveedor para que sus subagentes sigan dentro de la sesión.",
+    "detailOff": "Desactivado: los subagentes se ejecutan dentro de la sesión",
+    "detailEverything": "Lleva todo: {provider} no puede empezar con menos",
+    "detailNothing": "No lleva nada más",
+    "detailBrings": "Lleva {items}",
+    "subtitleLean": "Una tarjeta empieza con lich y las instrucciones del propio proyecto. Activa lo que también debe llevar.",
+    "subtitleEverything": "Una tarjeta lleva todo lo que configuraste para {provider}: no tiene forma de empezar una sesión con menos.",
+    "subtitleOff": "Los subagentes se ejecutan dentro de la sesión, como los ejecuta {provider}. Activa las tarjetas para seguir y tomar cada uno.",
+    "also": "También",
+    "onOf": "· {on} de {count}",
+    "memory": "Memoria",
+    "memoryDetail": "Lo que Claude Code recuerda de ti entre proyectos.",
+    "claudeSetup": "La configuración de Claude Code",
+    "claudeSetupDetail": "El CLAUDE.md y las skills de tu ~/.claude, que opencode también lee.",
+    "extensions": "Extensiones",
+    "extensionsDetail": "Las extensiones que oh-my-pi encuentra por su cuenta. La de lich siempre se carga.",
+    "skills": "Skills",
+    "skillsDetail": "Tus skills, incluidas las de la biblioteca de lich.",
+    "rules": "Reglas",
+    "rulesDetail": "Los archivos de reglas que oh-my-pi encuentra por su cuenta.",
+    "opencodePlugins": "Los plugins siempre van incluidos: opencode no puede empezar sin ellos.",
+    "originLibrary": "biblioteca",
+    "mcpCost": "Cada tarjeta lee las herramientas y las instrucciones de este servidor en cada llamada. Actívalo solo si la tarea de una tarjeta lo necesita.",
+    "saveFailed": "No se pudo guardar el ajuste de subagentes: {error}"
   }
 }

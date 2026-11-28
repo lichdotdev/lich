@@ -10,7 +10,7 @@ require (
 	github.com/go-text/typesetting v0.3.5
 	github.com/godbus/dbus/v5 v5.2.2
 	github.com/lichdotdev/gio-driver v0.0.0-20261111143827-fb7064d51698
-	github.com/lichdotdev/godemirror v0.11.1-0.20261125175513-d64f3ef2d3ef
+	github.com/lichdotdev/godemirror v0.13.0
 	github.com/lichdotdev/lich v0.0.0
 	github.com/lichdotdev/lich/extension v0.4.0
 	github.com/neovim/go-client v1.2.1
@@ -59,7 +59,7 @@ require (
 // requests still reaching the widgets of a subtree a frame replays from a
 // cache), and a surface refresh the window system is not ready for retried
 // (the window stayed black after a resize under XWayland). Every patch of ours lands on that branch.
-replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261123233932-67c6422e7129
+replace gioui.org => github.com/lichdotdev/gio v0.0.0-20261127143756-265ddb097d37
 
 replace github.com/lichdotdev/lich => ../
 

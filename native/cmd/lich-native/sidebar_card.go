@@ -8,6 +8,7 @@ import (
 
 	"gioui.org/font"
 	"gioui.org/io/clipboard"
+	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/op/clip"
@@ -31,13 +32,25 @@ func clickable(m map[string]*ui.Clickable, key string) *ui.Clickable {
 func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folders []string) (D, sidebarAction) {
 	var act sidebarAction
 	click := clickable(s.cards, sv.ID)
-	if click.Clicked(gtx) {
+	for {
+		c, ok := click.Update(gtx)
+		if !ok {
+			break
+		}
+		// A pinned card keeps its close out of every menu, the selection's too.
+		if c.Modifiers.Contain(key.ModShortcut) {
+			if !sv.Pinned {
+				s.selection.toggle(sv.ID)
+			}
+			continue
+		}
+		s.selection.clear()
 		act.activate = sv.ID
 	}
 	if clickable(s.mothers, sv.ID).Clicked(gtx) {
 		act.fold = motherKey(sv.ID)
 	}
-	lit := click.Hovered()
+	lit := click.Hovered() || s.selection.has(sv.ID)
 	fill := cardFill(th, sv.Color, active, lit)
 	th = th.On(fill)
 	// A card at rest with no tint of its own, or on a tray of its color,
@@ -65,6 +78,9 @@ func (s *sidebar) card(gtx C, th *ui.Theme, sv *sessionView, active bool, folder
 		s.renames[sv.ID] = rename
 	}
 	entries := func() []ui.MenuEntry {
+		if group := s.selection.menu(sv.ID, &act); group != nil {
+			return group
+		}
 		var extra []ui.MenuEntry
 		if len(sv.continueIn) > 0 {
 			extra = append(extra, continueInItem(th, sv, &act))

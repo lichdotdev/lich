@@ -76,6 +76,10 @@
         "one": "obtuvo {count} página",
         "other": "obtuvo {count} páginas"
       },
+      "lich": {
+        "one": "hizo {count} llamada a lich",
+        "other": "hizo {count} llamadas a lich"
+      },
       "others": {
         "one": "usó {count} herramienta más",
         "other": "usó {count} herramientas más"
@@ -87,7 +91,37 @@
     },
     "latest": "Lo último",
     "newActivity": "Novedades",
-    "edited": "Editados"
+    "edited": "Editados",
+    "lich": {
+      "openedSession": "Abrió sesión",
+      "openingSession": "Abriendo sesión",
+      "sentTo": "Envió a",
+      "sendingTo": "Enviando a",
+      "replied": "Respondió",
+      "replying": "Respondiendo",
+      "waited": "Esperó",
+      "waiting": "Esperando",
+      "closed": "Cerró",
+      "closing": "Cerrando",
+      "renamed": "Renombró",
+      "renaming": "Renombrando",
+      "adjusted": "Ajustó",
+      "adjusting": "Ajustando",
+      "filed": "Movió",
+      "filing": "Moviendo",
+      "started": "Inició",
+      "starting": "Iniciando",
+      "stopped": "Detuvo",
+      "stopping": "Deteniendo",
+      "restarted": "Reinició",
+      "restarting": "Reiniciando",
+      "openedPage": "Abrió página",
+      "openingPage": "Abriendo página",
+      "wentTo": "Fue a",
+      "goingTo": "Yendo a",
+      "showed": "Mostró",
+      "showing": "Mostrando"
+    }
   },
   "done": {
     "done": "Hecho",

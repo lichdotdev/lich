@@ -7,13 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+> [!NOTE]
+> **If your agents open subagent cards, a card now starts without your MCP servers, plugins and memory.** Turn back on what a card needs in Settings › Subagents.
+
 ### Added
 
-- **Keep your skills and MCP servers in lich, and choose which agent and which profile gets each one.** Settings › Skills and MCP servers list what your agents have installed, to move in with one click, then each item's switches; Plugins shows lich's own. MCP servers do not reach Antigravity, Crush or Kiro CLI yet.
+- **Choose what a subagent card brings, or keep a provider's subagents inside the session.** Settings › Subagents lists your agents: switch one's cards off, or open it and pick the MCP servers, plugins and memory a card also loads beyond lich and the project's own instructions. Not on Codex, Crush, Cursor CLI, Kiro CLI or Antigravity, whose cards bring everything.
+- **An agent that hands a task to a session with a very large context is told a new session would do it for less.** The task is still delivered; past 200k tokens of context the result your agent reads adds one line saying so. Not on Antigravity, opencode, oh-my-pi, Crush or Cursor CLI.
+- **A call to one of lich's own tools in a chat says what it did, under an icon of its own, and links the session it reached.** "Sent to", "Closed" or "Restarted" leads the row, and a click on the session's pill opens its card. Not on Antigravity, opencode, oh-my-pi, Cursor CLI or Kiro CLI.
+- **Your agent can compact its own conversation, start another session on a new one, or fork itself.** Ask it to: `control_session` takes compact and new, and `open_session` takes fork. Forking needs Claude Code, Codex or opencode.
+- **Close several sessions at once: a folder's, a session's children, or the ones you pick with Ctrl+click.** Close all sessions is in a folder's menu, Close child sessions in a mother session's, and Ctrl+click (Cmd+click on macOS) on cards selects them for one right-click Close all sessions.
+- **Keep your skills and MCP servers in lich, and choose which agent and which profile gets each one.** Settings › Skills and MCP servers list what your agents have installed, to move in with one click, then each item's switches, and in a project's scope MCP servers also shows the ones the project declares; Plugins lists lich's own and every plugin your agents load, each with its switch. MCP servers do not reach Antigravity, Crush or Kiro CLI yet.
 - **Number the editor's lines from the cursor's, as Vim's relativenumber does.** Turn it on in Settings › Editor › Relative line numbers; the cursor's own line keeps its number.
 - **A Homebrew install follows the beta channel through the `lich@beta` cask.** Pick Beta in Settings › Updates › Channel, and the update command swaps the cask for you.
 - **See the diff of one commit, or of a run of commits, of a pull request.** In Pulls, the chip over Files picks them, Shift+click extends the pick, and View changes on a row of Commits opens that commit; comments and Viewed are off while a pick is shown. On GitLab, only commits your clone holds.
 - **Link a pull request to a session by hand, and unlink one that does not belong.** Pick Link pull request… in the session's menu and type #N or the pull request's URL; it shows with a link glyph wherever the session's pull request does, and Unlink pull request hides it, the branch's own included.
+- **The editor shows your language server's errors, completions, docs and definitions.** A file whose server is on your PATH gets it, with the errors and warnings counted in the editor's header; Ctrl+click goes to a definition. A missing server shows Install in the header when lich knows how to install it.
+- **The editor closes brackets and quotes as you type, and Tab indents.** Enter after `{` indents the new line and a `}` typed first on a line steps back, in the file's own tabs or spaces. With Vim on, Neovim keeps doing this its own way.
 - **Edit files with Vim's own keys, run by your Neovim and its config.** Turn it on in Settings › Editor › Vim mode, which needs Neovim 0.10 or newer and opens your config with Edit config. A file whose language server is on your PATH gets it, with completion as you type, even when your config starts none.
 - **Type /resume in a chat to pick one of its project's conversations to resume.** It opens the palette's History narrowed to that project, with the sessions you closed and the conversations started outside lich; click the project's name over the list to see every project.
 - **A message you write while the agent works reaches it in the same turn, as soon as it starts its next tool.** It waits over the message box, still yours to edit or drop, until then. Antigravity, opencode, oh-my-pi, Cursor CLI and Kiro CLI still get it when the turn ends.
@@ -36,6 +46,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Talk to an agent in a chat instead of its terminal.** The GUI | TUI switch, at the right of the strip over a session's terminal or of a split pane's header, moves the conversation between the two, once the agent is between turns. The chat shows who speaks, a shimmer and a running clock on what the agent is doing, its tool calls hung under their turn from the moment each starts, with how long each took, asks for permissions inline, takes the agent's questions in a card over the message box (picking a choice answers at once, Esc or the × declines, a message sent instead declines them) and keeps your answer in the conversation as your own message, shows when each message was sent and ends the last turn with a line that says how it ended; a searchable model and effort picker and a mode menu sit in the message box, with the branch and the changes count under it. Links are underlined, and a path or a github.com link in an answer wears a file, folder or GitHub mark.
 - **Code blocks an agent writes are colored by their language, as the code view colors them.** A block that names Go, TypeScript, Python, Rust, JSON or another language the code view knows takes your theme's highlighting, in a chat answer or any Markdown lich shows.
 - **Copy a code block an agent writes with one click.** Point at the block, in a chat answer or any Markdown lich shows, and press the copy button at its top right; it turns into a check once the code is on the clipboard.
+- **Notes, tips and warnings an agent writes with GitHub's `> [!NOTE]` stand out with their own color, icon and name.** The five kinds, Note, Tip, Important, Warning and Caution, read this way in a chat answer or any Markdown lich shows.
+- **A long code block shows its first 20 lines, with Show N more lines under it for the rest.** Click it again to fold the block; the copy button still copies all of it.
+- **A diff an agent writes in a `diff` block marks its added and removed lines in green and red, across the whole row.** Header and `@@` lines stay muted, and copying gives back the patch as written.
 - **Select text in a chat and copy it with Ctrl+C.** Drag across the paragraphs, list items, table cells and code blocks of an answer or of your own message, or double click a word, triple click the whole paragraph; Ctrl+C (Cmd+C on macOS) copies what you read and Escape lets go. A selection stays inside one message.
 - **Quote part of a chat message in your reply.** Select text in an answer or in your own message and click Quote over it; it waits above what you type, and the agent gets it as a blockquote before your words.
 - **A message you send in a chat rises near the top of the view, and the answer fills the space under it.** The end of the previous answer stays in sight over your message, and once the answer reaches the message box the chat follows it as before; scroll up and the space goes.
@@ -77,6 +90,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **A subagent card spends fewer tokens on lich's tools.** Its tool list leaves out folders, projects, services and handoff, about a third of what every request it makes carried; a session you open keeps all of them.
+- **A report from another session shows in the chat as one shut line with its agent's mark, how it ended and its first words.** Click the line to read the whole report, or the arrow beside it to open that session.
+- **A task another session hands an agent shows at the left of its chat, under the sender's mark and name.** The right side is only ever your own messages; the arrow by the name opens the session that asked.
+- **Buttons are one size across lich.** Dialogs, Pulls threads and comments, and every screen's actions now share the same height; only the small buttons inside dense rows stay smaller.
+- **Shortcut hints read as real keys, one per key, and a button's shortcut follows its word.** Reply in Pulls now reads Reply, then Ctrl and ↵ as two small faded keys, and every button with a shortcut does the same.
 - **lich installs and updates its own plugin by itself, and it runs in every session lich starts, even after you turned it off or removed it in the agent's own config.** Settings › Updates shows the version your sessions run; a notice with Retry appears only when lich could not set it up.
 - **Menus, dialogs, tooltips and the panels over the message box float on a shadow and grow in from where you opened them.** Across the window, parts are set apart by space instead of lines, states are their glyphs, and the key that does something sits in its button. Toasts stand a little higher, so their shadow clears the footer.
 - **In a project's scope, Settings shows only what that project can change.** The settings every project shares give way to one line at the page's foot, whose Open Global takes you to them.
@@ -144,7 +162,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **The browser's Select and the agent's browser tools reach inside an iframe of the same site, not only the iframe.** A system that draws everything in a frame can be noted with Select, read by the agent and clicked or typed into; a frame from another site is still one element.
 - **Continue in moves a session drawn as a chat to another profile, as it does a terminal.** It refused with "switch this session to its terminal"; the chat now closes, its conversation moves and it opens again in the profile you picked, on the same model, effort and mode.
+- **Clicking an absolute file link in a chat opens it in that session's browser.** Artifact pages load from their isolated preview instead of being sent to the system URL opener.
 - **The Add service dialog keeps the keyboard when a terminal is open.** Typing in its fields no longer goes to the terminal behind it.
 - **The Services icon in the collapsed sidebar keeps its count badge inside the button.** The count no longer clips against the rail.
 - **lich no longer keeps a CPU core busy listing your sessions when dozens are open.** The tray, `lich sessions` and the agents' list of sessions read only what each transcript added since the last look, so opening a session or a worktree no longer waits behind them.

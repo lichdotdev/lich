@@ -128,7 +128,6 @@ func centre(img image.Image) color.NRGBA {
 }
 
 func TestATabShowsTheIconItsPageDeclares(t *testing.T) {
-	t.Parallel()
 	s, base := iconService(t)
 	goTo(t, s, base+"red")
 	redKey := waitIcon(t, s, func(k string) bool { return k != "" })
@@ -145,7 +144,6 @@ func TestATabShowsTheIconItsPageDeclares(t *testing.T) {
 // lich's own site declares its app icon as an SVG that colors itself by
 // prefers-color-scheme: black for a light window, white for a dark one.
 func TestATabShowsAnSVGIconInTheWindowsScheme(t *testing.T) {
-	t.Parallel()
 	t.Cleanup(func() { iconsDark.Store(false) })
 	s, base := iconService(t)
 	for _, dark := range []bool{false, true} {
@@ -173,7 +171,6 @@ func TestATabShowsAnSVGIconInTheWindowsScheme(t *testing.T) {
 // A page with no icon, or one that does not load, shows none: not the icon of
 // the page before it.
 func TestATabShowsNoIconWhereThePageHasNone(t *testing.T) {
-	t.Parallel()
 	s, base := iconService(t)
 	for _, page := range []string{"none", "broken"} {
 		goTo(t, s, base+"red")

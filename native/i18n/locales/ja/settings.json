@@ -35,7 +35,8 @@
       "chat": "チャット",
       "skills": "スキル",
       "mcp": "MCP サーバー",
-      "plugins": "プラグイン"
+      "plugins": "プラグイン",
+      "subagents": "サブエージェント"
     },
     "notYet": "まだありません"
   },
@@ -827,13 +828,44 @@
     "moveInAll": "すべて移す",
     "noSkills": "lich のライブラリにはまだスキルがありません。",
     "noMCP": "lich のライブラリにはまだ MCP サーバーがありません。",
+    "project": "このプロジェクト内",
     "reason": {
       "notWritten": "lich はまだ {provider} に MCP サーバーを書き込みません",
-      "sharedFile": "{provider} のプロファイルはすべて同じファイルを読むため、スイッチは 1 つで全プロファイルに効きます"
+      "sharedFile": "{provider} のプロファイルはすべて同じファイルを読むため、スイッチは 1 つで全プロファイルに効きます",
+      "committed": "{provider} がこのスイッチを保存するファイルはこのリポジトリにコミットされています",
+      "noSwitch": "{provider} はプラグインを削除しないと無効にできません"
     },
     "pluginBrings": "フック: {hooks} · スキル: {skills} · MCP サーバー: {mcp}",
     "pluginLocked": "lich が開くすべてのセッションで動きます。オフにはできません。",
     "moveFailed": "{name} を移せませんでした: {error}",
     "setFailed": "変更できませんでした: {error}"
+  },
+  "subagentsSettings": {
+    "cardsSwitch": "サブエージェントをカードで開く",
+    "searchWords": "サブエージェント カード ワーカー トークン mcp プラグイン メモリ 持ち込む subagent card",
+    "subtitle": "エージェントがサブエージェントを始めると、lich はそれを見守って引き継げるカードとして開きます。プロバイダーのカードをオフにすると、そのサブエージェントはセッションの中で動きます。",
+    "detailOff": "オフ: サブエージェントはセッションの中で動きます",
+    "detailEverything": "すべて持ち込みます: {provider} はこれ以上減らして始められません",
+    "detailNothing": "追加で持ち込むものはありません",
+    "detailBrings": "持ち込むもの: {items}",
+    "subtitleLean": "カードは lich とプロジェクト自身の指示から始まります。ほかに持ち込むものをオンにしてください。",
+    "subtitleEverything": "カードは {provider} に設定したものをすべて持ち込みます。これより少ない状態でセッションを始める方法がありません。",
+    "subtitleOff": "サブエージェントは {provider} と同じように、セッションの中で動きます。カードをオンにすると、一つずつ見守って引き継げます。",
+    "also": "そのほか",
+    "onOf": "· {count} 件中 {on} 件",
+    "memory": "メモリ",
+    "memoryDetail": "Claude Code がプロジェクトをまたいで覚えているあなたのこと。",
+    "claudeSetup": "Claude Code の設定",
+    "claudeSetupDetail": "~/.claude の CLAUDE.md とスキル。opencode もこれを読みます。",
+    "extensions": "拡張機能",
+    "extensionsDetail": "oh-my-pi が自分で見つける拡張機能。lich のものは常に読み込まれます。",
+    "skills": "スキル",
+    "skillsDetail": "あなたのスキル。lich のライブラリのものも含みます。",
+    "rules": "ルール",
+    "rulesDetail": "oh-my-pi が自分で見つけるルールファイル。",
+    "opencodePlugins": "プラグインは常に一緒に読み込まれます。opencode はプラグインなしでは始められません。",
+    "originLibrary": "ライブラリ",
+    "mcpCost": "カードは呼び出しのたびに、このサーバーのツールと指示を読みます。カードの作業に必要なときだけオンにしてください。",
+    "saveFailed": "サブエージェントの設定を保存できませんでした: {error}"
   }
 }

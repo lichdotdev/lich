@@ -419,7 +419,7 @@ lich: 2 requests are open against this session, and an answer that names no tick
 Outside a session, or with nothing open, it is an error rather than a guess, and
 the ticket is still the way to name a specific errand.
 
-### `lich open [--project <name-or-path>] [--kind <provider>] [--worktree <branch>] [--base <branch>] [--model <model>] [--effort <level>] [--ultracode] [--folder <name>] [--prompt <task> [--private | --subagent]] [--json]`
+### `lich open [--project <name-or-path>] [--kind <provider>] [--worktree <branch>] [--base <branch>] [--model <model>] [--effort <level>] [--ultracode] [--fork] [--folder <name>] [--prompt <task> [--private | --subagent]] [--json]`
 
 Opens a new session, starts it, and prints the two names it is addressed by:
 
@@ -469,6 +469,15 @@ It answers to "auth-fix" and to "auth-fix-9f8e". Its agent may still be starting
   branch off a typo that names a revision, leaving a checkout nobody asked for.
   It is **ignored when `--worktree` names a branch that already exists**: a base
   says where a branch starts, and that one already started.
+- `--fork` branches the caller's own conversation into the new session,
+  history and all, and leaves the caller running: the window's Fork, asked for
+  by the agent. Only Claude Code, Codex and opencode can fork; the others are
+  refused. The fork runs the caller's agent on the conversation's own model and
+  effort and opens in its terminal, so `--kind`, `--model`, `--effort`,
+  `--ultracode`, another `--project` and `--subagent` are refused with it.
+  Without `--worktree` it opens in the caller's checkout and folder; a new
+  worktree starts at the branch's last commit, without the caller's uncommitted
+  work ([ceilings](ceilings.md)).
 - **Confinement is the rung's own answer**, and the output says so when the
   answer is yes. Nobody is at this end to answer `Ask each time` — the rung that
   puts the question in the New session menu and the New worktree dialog — so a
@@ -835,8 +844,8 @@ the chat. **Experimental**: it may change outside semver
 ```
 $ lich control auth-fix prompt "run the tests again"
 "auth-fix" started a turn on the prompt.
-$ lich control auth-fix command compact "keep the test plan"
-"auth-fix" started a turn on /compact.
+$ lich control auth-fix compact "keep the test plan"
+"auth-fix" started a turn on the compaction.
 ```
 
 | Action | Value | Done means |
@@ -845,9 +854,11 @@ $ lich control auth-fix command compact "keep the test plan"
 | `abort` | none | the running turn stopped, as the chat's Stop does |
 | `model <model>` | a model the chat's picker offers, by its id, required | its next requests use it |
 | `effort <level>` | an effort level the chat's picker offers, required | its next requests use it |
+| `compact [<instructions>]` | optional, what the summary should keep | a turn started on the compaction command the chat lists (`/compact`, or `/summarize` on opencode and Cursor CLI) |
+| `new` | none | the chat started a new, empty conversation, as its New conversation does |
 | `command <name> [<args>]` | a slash command's name, with or without the slash, and what follows it | a turn started on it |
 
-- **A prompt or a command is the chat's next message**, sent after the turn it
+- **A prompt, a command or a compaction is the chat's next message**, sent after the turn it
   is running. It waits up to 10 seconds for that turn to start; one still
   waiting behind the running turn exits 2, and still goes through. A chat that
   ends first exits 3. `abort` with no turn running exits 1 with the chat's
@@ -863,9 +874,13 @@ $ lich control auth-fix command compact "keep the test plan"
   oh-my-pi, Cursor CLI (not verified) and Kiro CLI. A session on its terminal is
   refused on every provider, naming the switch to GUI; Crush has no chat and is
   always refused.
-- **A session cannot control itself**, except for `model` and `effort`. An
-  abort would end the turn asking for it, and a prompt or a slash command would
-  only run once that turn is over.
+- **A session cannot control itself**, except for `model`, `effort` and
+  `compact`. An abort would end the turn asking for it, a new conversation would
+  drop the one that turn runs in (`lich handoff` passes the work on instead),
+  and a prompt or a slash command would only run once that turn is over. A
+  compaction is wanted exactly then: it runs once the asking turn ends.
+- **`compact` is refused on a chat that lists no compaction command**, before
+  anything is sent.
 
 `--json` prints `{"id","project","label","action","value","state"}`, `value`
 absent when the action carried none; `state` is `done`, `delivered` or `ended`.
@@ -1111,7 +1126,7 @@ at lich.
 | `send_to_session` | `session`, `prompt`, optional `project`, `timeout_seconds` and `private` (`lich send --private`). |
 | `wait_for_answer` | optional `ticket`, `timeout_seconds` and `no_wait` — with a ticket, `lich wait <ticket>`; without one, the collect: everything ready at once. `no_wait` is `lich wait --no-wait` and takes no ticket. |
 | `reply_to_session` | `answer`, optional `ticket` — what a relayed message asks for; without a ticket, the one request open against the calling session, and a refusal naming each open ticket when there are two. |
-| `open_session` | optional `project` (a name, or an absolute directory path, which is opened as a project first), `kind`, `worktree`, `base`, `model`, `effort`, `ultracode`, `folder` — `lich open` — plus optional `prompt` and `private` — `lich open --prompt [--private]`, the same hand-off in the same call. |
+| `open_session` | optional `project` (a name, or an absolute directory path, which is opened as a project first), `kind`, `worktree`, `base`, `model`, `effort`, `ultracode`, `fork`, `folder` — `lich open` — plus optional `prompt` and `private` — `lich open --prompt [--private]`, the same hand-off in the same call. |
 | `handoff_session` | `done`, `next_steps`, optional `branch`, `commits`, `gotchas`, `kind`, `model`, `effort`, `profile` (only a suggestion to the user). Same as `lich handoff`. A note that did not land is reported beside the open session, as `open_session`'s `prompt` is. |
 | `close_session` | `session`, optional `project`, `worktree` (`keep`/`remove`), `force`. |
 | `close_project` | `project` (a name or a directory path) — `lich close-project`. |
@@ -1129,7 +1144,7 @@ at lich.
 | `stop_all_services` | optional `project`; answers with the project's services. `lich service stop-all`. |
 | `read_service_output` | `service`, optional `project`: the console as it is now, a running one's so far or a stopped one's last run. `lich service output`. |
 | `rename_session` | `label`, optional `session` (omitted renames the caller's own) and `project` — `lich rename`. |
-| `control_session` | Experimental. `session` (drawn as a chat), `action` (`prompt`, `abort`, `model`, `effort`, `command`), optional `value`, `args` (`command` only) and `project`. `lich control`. A prompt waiting behind the running turn is a result, not an error. |
+| `control_session` | Experimental. `session` (drawn as a chat), `action` (`prompt`, `abort`, `model`, `effort`, `compact`, `new`, `command`), optional `value`, `args` (`command` only) and `project`. `lich control`. A prompt waiting behind the running turn is a result, not an error. |
 | `list_worktrees` | optional `project` — the checkouts, as JSON. |
 | `show_code` | `path` (relative to the session's checkout, or absolute inside it), optional `line`, `end_line` and `comment` (plain text under the lines, up to 360 characters): opens the file in the stage editor of the session's checkout, the lines selected and the comment over the code. A missing file, a path outside the checkout or a line past the end is an error. |
 | `mark_thread_fixed` | `thread_id`, `commit`: marks a review thread the Pulls screen sent to the session as fixed by that commit. lich resolves the thread and replies with the commit once the pull request's head holds it. A thread never sent from the Pulls screen, or a commit the repository does not hold, is an error. |
@@ -1147,6 +1162,13 @@ journey (fan out into worktree sessions, carry on, collect) is told as one;
 the tool descriptions each only explain their own door. `list_sessions`,
 `list_worktrees`, `list_folders`, `list_services` and `read_service_output` are annotated `readOnlyHint`, so a client
 may auto-allow them.
+
+A subagent card (a session opened with `lich open --subagent`, at any depth) is
+listed every tool but the workspace's administration: the folder tools,
+`close_project`, the service tools and `handoff_session`. `lich mcp` asks the
+backend its session's depth (`relay.Self`) at `tools/list`; a session it cannot
+name, or a backend it cannot reach, gets the whole list. The instructions are the
+same for both, since they name none of those tools.
 
 `file_session`, `rename_folder` and `color_folder` refuse a call that leaves out
 `folder`, `to` or `color`, rather than reading the missing field as empty: an

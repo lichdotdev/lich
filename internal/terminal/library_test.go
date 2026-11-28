@@ -10,6 +10,7 @@ import (
 	"github.com/lichdotdev/lich/internal/prompt"
 	"github.com/lichdotdev/lich/internal/providers"
 	"github.com/lichdotdev/lich/internal/relay"
+	"github.com/lichdotdev/lich/internal/subagent"
 )
 
 // Every provider is handed the library by the route it takes, and the ones
@@ -21,7 +22,7 @@ func TestLibraryRoutesForEveryProvider(t *testing.T) {
 	}
 	for _, p := range providers.Registry {
 		t.Run(p.ID, func(t *testing.T) {
-			args := providerArgs(p.ID, "", "", "", "", "/usr/bin/lich", "", "", lib, false, false, false, relay.RouteCards, prompt.English)
+			args := providerArgs(p.ID, "", "", "", "", "/usr/bin/lich", "", "", lib, subagent.Card{}, false, false, false, relay.RouteCards, prompt.English)
 			joined := strings.Join(args, " ")
 			env := strings.Join(libraryEnv(nil, p.ID, lib), " ")
 			switch p.ID {

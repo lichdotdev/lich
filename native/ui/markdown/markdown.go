@@ -56,7 +56,7 @@ type markdownText struct {
 	// highlight is the style the code blocks were highlighted with.
 	highlight *godemirror.HighlightStyle
 	// copies is each code block's copy button, in the order they are written.
-	copies []*codeCopy
+	copies []*codePanel
 	// cells are the blocks' cells a selection can be made in, in the order
 	// they are written, and sels the selection of each.
 	sels  []*textSelection
@@ -79,9 +79,13 @@ type markdownBlock struct {
 	// quote draws the prose behind a bar, a blockquote; panel draws it on a
 	// fill of its own, a code block.
 	quote, panel bool
+	// alert is the kind of GitHub alert a quote is, noAlert for a quote.
+	alert Alert
 	// code is a panel's code as written, and copy its copy button.
 	code string
-	copy *codeCopy
+	copy *codePanel
+	// diff is the tone of each line of a diff block, nil for other code.
+	diff []diffTone
 	// blocks is what a quote holds when that is more than paragraphs, each
 	// drawn as it is outside one; the quote then has no prose.
 	blocks []markdownBlock
@@ -102,6 +106,9 @@ type markdownCell struct {
 	// sel is the cell's selection, nil for text no selection is made in.
 	sel *textSelection
 	geo *cellGeometry
+	// inRow is a table cell, read after the cell on its left: a pointer
+	// beside it is before or after it, not on one of its lines.
+	inRow bool
 }
 
 // Cache keeps each body's markdownText by a key of the caller's, so
@@ -247,7 +254,13 @@ func (b markdownBlock) layout(gtx C, th *ui.Theme, l Links) D {
 		return b.list.layout(gtx, th, l)
 	}
 	if b.quote {
-		return layoutQuote(gtx, th, func(gtx C) D {
+		return layoutQuote(gtx, th, b.alert.tone(th), func(gtx C) D {
+			if b.alert != noAlert {
+				return layout.Flex{Axis: layout.Vertical}.Layout(gtx,
+					layout.Rigid(func(gtx C) D { return layoutAlertHead(gtx, th, b.alert) }),
+					ui.VGap(alertHeadGap),
+					layout.Rigid(func(gtx C) D { return layoutBlocks(gtx, th, l, b.blocks, BlockGap) }))
+			}
 			if b.blocks != nil {
 				return layoutBlocks(gtx, th, l, b.blocks, BlockGap)
 			}
@@ -255,7 +268,7 @@ func (b markdownBlock) layout(gtx C, th *ui.Theme, l Links) D {
 		})
 	}
 	if b.panel {
-		return b.prose.layoutPanel(gtx, th, l, b.copy, b.code)
+		return b.layoutPanel(gtx, th, l)
 	}
 	if b.props != nil {
 		return layoutProps(gtx, th, b.props)

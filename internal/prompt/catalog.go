@@ -17,9 +17,12 @@ type Catalog struct {
 	// internal/relay: SpawnBriefing. These are passed as one argv entry and a
 	// provider shipped as a .cmd is spawned through cmd.exe, so they must not
 	// contain a double quote or angle brackets in any locale.
-	BriefingIntro        string
-	BriefingCards        string
-	BriefingNative       string
+	BriefingIntro  string
+	BriefingCards  string
+	BriefingNative string
+	// BriefingOff is the route of a provider whose cards Settings › Subagents
+	// turned off: its subagents stay native, and nothing pushes delegation.
+	BriefingOff          string
 	BriefingSessions     string
 	BriefingCommandTools string
 	BriefingCommandCLI   string
@@ -153,7 +156,10 @@ type Catalog struct {
 
 	// internal/cli: the lich command line and its MCP server, read from
 	// EnvVar. MCP tool descriptions, flag help and errors stay English.
+	// MCPInstructions: %[1]s is the reply tool, %[2]s MCPSubagentCards or
+	// nothing, for a session whose provider's cards are off.
 	MCPInstructions        string
+	MCPSubagentCards       string
 	MCPArtifacts           string // %s is the session's artifact directory
 	HandOverFailed         string
 	SendToSessionPrivate   string
@@ -169,6 +175,11 @@ type Catalog struct {
 	CollectedNothing       string
 	CollectedAnswer        string
 	CollectedStillWorking  string
+	// LargeTarget follows a send_to_session result whose target's context is
+	// past relay.largeContextTokens: %[1]q is the target, %[2]d its context in
+	// thousands of tokens.
+	LargeTarget            string
+	LargeTargetCLI         string
 	OpenedProject          string
 	OpenedWorktree         string
 	OpenedConfined         string

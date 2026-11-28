@@ -36,17 +36,21 @@ func tabButtonsOf(r *frameRig) []f32.Point {
 
 func TestDockTabButtonOpensItsTabInTheFrameThatTookTheClick(t *testing.T) {
 	u, r := stageFrames(t, dockCode)
-	r.settle(t)
-	u.dock.show(dockReview)
-	r.waitFor(t, i18n.T("diff.reviewPanel.noChanges"))
-	u.dock.show(dockCode)
+	// Review's changes read once first: the fake backend answers at once, and
+	// their first load landing between the two frames r.click compares reads
+	// as a click that drew the old state.
+	u.dock.tab = dockReview
+	r.waitFor(t, "No uncommitted changes")
+	u.dock.tab = dockCode
 	r.settle(t)
 	buttons := tabButtonsOf(r)
 	if len(buttons) != dockBuiltinTabs {
 		t.Fatalf("%d tab buttons at the dock's foot, want %d", len(buttons), dockBuiltinTabs)
 	}
 	for i, want := range []dockTab{dockReview, dockArtifacts, dockCode} {
-		r.click(t, buttons[int(want)-1])
+		// The first Review frame starts a diff read, so its result may update the next frame.
+		r.queueClick(buttons[int(want)-1])
+		r.frame()
 		if u.dock.tab != want {
 			t.Fatalf("click %d: dock on %v, want %v", i, u.dock.tab, want)
 		}

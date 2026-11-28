@@ -11,9 +11,11 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/f32"
 	"gioui.org/font/gofont"
 	"gioui.org/io/input"
 	"gioui.org/io/key"
+	"gioui.org/io/pointer"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/text"
@@ -412,16 +414,17 @@ func TestVimRestartRebuildsTheBuffersFromTheEditors(t *testing.T) {
 
 func TestVimKnowsTheFilesOfTheConfig(t *testing.T) {
 	h := newVimHost(func() {})
-	config := nativeTestPath("/home/p/.config/nvim")
-	if h.inConfig(filepath.Join(config, "init.lua")) {
+	config := filepath.Join(t.TempDir(), ".config", "nvim")
+	init := filepath.Join(config, "init.lua")
+	if h.inConfig(init) {
 		t.Fatal("a file counted as config before Neovim said where its config is")
 	}
 	h.configDir = config
 	for path, want := range map[string]bool{
-		filepath.Join(config, "init.lua"):                  true,
-		filepath.Join(config, "lua", "plugins.lua"):        true,
-		filepath.Join(config+"-old", "init.lua"):           false,
-		nativeTestPath("/home/p/code/lich/native/main.go"): false,
+		init: true,
+		filepath.Join(config, "lua", "plugins.lua"):                              true,
+		filepath.Join(config+"-old", "init.lua"):                                 false,
+		filepath.Join(filepath.Dir(config), "code", "lich", "native", "main.go"): false,
 	} {
 		if got := h.inConfig(path); got != want {
 			t.Errorf("%s in config = %v", path, got)
@@ -483,7 +486,7 @@ func TestVimNamesTheLanguageServerThatFailedToStart(t *testing.T) {
 	}
 }
 
-func TestVimRetriesTheServerOnceInstalled(t *testing.T) {
+func TestVimStartsTheServerOnceItsInstallEnds(t *testing.T) {
 	real, err := exec.LookPath("gopls")
 	dir := t.TempDir()
 	if err == nil {
@@ -508,20 +511,35 @@ func TestVimRetriesTheServerOnceInstalled(t *testing.T) {
 		f.vimFeed("lich_editor.focus(...)")
 		return f.vim.state.failed == "gopls"
 	})
-	if err := os.Symlink(real, fake+".new"); err != nil {
-		t.Fatal(err)
+	f.vimInstall("ln -sf " + real + " " + fake)
+	if got := f.vimLspText(true); got != "Installing gopls…" {
+		t.Fatalf("strip says %q while the install runs", got)
 	}
-	if err := os.Rename(fake+".new", fake); err != nil {
-		t.Fatal(err)
-	}
-	f.vim.retry = true
-	f.recheck()
-	vimUntil(t, f, "the installed server attached on coming back", func() bool {
+	vimUntil(t, f, "the installed server attached once the install ended", func() bool {
 		f.vimFeed("lich_editor.focus(...)")
 		return slices.Contains(f.vim.state.lsp, "gopls")
 	})
-	if f.vim.retry {
-		t.Fatal("the editor kept retrying once a server attached")
+}
+
+func TestVimInstallThatFailsSaysWhy(t *testing.T) {
+	bin := t.TempDir()
+	if err := os.WriteFile(filepath.Join(bin, "gopls"), []byte("#!/bin/sh\nexit 1\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	install := filepath.Join(bin, "install")
+	if err := os.WriteFile(install, []byte("#!/bin/sh\necho fetching\necho 'no network' >&2\nexit 2\n"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("PATH", bin+string(os.PathListSeparator)+os.Getenv("PATH"))
+	f, _ := vimEditorOf(t, t.TempDir(), "main.go", "package main\n")
+	vimUntil(t, f, "the failure", func() bool {
+		f.vimFeed("lich_editor.focus(...)")
+		return f.vim.state.failed == "gopls"
+	})
+	f.vimInstall(install)
+	vimUntil(t, f, "the install's failure", func() bool { return f.vim.installing == nil })
+	if got := f.vimLspText(true); got != "gopls install failed" || f.vim.installErr != "no network" {
+		t.Fatalf("strip says %q, why %q; want the failure and its last line", got, f.vim.installErr)
 	}
 }
 
@@ -541,14 +559,30 @@ func TestVimClickMovesVimsCursor(t *testing.T) {
 
 func TestVimWheelScrollsVimsWindow(t *testing.T) {
 	f, _ := vimEditor(t, strings.Repeat("line\n", 200))
-	vimResized(t, f)
+	r := newFrameRig(image.Pt(400, 300), func(gtx C, _ *ui.Theme) {
+		if d, err := f.ed.Layout(gtx); err == nil {
+			f.vimResize(d.Size)
+		}
+	})
+	r.frame()
 	top, _ := f.ed.LineBlockAt(f.ed.State().Line(51).From)
-	f.ed.SetScrollTop(top)
-	layOut(t, f)
-	vimUntil(t, f, "the wheel move Vim's top line", func() bool { return f.vim.state.top == 51 })
+	r.router.Queue(pointer.Event{Kind: pointer.Scroll, Source: pointer.Mouse, Position: f32.Pt(200, 150), Scroll: f32.Pt(0, float32(top))})
+	r.frame()
+	until := func(what string, ok func() bool) {
+		t.Helper()
+		for deadline := time.Now().Add(10 * time.Second); time.Now().Before(deadline); time.Sleep(5 * time.Millisecond) {
+			f.syncVim()
+			r.frame()
+			if ok() {
+				return
+			}
+		}
+		t.Fatalf("never saw %s; Neovim at %+v", what, f.vim.state)
+	}
+	until("the wheel move Vim's top line", func() bool { return f.vim.state.top == 51 })
 	for range 20 {
 		f.syncVim()
-		layOut(t, f)
+		r.frame()
 		time.Sleep(5 * time.Millisecond)
 	}
 	if got := f.ed.LineBlockAtHeight(f.ed.ScrollTop()).Number; got != 51 {

@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"gioui.org/io/key"
 	"gioui.org/layout"
 	"gioui.org/op"
 	"gioui.org/unit"
@@ -387,5 +388,60 @@ func TestADiskReadFromBeforeASaveNeverUndoesIt(t *testing.T) {
 	f.watchDisk(frameCtx())
 	if doc := f.ed.State().Doc(); doc != "aone\n" || f.disk.theirs != nil {
 		t.Fatalf("editor holds %q, warning %v; want the saved text kept, no warning", doc, f.disk.theirs != nil)
+	}
+}
+
+func TestTheEditorPairsBracketsIndentsWithTabAndByBrackets(t *testing.T) {
+	srv, d := diskBackend(t)
+	f := loadedEditor(t, srv, d, "func f() {\n\tx := 1\n\n")
+	f.syncVim()
+	if !f.ed.CloseBrackets || !f.ed.IndentWithTab {
+		t.Fatalf("CloseBrackets %v, IndentWithTab %v; want both on while Vim is off", f.ed.CloseBrackets, f.ed.IndentWithTab)
+	}
+	focused := false
+	r := newFrameRig(image.Pt(400, 300), func(gtx C, _ *ui.Theme) {
+		if !focused {
+			f.ed.Focus(gtx)
+			focused = true
+		}
+		_, _ = f.ed.Layout(gtx)
+	})
+	r.frame()
+	at := len("func f() {\n\tx := 1\n")
+	if err := f.ed.Dispatch(godemirror.TransactionSpec{Selection: godemirror.SingleSelection(at, at)}); err != nil {
+		t.Fatal(err)
+	}
+	r.frame()
+	r.router.Queue(key.Event{Name: key.NameTab, State: key.Press})
+	r.frame()
+	if got := f.ed.State().Doc(); got != "func f() {\n\tx := 1\n\t\n" {
+		t.Fatalf("doc %q after Tab; want the file's own tab", got)
+	}
+	r.router.Queue(key.EditEvent{Range: key.Range{Start: at + 1, End: at + 1}, Text: "}"})
+	r.frame()
+	if got := f.ed.State().Doc(); got != "func f() {\n\tx := 1\n}\n" {
+		t.Fatalf("doc %q after a closing brace first on an indented line; want it taken back one tab", got)
+	}
+}
+
+func TestTheIndentUnitIsTheFilesOwn(t *testing.T) {
+	for _, c := range []struct{ text, want string }{
+		{"func f() {\n\treturn\n}\n", "\t"},
+		{"def f():\n    return\n", "    "},
+		{"a:\n  b: 1\n    c: 2\n", "  "},
+		{"/*\n * a comment\n */\nx\n", ""},
+		{"no indentation\n", ""},
+	} {
+		if got := fileIndentUnit(c.text); got != c.want {
+			t.Errorf("fileIndentUnit(%q) = %q, want %q", c.text, got, c.want)
+		}
+	}
+}
+
+func TestVimKeepsItsOwnBracketsAndTab(t *testing.T) {
+	f, _ := vimEditor(t, "one\n")
+	f.syncVim()
+	if f.ed.CloseBrackets || f.ed.IndentWithTab {
+		t.Fatalf("CloseBrackets %v, IndentWithTab %v; want both off while Neovim runs the keys", f.ed.CloseBrackets, f.ed.IndentWithTab)
 	}
 }

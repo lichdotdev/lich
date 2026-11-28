@@ -52,6 +52,7 @@
     "prUnreadable": "无法读取：{error}",
     "prAlsoLinked": "此会话中的其他项：{numbers}",
     "closeSession": "关闭会话",
+    "closeChildSessions": "关闭子会话",
     "fork": "分叉",
     "forkHere": "在此处",
     "forkWorktree": "工作树…",
@@ -141,7 +142,8 @@
   "sessionTooltip": {
     "notMounted": "未挂载（符号链接）：{paths}",
     "morePaths": "另外 {count} 项",
-    "modelChanged": "启动时为 {requested}，当前运行 {running}"
+    "modelChanged": "启动时为 {requested}，当前运行 {running}",
+    "brought": "已带上：{items}"
   },
   "worktreeDialogView": {
     "title": "新建工作树会话",

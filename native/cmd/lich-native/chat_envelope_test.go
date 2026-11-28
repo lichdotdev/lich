@@ -159,10 +159,24 @@ func TestAnEnvelopeIsDrawnAsItsRows(t *testing.T) {
 	writeShot(t, r, "envelopes.png")
 }
 
-// A click on a worker's row opens its card.
-func TestAClickOnAWorkersRowOpensItsCard(t *testing.T) {
+// A worker's note opens shut: a click on its line unfolds the result, and the
+// arrow beside it opens the worker's card (contract changed: the line's click
+// opened the card before the note folded).
+func TestAWorkersNoteUnfoldsAndItsArrowOpensTheCard(t *testing.T) {
 	u, r := envelopeFrames(t)
+	// Markdown draws no labels: the result shows as the room it takes
+	// between the note and the one under it.
+	shut := r.at(t, "Fix #412 is waiting").Y - r.at(t, "Fix #412 finished").Y
 	r.clickLabel(t, "Fix #412 finished")
+	r.settle(t)
+	if open := r.at(t, "Fix #412 is waiting").Y - r.at(t, "Fix #412 finished").Y; open <= shut {
+		t.Fatalf("a click on the note did not unfold its result (%v to %v apart):\n%s", shut, open, r.drawn())
+	}
+	writeShot(t, r, "envelopes-open.png")
+	if sv, ok := u.model.activeSession(); ok && sv.ID == "s2" {
+		t.Fatal("a click on the note's line opened the worker's card")
+	}
+	r.click(t, r.controlOf(t, "Fix #412 finished"))
 	if sv, ok := u.model.activeSession(); !ok || sv.ID != "s2" {
 		t.Errorf("active session = %q, want the worker s2", sv.ID)
 	}
@@ -170,14 +184,27 @@ func TestAClickOnAWorkersRowOpensItsCard(t *testing.T) {
 
 // A worker's chat opens on its task as the person's box, naming who sent it.
 func TestATaskOpensTheWorkersChatAsTheSendersBox(t *testing.T) {
-	_, r := envelopeRig(t, worker)
-	if !r.showsAll("From Relay fixes", "Fix #412: the relay handshake races on reconnect. Add a test that reproduces it first.") {
+	u, r := envelopeRig(t, worker)
+	u.model.projects[0].Sessions = append(u.model.projects[0].Sessions, backend.Session{ID: "s3", Kind: "claude", Label: "Relay fixes"})
+	r.frame()
+	// the sender's name alone heads the box: the left side and the mark say
+	// it is not the person's (contract changed: "From Relay fixes" before)
+	if !r.showsAll("Relay fixes", "Fix #412: the relay handshake races on reconnect. Add a test that reproduces it first.") {
 		t.Fatalf("the task is not drawn as the sender's box:\n%s", r.drawn())
 	}
 	if r.shows("lich-notification") || r.shows("last-message") {
 		t.Errorf("the task was drawn as its XML:\n%s", r.drawn())
 	}
+	// the prompt is short: at the right, as the person's, it would start
+	// past the middle
+	if prompt := r.glyphAt(t, "Fix #412: the relay handshake races on reconnect. Add a test that reproduces it first."); prompt.X > float32(r.size.X)/4 {
+		t.Errorf("the task starts at x=%v of %v, not at the column's left", prompt.X, r.size.X)
+	}
 	writeShot(t, r, "envelope-task.png")
+	r.click(t, r.controlOf(t, "Relay fixes"))
+	if sv, ok := u.model.activeSession(); !ok || sv.ID != "s3" {
+		t.Errorf("active session = %q, want the sender s3", sv.ID)
+	}
 }
 
 // Copying a notification copies its rows' words, and walking back through the

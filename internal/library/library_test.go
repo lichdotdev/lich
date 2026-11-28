@@ -26,12 +26,18 @@ func (m memSettings) SetSetting(_ context.Context, opts api.SetSettingOptions) (
 	return api.None{}, nil
 }
 
+func (memSettings) ProviderBin(string, string) string { return "" }
+
 // rig is a library over a temporary home and config directory, every
 // provider's own config under that home.
 type rig struct {
 	*Service
 	home, config string
 	events       *[]string
+	// ran are the provider commands the library ran, as "provider args...",
+	// answered by answers by that same line, else nothing.
+	ran     *[]string
+	answers map[string]string
 }
 
 func newRig(t *testing.T) rig {
@@ -40,14 +46,24 @@ func newRig(t *testing.T) rig {
 	t.Setenv("HOME", home)
 	t.Setenv("USERPROFILE", home)
 	t.Setenv("XDG_CONFIG_HOME", filepath.Join(home, ".config"))
-	for _, v := range []string{"CLAUDE_CONFIG_DIR", "CODEX_HOME", "OMP_PROFILE", "PI_CODING_AGENT_DIR", "KIRO_HOME"} {
+	for _, v := range []string{"CLAUDE_CONFIG_DIR", "CLAUDE_CODE_PLUGIN_CACHE_DIR", "CODEX_HOME", "OMP_PROFILE", "PI_CODING_AGENT_DIR", "KIRO_HOME"} {
 		t.Setenv(v, "")
 	}
 	var events []string
 	s := New(memSettings{}, func(name string, _ any) { events = append(events, name) }, nil, nil)
 	s.configDir = func() (string, error) { return config, nil }
 	s.home = func() (string, error) { return home, nil }
-	return rig{Service: s, home: home, config: config, events: &events}
+	var ran []string
+	answers := map[string]string{}
+	s.cli = func(c command) ([]byte, error) {
+		line := strings.Join(append([]string{c.provider}, c.args...), " ")
+		if c.dir != "" {
+			line += " in " + c.dir
+		}
+		ran = append(ran, strings.TrimSpace(line+" "+strings.Join(c.env, " ")))
+		return []byte(answers[line]), nil
+	}
+	return rig{Service: s, home: home, config: config, events: &events, ran: &ran, answers: answers}
 }
 
 func writeSkill(t *testing.T, dir, name string) string {
@@ -86,7 +102,7 @@ func TestFoundSkillsAreOneRowPerName(t *testing.T) {
 		t.Fatal(err)
 	}
 
-	lib, err := r.List(t.Context(), api.None{})
+	lib, err := r.List(t.Context(), api.LibraryListOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -101,7 +117,7 @@ func TestFoundSkillsAreOneRowPerName(t *testing.T) {
 	if _, err := r.Seen(t.Context(), api.LibrarySeenOptions{Kind: api.LibrarySkill}); err != nil {
 		t.Fatal(err)
 	}
-	lib, _ = r.List(t.Context(), api.None{})
+	lib, _ = r.List(t.Context(), api.LibraryListOptions{})
 	if lib.Found[0].New {
 		t.Error("a skill seen on the last visit is still new")
 	}
@@ -147,7 +163,7 @@ func TestMoveInASkill(t *testing.T) {
 	if !slices.Contains(*r.events, api.LibraryChangedEvent.Name) {
 		t.Error("no library.changed after the move")
 	}
-	lib, _ := r.List(t.Context(), api.None{})
+	lib, _ := r.List(t.Context(), api.LibraryListOptions{})
 	if len(lib.Found) != 0 || len(lib.Skills) != 1 {
 		t.Errorf("found %+v, skills %+v, want the skill in the library alone", lib.Found, lib.Skills)
 	}
@@ -171,7 +187,7 @@ func TestMoveInAnMCPServer(t *testing.T) {
 	if _, ok := servers["postgres"]; ok || moved["postgres"] == nil || servers["lich"] == nil {
 		t.Errorf("document = %v, want postgres set aside and lich's own left", doc)
 	}
-	lib, _ := r.List(t.Context(), api.None{})
+	lib, _ := r.List(t.Context(), api.LibraryListOptions{})
 	if len(lib.MCP) != 1 || lib.MCP[0].Command != "npx pg" || lib.MCP[0].Transport != "stdio" {
 		t.Errorf("library mcp = %+v", lib.MCP)
 	}
@@ -224,7 +240,7 @@ func TestOneSwitchWhereProfilesShareTheFile(t *testing.T) {
 	}
 	r := newRig(t)
 	r.profiles = func(string) []api.Profile { return []api.Profile{{Slug: "personal"}, {Slug: "work"}} }
-	lib, err := r.List(t.Context(), api.None{})
+	lib, err := r.List(t.Context(), api.LibraryListOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -298,11 +314,10 @@ func skillsHanded(t *testing.T, r rig, provider string, d Delivery) []string {
 		dir = d.SkillsDir
 		if provider == providers.OMP {
 			data, err := os.ReadFile(d.OMPConfig)
-			_, encoded, ok := strings.Cut(string(data), "    - ")
-			var configuredDir string
-			decodeErr := json.Unmarshal([]byte(strings.TrimSpace(encoded)), &configuredDir)
-			if err != nil || !ok || decodeErr != nil || configuredDir != d.SkillsDir {
-				t.Errorf("omp overlay %q (read err %v, decode err %v) does not name %s", data, err, decodeErr, d.SkillsDir)
+			// The path is a double-quoted scalar, where a Windows \ is escaped.
+			quoted, _ := json.Marshal(d.SkillsDir)
+			if err != nil || !strings.Contains(string(data), string(quoted)) {
+				t.Errorf("omp overlay %q (err %v) does not name %s", data, err, d.SkillsDir)
 			}
 		}
 		if provider == providers.Claude || provider == providers.Cursor {
@@ -443,12 +458,12 @@ func TestRefusals(t *testing.T) {
 			t.Errorf("MoveIn(%+v) = nil, want an error", opts)
 		}
 	}
-	if _, err := r.Set(t.Context(), api.LibrarySwitchOptions{Kind: "plugin", Name: "x", Provider: providers.Claude}); err == nil {
+	if _, err := r.Set(t.Context(), api.LibrarySwitchOptions{Kind: "theme", Name: "x", Provider: providers.Claude}); err == nil {
 		t.Error("a switch for no kind was stored")
 	}
 	writeSkill(t, filepath.Join(r.home, ".cursor", "skills"), "pdf")
 	writeSkill(t, filepath.Join(r.config, "lich", "library", "skills"), "pdf")
-	if lib, _ := r.List(t.Context(), api.None{}); len(lib.Found) != 0 {
+	if lib, _ := r.List(t.Context(), api.LibraryListOptions{}); len(lib.Found) != 0 {
 		t.Errorf("found %+v, want a name the library has left out", lib.Found)
 	}
 }

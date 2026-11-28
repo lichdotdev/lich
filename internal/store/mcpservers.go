@@ -28,8 +28,14 @@ func (s *Service) SetSessionSandboxLinks(sessionID string, links []string) error
 	return s.setSessionList(sessionID, "sandbox_links", links)
 }
 
+// SetSessionBrought records what a subagent card brought of the user's setup
+// at its spawn, read back on hydration for SetSessionSandboxLinks' reason.
+func (s *Service) SetSessionBrought(sessionID string, items []string) error {
+	return s.setSessionList(sessionID, "brought", items)
+}
+
 // setSessionList writes a JSON array into one of the session's list columns.
-// column is a literal from the two callers above and never anything a caller
+// column is a literal from the callers above and never anything a caller
 // outside this file names.
 func (s *Service) setSessionList(sessionID, column string, values []string) error {
 	encoded := ""

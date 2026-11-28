@@ -281,8 +281,8 @@ func (u *window) editorIsland(gtx C, v stageView) error {
 	if id := u.model.referenceTarget(v.editor); id != "" {
 		inject = u.injector(id)
 	}
-	return f.layout(gtx, th, editorEnv{root: &u.root, code: code, inject: inject, comments: &u.comments, notify: func(t ui.Toast) { u.toaster.Show(t) }, vim: u.vimHost(),
-		relative: u.settings.editor.prefs.relative, installLSP: u.installLSP})
+	return f.layout(gtx, th, editorEnv{root: &u.root, code: code, inject: inject, comments: &u.comments, notify: func(t ui.Toast) { u.toaster.Show(t) }, vim: u.vimHost(), lsp: u.lspHost(),
+		relative: u.settings.editor.prefs.relative})
 }
 
 // vimHost is the Neovim behind the editors, nil while Vim is off.
@@ -294,6 +294,13 @@ func (u *window) vimHost() *vimHost {
 		u.vim = newVimHost(u.editors.invalidate)
 	}
 	return u.vim
+}
+
+func (u *window) lspHost() *lspHost {
+	if u.lsp == nil {
+		u.lsp = newLspHost(u.editors.invalidate)
+	}
+	return u.lsp
 }
 
 // editorWouldAsk is whether opening t would ask about unsaved changes to
@@ -345,10 +352,4 @@ func (u *window) editorCheckout() string {
 		return p.Path
 	}
 	return ""
-}
-
-// installLSP runs a language server's install in a shell session at dir, as
-// Settings › Version Control installs a missing tool.
-func (u *window) installLSP(dir, command string) {
-	go u.newSession(launchRequest{kind: "shell", dir: dir}, command+"\n")
 }

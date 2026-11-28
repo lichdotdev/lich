@@ -55,10 +55,13 @@
     "blame": "{author}、{age} · {summary}",
     "blameUncommitted": "自分 · 未コミットの変更",
     "artifactReadOnly": "エージェントから · 読み取り専用",
+    "readOnly": "読み取り専用",
     "vimFailed": "Neovim が起動しなかったため、エディタは自身のキー操作を使います",
-    "vimLspMissing": "{name} が見つかりません",
+    "lspMissing": "{name} が見つかりません",
     "vimConfigFailed": "Neovim の設定を開けませんでした",
-    "vimLspFailed": "{name} を起動できませんでした",
-    "vimLspInstall": "インストール"
+    "lspFailed": "{name} を起動できませんでした",
+    "lspInstall": "インストール",
+    "lspInstalling": "{name} をインストール中…",
+    "lspInstallFailed": "{name} のインストールに失敗しました"
   }
 }

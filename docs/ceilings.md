@@ -130,6 +130,14 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   took is its result's time in a Claude Code transcript, and otherwise the moment lich first saw it ended live: a
   conversation read back from Codex or an ACP server carries no end, so its calls show no time. A call the
   provider left running when its turn ended (interrupted) ends at the turn's end, live; read back, it has no end.
+- **A chat draws a call to one of lich's own tools with its icon, verb and session link only on Claude Code and
+  Codex** (`native/cmd/lich-native/chat_lich.go`, `internal/chat/claude.go` `claudeTool`, `codex_items.go`
+  `argsTitle`): the window knows a lich tool by the name it is called under (`mcp__lich__…`, and the single
+  underscore and bare forms `toolline.go` lists), and a session by the `session` argument read into the call's
+  title. An ACP chat names a call after its kind, or Antigravity's `call_mcp_tool` and Kiro CLI's own name, and
+  titles it as its server does, so on Antigravity, opencode, oh-my-pi, Cursor CLI and Kiro CLI a lich call is a
+  plain MCP call; Crush has no chat. The pill shows only when the session is still open and its label is unique
+  in the project, and a failed call keeps its row so its reason shows.
 - **A chat draws a compaction only where its provider reports one, or where the person typed the provider's own
   command for it** (`internal/chat/compaction.go`, `claude_compact.go`, `codex_compact.go`, `acp_compact.go`):
   Claude Code (2.1.330) and Codex (0.170.0) report a compaction's start and end, typed or automatic, with the
@@ -159,6 +167,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   start branches its source's conversation, and only the terminal's resume flag does that; the chat resumes a
   conversation, it cannot branch one. The setting decides the birth only: a resumed or restored session keeps
   the view it had.
+- **An agent forks only its own conversation, and only on Claude Code, Codex and opencode** (`internal/spawn/fork.go`):
+  `lich open --fork` and `open_session`'s `fork` branch the caller's conversation (`providers.SupportsFork`); the
+  other five are refused, as the window's Fork is. The fork runs the caller's agent on the conversation's own model
+  and effort, so naming a kind, model, effort or ultracode is refused rather than dropped, and so is another
+  project. Without a worktree it opens in the caller's checkout, where both agents edit the same files. Into a new
+  worktree it starts at the branch's last commit: the window's Fork carries the source's uncommitted work
+  (`seedWorktree`), and this does not. A caller with no conversation yet, or one its provider pruned, is refused.
 - **A session drawn as a chat takes the relay's tasks and notes as its next message, and nothing that needs its
   terminal** (`internal/chat/relay.go`, `internal/terminal/chatprompt.go`): `ChatPrompt` hands the text to the
   chat, which sends it at once or queues it, oldest first, behind the turn running; the receipt is acked when its
@@ -742,8 +757,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   - `/model` and `/effort` are refused as slash commands: Claude Code's TUI writes them to
     `~/.claude/settings.json`, the default for every new session (2.1.288), and a chat's was not measured. The
     `model` and `effort` actions are the per-session route.
-  - A session cannot control itself past `model` and `effort`: an abort would end the asking turn, and a prompt or
-    a slash command would only run after it.
+  - A session cannot control itself past `model`, `effort` and `compact`: an abort would end the asking turn, a new
+    conversation would drop the one it runs in, and a prompt or a slash command would only run after it. Its own
+    `compact` is taken as its next message, so it runs once the asking turn ends, and nothing tells the agent when.
+  - `compact` sends the compaction command the chat lists (`/compact`, `/summarize`, `internal/chat/compaction.go`)
+    and is refused on a chat that lists neither; which providers list one is whatever each reports at its start.
   - A slash command reaches the agent as the text of a message, never the window: the commands the chat's own
     box answers itself (`/new`, `/clear`, `/reset`, and the `/mcp`, `/memory`, `/permissions` panels) are
     sent to the agent as typed, and what each agent makes of them in its structured mode was not measured.
@@ -982,6 +1000,13 @@ work when nobody knows it and that the call site never shows. The mechanism and 
 
 ## Relay, errands and subagents
 
+- **Only Claude Code, Codex and Kiro CLI warn a sender that its target's context is large**
+  (`internal/relay/largecontext.go`, `largeContextTokens`; `terminal.ContextTokens`): a task handed to a session
+  whose context is past 200k tokens is delivered as any other, and the sender's result says how big that context
+  is and that an independent task costs less in a new session. The size is the footer's context readout, so the
+  providers that record no window (Antigravity, opencode, oh-my-pi, Crush, Cursor CLI) never warn. It is read
+  once, when the task is sent: a target that grows past the line while it works, or a task held until the target
+  is at a prompt, is not warned again.
 - **A compaction can cost a terminal worker its ticket, and nothing reminds it** (`internal/relay/observe.go`,
   `compactReminderLocked`; docs/hooks/session-state.md): a relayed task is a turn of the worker's conversation,
   and a compaction may summarise its ticket away; with two errands open an answer that names none is refused, so
@@ -1027,6 +1052,11 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   lich-plugin does not forward) and Cursor CLI's terminal (its `stop` names none); in a chat the ACP providers'
   self-started turn arrives as updates with no `session/prompt` running, which the ACP driver does not run as a
   turn. All read from shipped binaries, not measured.
+- **A subagent card is not listed lich's folder, project, service and handoff tools** (`internal/cli/mcp.go`,
+  `cardTools`): every request a card makes carries its tool list, and a card does the task it was handed. A
+  card asked to file sessions, close a project, run a service or hand off says it has no tool for it; a call by
+  name still runs, so a client that kept an older list loses nothing. Same on every provider that reaches
+  `lich mcp`: the depth is read from the backend by `LICH_SESSION_ID`, which every tool already needs.
 - **Codex and Kiro CLI sessions get the spawn briefing, not lich's MCP instructions** (`internal/cli/mcp.go`,
   `mcpInstructions`; `internal/terminal/command.go`, `codexBriefingArgs`, `briefingEnv`): both initialize the
   server, list its tools and never hand its initialize `instructions` to the model (measured 2026-11-07 on
@@ -1166,10 +1196,22 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   `research`, Cursor CLI `explore`), and a call that mixes one with other tasks stays native as a whole, since a
   veto is the call's; so do a workflow step, another plugin's spawn, a call from inside a native subagent and the
   subagents of a worker two levels down, and the worker is reached with `send_to_session` or `lich send`, never with
-  the provider's own message tool. Subagent cards are not optional: there is no setting, and a plugin older than
-  the hook still reads `LICH_SUBAGENT_CARDS=off`, which lich exports only to a worker past the depth cards nest to.
+  the provider's own message tool. Settings › Subagents turns a provider's cards off, and a plugin older than the
+  hook still reads `LICH_SUBAGENT_CARDS=off`, which lich exports to a worker past the depth cards nest to and, under
+  such a plugin, to every Claude Code session whose cards are off.
   A call lich cannot open within 5 s runs natively, and what it opened after that is closed; so is a call whose
   hook gave up before lich answered.
+- **A subagent card starts lean only on Claude Code, opencode and oh-my-pi** (`internal/subagent/cards.go`,
+  docs/hooks/subagent-cards.md, What a card brings): a card brings lich, the project's own instructions and what
+  Settings › Subagents has it bring, nothing else by default. Codex, Crush, Cursor CLI, Kiro CLI and Antigravity
+  have no way lich uses to start a session with less (no per-spawn knob for MCP, plugins or memory in their
+  `--help`; Codex's `-c plugins."<id>".enabled=false` and `--disable apps` are documented but not measured yet, and
+  Kiro injects AGENTS.md, README.md and its skills on its own), so a card of theirs brings everything; the switch that turns their cards off still works.
+  What always comes even where a card is lean: Claude Code's user hooks from `settings.json` (no knob drops them
+  without lich's), claude.ai connectors and a project's or local-scope MCP servers (not listed, since lich does
+  not read them without a session), opencode's plugins and oh-my-pi's MCP servers. A card the user takes over
+  keeps what it was born with until it is restarted. A Claude Code card no longer reads the user's auto memory
+  unless Memory is picked, which a user upgrading has to turn back on.
 - **Cursor CLI's chat runs no hooks** (docs/hooks/subagent-cards.md, Known ceilings): `cursor-agent acp` runs
   neither Cursor's hooks nor the Claude Code install's, so a Cursor chat's subagent runs natively and never becomes a
   card; in a terminal it does.
@@ -1205,8 +1247,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   run natively when `jq` is missing, as the reports already go silent without it. No install step brings jq and the
   window says nothing, so a machine without jq sees no card for an agent's own subagent; `lich doctor` warns and
   names the command that installs it.
-- **oh-my-pi's chat loads the plugin's extension only from `$PI_CODING_AGENT_DIR/extensions/`**: its ACP server
-  takes no flags, so without the extension there a chat's subagent runs natively.
+- **oh-my-pi's chat takes the plugin's extension only on its root, before `acp`**: `acp` takes no flags of its own,
+  and the root's (`-e`, `--config`, a lean card's `--no-extensions`, `--no-skills`, `--no-rules`) are passed before it
+  (measured on 19.1.1), so without the extension there a chat's subagent runs natively.
 - **A vetoed call is drawn as opened only where the chat's tool item carries the hook's `tool_use_id`**
   (`native/cmd/lich-native/chat_veto.go`): Claude Code's chat does (its item id is the `toolu_` id). Codex's
   app-server chat draws no item at all for a vetoed spawn, so nothing there is drawn as failed, and the redirect's
@@ -1573,15 +1616,36 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   none yet, and each one's row says so. A built folder is named by its content and never rewritten, so a session
   keeps what it started with; old ones are not removed yet. Moving in copies the item and turns it off where it
   was, never deleting: a skill folder's `SKILL.md` becomes `SKILL.md.lich-moved` (a link is renamed instead), and an
-  MCP entry moves under a `lichMoved_<key>` key beside the provider's own. Claude Code's MCP servers in
-  `~/.claude.json`, which it rewrites while it runs, and Codex's in `config.toml` are not offered. What the
-  providers hold is read again every 30 seconds (go.mod carries no file watcher). A provider with profiles (Claude
+  MCP entry moves under a `lichMoved_<key>` key beside the provider's own. Claude Code's user servers in
+  `~/.claude.json`, which it rewrites while it runs, leave through `claude mcp remove -s user`, whose change a
+  running Claude Code keeps (measured on 2.1.332), and Codex's in `config.toml` through `codex mcp get --json` and
+  `codex mcp remove`: lich does not rewrite either file. A server that sends its own headers (an `Authorization`
+  header, Codex's `bearer_token_env_var`) is refused, since the library has nowhere to keep them yet, and an
+  `opencode.jsonc` with comments is never rewritten, since JSON would drop them. A project's own servers show in
+  that project's scope, never moved: Claude Code's `.mcp.json` and its local scope in `~/.claude.json`, Codex's
+  `.codex/config.toml`, opencode's `opencode.json(c)`, Crush's `crush.json` and `.crush.json`, Cursor CLI's
+  `.cursor/mcp.json` and Kiro CLI's `.kiro/settings/mcp.json`; Antigravity and oh-my-pi read no project file lich
+  knows of yet. What the providers hold, and what the projects a screen showed declare, is read again every 30
+  seconds (go.mod carries no file watcher). A provider with profiles (Claude
   Code, Codex and oh-my-pi, and opencode, Cursor CLI and Kiro CLI where `internal/xdgprofile` gives them some) gets
   one switch per profile; a move in turns the item on for all of them at once, and a profile's own switch wins once
   set. Where lich writes one file or folder that every profile of a provider reads, a split could not be kept, so
   that provider gets one switch saying why: Codex's and Kiro CLI's skills (Codex's profiles link Personal's
   `skills/`, and Kiro CLI's read one `~/.kiro/skills`), and oh-my-pi's and Cursor CLI's MCP servers (one `mcp.json`
   each).
+- **Settings › Plugins switches the providers' own plugins through their own CLI, and some providers have no
+  switch** (`internal/library/plugins.go`): lich lists the plugins each provider loads in the screen's scope and
+  never holds or moves one. Claude Code's are the `enabledPlugins` of each profile's `settings.json`, one switch per
+  profile through `claude plugin enable|disable --scope user` with the profile's `CLAUDE_CONFIG_DIR`; in a project
+  they are Personal's as the project's `.claude/settings.json` and then `settings.local.json` override them, behind
+  one switch that runs `--scope local` in the project and so writes `settings.local.json`, never the committed
+  `settings.json`. A project that commits `settings.local.json` too gets no switch, saying why. Codex has no plugin
+  switch in its CLI (0.170.0), so lich flips the `enabled` line of the plugin's table in each profile's
+  `config.toml`, the file it already rewrites to turn its own plugin back on; Codex installs plugins for the user
+  alone. Antigravity's go through `agy plugin enable|disable`, oh-my-pi's through `omp plugin enable|disable`,
+  which flips them for every profile at once (its `--scope project` writes nothing, measured on 19.1.1). opencode
+  turns a plugin off only by removing it, so its plugins show without a switch, saying so. Crush and Kiro CLI take
+  no plugins, and Cursor CLI loads the ones Claude Code installed, which show under Claude Code.
 - **A plugin install is pinned, so the harness never updates it on its own** (`internal/agentplugin/compat.go`,
   `codex.go` `codexPinMarketplace`): for the providers that still install it (Codex, Antigravity, Crush, Kiro CLI),
   lich installs the newest plugin release inside the range it speaks and declares Codex's marketplace at that
@@ -2448,7 +2512,7 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   as the distribution's Chrome, Edge and Brave do: one unpacked from a tarball fails to start with "No usable
   sandbox!", which the agent reads as the browser's error.
 - **A page in lich-browser has no pause for the agent to hear** (`internal/browser/webkit*.go`,
-  `docs/lich-browser.md`): on Linux with an X display and `lich-browser` beside `lich`, on macOS with
+  `docs/lich-browser.md`): on Linux with an X or Wayland display and `lich-browser` beside `lich`, on macOS with
   `lich-browser` beside `lich`, and on Windows with `lich-browser.exe` beside `lich.exe`, every page lives there,
   and DevTools is the engine's inspector, a tab of the pane's. Nothing on the wire says the page stopped in its
   debugger, so the agent's tools do not fail naming the pause as they do on a Chrome page: a read answers with the
@@ -2468,6 +2532,15 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   acceleration AppKit puts on it. A popped-out page's window has no Dock tile (lich-browser is an accessory app),
   and the favicon is fetched apart from the page's cookies. WKDownload refuses a file that exists, so the name Go
   reserves is freed just before WebKit takes it: two downloads of one name at once may race for it.
+- **A page in lich-browser on Wayland without X is drawn from frames, with three gaps against X11**
+  (`native/cmd/lich-browser/frames_linux.go`, `docs/lich-browser.md`): with no X display each tab draws in a
+  `GtkOffscreenWindow`, and the pane shows it the way it showed Chrome's screencast, so every frame crosses the
+  backend's `/events` as a base64 JPEG: 130 KiB a frame at 1280x720 and 353 KiB at 2x, about 65 a second while
+  the wheel scrolls, 2 ms and 8 ms to encode (KWin headless, 2026-11-26), and a PNG once the page holds still.
+  The pane's pointer, keys and committed text reach the page over the wire, trusted, and the clipboard goes
+  through the window, as with Chrome. The gaps: (1) the pane shows the window's arrow over the page, never its
+  I-beam or hand; (2) a file dragged from the desktop does not drop into the page; (3) a page just loaded may
+  show GTK's dark background for one frame, about 50 ms, before WebKit's first paint.
 - **A layer the window floats over the content shows over a page it draws itself only where it says so**
   (`coverPages` in `native/cmd/lich-native/browser_native.go`): the page is a native child window over the pane,
   above anything the window draws, so a layer that floats over the content (a dock or sidebar sliding in, and later
@@ -2583,7 +2656,8 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   (`openArtifactInEditor`, `native/cmd/lich-native/stage_editor_window.go`), with the Code tab's Markdown
   renderer. The editor reads it from the artifact folder and never writes it, since `project.WriteFile` is bound
   to the checkout; typing in its source changes nothing. `browser_open` on the same file still loads its source
-  in the browser, since the renderer only draws in the window.
+  in the browser, since the renderer only draws in the window. An absolute local link in a chat answer goes
+  through that session's browser and preview server, so artifact links load from their isolated HTTP origin.
 - **`browser_eval` hands the agent whatever the page holds, form values and passwords included**
   (`internal/browser/eval.go`): page info never reads a field's value, but a script asks for what it wants, and
   its answer lands in the session's transcript. It runs in the page's own world, so it changes what the user
@@ -2606,7 +2680,9 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   Disabled is `:disabled` or `aria-disabled="true"`, which a page may set on something it still handles.
 - **A note left on the page names only what the page shows lich** (`internal/browser/notes.go`,
   `native/cmd/lich-native/browser_notes.go`): the pick asks the page for the element under the pointer, so an
-  element inside an iframe is picked as the iframe and one inside a closed shadow root as its host, and a
+  element inside a cross-origin iframe is picked as the iframe and one inside a closed shadow root as its host.
+  Inside a same-origin iframe the pick reaches the element, and its selector joins the frame's and the
+  element's with ` >>> `, which `browser_click` and the agent's other targets and `within` follow too. A
   selector picked inside an open shadow root finds it again only from that root, where `browser_click` does
   not look. The React component comes from the page's fiber, there only in a development build, and its file
   and line from `_debugSource`, which React 19 dropped. Pins follow their elements by looking them up again
@@ -2615,6 +2691,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   fixed one, so an absolutely positioned element that escapes such an ancestor is cut anyway, and one a
   sibling covers keeps its pin. Notes not sent yet
   live in the window: closing it, or the browser, loses them.
+- **The agent reads into a same-origin iframe only** (`internal/browser/pageinfo.go`, `pagescript/pagescript.go`):
+  a page's script reaches a frame's document only on its own origin, so a cross-origin frame's text and elements
+  stay out of `browser_info` and ` >>> ` does not step into it; a click at x and y off a screenshot still lands
+  there. A frame's text follows the page's, so the 1000-character cut can leave it out of a long page.
 - **A sketch on the page is a picture of what the pane showed, and only an agent that reads images sees it**
   (`native/cmd/lich-native/browser_sketch.go`): the strokes are in the pane's coordinates, not the page's, so
   the wheel is held while there are any, a navigation drops them, and a pane resized under them leaves them
@@ -2706,6 +2786,18 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   opened, saved or reloaded, never on a timer, so a commit made meanwhile shows at the next of those. Its
   room counts the line's runes as cells, so a line with tabs or wide characters cuts it at the code area's
   edge without the "…".
+- **The editor's language servers come from godemirror's catalog, one per server and project folder**
+  (`native/cmd/lich-native/lsp_*.go`, `stage_editor_lsp.go`, off while Vim mode is on, where the person's
+  Neovim runs its own): a file gets the first server of `servers.Lookup` whose program is on the PATH or among
+  those lich installed, started at the nearest folder holding one of its root markers up to the checkout, and
+  kept for the window's life; a server whose lspconfig command is computed in Lua (no `Command` in the catalog)
+  is never started, a file outside the checkout gets none, and a server that exits is not restarted until the
+  file is opened again. Install runs mason-registry's recipe in the background into lich's cache folder
+  (`lich/lsp/<server>`), for Go, npm, PyPI and Cargo packages when go, npm, python3 or cargo is on the PATH; a
+  GitHub release (rust-analyzer, lua-language-server, clangd and most others) gets no Install yet. A definition
+  in another file of the checkout opens in the editor, one outside it read only; a rename's or a code action's
+  edits to other files are written to disk as they stand there, so an unsaved change in an editor of another
+  checkout is not seen. Find references, the outline and formatting have no place in the window yet.
 - **Vim mode is the person's own Neovim behind the editor, not an emulation** (`native/cmd/lich-native/vim*.go`,
   Settings › Editor › Vim mode, off by default): the window starts one `nvim --embed` with the person's config at
   the first key, every editor holds a buffer in it named as its file (so the filetype and its settings apply,
@@ -2738,9 +2830,10 @@ work when nobody knows it and that the call site never shows. The mechanism and 
   a server lich started that exits before attaching (a version manager's shim with no version for the folder)
   shows as "failed to start", with the first line of its stderr as lsp.log keeps it in a tooltip, while one the
   person's config started and lost leaves the strip silent; a missing or failed gopls, basedpyright or
-  rust-analyzer offers Install when go, pipx or pip, or rustup is on the PATH, which runs the install in a shell
-  session at the project and starts the server again each time the editor comes back to the stage until one
-  attaches (clangd, lua-language-server and jdtls come from the system's package manager, and get no Install); Settings › Editor › Vim mode › Edit config opens init.lua or
+  rust-analyzer offers Install when go, pipx or pip, or rustup is on the PATH, which runs the install in the
+  background at the project, the strip saying so, and starts the server once it ends; a failed install shows its
+  output's last line in a tooltip and the rest in lich-native.log, and an installed server that lands outside the
+  PATH (go install's GOBIN, pip's user folder) still shows as not found (clangd, lua-language-server and jdtls come from the system's package manager, and get no Install); Settings › Editor › Vim mode › Edit config opens init.lua or
   init.vim of the config folder Neovim reports (NVIM_APPNAME and XDG_CONFIG_HOME followed), writing an empty
   init.lua where there is none, and saving any file under that folder restarts Neovim, as Restart Neovim in the
   palette does;

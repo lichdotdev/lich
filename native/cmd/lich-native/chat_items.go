@@ -285,12 +285,11 @@ func chatThought(gtx C, th *ui.Theme, f *chatFold, it backend.ChatItem, live boo
 // kind with the time they took and how many failed, opening on a row per call.
 // While a call runs the line is that call, shimmering, beside the count.
 func (u *window) chatWork(gtx C, th *ui.Theme, p *chatPane, f *chatFold, sv sessionView, r chatRow) D {
-	outcome := u.vetoOutcome(p, sv)
+	outcome, vetoed := u.chatOutcome(p, sv)
 	if len(r.tools) == 1 {
 		return chatToolWith(gtx, th, r.tools[0], r.live, outcome(r.tools[0]), 0)
 	}
 	f.update(gtx)
-	vetoed := func(it backend.ChatItem) bool { return outcome(it) != nil }
 	label := func(gtx C, fg color.NRGBA) D { return chatWorkLabel(gtx, th, r, vetoed, fg) }
 	earlier := p.fold("earlier:" + r.run)
 	earlier.update(gtx)
@@ -545,6 +544,12 @@ func chatToolWith(gtx C, th *ui.Theme, it backend.ChatItem, live bool, opened *c
 				}),
 				ui.Gap(2),
 				layout.Flexed(1, func(gtx C) D {
+					if opened != nil && opened.target != nil {
+						gtx.Constraints.Min.X = 0
+						d := opened.target(gtx)
+						d.Size.X = gtx.Constraints.Max.X
+						return d
+					}
 					// The text's own width, not the room's: the band sweeps the words.
 					gtx.Constraints.Min.X = 0
 					d := target.Layout(gtx)
@@ -552,7 +557,7 @@ func chatToolWith(gtx C, th *ui.Theme, it backend.ChatItem, live bool, opened *c
 					return d
 				}),
 				layout.Rigid(func(gtx C) D {
-					if opened != nil {
+					if opened != nil && opened.links != nil {
 						return opened.links(gtx)
 					}
 					return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -857,7 +862,7 @@ func (u *window) chatAnswer(gtx C, th *ui.Theme, p *chatPane, sv sessionView, r 
 	return c.hover(gtx, func(gtx C, over bool) D {
 		body := []layout.FlexChild{
 			layout.Rigid(func(gtx C) D {
-				links := markdown.Links{Open: func(url string) { openLink(u.client, notify, url) }, Paths: p.paths, Quote: u.quoteButton(p, th, gtx.Metric)}
+				links := markdown.Links{Open: func(url string) { u.openChatLink(sv.ID, notify, url) }, Paths: p.paths, Quote: u.quoteButton(p, th, gtx.Metric)}
 				return p.md.LayoutLinksWindow(gtx, th, it.ID, src, links, p.window)
 			}),
 		}

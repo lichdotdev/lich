@@ -54,6 +54,7 @@
     "prUnreadable": "Не удалось прочитать: {error}",
     "prAlsoLinked": "Ещё в этой сессии: {numbers}",
     "closeSession": "Закрыть сессию",
+    "closeChildSessions": "Закрыть дочерние сессии",
     "fork": "Форк",
     "forkHere": "Здесь",
     "forkWorktree": "Worktree…",
@@ -145,7 +146,8 @@
   "sessionTooltip": {
     "notMounted": "Не смонтировано (симлинки): {paths}",
     "morePaths": "+ещё {count}",
-    "modelChanged": "Открыта на {requested}, работает на {running}"
+    "modelChanged": "Открыта на {requested}, работает на {running}",
+    "brought": "Взяла: {items}"
   },
   "worktreeDialogView": {
     "title": "Новая сессия в worktree",

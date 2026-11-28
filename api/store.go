@@ -347,6 +347,10 @@ type Session struct {
 	// window restart has to come back to the same answer. Nil for an unconfined
 	// session and for one whose sandbox skipped nothing.
 	SandboxSkippedLinks []string `json:"sandboxSkippedLinks"`
+	// Brought is what a subagent card brought of the user's setup at its
+	// spawn, by SubagentCardItem.ID, riding the row for MCPServers' reason.
+	// Nil for a session that is no card and a card that brought nothing.
+	Brought []string `json:"brought,omitempty"`
 	// View is how the session is drawn, ViewChat or ViewTerminal; "" reads
 	// as the terminal, what every session was before chats.
 	View string `json:"view,omitempty"`

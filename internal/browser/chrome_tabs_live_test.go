@@ -36,7 +36,6 @@ func frontOf(tabs []api.BrowserTab) api.BrowserTab {
 }
 
 func TestChromeTabsOpenSwitchAndCloseKeepingEachPage(t *testing.T) {
-	t.Parallel()
 	p, srv := liveChrome(t)
 	tabs := make(chan []api.BrowserTab, 32)
 	p.Listen(func(string, string) {}, func(string, string) {}, func(string, api.BrowserDownload) {}, func(string) {},
@@ -89,7 +88,6 @@ func TestChromeTabsOpenSwitchAndCloseKeepingEachPage(t *testing.T) {
 }
 
 func TestChromeNewTabReportsThePageTitleOnceLoaded(t *testing.T) {
-	t.Parallel()
 	p, srv := liveChrome(t)
 	tabs := make(chan []api.BrowserTab, 32)
 	p.Listen(func(string, string) {}, func(string, string) {}, func(string, api.BrowserDownload) {}, func(string) {},

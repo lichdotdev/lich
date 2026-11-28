@@ -462,3 +462,36 @@ func TestAResumedCompactionIsNotReported(t *testing.T) {
 		t.Errorf("states = %q, want no compacting for the history", got)
 	}
 }
+
+// TestCompactCommandIsTheOneTheProviderLists: control's compaction sends the
+// command each provider lists, /summarize where it has no /compact, and one
+// that lists neither is refused.
+func TestCompactCommandIsTheOneTheProviderLists(t *testing.T) {
+	for _, kind := range []string{providers.Claude, providers.Codex, providers.OpenCode} {
+		for _, tc := range []struct {
+			listed []api.ChatCommand
+			want   string
+		}{
+			{[]api.ChatCommand{{Text: "/review"}, {Text: "/compact"}}, "/compact"},
+			{[]api.ChatCommand{{Text: "/summarize"}}, "/summarize"},
+			{[]api.ChatCommand{{Text: "/review"}}, ""},
+		} {
+			t.Run(kind+" "+tc.want, func(t *testing.T) {
+				r := newChat(t, kind)
+				// After the fake's own list, which would replace this one.
+				r.eventually("the commands", func() bool { return len(r.commands()) > 0 })
+				r.svc.running("s1").setCommands(tc.listed)
+				got, err := r.svc.CompactCommand(t.Context(), api.SessionIDOptions{ID: "s1"})
+				if tc.want == "" {
+					if err == nil {
+						t.Fatalf("CompactCommand = %q, want a refusal", got)
+					}
+					return
+				}
+				if err != nil || got != tc.want {
+					t.Fatalf("CompactCommand = %q, %v, want %q", got, err, tc.want)
+				}
+			})
+		}
+	}
+}

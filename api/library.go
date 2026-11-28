@@ -1,7 +1,7 @@
 package api
 
 var (
-	LibraryList   = define[None, Library]("library.List")
+	LibraryList   = define[LibraryListOptions, Library]("library.List")
 	LibraryMoveIn = define[LibraryItemOptions, None]("library.MoveIn")
 	LibrarySet    = define[LibrarySwitchOptions, None]("library.Set")
 	LibrarySeen   = define[LibrarySeenOptions, None]("library.Seen")
@@ -11,14 +11,29 @@ var (
 const (
 	LibrarySkill = "skill"
 	LibraryMCP   = "mcp"
+	// LibraryPluginKind is a provider's own plugin, which lich lists and
+	// switches but does not hold.
+	LibraryPluginKind = "plugin"
 )
+
+// LibraryListOptions names the project whose scope the screens show, by its
+// path; "" is the user's scope alone.
+type LibraryListOptions struct {
+	Project string `json:"project,omitempty"`
+}
 
 // Library is lich's own library of skills and MCP servers, what each provider
 // has installed that is not in it yet, and lich's own plugin.
 type Library struct {
-	Skills    []LibraryItem     `json:"skills"`
-	MCP       []LibraryItem     `json:"mcp"`
-	Found     []LibraryFound    `json:"found"`
+	Skills []LibraryItem  `json:"skills"`
+	MCP    []LibraryItem  `json:"mcp"`
+	Found  []LibraryFound `json:"found"`
+	// Project are the MCP servers the project's own files declare, which
+	// lich shows and never moves (Paths relative to the project, or under ~).
+	Project []LibraryFound `json:"project"`
+	// Plugins are the providers' own plugins loaded in the scope, lich's
+	// left out.
+	Plugins   []LibraryItem     `json:"plugins"`
 	Plugin    LibraryPlugin     `json:"plugin"`
 	Providers []LibraryProvider `json:"providers"`
 }
@@ -39,10 +54,12 @@ type LibraryItem struct {
 
 // LibrarySwitch is whether an item reaches a provider's sessions, in one of
 // its profiles; Profile "" is the provider's own switch, above its profiles.
+// Reason is why it cannot be pressed (a Library* reason code), "" when it can.
 type LibrarySwitch struct {
 	Provider string `json:"provider"`
 	Profile  string `json:"profile"`
 	On       bool   `json:"on"`
+	Reason   string `json:"reason,omitempty"`
 }
 
 // LibraryFound is an item a provider has installed in its own config, one per
@@ -75,6 +92,12 @@ const (
 	// LibrarySharedFile is a provider whose profiles read that kind from one
 	// file or folder, so it cannot be split between them.
 	LibrarySharedFile = "sharedFile"
+	// LibraryCommitted is a switch only a file the repository commits holds,
+	// which lich never writes.
+	LibraryCommitted = "committed"
+	// LibraryNoSwitch is a provider whose CLI cannot turn a plugin off
+	// without removing it.
+	LibraryNoSwitch = "noSwitch"
 )
 
 // LibraryProvider is one provider as the library's screens list it: its
@@ -99,13 +122,14 @@ type LibraryItemOptions struct {
 }
 
 // LibrarySwitchOptions turns an item on or off for a provider, or one of its
-// profiles.
+// profiles; a plugin's, in Project's scope when it names one.
 type LibrarySwitchOptions struct {
 	Kind     string `json:"kind"`
 	Name     string `json:"name"`
 	Provider string `json:"provider"`
 	Profile  string `json:"profile"`
 	On       bool   `json:"on"`
+	Project  string `json:"project,omitempty"`
 }
 
 // LibrarySeenOptions records every found item of Kind as seen.

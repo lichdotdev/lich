@@ -64,8 +64,12 @@ var toolIcons = map[string]*icons.Icon{
 	"exitplanmode":         icToolPlan,
 }
 
-// toolIcon is the glyph of the tool called name.
-func toolIcon(name string) *icons.Icon {
+// toolIcon is the glyph of the tool called name: a lich tool wears its
+// family's pixel mark.
+func toolIcon(name string) icons.Glyph {
+	if _, call, ok := lichTool(name); ok {
+		return call.mark
+	}
 	name = strings.ToLower(name)
 	if ic, ok := toolIcons[name]; ok {
 		return ic

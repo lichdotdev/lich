@@ -85,6 +85,7 @@ func hello(ctx context.Context, c *wireConn) error {
 	if h.Version != browserwire.Version {
 		return fmt.Errorf("lich-browser speaks version %d of the wire and this lich %d: install the lich-browser built with this lich", h.Version, browserwire.Version)
 	}
+	c.frames = h.Frames
 	return nil
 }
 

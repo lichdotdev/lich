@@ -62,7 +62,10 @@ func TestButtonSizes(t *testing.T) {
 	cases := []struct {
 		size Size
 		h    int
-	}{{SizeDefault, 36}, {SizeXS, 24}, {SizeSM, 32}, {SizeLG, 40}}
+	}{{SizeMD, 36}, {SizeXS, 24}, {SizeSM, 32}, {SizeLG, 40}}
+	if d := layoutAt(th.Button(click, "Shell").Layout, 0, 500); d.Size.Y != 32 {
+		t.Errorf("a button with no size set: height %d, want SizeSM's 32", d.Size.Y)
+	}
 	for _, tc := range cases {
 		b := th.Button(click, "Shell")
 		b.Size = tc.size
@@ -125,7 +128,7 @@ func TestButtonVariantFillsAreTheBrowsersColors(t *testing.T) {
 // short of it. A whole pixel row, not half of two.
 func TestButtonOutlineBorderIsInputOverThePage(t *testing.T) {
 	b := testTheme().Button(new(Clickable), "Shell")
-	b.Variant = VariantOutline
+	b.Variant, b.Size = VariantOutline, SizeMD
 	img := toggleRender(t, image.Pt(80, 36), time.Time{}, func(gtx C) D { return b.draw(gtx, false) })
 	want := color.NRGBA{R: 52, G: 52, B: 53, A: 255}
 	if !toggleIs(img, image.Pt(20, 0), want) {

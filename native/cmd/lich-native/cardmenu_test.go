@@ -164,3 +164,42 @@ func TestACardInALayoutsOwnSidebarIsFiledNowhere(t *testing.T) {
 		t.Fatalf("menu %v offers a folder of a project the list does not show", got)
 	}
 }
+
+func TestCardMenuClosesChildren(t *testing.T) {
+	var act sidebarAction
+	sv := &sessionView{ID: "m", Kind: "claude"}
+	sv.place.descendants = []string{"c1", "c2"}
+	menu := cardMenu(sv, nil, &act, func() {}, func() {})
+	if got := labels(menu)[len(menu)-3:]; !slices.Equal(got, []string{"", "Close child sessions", "Close session"}) {
+		t.Fatalf("menu ends %v", got)
+	}
+	entry(t, menu, "Close child sessions").OnClick()
+	if !slices.Equal(act.closeAll, []string{"c1", "c2"}) || act.close != "" {
+		t.Errorf("Close child sessions: closeAll %v, close %q", act.closeAll, act.close)
+	}
+	sv.Pinned = true
+	if got := labels(cardMenu(sv, nil, &act, func() {}, func() {})); !slices.Contains(got, "Close child sessions") {
+		t.Errorf("a pinned mother cannot close her children: %v", got)
+	}
+	sv.place.descendants = nil
+	if got := labels(cardMenu(sv, nil, &act, func() {}, func() {})); slices.Contains(got, "Close child sessions") {
+		t.Errorf("a session with no children offers to close them: %v", got)
+	}
+}
+
+func TestDescendantsOf(t *testing.T) {
+	sessions := []sessionView{
+		{ID: "m"}, {ID: "c1", OriginSessionID: "m"}, {ID: "g1", OriginSessionID: "c1"},
+		{ID: "c2", OriginSessionID: "m"}, {ID: "other"}, {ID: "self", OriginSessionID: "self"},
+	}
+	if got := descendantsOf(sessions, "m"); !slices.Equal(got, []string{"c1", "g1", "c2"}) {
+		t.Errorf("descendants of m %v", got)
+	}
+	if got := descendantsOf(sessions, "self"); got != nil {
+		t.Errorf("a session of its own origin is its own child: %v", got)
+	}
+	loop := []sessionView{{ID: "a", OriginSessionID: "b"}, {ID: "b", OriginSessionID: "a"}}
+	if got := descendantsOf(loop, "a"); !slices.Equal(got, []string{"b"}) {
+		t.Errorf("an origin loop gives %v", got)
+	}
+}

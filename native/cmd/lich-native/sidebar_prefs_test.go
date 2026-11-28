@@ -58,8 +58,12 @@ func (f *sidebarBackend) answer(method string, args []json.RawMessage) any {
 		return nil
 	case "providers.Detect":
 		return f.detected
+	case "subagent.Cards":
+		return subagentCardsFixture()
 	case "library.List":
-		return libraryFixture()
+		var opts api.LibraryListOptions
+		_ = json.Unmarshal(args[0], &opts)
+		return libraryFixtureIn(opts.Project)
 	case "agentplugin.Status":
 		return []backend.PluginStatus{
 			{Provider: "claude", Name: "Claude Code", Available: true, Installed: true, InstalledVersion: "0.23.0", Compatible: true},

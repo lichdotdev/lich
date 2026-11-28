@@ -55,10 +55,13 @@
     "blame": "{author}, {age} · {summary}",
     "blameUncommitted": "Você · Alterações não commitadas",
     "artifactReadOnly": "Do agente · somente leitura",
+    "readOnly": "Somente leitura",
     "vimFailed": "O Neovim não iniciou, então o editor usa as próprias teclas",
-    "vimLspMissing": "{name} não encontrado",
+    "lspMissing": "{name} não encontrado",
     "vimConfigFailed": "Não foi possível abrir a config do Neovim",
-    "vimLspFailed": "{name} não iniciou",
-    "vimLspInstall": "Instalar"
+    "lspFailed": "{name} não iniciou",
+    "lspInstall": "Instalar",
+    "lspInstalling": "Instalando {name}…",
+    "lspInstallFailed": "Falha ao instalar {name}"
   }
 }

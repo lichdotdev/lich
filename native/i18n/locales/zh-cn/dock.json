@@ -55,10 +55,13 @@
     "blame": "{author}，{age} · {summary}",
     "blameUncommitted": "你 · 未提交的更改",
     "artifactReadOnly": "来自智能体 · 只读",
+    "readOnly": "只读",
     "vimFailed": "Neovim 未能启动，编辑器改用自带的按键",
-    "vimLspMissing": "未找到 {name}",
+    "lspMissing": "未找到 {name}",
     "vimConfigFailed": "无法打开 Neovim 配置",
-    "vimLspFailed": "{name} 启动失败",
-    "vimLspInstall": "安装"
+    "lspFailed": "{name} 启动失败",
+    "lspInstall": "安装",
+    "lspInstalling": "正在安装 {name}…",
+    "lspInstallFailed": "{name} 安装失败"
   }
 }

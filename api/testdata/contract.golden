@@ -122,7 +122,7 @@ kiroprofile.DeleteProfile(ProfileSlugOptions) None
 kiroprofile.LoginCommand(ProfileSlugOptions) string
 kiroprofile.Profiles(None) []ProfileInfo
 kiroprofile.UpdateProfile(UpdateProfileOptions) Profile
-library.List(None) Library
+library.List(LibraryListOptions) Library
 library.MoveIn(LibraryItemOptions) None
 library.Seen(LibrarySeenOptions) None
 library.Set(LibrarySwitchOptions) None
@@ -310,6 +310,10 @@ store.SetSessionUnread(SessionUnreadOptions) None
 store.SetSetting(SetSettingOptions) None
 store.UnmarkViewed(UnmarkViewedOptions) None
 store.ViewedFiles(ViewedFilesOptions) []ViewedFile
+subagent.Cards(None) []SubagentCardProvider
+subagent.CardsOn(SessionIDOptions) SubagentCardsState
+subagent.SetBring(SubagentSetBringOptions) None
+subagent.SetCards(SubagentSetCardsOptions) None
 subagent.Vetoed(None) []SubagentVeto
 system.AttachNative(AttachNativeOptions) None
 system.Diagnostics(None) Diagnostics
@@ -391,6 +395,7 @@ event pull-request-changed PRChanged
 event service-reveal ServiceIDOptions
 event services []Service
 event session-agent SessionAgent
+event session-brought SessionBrought
 event session-closed SessionClosed
 event session-conversation SessionConversation
 event session-cwd SessionCwd
@@ -420,6 +425,7 @@ event session-watch-stopped SessionWatchStopped
 event sessions-colored SessionsColored
 event sessions-filed SessionsFiled
 event show-code ShowCode
+event subagent-cards.changed None
 event subagent-veto SubagentVeto
 event terminal:data:<id> string
 event terminal:exit:<id> SessionExit
@@ -1020,10 +1026,16 @@ ExtensionSendOptions {
 	message json
 }
 
+LibraryListOptions {
+	project,omitempty string
+}
+
 Library {
 	skills []LibraryItem
 	mcp []LibraryItem
 	found []LibraryFound
+	project []LibraryFound
+	plugins []LibraryItem
 	plugin LibraryPlugin
 	providers []LibraryProvider
 }
@@ -1043,6 +1055,7 @@ LibrarySwitchOptions {
 	provider string
 	profile string
 	on bool
+	project,omitempty string
 }
 
 PatchNotesOptions {
@@ -1692,6 +1705,7 @@ Peer {
 	detail,omitempty string
 	reason,omitempty string
 	focused,omitempty bool
+	subagent,omitempty int
 }
 
 ReplyOptions {
@@ -1744,6 +1758,7 @@ SendResult {
 	status string
 	answer string
 	private,omitempty bool
+	targetContext,omitempty int
 }
 
 SetScheduleOptions {
@@ -1911,6 +1926,7 @@ OpenSessionOptions {
 	effort string
 	folder string
 	ultracode bool
+	fork bool
 }
 
 OpenSubagentOptions {
@@ -2136,6 +2152,7 @@ Session {
 	unread bool
 	mcpServers []string
 	sandboxSkippedLinks []string
+	brought,omitempty []string
 	view,omitempty string
 }
 
@@ -2198,6 +2215,28 @@ ViewedFile {
 	path string
 	hash string
 	viewedAt int64
+}
+
+SubagentCardProvider {
+	provider string
+	cards bool
+	lean bool
+	items []SubagentCardItem
+}
+
+SubagentCardsState {
+	cards bool
+}
+
+SubagentSetBringOptions {
+	provider string
+	item string
+	on bool
+}
+
+SubagentSetCardsOptions {
+	provider string
+	on bool
 }
 
 SubagentVeto {
@@ -2542,6 +2581,11 @@ PRChanged {
 SessionAgent {
 	id string
 	agent string
+}
+
+SessionBrought {
+	id string
+	brought []string
 }
 
 SessionClosed {
@@ -3238,6 +3282,14 @@ SessionWatch {
 	seen string
 }
 
+SubagentCardItem {
+	id string
+	kind string
+	name string
+	origin,omitempty string
+	on bool
+}
+
 SubagentOpened {
 	id string
 	label string
@@ -3342,6 +3394,7 @@ LibrarySwitch {
 	provider string
 	profile string
 	on bool
+	reason,omitempty string
 }
 
 StepLog {

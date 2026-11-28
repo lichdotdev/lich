@@ -68,6 +68,9 @@ func TestHelloAnswersTheWireVersion(t *testing.T) {
 	if r.Version != browserwire.Version {
 		t.Fatalf("hello answered version %d, want %d", r.Version, browserwire.Version)
 	}
+	if r.Frames != offscreen() {
+		t.Fatalf("hello answered frames %v, want %v", r.Frames, offscreen())
+	}
 }
 
 func TestEvalAnswersAsTheConsoleDoes(t *testing.T) {
@@ -152,6 +155,9 @@ func TestNamedKeysActOnThePage(t *testing.T) {
 // page. Measured under fcitx5 on its own D-Bus and Xvfb; with no input
 // method, it guards the path every key takes.
 func TestNamedKeysActOnAnEmbeddedPage(t *testing.T) {
+	if offscreen() {
+		t.Skip("off screen, no page is embedded")
+	}
 	pressNamedKeys(t, true)
 }
 
@@ -287,8 +293,9 @@ func TestAWindowOpenedByThePageIsATabInFront(t *testing.T) {
 		return json.Unmarshal(raw, &tabs) == nil && len(tabs.Tabs) == 2 && strings.HasSuffix(tabs.Tabs[1].URL, "/images")
 	})
 	first, second := tabs.Tabs[0], tabs.Tabs[1]
-	if !second.Front || first.Front || first.XID == 0 || second.XID == 0 || first.XID == second.XID {
-		t.Fatalf("tabs %+v, want the opened one in front, each its own X window", tabs.Tabs)
+	ownWindows := first.XID != 0 && second.XID != 0 && first.XID != second.XID
+	if !second.Front || first.Front || ownWindows == offscreen() {
+		t.Fatalf("tabs %+v, want the opened one in front, each its own X window, none off screen", tabs.Tabs)
 	}
 	c.must(browserwire.SelectTab, browserwire.TabParams{Page: "b1", Tab: first.ID}, nil)
 	if got := c.eval("b1", "document.title"); got != `"Form"` {
@@ -416,8 +423,8 @@ func TestAPagePopsOutAndBackWithoutReloading(t *testing.T) {
 			var tabs browserwire.TabsEvent
 			raw, _ := c.event(from, browserwire.EventTabs, nil)
 			json.Unmarshal(raw, &tabs)
-			if out := tabs.Tabs[0].XID == 0; out != step.popped {
-				t.Fatalf("after %s the tab's xid is %d, want it 0 only while out", step.method, tabs.Tabs[0].XID)
+			if out := tabs.Tabs[0].XID == 0; out != (step.popped || offscreen()) {
+				t.Fatalf("after %s the tab's xid is %d, want it 0 only while out, or off screen", step.method, tabs.Tabs[0].XID)
 			}
 		}
 		if got := c.eval("b1", "window.kept"); got != "42" {
@@ -441,7 +448,13 @@ func TestTheWindowsLayerDrawsTheLatestAndABareSnapshotLeavesItOut(t *testing.T) 
 	for _, color := range []string{"rgb(0,0,255)", "rgb(0,255,0)", "rgb(255,0,0)"} {
 		c.must(browserwire.Draw, browserwire.DrawParams{Page: "b1", Script: layer(color)}, nil)
 	}
-	got := c.eval("b1", "new Promise(r => setTimeout(() => r(getComputedStyle(document.getElementById('"+browserwire.LayerID+"')).backgroundColor), 200))")
+	// A Draw is answered before the page runs it, and the newest waits for the
+	// one running: the layer turns red some time after, slower on a cold
+	// runner. Any other colour that stays is a drawing that won out of turn.
+	got := c.eval("b1", `new Promise(r => { const until = Date.now() + 5000;
+		const look = () => { const c = getComputedStyle(document.getElementById('`+browserwire.LayerID+`')).backgroundColor;
+			c === 'rgb(255, 0, 0)' || Date.now() > until ? r(c) : setTimeout(look, 20); };
+		look(); })`)
 	if got != `"rgb(255, 0, 0)"` {
 		t.Fatalf("the layer is %s, want the last drawing's red", got)
 	}
@@ -500,8 +513,9 @@ func inspectAsATab(t *testing.T, w, h int) {
 	c.must(browserwire.Inspect, browserwire.PageParams{Page: "b1"}, nil)
 	tabs := c.tabsWhere(from, func(tabs []browserwire.Tab) bool { return len(tabs) == 2 })
 	page, tools := tabs[0], tabs[1]
-	if !tools.DevTools || !tools.Front || page.Front || tools.XID == 0 || tools.XID == page.XID {
-		t.Fatalf("tabs %+v: want the inspector after the page, in front, in an X window of its own", tabs)
+	ownWindow := tools.XID != 0 && tools.XID != page.XID
+	if !tools.DevTools || !tools.Front || page.Front || ownWindow == offscreen() {
+		t.Fatalf("tabs %+v: want the inspector after the page, in front, in an X window of its own, none off screen", tabs)
 	}
 	if got := c.eval("b1", "document.title"); got != `"Form"` {
 		t.Fatalf("with the inspector in front eval read %s, want the page's title", got)

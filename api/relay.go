@@ -213,6 +213,11 @@ type Peer struct {
 	// active card of the project tab in front. No session has it while no
 	// window is open.
 	Focused bool `json:"focused,omitempty"`
+	// Subagent is how many subagent levels below a session nobody opened as
+	// one this session runs (store.SessionSubagentDepth), 0 for such a
+	// session. lich mcp reads its own to leave a card's tool list without the
+	// workspace administration tools (internal/cli, cardTools).
+	Subagent int `json:"subagent,omitempty"`
 }
 
 // ReplyOptions is one Reply call, an object for the reason SendOptions is one.
@@ -256,6 +261,10 @@ type SendResult struct {
 	// Private is set on the outcome of a ticket sent with SendPrivate, which
 	// only that ticket collects: no note will announce it.
 	Private bool `json:"private,omitempty"`
+	// TargetContext is the tokens the target's context held when the task was
+	// handed to it, set only past the size where a new session would do the
+	// same task for less (relay.largeContextTokens).
+	TargetContext int `json:"targetContext,omitempty"`
 }
 
 // WaitOptions is one Wait call, an object for the reason SendOptions is one.

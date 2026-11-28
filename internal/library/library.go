@@ -26,10 +26,12 @@ import (
 	"github.com/lichdotdev/lich/internal/events"
 )
 
-// Settings is where the switches are kept: the store's global settings.
+// Settings is where the switches are kept, the store's global settings, and
+// the binary the person set for each provider ("" for its default name).
 type Settings interface {
 	GetSetting(ctx context.Context, opts api.GetSettingOptions) (string, error)
 	SetSetting(ctx context.Context, opts api.SetSettingOptions) (api.None, error)
+	ProviderBin(providerID, projectID string) string
 }
 
 // Service is the library over one config directory.
@@ -44,16 +46,24 @@ type Service struct {
 	profiles func(provider string) []api.Profile
 	// pluginDir names lich's own unpacked plugin release (agentplugin.BundleDir).
 	pluginDir func() string
+	// cli runs a provider's own CLI (runCLI), swapped by tests.
+	cli func(command) ([]byte, error)
+	// projects are the project folders the screens asked about, which the
+	// watcher reads again beside the providers' own config.
+	projects   map[string]bool
+	projectsMu sync.Mutex
 
 	mu sync.Mutex // one write to the library or a provider's config at a time
 }
 
 // New returns the library, reporting changes through emit.
 func New(settings Settings, emit func(name string, data any), profiles func(string) []api.Profile, pluginDir func() string) *Service {
-	return &Service{
+	s := &Service{
 		settings: settings, emit: emit, profiles: profiles, pluginDir: pluginDir,
-		configDir: os.UserConfigDir, home: os.UserHomeDir,
+		configDir: os.UserConfigDir, home: os.UserHomeDir, projects: map[string]bool{},
 	}
+	s.cli = s.runCLI
+	return s
 }
 
 // libraryDir is <config>/lich/library.

@@ -170,7 +170,8 @@ func (u *window) pollShell(gtx C, p *chatPane, id string, s backend.ChatShell) {
 		o.fetching = false
 		if o.id == s.ID {
 			o.read, o.state = true, state
-			if err == nil {
+			// gen moves the list to its end: only output that grew does
+			if err == nil && text != o.text {
 				o.text = text
 				o.gen++
 			}

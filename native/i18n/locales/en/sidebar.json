@@ -52,6 +52,7 @@
     "prUnreadable": "Could not read it: {error}",
     "prAlsoLinked": "Also on this session: {numbers}",
     "closeSession": "Close session",
+    "closeChildSessions": "Close child sessions",
     "fork": "Fork",
     "forkHere": "Here",
     "forkWorktree": "Worktree…",
@@ -141,7 +142,8 @@
   "sessionTooltip": {
     "notMounted": "Not mounted (symlinks): {paths}",
     "morePaths": "+{count} more",
-    "modelChanged": "Opened on {requested}, running {running}"
+    "modelChanged": "Opened on {requested}, running {running}",
+    "brought": "Brought: {items}"
   },
   "worktreeDialogView": {
     "title": "New worktree session",

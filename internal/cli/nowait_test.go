@@ -87,7 +87,7 @@ func TestMCPWaitNoWaitRefusesATicket(t *testing.T) {
 func TestMCPInstructionsTellWhenToLookWithoutWaiting(t *testing.T) {
 	t.Parallel()
 	for _, want := range []string{"no_wait", "before delegating more", "before the final synthesis", "in a loop"} {
-		if !strings.Contains(mcpInstructions(prompt.English), want) {
+		if !strings.Contains(mcpInstructions(prompt.English, prompt.For(prompt.English).MCPSubagentCards), want) {
 			t.Errorf("instructions are missing %q", want)
 		}
 	}

@@ -63,7 +63,7 @@ func TestBlockOptionsByKindAndFilter(t *testing.T) {
 		t.Error("the pinned block has a … menu")
 	}
 	menu := blockOptions(folder, []string{"Apps"}, false, &act, hooks)
-	if want := []string{"Rename folder", "Ungroup", "Color"}; !slices.Equal(labels(menu), want) {
+	if want := []string{"Rename folder", "Ungroup", "Color", "", "Close all sessions"}; !slices.Equal(labels(menu), want) {
 		t.Fatalf("folder … %v, want %v", labels(menu), want)
 	}
 	entry(t, menu, "Rename folder").OnClick()
@@ -71,6 +71,10 @@ func TestBlockOptionsByKindAndFilter(t *testing.T) {
 	entry(t, entry(t, menu, "Color").Sub, "Red").OnClick()
 	if !renamed || act.folder != (folderRename{from: "Apps"}) || act.paint.color != "red" || !slices.Equal(act.paint.ids, []string{"f1", "f2"}) {
 		t.Fatalf("after the clicks: renamed %v, act %+v", renamed, act.sidebarWrites)
+	}
+	entry(t, menu, "Close all sessions").OnClick()
+	if !slices.Equal(act.closeAll, []string{"f1", "f2"}) {
+		t.Errorf("the folder's Close all sessions closed %v", act.closeAll)
 	}
 	if !entry(t, entry(t, menu, "Color").Sub, "Teal").Checked {
 		t.Error("the folder's shared color is not checked")

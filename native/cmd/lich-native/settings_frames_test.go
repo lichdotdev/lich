@@ -61,8 +61,8 @@ func TestAProjectLeavesOutWhatOnlyGlobalSets(t *testing.T) {
 	if !r.shows(i18n.T("settings.chatPrefSetting.modelTitle")) || !r.shows(i18n.T("settings.settingsRow.restGlobal")) {
 		t.Fatalf("drawn: %s", r.drawn())
 	}
-	r.pressLabel(t, i18n.T("settings.settingsRow.openGlobal"))
-	r.waitFor(t, skip)
+	r.clickLabel(t, i18n.T("settings.settingsRow.openGlobal"))
+	r.settle(t)
 	if s.scope != "" || !r.shows(skip) {
 		t.Errorf("Open Global left scope %q", s.scope)
 	}

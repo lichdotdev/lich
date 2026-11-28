@@ -14,9 +14,10 @@ import (
 // a subagent (LICH_SUBAGENT_DEPTH, 0 for a session nobody opened as one), which
 // the mod's worker-answer.js reads to tell a worker. A mod older than the
 // subagent hook still converts subagents itself, so a session past the depth
-// cards nest to is also told to leave them native (LICH_SUBAGENT_CARDS=off,
-// read by that mod's agent-cards.js); a newer one has lich decide at
-// /subagent, and is told nothing.
+// cards nest to, or whose provider's cards Settings › Subagents turned off, is
+// also told to leave them native (LICH_SUBAGENT_CARDS=off, read by that mod's
+// agent-cards.js); a newer one has lich decide at /subagent, and is told
+// nothing.
 func subagentEnv(env []string, kind string, depth int, cardsOn, asksLich bool) []string {
 	if kind != providers.Claude {
 		return env

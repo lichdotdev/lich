@@ -175,11 +175,11 @@ func TestThePlusAndTheAddSquareOpenThePicker(t *testing.T) {
 			var mu sync.Mutex
 			var writes []string
 			u.footer.client = pickBackend(t, backend.Attachment{Path: notes}, &mu, &writes)
-			u.footer.attachAt = u.attachAtPrompt
+			land := holdPicks(t, u)
 			u.footer.layout = footerLayout{Left: []string{"changes"}}
 			r.settle(t)
-			r.queueClick(r.smallestClickIn(t, boxPlus))
-			r.frame()
+			r.click(t, r.smallestClickIn(t, boxPlus))
+			land()
 			waitCards(t, r, p, notes)
 			r.settle(t)
 			other := writeFile(t, filepath.Join(filepath.Dir(notes), "spec-v2.pdf"), "%PDF")
@@ -188,8 +188,8 @@ func TestThePlusAndTheAddSquareOpenThePicker(t *testing.T) {
 			if !ok {
 				t.Fatalf("no add square with a file attached:\n%s", r.drawn())
 			}
-			r.queueClick(centre(sq))
-			r.frame()
+			r.click(t, centre(sq))
+			land()
 			waitCards(t, r, p, notes, other)
 		})
 	}

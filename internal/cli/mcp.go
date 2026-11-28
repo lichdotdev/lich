@@ -121,14 +121,32 @@ const privateToolUsage = "Set this when you are a subagent or workflow step runn
 //
 // The artifact paragraph names the session's own folder, so an agent whose
 // file tools take no variables can write there; a lich mcp started outside a
-// lich session has none, and the paragraph is left out.
-func mcpInstructions(lang prompt.Lang) string {
+// lich session has none, and the paragraph is left out. cards is what it says
+// of subagent cards (mcpCards).
+func mcpInstructions(lang prompt.Lang, cards string) string {
 	catalog := prompt.For(lang)
-	text := fmt.Sprintf(catalog.MCPInstructions, relay.ToolReply)
+	text := fmt.Sprintf(catalog.MCPInstructions, relay.ToolReply, cards)
 	if dir := os.Getenv(artifact.EnvVar); dir != "" {
 		text += "\n\n" + fmt.Sprintf(catalog.MCPArtifacts, dir)
 	}
 	return text
+}
+
+// mcpCards is what the instructions say of subagent cards for this session:
+// the catalog's sentences, unless lich says its provider's cards are off
+// (Settings › Subagents). Outside a session, or with lich out of reach, the
+// sentences stay, as they read before the setting existed.
+func (c *client) mcpCards(lang prompt.Lang) string {
+	text := prompt.For(lang).MCPSubagentCards
+	id := c.sessionID()
+	if id == "" {
+		return text
+	}
+	state, err := callMethod(context.Background(), c, api.SubagentCardsOn, api.SessionIDOptions{ID: id}, shortCall)
+	if err != nil || state.Cards {
+		return text
+	}
+	return ""
 }
 
 // serveMCP runs the stdio server until its input ends. Messages are answered
@@ -275,11 +293,13 @@ func (c *client) handleMCP(ctx context.Context, request jsonRPC) (jsonRPC, bool)
 	var result map[string]any
 	switch request.Method {
 	case "initialize":
-		result = mcpHandshake(request.Params, c.version, c.lang())
+		lang := c.lang()
+		result = mcpHandshake(request.Params, c.version, lang, c.mcpCards(lang))
 	case "server/discover":
-		result = mcpDiscovery(c.lang())
+		lang := c.lang()
+		result = mcpDiscovery(lang, c.mcpCards(lang))
 	case "tools/list":
-		result = map[string]any{"tools": mcpToolList()}
+		result = map[string]any{"tools": mcpToolList(c.offeredTools(ctx))}
 	case "tools/call":
 		result, response.Error = c.callMCPTool(ctx, request.Params)
 	case "ping":
@@ -313,28 +333,24 @@ func requestedProtocol(params json.RawMessage) (string, bool) {
 
 // mcpDiscovery answers server/discover, the modern era's counterpart of
 // initialize: the same capabilities and briefing, without a session.
-func mcpDiscovery(lang prompt.Lang) map[string]any {
+func mcpDiscovery(lang prompt.Lang, cards string) map[string]any {
 	return map[string]any{
 		"supportedVersions": mcpModernVersions,
 		"capabilities":      map[string]any{"tools": map[string]any{}},
-		"instructions":      mcpInstructions(lang),
+		"instructions":      mcpInstructions(lang, cards),
 	}
 }
 
-// markModern adds what a modern result carries over a legacy one. Discovery is
-// cached privately because its briefing is written in the calling session's
-// language, so one session's copy is not another's; the tool list is the same
-// English for every session.
+// markModern adds what a modern result carries over a legacy one. Both are
+// cached privately, since one session's copy is not another's: discovery's
+// briefing is written in the calling session's language, and a subagent card is
+// listed fewer tools (offeredTools).
 func markModern(method string, result map[string]any, version string) {
 	result["resultType"] = "complete"
 	result["_meta"] = map[string]any{"io.modelcontextprotocol/serverInfo": mcpServerInfo(version)}
-	switch method {
-	case "server/discover":
+	if method == "server/discover" || method == "tools/list" {
 		result["ttlMs"] = mcpCacheTTL.Milliseconds()
 		result["cacheScope"] = "private"
-	case "tools/list":
-		result["ttlMs"] = mcpCacheTTL.Milliseconds()
-		result["cacheScope"] = "public"
 	}
 }
 
@@ -344,7 +360,7 @@ func mcpServerInfo(version string) map[string]any {
 
 // mcpHandshake answers initialize, echoing the client's protocol version when
 // it named one (see mcpProtocolVersion).
-func mcpHandshake(params json.RawMessage, version string, lang prompt.Lang) map[string]any {
+func mcpHandshake(params json.RawMessage, version string, lang prompt.Lang, cards string) map[string]any {
 	var asked struct {
 		ProtocolVersion string `json:"protocolVersion"`
 	}
@@ -357,7 +373,7 @@ func mcpHandshake(params json.RawMessage, version string, lang prompt.Lang) map[
 		"protocolVersion": protocol,
 		"capabilities":    map[string]any{"tools": map[string]any{}},
 		"serverInfo":      mcpServerInfo(version),
-		"instructions":    mcpInstructions(lang),
+		"instructions":    mcpInstructions(lang, cards),
 	}
 }
 
@@ -395,9 +411,27 @@ func mcpText(text string, failed bool) map[string]any {
 	return result
 }
 
-func mcpToolList() []map[string]any {
-	list := make([]map[string]any, 0, len(mcpTools))
-	for _, tool := range mcpTools {
+// offeredTools is the tool list this server shows: a subagent card gets
+// cardTools, everything else every tool. A session lich cannot name is offered
+// everything, as before lich knew cards.
+func (c *client) offeredTools(ctx context.Context) []mcpTool {
+	if c.sessionID() == "" {
+		return mcpTools
+	}
+	self, err := callMethod(ctx, c, api.RelaySelf, relay.SelfOptions{From: c.sessionID()}, shortCall)
+	if err != nil {
+		fmt.Fprintf(c.stderr, "lich mcp: offering every tool, since this session's subagent depth could not be read: %v\n", err)
+		return mcpTools
+	}
+	if self.Subagent > 0 {
+		return cardTools
+	}
+	return mcpTools
+}
+
+func mcpToolList(tools []mcpTool) []map[string]any {
+	list := make([]map[string]any, 0, len(tools))
+	for _, tool := range tools {
 		entry := map[string]any{
 			"name":        tool.Name,
 			"description": tool.Description,
@@ -546,7 +580,7 @@ var mcpTools = append([]mcpTool{
 			if err != nil {
 				return "", err
 			}
-			return mcpOutcome(c.lang(), result), nil
+			return sendOutcome(c.lang(), result), nil
 		},
 	},
 	{
@@ -637,6 +671,8 @@ var mcpTools = append([]mcpTool{
 					"a set of workers opened for one piece of work stays together on the user's "+
 					"screen. Names are matched exactly: list_folders shows the ones there are, "+
 					"and a name none of them has starts a new folder."),
+			"fork": property("boolean", forkFlagUsage+
+				". Only Claude Code, Codex and opencode can; a fork opens in its terminal."),
 			"prompt": property("string",
 				"Task to hand the new session as soon as its agent is up. Omit to open it idle "+
 					"and send later. Capped at 8 KB, like send_to_session: name what to read, "+
@@ -654,6 +690,7 @@ var mcpTools = append([]mcpTool{
 				From: c.sessionID(), Project: args.text("project"), Kind: args.text("kind"),
 				Worktree: args.text("worktree"), Base: args.text("base"), Model: args.text("model"),
 				Effort: args.text("effort"), Folder: args.text("folder"), Ultracode: args.flag("ultracode"),
+				Fork: args.flag("fork"),
 			}, openCall)
 			if err != nil {
 				return "", err
@@ -777,6 +814,18 @@ var mcpTools = append([]mcpTool{
 	},
 }, append(append(append(append(append(append(append(append(append(folderTools, controlTools...), closeProjectTools...), serviceTools...), browserTools...), handoffTools...), scheduleTools...), checkLogTools...), codeTools...), threadTools...)...)
 
+// adminTools look after the workspace: its folders, projects, services and
+// handoffs. A subagent card does the task it was handed and reports back, so
+// its list leaves them out: each tool's description rides every request the
+// card makes. Calling one by name still works (callMCPTool reads mcpTools); the
+// list is about tokens, not permission.
+var adminTools = slices.Concat(folderTools, closeProjectTools, serviceTools, handoffTools)
+
+// cardTools is mcpTools without adminTools, in the same order.
+var cardTools = slices.DeleteFunc(slices.Clone(mcpTools), func(tool mcpTool) bool {
+	return slices.ContainsFunc(adminTools, func(admin mcpTool) bool { return admin.Name == tool.Name })
+})
+
 // handOver gives a just-opened session its first task, wording the outcome the
 // way send_to_session words it — the caller should not have to learn two
 // spellings of one answer.
@@ -827,6 +876,22 @@ func mcpOutcome(lang prompt.Lang, result relay.Result) string {
 		return fmt.Sprintf(text.StillWorkingPrivate, result.Target, result.Ticket)
 	}
 	return fmt.Sprintf(text.StillWorkingOpen, result.Target, result.Ticket)
+}
+
+// sendOutcome is mcpOutcome for a send, which also says when the target's
+// context is large enough that a new session would cost less.
+func sendOutcome(lang prompt.Lang, result relay.Result) string {
+	out := mcpOutcome(lang, result)
+	if result.TargetContext > 0 {
+		out += "\n\n" + largeTargetText(prompt.For(lang).LargeTarget, result)
+	}
+	return out
+}
+
+// largeTargetText words a result's TargetContext with format, LargeTarget or
+// LargeTargetCLI.
+func largeTargetText(format string, result relay.Result) string {
+	return fmt.Sprintf(format, result.Target, result.TargetContext/1000)
 }
 
 // collectedText words a drain: each result in the order it arrived, then who

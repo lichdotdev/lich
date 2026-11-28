@@ -118,7 +118,7 @@ A card painted a color mixes it into the accent: `tintRest` 0.10 at rest, `tintH
 The only chromatic color besides a card's own paint and the history graph's lanes. It encodes state and never
 decorates. A lane's color (`th.GraphLanes`, one set per scheme, not a theme token) carries which branch a line is,
 which the eye cannot follow through a crossing in one gray: use it for that graph and nothing else. `ToneMerged`
-is one color per scheme too, not a theme token.
+is one color per scheme too, not a theme token, and so are `ToneNote` and `ToneImportant`.
 
 | Token | Meaning |
 | --- | --- |
@@ -126,6 +126,7 @@ is one color per scheme too, not a theme token.
 | `ToneWait` | waiting on the user, running, outdated |
 | `Destructive` | destructive action, failure, removed lines |
 | `ToneMerged` | a merged pull request |
+| `ToneNote`, `ToneImportant` | a Markdown note and important alert, and nothing else |
 
 Added and removed lines in a code excerpt tint their row with `MixOKLab(Background, tone, 0.12)` and color
 their text with the tone itself.
@@ -148,6 +149,17 @@ their text with the tone itself.
   Its copy button is a ghost `SizeIconXS` one (Lucide `copy`, a check for 1.5s after a click) shown only while the
   pointer is over the block, as a message's copy is, with no tooltip; it stands on the first line inside the
   right padding, and the code wraps short of it, so it never covers text and nothing moves when it shows.
+  A block past 20 lines (`codeShown`, the chat's edit diff count) shows those, cut under the last one's glyphs,
+  and a muted `TextXS` "Show N more lines" under the panel that opens it at once, no animation, as a shell
+  command's output does, and turns into "Show less". A `diff` or `patch` fence tints its added and removed rows
+  across the panel with `MixOKLab(fill, tone, 0.12)` and colors their text with the tone; header and `@@` lines
+  are `MutedForeground`.
+- A GitHub alert (`> [!NOTE]`, `[!TIP]`, `[!IMPORTANT]`, `[!WARNING]`, `[!CAUTION]`) is a blockquote whose bar
+  takes its tone (`ToneNote`, `TonePass`, `ToneImportant`, `ToneWait`, `Destructive`), headed by its Lucide icon
+  (`info`, `lightbulb`, `message-square-warning`, `triangle-alert`, `octagon-alert`) and its name in `TextSM`
+  semibold, both in the tone, `Space(0.5)` over the text. The text is prose's color, not a quote's muted one:
+  an alert is meant to be read. These are GitHub's five colors, kept as GitHub draws them so an alert reads
+  the same here as on the agent's pull request.
 - Markdown text is selectable inside one cell (a paragraph, a heading, a list item's text, a table cell, a code
   block): a drag past 3dp selects by character, a double click a word, a triple click the cell, and the text
   cursor shows over it. The selection fills each rune's glyph box, not the line's leading, in the code views'
@@ -163,7 +175,10 @@ their text with the tone itself.
 ### Icons
 
 Lucide through `icons.Lucide`, at `Space(3.5)` or `Space(4)`; `Space(3)` (12) inside dense meta and rows.
-Provider marks and file-type logos have their own sets in `ui/icons`. An icon centered in a box of odd
+Provider marks and file-type logos have their own sets in `ui/icons`. lich's own marks are pixel art
+(`icons.Lich`, `ui/icons/lich/`): 14×14 PNGs, black on clear with 1px strokes, tinted like a Lucide glyph and
+scaled by whole blocks only, so a fractional screen scale draws them a step smaller, centered, never smeared.
+A new one is drawn on the same grid and stroke. An icon centered in a box of odd
 leftover goes through `ui.CenteredIcon`, at a fractional offset, or it lands half a pixel off.
 
 ### Elevation
@@ -195,12 +210,12 @@ draws by the same rules: its `separator` and `railHairline` leave space, no rule
 
 | Size | Height | Use |
 | --- | --- | --- |
-| `SizeSM` / `SizeIconSM` | 32 | **the default for actions on a screen**: headers, thread and comment actions, dialogs |
-| `SizeDefault` / `SizeIcon` | 36 | a form's main row, beside a 36px input |
+| `SizeSM` / `SizeIconSM` | 32 | **the default for actions on a screen**: headers, thread and comment actions, dialogs; a button with no size set is this one |
+| `SizeMD` / `SizeIcon` | 36 | a form's main row, beside a 36px input |
 | `SizeXS` / `SizeIconXS` | 24 | inline inside dense rows (a file row, a binary preview, a folder header's `⋯`), and the × that closes a floating surface |
 | `SizeLG` | 40 | rare; a lone call to action |
 
-Buttons side by side share one size. A row that mixes 24px and 32px buttons is a bug.
+Buttons side by side share one size. A row that mixes 24px and 32px buttons is a bug, and every frame a `lich-native` test draws fails on one (`mixedButtonRows`).
 
 Variants: `VariantDefault` (primary fill) for the one action a view exists for, `VariantSecondary` for the
 next most likely, `VariantOutline` for an action that should stand out from ghost ones, `VariantGhost` for
@@ -496,7 +511,7 @@ never makes the Latest pill show.
   is underlined in its color and takes the hand, and a click with it opens a file in the stage editor
   (`followCodeRef`) and a folder in the dock's Code tab, unfolded down to it (`chat_paths.go`). A path it does not
   hold stays text. Anything else in code is plain. An answer has no header: who wrote it is the
-  foot's (see A message's time); the provider's avatar marks no row of the chat: no answer, call, notification of lich's or closing line, the harness's own notes about its background work alone excepted (see A harness's background note). A thought is a muted fold, closed, with the
+  foot's (see A message's time); the provider's avatar marks no row of the chat: no answer, call, notice of lich's or closing line. Two kinds of row are excepted: the harness's own notes about its background work (see A harness's background note) and what another session sent this one (see A message from another session). A thought is a muted fold, closed, with the
   sparkles before its label.
 - **A turn's tool calls** fold by run: the calls between two of the agent's texts (or the person's message and
   the first text) fold into one muted line where the first of them came. One line for the whole turn stood where
@@ -505,7 +520,7 @@ never makes the Latest pill show.
   Codex and Claude Code desktop) leaves the agent's mark off its calls. A run of one call is no fold: it is that
   call's row, its target in view, the complaint most heard of the apps that fold it. Several read as what they
   did, a clause per kind in one sentence ("Ran 4 commands, read 2 files", `chat_calls.go`: edited, ran, read,
-  searched, fetched, then "used N other tools"), then, muted, how long the run took, from its first call to its
+  searched, fetched, "made N lich calls", then "used N other tools"), then, muted, how long the run took, from its first call to its
   last call's end, and "· 1 failed" in `Destructive` when one did (a call lich opened as a card is not a
   failure); the turn's total is on its closing line. While a call runs the line is that call instead, its
   running verb and target shimmering ("Running go test ./…", cut at 60 characters), the run's time counting,
@@ -515,7 +530,8 @@ never makes the Latest pill show.
   which would push the view past its height. The rest wait behind a first row, muted `TextXS`
   "Show 12 earlier calls", lit on hover, whose click shows them all and turns it into "Show less". A row is its
   tool's glyph muted (a Lucide mark by tool name, Claude Code's, Codex's, ACP's kinds and the names Antigravity
-  and Kiro CLI put in their place, one generic wrench for the rest), its verb muted (the tool's own name, an MCP
+  and Kiro CLI put in their place, one generic wrench for the rest; a lich tool its family's pixel mark), its
+  verb muted (a lich tool's own, "Sent to", "Restarted", where it has one; else the tool's own name, an MCP
   tool's without its server, when it has no kind) in a column as wide as the run's widest verb, up to
   `Space(24)`, so the targets line up, what it acted on in mono, then at the right the time it ran in muted mono.
   A call that went well says nothing more; a failed one turns its glyph and verb `Destructive` and shows the
@@ -523,7 +539,11 @@ never makes the Latest pill show.
   tone the provider's veto has always worn, but trades the glyph for the card's provider mark and the time and
   output for a badge per card at the right: the card's state dot, its name and `arrow-up-right` in
   `Destructive`, with no fill or edge at rest and an `Accent` fill under the pointer, and a click opens the
-  card. The veto's own milliseconds are the hook answering, not work, so they are not shown. A time that stands still reads in milliseconds under a second ("476ms"), the line's
+  card. The veto's own milliseconds are the hook answering, not work, so they are not shown. A lich call whose
+  target is an open session (`chat_lich.go`: send, close, rename, control, file) draws the same badge in place
+  of its target, its name in mono `Foreground` as the other targets read and its dot and arrow muted, pulled
+  left by its own inset so the name starts on the targets' column; the time stays. A failed one keeps its plain
+  row, which says why. A time that stands still reads in milliseconds under a second ("476ms"), the line's
   own time too; a call whose end nobody reported (most histories) shows no time. A call that changed a file is
   not in the fold: it is an edit, a line of its own (see An edit). The group never opens on its own. Only
   the turn in flight is alive: a call an ended turn left running (interrupted) stops with it, its time up to the
@@ -649,11 +669,29 @@ never makes the Latest pill show.
 - **A harness's background note** (`chat_tasknote.go`), a `<task-notification>` Claude Code writes into the
   conversation when a subagent, a background command or a Monitor moves, is a row of its own: the provider's
   pixel mark (`Space(3.5)`), the note's summary in `TextSM` medium in the harness's own words, untranslated,
-  `Destructive` when its status is failed, and nothing after it. The mark is the one exception
+  `Destructive` when its status is failed, and nothing after it. The mark is an exception
   to the chat's rule against provider avatars: without it the row reads as a worker's note lich wrote. A note
   that carries text (a subagent's result as Markdown, a Monitor's event muted) ends in a muted chevron and
   opens closed, its text unfolding under the summary; a command's note has neither. Notes under each other
   start no turn.
+- **A message from another session** (`chat_envelope_draw.go`) wears the provider mark of the session that sent
+  it, so the person tells another agent's words from their own and from this agent's at a glance, across
+  providers.
+  A worker's outcome (finished, failed, stopped, waiting, expired) reaches the session that opened the worker as
+  one shut line, the shape of a background note: the mark (`Space(3.5)`), a glyph of how it ended (check in
+  `TonePass`, cross in `Destructive`, stop square muted, clock in `ToneWait` while it waits and muted once it
+  expired), the title in `TextSM` medium, then, muted and cut on one line, the first line of its text with
+  Markdown's code and bold marks dropped. A note with text ends in a chevron, and a click on the line unfolds
+  the text under it, indented past the mark, the preview leaving the line while it is open; it opens shut,
+  since the agent reads the report and the person seldom needs it. A muted `arrow-up-right` at the far right,
+  lit on hover, opens the worker's card while it is still open. The line's own click folds, never opens the
+  card.
+  A task reaches the worker at the column's left, as the other side of a conversation in a messaging app: the
+  sender's mark, then over the box its name in `TextXS` medium and the same arrow opening the sender, then the
+  prompt in a `Card` balloon with a `Border` hairline, `RadiusXL` but for the corner by the mark, `RadiusSM`.
+  The right side is the person's alone, so a message they send the worker mid-task reads as theirs. The task
+  stays open: it is what the turn answers. Its time and copy button stand under the box at its left edge.
+  A session that is gone draws the generic mark and no arrow.
 - **An empty chat** (its conversation read and holding nothing: a new session, or after `/new`) draws its start
   screen (`chat_start.go`): lich's mark in pixel art, the Welcome screen's still frame (48x68, pixels of 1.5dp,
   its five tones from the tokens: `Foreground`, a mix of it and `MutedForeground`, `MutedForeground`, and two
@@ -1074,9 +1112,11 @@ group heading under it. A section with a structure of its own (Providers, Sandbo
 Control, Hotkeys, Updates, Help) stays one entry. A search result's path names the section and the group.
 
 The pane's content sits in a reading column centred at `settingsColumn` (760px), the title included; the
-extension catalog and the Themes page keep the pane's width, since their grids take columns as the pane grows. A page title has no
-subtitle; the Footer's alone holds its one line of how to use the editor, and Restore default at its right. A
-count beside it, in muted mono, appears only on Notifications (switches on) and Footer (items shown).
+extension catalog and the Themes page keep the pane's width, since their grids take columns as the pane grows. A page title
+may carry a subtitle: one muted `TextXS` line under it saying what the page decides, for a page whose rows
+cannot say it alone, because the idea is new to the reader or the list starts in a state worth naming
+(everything off). It never repeats the title or the rows; a page whose rows read plainly has none. The Footer's line says how to use the editor, with Restore default at its
+right. A count beside the title, in muted mono, appears only on Notifications (switches on) and Footer (items shown).
 
 Every row keeps its control at its right, a segmented control included; what the chosen answer does is a line
 under the description (`settingRow.detail`), never under the control. The control drops under the text only

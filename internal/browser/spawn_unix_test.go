@@ -4,6 +4,7 @@ package browser
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -12,12 +13,13 @@ import (
 	"github.com/lichdotdev/lich/browserwire"
 )
 
-// fakeBinary is a lich-browser that writes to its stderr, answers hello and
-// waits for its stdin to close.
+// fakeBinary is a lich-browser built with this lich: it writes to its
+// stderr, answers hello with this wire's version and waits for its stdin to
+// close.
 func fakeBinary(t *testing.T) string {
 	t.Helper()
 	path := filepath.Join(t.TempDir(), "lich-browser")
-	script := "#!/bin/sh\necho engine says hi >&2\nread line\necho '{\"id\":1,\"result\":{\"version\":1}}'\nread line\n"
+	script := fmt.Sprintf("#!/bin/sh\necho engine says hi >&2\nread line\necho '{\"id\":1,\"result\":{\"version\":%d}}'\nread line\n", browserwire.Version)
 	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
 		t.Fatal(err)
 	}

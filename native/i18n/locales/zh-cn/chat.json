@@ -65,6 +65,9 @@
       "fetched": {
         "other": "获取了 {count} 个页面"
       },
+      "lich": {
+        "other": "调用了 {count} 次 lich"
+      },
       "others": {
         "other": "使用了 {count} 个其他工具"
       },
@@ -74,7 +77,37 @@
     },
     "latest": "最新",
     "newActivity": "新动态",
-    "edited": "已编辑"
+    "edited": "已编辑",
+    "lich": {
+      "openedSession": "打开会话",
+      "openingSession": "正在打开会话",
+      "sentTo": "发送给",
+      "sendingTo": "正在发送给",
+      "replied": "回复",
+      "replying": "正在回复",
+      "waited": "等待",
+      "waiting": "正在等待",
+      "closed": "关闭",
+      "closing": "正在关闭",
+      "renamed": "重命名",
+      "renaming": "正在重命名",
+      "adjusted": "调整",
+      "adjusting": "正在调整",
+      "filed": "移入文件夹",
+      "filing": "正在移入文件夹",
+      "started": "启动",
+      "starting": "正在启动",
+      "stopped": "停止",
+      "stopping": "正在停止",
+      "restarted": "重启",
+      "restarting": "正在重启",
+      "openedPage": "打开页面",
+      "openingPage": "正在打开页面",
+      "wentTo": "前往",
+      "goingTo": "正在前往",
+      "showed": "显示代码",
+      "showing": "正在显示代码"
+    }
   },
   "done": {
     "done": "完成",

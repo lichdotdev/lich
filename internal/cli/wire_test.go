@@ -42,6 +42,9 @@ func (wiredSessions) SetSessionSchedule(string, int64, string) error { return ni
 // No checkout here has a branch git could name.
 func (wiredSessions) SessionBranch(string) string { return "" }
 
+// Nobody here was opened as a subagent.
+func (wiredSessions) SessionSubagentDepth(string) int { return 0 }
+
 type wiredTerminal struct {
 	mu    sync.Mutex
 	typed string
@@ -83,6 +86,7 @@ func (*wiredTerminal) ChatOpened(string) bool             { return false }
 func (*wiredTerminal) Chat(string) bool                   { return false }
 func (*wiredTerminal) FinalMessage(string) (string, bool) { return "", false }
 func (*wiredTerminal) BackgroundWork(string) bool         { return false }
+func (*wiredTerminal) ContextTokens(string) (int, bool)   { return 0, false }
 
 func (w *wiredTerminal) Write(_ context.Context, opts api.WriteOptions) (api.None, error) {
 	w.mu.Lock()
@@ -414,6 +418,10 @@ func (s *spawnStore) CloseProject(_ context.Context, opts api.ProjectIDOptions) 
 	return api.None{}, nil
 }
 
+func (*spawnStore) MarkForked(context.Context, api.SessionIDOptions) (api.None, error) {
+	return api.None{}, nil
+}
+
 func (*spawnStore) PurgeWorktreeSessions(_ context.Context, opts api.WorktreeSessionsOptions) (api.None, error) {
 	return api.None{}, nil
 }
@@ -507,6 +515,16 @@ func (s *spawnTerminal) Start(_ context.Context, opts api.StartOptions) (api.Non
 // Nothing renamed itself here either, so a session is addressed by the name
 // lich derives for it.
 func (*spawnTerminal) AgentName(string) string { return "" }
+
+func (*spawnTerminal) Resumable(string, string, string) bool { return true }
+
+func (*spawnTerminal) CompactCommand(context.Context, api.SessionIDOptions) (string, error) {
+	return "/compact", nil
+}
+
+func (*spawnTerminal) New(context.Context, api.SessionIDOptions) (api.None, error) {
+	return api.None{}, nil
+}
 
 func (*spawnTerminal) SuggestProfile(string, string) error { return nil }
 

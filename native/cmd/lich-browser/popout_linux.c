@@ -24,7 +24,13 @@ static void move(GtkWidget *view, GtkWidget *parent) {
 // lich_page_pop_out shows tab's view in a window of the page's own, width x
 // height device pixels.
 void lich_page_pop_out(LichPage *page, LichTab *tab, int width, int height) {
-	int scale = gdk_monitor_get_scale_factor(gdk_display_get_primary_monitor(gdk_display_get_default()));
+	GdkDisplay *display = gdk_display_get_default();
+	// Wayland has no primary monitor.
+	GdkMonitor *monitor = gdk_display_get_primary_monitor(display);
+	if (!monitor) {
+		monitor = gdk_display_get_monitor(display, 0);
+	}
+	int scale = monitor ? gdk_monitor_get_scale_factor(monitor) : 1;
 	page->popped = gtk_window_new(GTK_WINDOW_TOPLEVEL);
 	gtk_window_set_default_size(GTK_WINDOW(page->popped), width / scale, height / scale);
 	g_signal_connect(page->popped, "delete-event", G_CALLBACK(closing), page);

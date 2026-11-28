@@ -69,13 +69,17 @@ func cardMenu(sv *sessionView, folders []string, act *sidebarAction, startRename
 		entries = append(entries, ui.MenuEntry{Label: i18n.T("layouts.pane.unsplit"), Icon: icSplit, OnClick: func() { act.unsplit = sv.ID }})
 	}
 	entries = append(entries, extra...)
-	if !sv.Pinned {
-		entries = append(entries,
-			ui.MenuEntry{Kind: ui.MenuSeparator},
-			ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.closeSession"), Icon: icMenuClose, Variant: ui.VariantDestructive, OnClick: func() { act.close = sv.ID }},
-		)
+	var closes []ui.MenuEntry
+	if kids := sv.place.descendants; len(kids) > 0 {
+		closes = append(closes, ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.closeChildSessions"), Icon: icMenuClose, Variant: ui.VariantDestructive, OnClick: func() { act.closeAll = kids }})
 	}
-	return entries
+	if !sv.Pinned {
+		closes = append(closes, ui.MenuEntry{Label: i18n.T("sidebar.sessionCard.closeSession"), Icon: icMenuClose, Variant: ui.VariantDestructive, OnClick: func() { act.close = sv.ID }})
+	}
+	if len(closes) == 0 {
+		return entries
+	}
+	return append(append(entries, ui.MenuEntry{Kind: ui.MenuSeparator}), closes...)
 }
 
 // replyCommand is what a session that lost its instruction runs to answer
