@@ -83,9 +83,8 @@ func TestAProjectDefaultIsOneValueEveryReaderSees(t *testing.T) {
 		t.Fatalf("Settings reads %q, %v", got, ok)
 	}
 	waitForSetting(t, f, "provider.default@p", "codex")
-	if err := m.providers.reload(context.Background()); err != nil {
-		t.Fatal(err)
-	}
+	s.providersChanged()
+	waitForProviderRead(t, m.providers)
 	if got := m.newSessionKind(); got != "codex" {
 		t.Fatalf("the launch kind after a read: %q", got)
 	}
@@ -95,6 +94,17 @@ func TestAProjectDefaultIsOneValueEveryReaderSees(t *testing.T) {
 		t.Fatalf("a project that follows Global spawns %q", got)
 	}
 	waitForSetting(t, f, "provider.default@p", "")
+	s.providersChanged()
+	waitForProviderRead(t, m.providers)
+}
+
+func waitForProviderRead(t *testing.T, b *providerBook) {
+	t.Helper()
+	eventually(t, "the provider book read to settle", func() bool {
+		b.mu.Lock()
+		defer b.mu.Unlock()
+		return !b.reading && !b.again
+	})
 }
 
 func TestSwitchingAProviderOffReachesTheLaunchMenuAndSandbox(t *testing.T) {

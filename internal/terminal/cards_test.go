@@ -2,6 +2,7 @@ package terminal
 
 import (
 	"encoding/json"
+	"path/filepath"
 	"slices"
 	"strings"
 	"testing"
@@ -25,7 +26,8 @@ var leanCard = subagent.Card{Lean: true, Brought: []string{}, Left: []api.Subage
 // provider's spawn that takes them, and nothing a card leaves out names them.
 func TestLichAlwaysRidesALeanCard(t *testing.T) {
 	t.Parallel()
-	const bin, plugin = "/usr/bin/lich", "/p/0.23.0"
+	// The plugin's path in the OS's own spelling, as the spawn joins it.
+	bin, plugin := "/usr/bin/lich", filepath.FromSlash("/p/0.23.0")
 	lib := library.Delivery{MCP: map[string]library.Server{"github": {Command: "gh-mcp"}}}
 	for _, kind := range []string{providers.Claude, providers.Codex, providers.OMP, providers.Cursor} {
 		t.Run(kind, func(t *testing.T) {

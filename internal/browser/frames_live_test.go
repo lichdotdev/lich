@@ -64,7 +64,6 @@ func framedHit(t *testing.T, p *chromePage, ctx context.Context) string {
 }
 
 func TestChromeInfoReadsASameOriginFrameAndItsIndexesClick(t *testing.T) {
-	t.Parallel()
 	p, ctx := framedPage(t)
 	info, err := p.Info(ctx, "")
 	if err != nil {
@@ -94,7 +93,6 @@ func TestChromeInfoReadsASameOriginFrameAndItsIndexesClick(t *testing.T) {
 }
 
 func TestChromeClickBySelectorReachesIntoAFrameAndScrollsIt(t *testing.T) {
-	t.Parallel()
 	p, ctx := framedPage(t)
 	if _, _, err := p.Click(ctx, Target{Selector: "iframe#app >>> #far"}); err != nil {
 		t.Fatal(err)
@@ -108,7 +106,6 @@ func TestChromeClickBySelectorReachesIntoAFrameAndScrollsIt(t *testing.T) {
 }
 
 func TestChromeTypeClearsAFieldInsideAFrame(t *testing.T) {
-	t.Parallel()
 	p, ctx := framedPage(t)
 	if err := p.Type(ctx, "new", true, Target{Selector: "iframe#app >>> #name"}); err != nil {
 		t.Fatal(err)
@@ -123,7 +120,6 @@ func TestChromeTypeClearsAFieldInsideAFrame(t *testing.T) {
 }
 
 func TestChromeInfoWithinAndWaitForReachIntoAFrame(t *testing.T) {
-	t.Parallel()
 	p, ctx := framedPage(t)
 	info, err := p.Info(ctx, "iframe#app >>> body")
 	if err != nil {

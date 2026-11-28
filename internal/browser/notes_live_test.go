@@ -57,7 +57,6 @@ func boxOf(t *testing.T, p *chromePage, ctx context.Context, selector string) ap
 }
 
 func TestChromeElementAtNamesTheElementAndASelectorThatFindsItAgain(t *testing.T) {
-	t.Parallel()
 	p, ctx := notesPage(t)
 	team := boxOf(t, p, ctx, ".plan:nth-of-type(3) .cta")
 	el, err := p.ElementAt(ctx, float64(team.X+team.W/2), float64(team.Y+team.H/2))
@@ -79,7 +78,6 @@ func TestChromeElementAtNamesTheElementAndASelectorThatFindsItAgain(t *testing.T
 }
 
 func TestChromeElementAtSkipsAGeneratedClassName(t *testing.T) {
-	t.Parallel()
 	p, ctx := notesPage(t)
 	hobby := boxOf(t, p, ctx, ".plan b")
 	el, err := p.ElementAt(ctx, float64(hobby.X+1), float64(hobby.Y+1))
@@ -92,7 +90,6 @@ func TestChromeElementAtSkipsAGeneratedClassName(t *testing.T) {
 }
 
 func TestChromeElementAtKeepsFieldValuesOutOfTheMarkup(t *testing.T) {
-	t.Parallel()
 	p, ctx := notesPage(t)
 	if err := p.Type(ctx, "my secret query", false, Target{Selector: "#q"}); err != nil {
 		t.Fatal(err)
@@ -113,7 +110,6 @@ func TestChromeElementAtKeepsFieldValuesOutOfTheMarkup(t *testing.T) {
 }
 
 func TestChromeElementAtThePageRootAnswersNothing(t *testing.T) {
-	t.Parallel()
 	p, ctx := notesPage(t)
 	el, err := p.ElementAt(ctx, 790, 590)
 	if err != nil {
@@ -125,7 +121,6 @@ func TestChromeElementAtThePageRootAnswersNothing(t *testing.T) {
 }
 
 func TestChromeLocateAnswersAnEmptyBoxForAnElementGone(t *testing.T) {
-	t.Parallel()
 	p, ctx := notesPage(t)
 	if got := boxOf(t, p, ctx, "#gone"); got != (api.BrowserRect{}) {
 		t.Fatalf("box of a missing element = %+v", got)
@@ -148,7 +143,6 @@ const scrollProbe = `<body style="margin:0;font:16px sans-serif">
 <div style="height:300px"></div></body>`
 
 func TestChromeLocateHidesAnElementItsScrollingBoxHides(t *testing.T) {
-	t.Parallel()
 	p, ctx := notesPageOf(t, scrollProbe)
 	if got := boxOf(t, p, ctx, "#i5"); got != (api.BrowserRect{}) {
 		t.Errorf("row scrolled out of its list answers %+v, want an empty box", got)
@@ -159,7 +153,6 @@ func TestChromeLocateHidesAnElementItsScrollingBoxHides(t *testing.T) {
 }
 
 func TestChromeElementAtBoxesOnlyThePartItsScrollingBoxShows(t *testing.T) {
-	t.Parallel()
 	p, ctx := notesPageOf(t, scrollProbe)
 	el, err := p.ElementAt(ctx, 20, 90)
 	if err != nil {
@@ -171,7 +164,6 @@ func TestChromeElementAtBoxesOnlyThePartItsScrollingBoxShows(t *testing.T) {
 }
 
 func TestChromeLocateRevealsAnElementOutOfView(t *testing.T) {
-	t.Parallel()
 	p, ctx := notesPageOf(t, scrollProbe)
 	boxes, err := p.Locate(ctx, []string{"#i5", "#far"}, "#i5")
 	if err != nil {
@@ -212,7 +204,6 @@ document.getElementById('prod')['__reactFiber$x1'] = {type: 'button', return: {t
 </script></body>`
 
 func TestChromeElementAtNamesTheReactComponentButNotAMinifiedOne(t *testing.T) {
-	t.Parallel()
 	p, _ := liveChrome(t)
 	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/html")
@@ -249,7 +240,6 @@ const frameProbe = `<body style="margin:0">
 </body>`
 
 func TestChromeElementAtReachesAnElementInsideASameOriginFrame(t *testing.T) {
-	t.Parallel()
 	p, ctx := notesPageOf(t, frameProbe)
 	for loaded := false; !loaded; time.Sleep(20 * time.Millisecond) {
 		if err := p.evaluate(ctx, `!!document.getElementById('app').contentDocument.querySelector('.save')`, &loaded); err != nil {

@@ -1292,7 +1292,7 @@ func (u *window) lostNotice(gtx C) D {
 // this frame: not while a field or a dialog over it is typing.
 func (u *window) terminalTakesKeys(gtx C) bool {
 	typing := u.sidebar.holdsKeys() || u.footer.holdsKeys() || u.dock.holdsKeys(gtx) || u.git.holdsKeys(gtx) || u.extPanel.holdsKeys(gtx) || u.topbar.holdsKeys()
-	return !typing && !u.palette.open && !u.worktree.open && !u.comments.isEditing()
+	return !typing && !u.palette.open && !u.worktree.open && (u.settings == nil || !u.settings.services.open) && !u.comments.isEditing()
 }
 
 // uncoverStage takes away the screens that cover the stage, Settings, Pulls

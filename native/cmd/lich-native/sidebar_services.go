@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"image"
+	"image/color"
 	"strconv"
 	"strings"
 	"time"
@@ -258,8 +259,8 @@ func (f *servicesFooter) rowList(gtx C, th *ui.Theme, root *ui.Root, list []back
 	})
 }
 
-// row is one service as a session's row is drawn: its glyph where a
-// session's mark sits, the name, muted while it is down, how long it has run
+// row is one service as a session's row is drawn: its glyph in its state's
+// tone where a session's mark sits, the name, muted while it is down, how long it has run
 // or how it failed, and the corner: the … under the pointer, the spinner while
 // it stops. Its actions are its menu, from the … or the right click; a click
 // shows its console.
@@ -279,9 +280,9 @@ func (f *servicesFooter) row(gtx C, th *ui.Theme, root *ui.Root, v backend.Servi
 				func(gtx C) D { return ui.Fill(gtx, fill, ui.RadiusMD) },
 				func(gtx C) D {
 					on := th.On(th.Over(fill))
-					name, glyph := on.Text(ui.TextSM, v.Name), on.Foreground
+					name, glyph := on.Text(ui.TextSM, v.Name), serviceGlyphInk(on, v)
 					if !serviceUp(v) && v.State != api.ServiceFailed {
-						name, glyph = name.Muted(), on.MutedForeground
+						name = name.Muted()
 					}
 					return layout.Inset{Top: ui.Space(1.5), Bottom: ui.Space(1.5), Left: rowInset, Right: ui.Space(1)}.Layout(gtx, func(gtx C) D {
 						return layout.Flex{Alignment: layout.Middle}.Layout(gtx,
@@ -301,6 +302,18 @@ func (f *servicesFooter) row(gtx C, th *ui.Theme, root *ui.Root, v backend.Servi
 			)
 		})
 	})
+}
+
+// serviceGlyphInk is a row's glyph in its state's tone: TonePass while it is
+// up, Destructive once it failed, muted while it is down.
+func serviceGlyphInk(th *ui.Theme, v backend.Service) color.NRGBA {
+	switch {
+	case serviceUp(v):
+		return th.TonePass
+	case v.State == api.ServiceFailed:
+		return th.Destructive
+	}
+	return th.MutedForeground
 }
 
 // serviceCorner is a row's corner slot: the … under the pointer or while its

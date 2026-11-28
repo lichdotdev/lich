@@ -25,7 +25,6 @@ const resizeCounter = `data:text/html,<script>window.n = 0; addEventListener("re
 // Chrome on Linux keeps the page whole after a screenshot, so the relayout
 // itself is what is pinned: equal device metrics alone would change nothing.
 func TestChromeFirstDocumentAfterAScreenshotIsLaidOutAgain(t *testing.T) {
-	t.Parallel()
 	p, frames, ctx := castRig(t)
 	if _, _, err := p.Screenshot(ctx, filepath.Join(t.TempDir(), "shot.png")); err != nil {
 		t.Fatal(err)
@@ -44,7 +43,6 @@ func TestChromeFirstDocumentAfterAScreenshotIsLaidOutAgain(t *testing.T) {
 }
 
 func TestChromeReloadWithoutAScreenshotIsNotLaidOutAgain(t *testing.T) {
-	t.Parallel()
 	p, _, ctx := castRig(t)
 	if err := p.Reload(ctx); err != nil {
 		t.Fatal(err)
@@ -129,7 +127,6 @@ func waitFrameSize(t *testing.T, frames <-chan string, w, h int) {
 // draws at gets one frame a pixel narrower after the first capture, and equal
 // ones after it.
 func TestChromeStillDrawsNoNewFrameAndMatchesTheFrames(t *testing.T) {
-	t.Parallel()
 	p, frames, ctx := castRigAt(t, frameScale)
 	last, size := quietFrames(t, frames)
 	for range 5 {
@@ -197,7 +194,6 @@ func quietFrames(t *testing.T, frames <-chan string) (string, image.Config) {
 const pngPrefix = "iVBORw0KGgo"
 
 func TestChromeAStillPaneGetsAPNGAndKeepsIt(t *testing.T) {
-	t.Parallel()
 	frames := stillPane(t, frameScale)
 	if n := countPNGs(frames); n != 1 || !strings.HasPrefix(frames[len(frames)-1].Data, pngPrefix) {
 		t.Fatalf("frames %s; want one PNG, the last frame", describeFrames(frames))
@@ -209,7 +205,6 @@ func TestChromeAStillPaneGetsAPNGAndKeepsIt(t *testing.T) {
 // differs from the one before it (CI, macos-latest, 2026-11-12). The page gets
 // no more captures than its tries and then stops, PNG or not.
 func TestChromeAStillPaneUnderTheBrowsersScaleStopsCapturing(t *testing.T) {
-	t.Parallel()
 	frames := stillPane(t, 1)
 	if n := countPNGs(frames); n > stillTries {
 		t.Fatalf("frames %s; want %d PNGs at most", describeFrames(frames), stillTries)
@@ -279,7 +274,6 @@ func describeFrames(frames []api.BrowserFrame) string {
 
 // The probe page's field, clicked into from the pane, blinks its caret.
 func TestChromeABlinkingCaretGetsNoStill(t *testing.T) {
-	t.Parallel()
 	_, srv := liveChrome(t)
 	s := newService(chromeLaunch, func(string, string) (string, error) {
 		return t.TempDir(), nil
@@ -319,7 +313,6 @@ func TestChromeABlinkingCaretGetsNoStill(t *testing.T) {
 // A caret frame late past stillAfter, which a loaded runner sends, must not
 // get its PNG either: Still itself refuses while a caret blinks.
 func TestChromeStillRefusesWhileACaretBlinks(t *testing.T) {
-	t.Parallel()
 	p, srv := liveChrome(t)
 	ctx, cancel := context.WithTimeout(context.Background(), pageWait)
 	defer cancel()

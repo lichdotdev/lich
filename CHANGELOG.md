@@ -91,6 +91,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **A running service is easy to spot: its icon in the sidebar turns green.** It turns red when the service failed and stays grey while it is stopped.
 - **A subagent card spends fewer tokens on lich's tools.** Its tool list leaves out folders, projects, services and handoff, about a third of what every request it makes carried; a session you open keeps all of them.
 - **A report from another session shows in the chat as one shut line with its agent's mark, how it ended and its first words.** Click the line to read the whole report, or the arrow beside it to open that session.
 - **A task another session hands an agent shows at the left of its chat, under the sender's mark and name.** The right side is only ever your own messages; the arrow by the name opens the session that asked.
@@ -165,6 +166,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **The browser's Select and the agent's browser tools reach inside an iframe of the same site, not only the iframe.** A system that draws everything in a frame can be noted with Select, read by the agent and clicked or typed into; a frame from another site is still one element.
 - **Continue in moves a session drawn as a chat to another profile, as it does a terminal.** It refused with "switch this session to its terminal"; the chat now closes, its conversation moves and it opens again in the profile you picked, on the same model, effort and mode.
+- **Clicking an absolute file link in a chat opens it in that session's browser.** Artifact pages load from their isolated preview instead of being sent to the system URL opener.
+- **The Add service dialog keeps the keyboard when a terminal is open.** Typing in its fields no longer goes to the terminal behind it.
+- **The Services icon in the collapsed sidebar keeps its count badge inside the button.** The count no longer clips against the rail.
 - **lich no longer keeps a CPU core busy listing your sessions when dozens are open.** The tray, `lich sessions` and the agents' list of sessions read only what each transcript added since the last look, so opening a session or a worktree no longer waits behind them.
 - **Switching between stable and beta on Arch is an ordinary package upgrade, with no removal by hand.** The update keeps the name of the package you installed, `lich` from install.sh or `lich-bin` from the AUR.
 - **A site whose server leaves out part of its certificate chain opens in the built-in browser on Linux, as it does in Chrome.** It showed "Unacceptable TLS certificate"; lich now fetches the missing certificate the way Chrome does and still refuses one that fails any other check.

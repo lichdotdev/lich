@@ -102,6 +102,7 @@ func TestLayoutHighlightsKeepsCautionAsACallout(t *testing.T) {
 // lich sets the plugin up itself.
 func TestUpdatesShowsThePluginReleaseReadOnly(t *testing.T) {
 	_, r := settingsFrames(t, sectionUpdates)
+	r.waitFor(t, "v0.23.0")
 	r.settle(t)
 	if !r.showsAll(i18n.T("settings.pluginSetting.title"), "v0.23.0") {
 		t.Fatalf("drawn: %s", r.drawn())

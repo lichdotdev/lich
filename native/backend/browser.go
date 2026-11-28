@@ -50,6 +50,12 @@ func (c *Client) RunningBrowsers(ctx context.Context) ([]api.BrowserState, error
 	return callMethod(ctx, c, api.BrowserRunning, api.None{})
 }
 
+// OpenBrowserURL opens url in session id's browser, starting one when needed.
+func (c *Client) OpenBrowserURL(ctx context.Context, id, url string) error {
+	_, err := callMethod(ctx, c, api.BrowserOpen, api.BrowserOpenOptions{ID: id, URL: url})
+	return err
+}
+
 // AttachBrowser starts the frames of session id's page at the pane's size,
 // starting a browser when the session has none.
 func (c *Client) AttachBrowser(ctx context.Context, v api.BrowserViewOptions) error {
