@@ -8,6 +8,7 @@ import (
 	"context"
 	"github.com/lichdotdev/lich/native/ui/icons"
 	"image"
+	"log"
 	"path"
 	"path/filepath"
 	"strings"
@@ -166,6 +167,11 @@ func (f *fileEditor) takeSave() {
 	doc, _ := f.savedText()
 	f.setDirty(doc != f.base)
 	f.onSaved()
+	if f.lsp.doc != nil {
+		if err := f.lsp.doc.Save(); err != nil {
+			log.Printf("lsp %s: save %s: %v", f.lsp.name, f.rel, err)
+		}
+	}
 	f.vimSaved(s.doc)
 	if h := f.env.vim; h != nil && h.inConfig(filepath.Join(f.root(), filepath.FromSlash(f.rel))) {
 		h.restart()

@@ -304,17 +304,21 @@ func (f *fileEditor) vimBufOf(gen int) int {
 	return f.vim.buf
 }
 
-// vimPointer hands Neovim a click or a drag in the editor: its cursor
+// vimPointer hands Neovim a click, a drag or a jump in the editor: its cursor
 // there, or a characterwise Visual selection over what was dragged.
 func (f *fileEditor) vimPointer(u godemirror.Update) {
 	pointer := false
+	var st godemirror.EditorState
 	for _, t := range u.Transactions {
-		pointer = pointer || t.IsUserEvent("select.pointer")
+		// "select" alone is the editor's own jump, to a diagnostic the header was clicked for.
+		if t.IsUserEvent("select.pointer") || t.UserEvent == "select" {
+			// Its own state: a Neovim state laid in after it in the same frame is where Vim was, not where to go.
+			pointer, st = true, t.State
+		}
 	}
 	if !pointer || !f.vimOn() {
 		return
 	}
-	st := u.State
 	main := st.Selection().Main()
 	row, col := vimClickCol(st, main.Anchor(), main.Head())
 	f.vim.sent++

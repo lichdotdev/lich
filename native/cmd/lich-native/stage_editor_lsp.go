@@ -155,9 +155,10 @@ func (f *fileEditor) lspGoTo(loc godemirror.Location) {
 	f.openReference(filepath.Dir(path), filepath.Base(path), line)
 }
 
-// lspCounts is how many errors and warnings the server reports on the file.
+// lspCounts is how many errors and warnings are reported on the file, by
+// the editor's server or by Vim's.
 func (f *fileEditor) lspCounts() (errs, warns int) {
-	if f.lsp.doc == nil {
+	if f.ed == nil {
 		return 0, 0
 	}
 	for _, d := range f.ed.Diagnostics() {
@@ -178,7 +179,8 @@ var icCircleX = icons.Lucide("circle-x")
 // is none, with Install where lich can install it.
 func (f *fileEditor) lspStatus(gtx C, th *ui.Theme) D {
 	l := &f.lsp
-	if l.name == "" {
+	errs, warns := f.lspCounts()
+	if l.name == "" && errs+warns == 0 {
 		return D{}
 	}
 	if l.installBtn.Clicked(gtx) && l.installing == nil {
@@ -192,7 +194,6 @@ func (f *fileEditor) lspStatus(gtx C, th *ui.Theme) D {
 	}
 	text, reason, install := f.lspText()
 	children := []layout.FlexChild{}
-	errs, warns := f.lspCounts()
 	if errs > 0 {
 		children = append(children, layout.Rigid(lspCount(th, &l.errors, icCircleX, errs, th.Destructive)), ui.Gap(1))
 	}
@@ -200,6 +201,9 @@ func (f *fileEditor) lspStatus(gtx C, th *ui.Theme) D {
 		children = append(children, layout.Rigid(lspCount(th, &l.warnings, icTriangleAlert, warns, th.ToneWait)), ui.Gap(1))
 	}
 	label := th.Text(ui.TextSM, text).Mono().Muted()
+	if text == "" {
+		return layout.Flex{Alignment: layout.Middle}.Layout(gtx, children...)
+	}
 	children = append(children, layout.Rigid(func(gtx C) D {
 		if reason == "" {
 			return label.Layout(gtx)
