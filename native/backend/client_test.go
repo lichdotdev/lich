@@ -52,6 +52,18 @@ func TestCallSendsItsOptionsAndDecodes(t *testing.T) {
 	}
 }
 
+func TestOpenBrowserURLSendsSessionAndURL(t *testing.T) {
+	c := fakeBackend(t, func(method string, args []json.RawMessage) (any, int) {
+		if method != "browser.Open" || len(args) != 1 || string(args[0]) != `{"id":"s1","url":"/artifacts/report.html"}` {
+			t.Errorf("got %s %s", method, args)
+		}
+		return map[string]any{}, http.StatusOK
+	})
+	if err := c.OpenBrowserURL(context.Background(), "s1", "/artifacts/report.html"); err != nil {
+		t.Fatal(err)
+	}
+}
+
 func TestCallWithNoArgsSendsEmptyArray(t *testing.T) {
 	c := fakeBackend(t, func(_ string, args []json.RawMessage) (any, int) {
 		if args == nil {

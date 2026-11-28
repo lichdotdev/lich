@@ -97,7 +97,9 @@ func TestAttachInAChatAddsACard(t *testing.T) {
 	p := u.chats.pane("s1")
 	p.editor.SetText("read ")
 	r.settle(t)
-	r.click(t, r.smallestClickIn(t, boxPlus))
+	r.queueClick(r.smallestClickIn(t, boxPlus))
+	r.frame()
+	// The picker reply is asynchronous; waitCards drives the frame that applies it.
 	land()
 	waitCards(t, r, p, "/home/me/repo/notes.md")
 	if p.editor.Text() != "read " {

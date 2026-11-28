@@ -11,6 +11,7 @@ import (
 )
 
 func TestValidateExternalURL(t *testing.T) {
+	const artifactPath = "/home/u/.config/lich/artifacts/s1/git-log.html"
 	valid := []string{"http://example.com", "https://github.com/omartelo/lich/pull/1"}
 	for _, u := range valid {
 		if err := ValidateExternalURL(u); err != nil {
@@ -19,6 +20,7 @@ func TestValidateExternalURL(t *testing.T) {
 	}
 	invalid := []string{
 		"file:///etc/passwd",
+		artifactPath,
 		"javascript:alert(1)",
 		"vscode://open",
 		"https://",
@@ -29,6 +31,9 @@ func TestValidateExternalURL(t *testing.T) {
 		if err := ValidateExternalURL(u); err == nil {
 			t.Fatalf("want %q rejected", u)
 		}
+	}
+	if err := ValidateExternalURL(artifactPath); err == nil || err.Error() != `refusing to open scheme ""` {
+		t.Fatalf("absolute path error = %v, want the reproduced empty-scheme refusal", err)
 	}
 }
 
