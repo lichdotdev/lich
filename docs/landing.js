@@ -53,7 +53,10 @@ latest.then(function (release) {
       var on = t === tab;
       t.setAttribute("aria-selected", String(on));
       t.tabIndex = on ? 0 : -1;
-      document.getElementById(t.getAttribute("aria-controls")).hidden = !on;
+      var panel = document.getElementById(t.getAttribute("aria-controls"));
+      // A GIF plays from its first frame each time its tab opens, so the story is told from the start.
+      if (on && panel.hidden) panel.querySelectorAll("img[src$='.gif']").forEach(function (img) { img.src = img.src; });
+      panel.hidden = !on;
     });
     if (focus) tab.focus();
   }
