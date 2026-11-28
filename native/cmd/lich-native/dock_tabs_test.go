@@ -48,7 +48,9 @@ func TestDockTabButtonOpensItsTabInTheFrameThatTookTheClick(t *testing.T) {
 		t.Fatalf("%d tab buttons at the dock's foot, want %d", len(buttons), dockBuiltinTabs)
 	}
 	for i, want := range []dockTab{dockReview, dockArtifacts, dockCode} {
-		r.click(t, buttons[int(want)-1])
+		// The first Review frame starts a diff read, so its result may update the next frame.
+		r.queueClick(buttons[int(want)-1])
+		r.frame()
 		if u.dock.tab != want {
 			t.Fatalf("click %d: dock on %v, want %v", i, u.dock.tab, want)
 		}

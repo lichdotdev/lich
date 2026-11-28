@@ -94,8 +94,8 @@ func railServicesHint(t servicesTally) string {
 
 // railServicesBadge is the open footer's count, up/total, on the icon's
 // bottom right: red when one failed, the running tone while one runs, muted
-// otherwise, none with no service. It sits on a plate of the button's fill so
-// it reads off the icon's stroke under it, and runs past the icon's box.
+// otherwise, none with no service. Its plate keeps the count readable against
+// the button.
 func railServicesBadge(gtx C, th *ui.Theme, t servicesTally) D {
 	box := gtx.Constraints.Min
 	if t.total == 0 {
@@ -116,7 +116,7 @@ func railServicesBadge(gtx C, th *ui.Theme, t servicesTally) D {
 	call := m.Stop()
 	pad := gtx.Dp(railCountPad)
 	plate := d.Size.Add(image.Pt(2*pad, 0))
-	at := box.Add(image.Pt(gtx.Dp(railCountOut), gtx.Dp(railCountOut))).Sub(plate)
+	at := box.Sub(plate)
 	defer op.Offset(at).Push(gtx.Ops).Pop()
 	paint.FillShape(gtx.Ops, th.Surface, clip.UniformRRect(image.Rectangle{Max: plate}, gtx.Dp(ui.RadiusSM)).Op(gtx.Ops))
 	defer op.Offset(image.Pt(pad, 0)).Push(gtx.Ops).Pop()
@@ -124,12 +124,8 @@ func railServicesBadge(gtx C, th *ui.Theme, t servicesTally) D {
 	return D{Size: box}
 }
 
-// railCountOut is how far the count runs past the icon's corner, and
-// railCountPad the plate's room on either side of it.
-var (
-	railCountOut = unit.Dp(6)
-	railCountPad = unit.Dp(2)
-)
+// railCountPad is the plate's room on either side of the count.
+const railCountPad = unit.Dp(2)
 
 // railFill is a rail button's fill: accent while its popup is open, the
 // rail's hover while hovered.
